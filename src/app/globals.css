@@ -1,17 +1,63 @@
+/*import inter font*/
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap");
+
+/*import tailwindcss*/
 @import "tailwindcss";
+
+/*
+--background is Default background color.
+--foreground is Default text color
+
+These are your light mode colors.
+*/
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
+/*
+--color-background => --background.
+--color-foreground => --foreground.
+--font-sans => Inter font
+
+→ Purpose: This block basically maps base variables like --background into a theme-specific naming system (e.g. --color-background) for consistency.
+*/
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Inter", sans-serif;
 }
 
+/* design system */
+@theme {
+  /* Color palette */
+  --color-primary: oklch(0.8968 0.0755 76.37) /* red */
+  --color-secondary: oklch(0.8968 0.0755 76.37) /* yellow */
+  --color-black: oklch(0.2304 0.0209 264.04)
+  --color-gray: oklch(0.4596 0.0174 264.39)
+  --color-white: oklch(1 0 0)
+
+  /* Typography sizes */
+  --text-xs: 0.75rem;    /* 12px */
+  --text-sm: 0.875rem;   /* 14px */
+  --text-md: 1rem;       /* 16px */
+  --text-lg: 1.125rem;   /* 18px */
+  --text-xl: 1.25rem;    /* 20px */
+  --text-dxs: 1.5rem;    /* 24px */
+  --text-dsm: 1.875rem;  /* 30px */
+  --text-dmd: 2.25rem;   /* 36px */
+  --text-dlg: 3rem;      /* 48px */
+  --text-dxl: 3.75rem;   /* 60px */
+  --text-d2xl: 4.5rem;   /* 72px */
+}
+
+/*
+These are the colors when user is in dark mode, the default is overwriten:
+
+--background becomes near black (#0a0a0a).
+--foreground becomes light gray (#ededed).
+*/
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -19,8 +65,27 @@
   }
 }
 
+/* 
+Styles for page body
+*/
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+.landing-title {
+  @apply text-dxs font-semibold xl:text-dxl;
+}
+
+.landing-description {
+  @apply text-sm font-normal xl:text-xl;
+}
+
+.nav-text {
+  @apply text-xs font-semibold xl:text-md;
+}
+
+.nav-text {
+  @apply text-xs font-semibold xl:text-md;
 }
