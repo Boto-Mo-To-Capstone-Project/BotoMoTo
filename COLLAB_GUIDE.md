@@ -5,9 +5,9 @@
 We use developer-based branching to avoid conflicts and keep our repository organized.
 
 ✅ Main Branches:
-- main → Production/stable code only (DO NOT TOUCH)
+- main → Production-stable code only (DO NOT TOUCH)
 - dev → Shared development branch (latest working version)
-- dev/ayumi, dev/marc, dev/mc, dev/cj → Personal branches for each developer
+- dev-ayumi, dev-marc, dev-mc, dev-cj → Personal branches for each developer
 
 ---
 
@@ -43,25 +43,25 @@ git pull origin dev
 
 If your branch doesn’t exist yet, create it:
 ```bash
-git checkout -b dev/<your-name>
-git pull origin dev/<your-name>
+git checkout -b dev-<your-name>
+git pull origin dev-<your-name>
 ```
 If your branch already exists, switch to it:
 ```bash
-git checkout dev/<your-name>
-git pull origin dev/<your-name>
+git checkout dev-<your-name>
+git pull origin dev-<your-name>
 ```
 **Example for Ayumi:**
 ```bash
 # this creates a new branch if it doesn't exist and switches to it
-git checkout -b dev/ayumi
-git pull origin dev/ayumi
+git checkout -b dev-ayumi
+git pull origin dev-ayumi
 ```
 OR
 ```bash
 # this switches to an existing branch and pulls latest changes
-git checkout dev/ayumi
-git pull origin dev/ayumi
+git checkout dev-ayumi
+git pull origin dev-ayumi
 ```
 
 ---
@@ -85,11 +85,11 @@ git commit -m "added login form component"
 
 ### 5️⃣ Push Your Work to Your Personal Branch
 ```bash
-git push origin dev/<your-name>
+git push origin dev-<your-name>
 ```
 **Example:**
 ```bash
-git push origin dev/ayumi
+git push origin dev-ayumi
 ```
 
 ---
@@ -97,7 +97,7 @@ git push origin dev/ayumi
 ### 6️⃣ Create a Pull Request (PR) to `dev`
 
 - Go to GitHub
-- Open a Pull Request from your branch `dev/<your-name>` → `dev`
+- Open a Pull Request from your branch `dev-<your-name>` → `dev`
 - Add a short description of your changes
 - Wait for team review
 - After approval, merge to `dev`
@@ -113,13 +113,13 @@ git pull origin dev
 ```
 **Create personal branch:**
 ```bash
-git checkout -b dev/<your-name>  
-git pull origin dev/<your-name>  
+git checkout -b dev-<your-name>  
+git pull origin dev-<your-name>  
 ```
 **Switch to personal branch:**
 ```bash
-git checkout dev/<your-name>  
-git pull origin dev/<your-name>  
+git checkout dev-<your-name>  
+git pull origin dev-<your-name>  
 ```
 **Add and commit changes:**
 ```bash
@@ -128,7 +128,7 @@ git commit -m "short but clear description"
 ```
 **Push changes to remote:**
 ```bash
-git push origin dev/<your-name>  
+git push origin dev-<your-name>  
 ```
 
 ---
@@ -138,7 +138,7 @@ git push origin dev/<your-name>
 ✅ Never commit directly to `main`  
 ✅ Always pull latest `dev` before working  
 ✅ Keep commit messages short but clear  
-✅ Use only your assigned `dev/<your-name>` branch  
+✅ Use only your assigned `dev-<your-name>` branch  
 ✅ Regularly push your progress to avoid conflicts  
 
 ---
