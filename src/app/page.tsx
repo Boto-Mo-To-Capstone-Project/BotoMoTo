@@ -1,6 +1,7 @@
 import Image from "next/image";
 
 import DashboardImage from "./assets/DashboardImage.png";
+import DashboardImageFull from "./assets/DashboardImageFull.png";
 import Button from "@/components/Button";
 
 export default function HomePage() {
@@ -19,9 +20,22 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="flex justify-center">
-        {" "}
-        <Image src={DashboardImage} height={480} alt="BotoMoToLogo" />
+      <div className="flex justify-center pt-5 xl:pt-0">
+        {/* Mobile image: visible below md */}
+        <Image
+          src={DashboardImageFull}
+          height={480}
+          alt="BotoMoToLogo"
+          className="block xl:hidden"
+        />
+
+        {/* Desktop image: visible md and up */}
+        <Image
+          src={DashboardImage}
+          height={480}
+          alt="BotoMoToLogo"
+          className="hidden xl:block"
+        />
       </div>
     </main>
   );
