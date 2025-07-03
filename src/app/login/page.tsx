@@ -1,60 +1,104 @@
-'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+"use client";
+
+import Image from "next/image";
+import BotoMoToLogo from "@/app/assets/BotoMoToLogo.png";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (res.ok) {
-      router.push('/dashboard');
-      console.log('Login successful');
-    } else {
-      const data = await res.json();
-      setError(data.error || 'Something went wrong');
-    }
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow-md w-full max-w-sm">
-        <h2 className="text-2xl text-black font-semibold mb-6">Admin Login</h2>
-        {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          className="w-full text-neutral-950 p-2 mb-4 border rounded"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          className="w-full text-neutral-950 p-2 mb-4 border rounded"
-          required
-        />
-        <button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded"
-        >
-          Login
-        </button>
-      </form>
-    </div>
+    <main className="min-h-screen flex flex-col items-center justify-center px-4 bg-[var(--background)] text-[var(--foreground)]">
+      <div className="w-full max-w-md text-center space-y-6">
+        {/* Logo */}
+        <div className="flex justify-center">
+          <Image
+            src={BotoMoToLogo}
+            alt="Boto Mo ‘To Logo"
+            className="w-16 h-16"
+          />
+        </div>
+
+        {/* Heading */}
+        <div>
+          <p className="text-2xl font-semibold text-[var(--color-black)]">
+            Log in to your account
+          </p>
+          <p className="text-sm text-[var(--color-gray)]">
+            Welcome back! Please enter your details.
+          </p>
+        </div>
+
+        {/* Form */}
+        <form className="space-y-4 text-left">
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-black)] mb-1">
+              Email Address
+            </label>
+            <input
+              type="email"
+              placeholder="Enter your email"
+              className="w-full border border-[var(--color-secondary)] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-black)] mb-1">
+              Password
+            </label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              className="w-full border border-[var(--color-secondary)] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
+            />
+          </div>
+
+          <div className="flex items-center justify-between text-sm">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                className="form-checkbox border-gray-300 rounded"
+              />
+              <span className="text-[var(--color-black)]">Remember for 30 days</span>
+            </label>
+            <a
+              href="#"
+              className="text-[var(--color-primary)] hover:underline font-medium"
+            >
+              Forgot password
+            </a>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-[var(--color-primary)] hover:brightness-90 text-white py-2 rounded-md text-sm font-semibold"
+          >
+            Log In
+          </button>
+        </form>
+
+        {/* Divider Buttons */}
+        <div className="space-y-3">
+          <button className="w-full flex items-center justify-center border border-gray-300 rounded-md py-2 text-sm gap-2 hover:bg-gray-50">
+            <img src="/google.svg" alt="Google" className="w-5 h-5" />
+            Sign in with Google
+          </button>
+
+          <button className="w-full flex items-center justify-center border border-gray-300 rounded-md py-2 text-sm gap-2 hover:bg-gray-50">
+            <img src="/facebook-icon.svg" alt="Facebook" className="w-5 h-5" />
+            Sign in with Facebook
+          </button>
+        </div>
+
+        {/* Sign up Footer */}
+        <p className="text-sm text-[var(--color-gray)]">
+          Don’t have an account?{" "}
+          <a
+            href="#"
+            className="text-[var(--color-primary)] font-medium hover:underline"
+          >
+            Sign up
+          </a>
+        </p>
+      </div>
+    </main>
   );
 }
