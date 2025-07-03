@@ -2,16 +2,18 @@
 "use client";
 
 import Image from "next/image";
-import BotoMoToLogo from "@/app/assets/BotoMoToLogo.png";
+import Logomark from "@/app/assets/Logomark.png";
+import GoogleIcon from "@/app/assets/google-icon.png";
+import FacebookIcon from "@/app/assets/facebook-icon.png";
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-4 bg-[var(--background)] text-[var(--foreground)]">
+    <main className="min-h-screen flex items-center justify-center px-4 bg-[var(--background)] text-[var(--foreground)]">
       <div className="w-full max-w-md text-center space-y-6">
         {/* Logo */}
         <div className="flex justify-center">
           <Image
-            src={BotoMoToLogo}
+            src={Logomark}
             alt="Boto Mo ‘To Logo"
             className="w-16 h-16"
           />
@@ -78,12 +80,12 @@ export default function LoginPage() {
         {/* Divider Buttons */}
         <div className="space-y-3">
           <button className="w-full flex items-center justify-center border border-gray-300 rounded-md py-2 text-sm gap-2 hover:bg-gray-50">
-            <img src="/google.svg" alt="Google" className="w-5 h-5" />
+            <Image src={GoogleIcon} alt="Google" className="w-5 h-5" />
             Sign in with Google
           </button>
 
           <button className="w-full flex items-center justify-center border border-gray-300 rounded-md py-2 text-sm gap-2 hover:bg-gray-50">
-            <img src="/facebook-icon.svg" alt="Facebook" className="w-5 h-5" />
+            <Image src={FacebookIcon} alt="Facebook" className="w-5 h-5" />
             Sign in with Facebook
           </button>
         </div>
