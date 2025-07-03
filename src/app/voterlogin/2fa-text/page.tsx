@@ -1,25 +1,25 @@
 import Button from "@/components/Button";
 import Image from "next/image";
 
-import EnterVoterCode from "../assets/EnterVoterCode.png";
+import EnterOTPText from "../../assets/EnterOTPText.png";
 import OtpInput from "@/components/OtpInput";
-const VoterLoginPage = () => {
+const Text2fa = () => {
   return (
     <main className=" flex flex-col items-center justify-center gap-10 px-10 py-20">
       <div className="text-center space-y-2">
-        <p className="voterlogin-heading">Enter Voter Code</p>
+        <p className="voterlogin-heading">Enter OTP</p>
         <p className="voterlogin-subheading">
-          Enter your Voter Unique Code to continue. Check your{" "}
-          <span className="text-primary">email</span> app to find your unique
-          code.
+          A One-Time Password (OTP) has been sent to your phone number{" "}
+          <span className="text-primary">09 *** 89.</span> This code will
+          authenticate your current session.
         </p>
       </div>
 
-      <Image src={EnterVoterCode} height={300} alt="BotoMoToLogo" />
+      <Image src={EnterOTPText} height={300} alt="BotoMoToLogo" />
       <div className="flex flex-col gap-2">
         {" "}
-        <p className="voterlogin-label">Enter Unique Code</p>
-        <OtpInput length={6} />
+        <p className="voterlogin-label">One Time Password</p>
+        <OtpInput length={4} />
       </div>
 
       <div className="flex flex-col gap-4 w-4/5 xs:w-auto">
@@ -30,4 +30,4 @@ const VoterLoginPage = () => {
   );
 };
 
-export default VoterLoginPage;
+export default Text2fa;

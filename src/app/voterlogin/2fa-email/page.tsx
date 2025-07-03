@@ -1,25 +1,24 @@
 import Button from "@/components/Button";
 import Image from "next/image";
 
-import EnterVoterCode from "../assets/EnterVoterCode.png";
+import EnterEmail from "../../assets/EnterEmail.png";
 import OtpInput from "@/components/OtpInput";
-const VoterLoginPage = () => {
+const Email2fa = () => {
   return (
     <main className=" flex flex-col items-center justify-center gap-10 px-10 py-20">
       <div className="text-center space-y-2">
-        <p className="voterlogin-heading">Enter Voter Code</p>
+        <p className="voterlogin-heading">Enter your email</p>
         <p className="voterlogin-subheading">
-          Enter your Voter Unique Code to continue. Check your{" "}
-          <span className="text-primary">email</span> app to find your unique
-          code.
+          Enter your email address or log in with Google to verify that the
+          email we sent belongs to you.
         </p>
       </div>
 
-      <Image src={EnterVoterCode} height={300} alt="BotoMoToLogo" />
+      <Image src={EnterEmail} height={300} alt="BotoMoToLogo" />
       <div className="flex flex-col gap-2">
         {" "}
-        <p className="voterlogin-label">Enter Unique Code</p>
-        <OtpInput length={6} />
+        <p className="voterlogin-label">Email Address TEXT INPUT</p>
+        <OtpInput length={4} />
       </div>
 
       <div className="flex flex-col gap-4 w-4/5 xs:w-auto">
@@ -30,4 +29,4 @@ const VoterLoginPage = () => {
   );
 };
 
-export default VoterLoginPage;
+export default Email2fa;
