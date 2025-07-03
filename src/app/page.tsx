@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 
 import Image from "next/image";
 
-import DashboardImage from "./assets/DashboardImage.png";
-import DashboardImageFull from "./assets/DashboardImageFull.png";
+import DashboardImage from "@/app/assets/DashboardImage.png";
+import DashboardImageFull from "@/app/assets/DashboardImageFull.png";
 import Button from "@/components/Button";
 
 export default function HomePage() {
@@ -22,7 +22,7 @@ export default function HomePage() {
         </div>
         <div className="flex flex-col gap-4 pt-10 w-3/5 xs:flex-row xs:w-auto">
           <Button variant="primary">Admin</Button>
-          <Button onClick={() => router.push("/voterlogin")}>Voter</Button>
+          <Button onClick={() => router.push("/voter/login")}>Voter</Button>
         </div>
       </div>
 

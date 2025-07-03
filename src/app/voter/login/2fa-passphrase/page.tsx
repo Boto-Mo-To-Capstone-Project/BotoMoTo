@@ -1,7 +1,7 @@
 import Button from "@/components/Button";
 import Image from "next/image";
 
-import EnterPassphrase from "../../../assets/EnterPassphrase.png";
+import EnterPassphrase from "@/app/assets/EnterPassphrase.png";
 import OtpInput from "@/components/OtpInput";
 const Passphrase2fa = () => {
   return (

@@ -34,8 +34,8 @@ These are your light mode colors.
   /* Color palette */
   --color-primary: oklch(0.3767 0.154577 29.2339); /* red */
   --color-secondary: oklch(0.8968 0.0755 76.37); /* yellow */
-  --color-black: oklch(0.2304 0.0209 264.04);
-  --color-gray: oklch(0.4596 0.0174 264.39);
+  --color-black: oklch(0.2304 0.0209 264.04); /* gray-900 */
+  --color-gray: oklch(0.4596 0.0174 264.39); /* gray-600*/
   --color-white: oklch(1 0 0);
 
   /* Typography sizes */
@@ -108,4 +108,20 @@ body {
 
 .voterlogin-label {
   @apply text-sm font-medium text-gray-700 md:text-md;
+}
+
+.voter-election-heading {
+  @apply text-dxs font-semibold text-black;
+}
+
+.voter-election-subheading {
+  @apply text-md font-semibold text-primary;
+}
+
+.voter-election-item {
+  @apply text-lg font-semibold text-black;
+}
+
+.voter-election-desc {
+  @apply text-lg font-normal text-gray;
 }
