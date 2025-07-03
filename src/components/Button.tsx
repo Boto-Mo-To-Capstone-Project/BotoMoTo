@@ -11,10 +11,13 @@ const Button = ({
   children,
   className = "",
   variant = "primary",
+  disabled = false,
   ...rest
 }: ButtonProps) => {
   const baseStyles =
     "rounded-lg h-11 px-3 btn-text cursor-pointer hover:brightness-90";
+
+  const disabledStyles = "opacity-50 cursor-not-allowed hover:brightness-100";
 
   const variants = {
     primary: "bg-primary text-white xs:w-39",
@@ -26,7 +29,9 @@ const Button = ({
 
   return (
     <button
-      className={`${baseStyles} ${variants[variant]} ${className}`}
+      className={`${baseStyles} ${variants[variant]} ${
+        disabled ? disabledStyles : ""
+      } ${className}`}
       {...rest}
     >
       {children}

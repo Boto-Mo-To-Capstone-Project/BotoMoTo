@@ -1,7 +1,7 @@
 import Button from "@/components/Button";
 import Image from "next/image";
 
-import EnterEmail from "../../../assets/EnterEmail.png";
+import EnterEmail from "@/app/assets/EnterEmail.png";
 import OtpInput from "@/components/OtpInput";
 const Email2fa = () => {
   return (

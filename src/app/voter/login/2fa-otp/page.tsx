@@ -1,7 +1,7 @@
 import Button from "@/components/Button";
 import Image from "next/image";
 
-import EnterOTP from "../../../assets/EnterOTP.png";
+import EnterOTP from "@/app/assets/EnterOTP.png";
 import OtpInput from "@/components/OtpInput";
 
 const OTP2fa = () => {
