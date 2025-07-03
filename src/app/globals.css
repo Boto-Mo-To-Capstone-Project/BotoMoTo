@@ -95,5 +95,17 @@ body {
 }
 
 .btn-text {
-  @apply text-xs font-semibold xl:text-md;
+  @apply text-md font-semibold xl:text-md;
+}
+
+.voterlogin-heading {
+  @apply text-dxs font-semibold md:text-dsm;
+}
+
+.voterlogin-subheading {
+  @apply text-md font-normal text-gray-600 md:text-lg;
+}
+
+.voterlogin-label {
+  @apply text-sm font-medium text-gray-700 md:text-md;
 }
