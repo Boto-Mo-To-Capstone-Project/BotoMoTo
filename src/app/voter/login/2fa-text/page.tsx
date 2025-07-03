@@ -1,24 +1,24 @@
 import Button from "@/components/Button";
 import Image from "next/image";
 
-import EnterPassphrase from "../../assets/EnterPassphrase.png";
+import EnterOTPText from "../../../assets/EnterOTPText.png";
 import OtpInput from "@/components/OtpInput";
-const Passphrase2fa = () => {
+const Text2fa = () => {
   return (
     <main className=" flex flex-col items-center justify-center gap-10 px-10 py-20">
       <div className="text-center space-y-2">
-        <p className="voterlogin-heading">Enter passphrase</p>
+        <p className="voterlogin-heading">Enter OTP</p>
         <p className="voterlogin-subheading">
-          Enter your Passphrase to continue. This was sent to your{" "}
-          <span className="text-primary">email</span> and will serve as your
-          authentication for this session.
+          A One-Time Password (OTP) has been sent to your phone number{" "}
+          <span className="text-primary">09 *** 89.</span> This code will
+          authenticate your current session.
         </p>
       </div>
 
-      <Image src={EnterPassphrase} height={300} alt="BotoMoToLogo" />
+      <Image src={EnterOTPText} height={300} alt="BotoMoToLogo" />
       <div className="flex flex-col gap-2">
         {" "}
-        <p className="voterlogin-label">PARAPHRASE TEXT INPUT</p>
+        <p className="voterlogin-label">One Time Password</p>
         <OtpInput length={4} />
       </div>
 
@@ -30,4 +30,4 @@ const Passphrase2fa = () => {
   );
 };
 
-export default Passphrase2fa;
+export default Text2fa;
