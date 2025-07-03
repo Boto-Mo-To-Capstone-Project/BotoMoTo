@@ -1,0 +1,325 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL_SQLITE")
+}
+
+// this is just a sample schema na tinry ko lang for a crud app
+model User {
+  id    Int    @id @default(autoincrement())
+  name  String
+  email String @unique
+}
+
+
+model Admin {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  password   String
+  provider   String
+  providerId String
+  fullName   String
+  photoUrl   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  deletedAt  DateTime?
+  isDeleted  Boolean  @default(false)
+
+  organization Organization?
+  tickets      Ticket[]
+}
+
+model ChiefAdministrator {
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+}
+
+model Organization {
+  id            Int                  @id @default(autoincrement())
+  adminId       Int                  @unique
+  name          String
+  description   String
+  membersCount  Int
+  status        String
+  photoUrl      String
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  deletedAt     DateTime?
+  isDeleted     Boolean              @default(false)
+  letterUrl     String
+  frequency     String
+
+  admin          Admin              @relation(fields: [adminId], references: [id])
+  contactDetails OrgContactDetails[]
+  elections      Election[]
+}
+
+model OrgContactDetails {
+  id        Int          @id @default(autoincrement())
+  orgId     Int
+  name      String
+  email     String
+  contactNum String
+
+  organization Organization @relation(fields: [orgId], references: [id])
+}
+
+model Election {
+  id          Int          @id @default(autoincrement())
+  orgId       Int
+  name        String
+  description String
+  status      String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+  isDeleted   Boolean       @default(false)
+
+  organization Organization @relation(fields: [orgId], references: [id])
+  schedule     ElectionSched?
+  mfaSettings  MfaSettings?
+  votingScopes VotingScope[]
+  voters       Voter[]
+  positions    Position[]
+  parties      Party[]
+  candidates   Candidate[]
+  voteResponses VoteResponse[]
+}
+
+model ElectionSched {
+  id          Int       @id @default(autoincrement())
+  electionId  Int       @unique
+  dateStart   DateTime
+  dateFinish  DateTime
+
+  election Election @relation(fields: [electionId], references: [id])
+}
+
+model MfaSettings {
+  id          Int       @id @default(autoincrement())
+  electionId  Int       @unique
+  mfaEnabled  Boolean
+  mfaMethod   String
+
+  election Election @relation(fields: [electionId], references: [id])
+}
+
+model VotingScope {
+  id          Int       @id @default(autoincrement())
+  electionId  Int
+  name        String
+  type        String
+  description String
+
+  election   Election  @relation(fields: [electionId], references: [id])
+  voters     Voter[]
+  positions  Position[]
+}
+
+model Voter {
+  id              Int       @id @default(autoincrement())
+  electionId      Int
+  code            String
+  email           String
+  contactNum      String
+  firstName       String
+  middleName      String
+  lastName        String
+  codeSendStatus  String
+  isVerified      Boolean
+  votingScopeId   Int?
+  address         String
+  isActive        Boolean
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+  isDeleted       Boolean   @default(false)
+  hasVoted        Boolean   @default(false)
+
+  election       Election    @relation(fields: [electionId], references: [id])
+  votingScope    VotingScope? @relation(fields: [votingScopeId], references: [id])
+  candidate      Candidate?
+  voteResponses  VoteResponse[]
+  surveyResponses SurveyResponse[]
+}
+
+model Position {
+  id             Int          @id @default(autoincrement())
+  electionId     Int
+  name           String
+  description    String
+  voteLimit      Int
+  numOfWinners   Int
+  votingScopeId  Int?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+  isDeleted      Boolean      @default(false)
+
+  election      Election      @relation(fields: [electionId], references: [id])
+  votingScope   VotingScope?  @relation(fields: [votingScopeId], references: [id])
+  candidates    Candidate[]
+  voteResponses VoteResponse[]
+}
+
+model Candidate {
+  id          Int       @id @default(autoincrement())
+  electionId  Int
+  voterId     Int       @unique
+  positionId  Int
+  isNew       Boolean
+  partyId     Int?
+  imageUrl    String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
+
+  election     Election   @relation(fields: [electionId], references: [id])
+  voter        Voter      @relation(fields: [voterId], references: [id])
+  position     Position   @relation(fields: [positionId], references: [id])
+  party        Party?     @relation(fields: [partyId], references: [id])
+  leaderships  CandidateLeadershipExperience[]
+  workExps     CandidateWorkExperience[]
+  educations   CandidateEducationLevel[]
+  voteResponses VoteResponse[]
+}
+
+model Party {
+  id          Int       @id @default(autoincrement())
+  electionId  Int
+  name        String
+  color       String
+  logoUrl     String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
+
+  election   Election    @relation(fields: [electionId], references: [id])
+  candidates Candidate[]
+}
+
+model CandidateLeadershipExperience {
+  id            Int       @id @default(autoincrement())
+  candidateId   Int
+  organization  String
+  position      String
+  dateRange     String
+
+  candidate Candidate @relation(fields: [candidateId], references: [id])
+}
+
+model CandidateWorkExperience {
+  id          Int       @id @default(autoincrement())
+  candidateId Int
+  company     String
+  role        String
+  dateRange   String
+
+  candidate Candidate @relation(fields: [candidateId], references: [id])
+}
+
+model CandidateEducationLevel {
+  id            Int       @id @default(autoincrement())
+  candidateId   Int
+  school        String
+  educationLevel String
+  dateRange     String
+
+  candidate Candidate @relation(fields: [candidateId], references: [id])
+}
+
+model VoteResponse {
+  id          Int       @id @default(autoincrement())
+  electionId  Int
+  voterId     Int
+  candidateId Int
+  positionId  Int
+
+  election   Election   @relation(fields: [electionId], references: [id])
+  voter      Voter      @relation(fields: [voterId], references: [id])
+  candidate  Candidate  @relation(fields: [candidateId], references: [id])
+  position   Position   @relation(fields: [positionId], references: [id])
+}
+
+model SurveyForm {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String
+  formSchema  Json
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
+
+  surveyResponses SurveyResponse[]
+}
+
+model SurveyResponse {
+  id         Int       @id @default(autoincrement())
+  formId     Int
+  voterId    Int
+  answers    Json
+  submittedAt DateTime @default(now())
+
+  surveyForm SurveyForm @relation(fields: [formId], references: [id])
+  voter      Voter      @relation(fields: [voterId], references: [id])
+}
+
+model Ticket {
+  id        Int      @id @default(autoincrement())
+  adminId   Int
+  subject   String
+  message   String
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  closedAt  DateTime?
+
+  admin Admin @relation(fields: [adminId], references: [id])
+}
+
+model Broadcast {
+  id          Int       @id @default(autoincrement())
+  title       String
+  message     String
+  scheduledAt DateTime
+  sentAt      DateTime?
+  isSent      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Audits {
+  id         Int       @id @default(autoincrement())
+  actorId    Int
+  actorRole  String
+  action     String
+  ipAdress   String
+  userAgent  String
+  timestamp  DateTime  @default(now())
+
+  affectedTables AuditTableAffected[]
+}
+
+model AuditTableAffected {
+  id            Int     @id @default(autoincrement())
+  auditId       Int
+  tableAffected String
+  recordId      Int
+  changes       Json
+
+  audit Audits @relation(fields: [auditId], references: [id])
+}
