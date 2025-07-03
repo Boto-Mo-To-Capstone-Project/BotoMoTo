@@ -1,3 +1,7 @@
+"use client"; // useRouter needs a client component
+
+import { useRouter } from "next/navigation";
+
 import Image from "next/image";
 
 import DashboardImage from "./assets/DashboardImage.png";
@@ -5,6 +9,8 @@ import DashboardImageFull from "./assets/DashboardImageFull.png";
 import Button from "@/components/Button";
 
 export default function HomePage() {
+  const router = useRouter(); // to go to another route
+
   return (
     <main className="flex flex-col gap-8 md:justify-between">
       <div className="flex flex-col items-center pt-20">
@@ -16,7 +22,7 @@ export default function HomePage() {
         </div>
         <div className="flex flex-col gap-4 pt-10 w-3/5 xs:flex-row xs:w-auto">
           <Button variant="primary">Admin</Button>
-          <Button>Voter</Button>
+          <Button onClick={() => router.push("/voterlogin")}>Voter</Button>
         </div>
       </div>
 
