@@ -19,11 +19,11 @@ export default function ForgotPasswordPage() {
 
         {/* Image */}
         <div className="flex justify-center">
-            <Image
+          <Image
             src={ForgotPasswordImage}
             alt="Forgot Password"
             className="w-[294.98px] h-[297px]"
-            />
+          />
         </div>
 
         {/* Form */}
@@ -39,6 +39,14 @@ export default function ForgotPasswordPage() {
             />
           </div>
 
+          {/* Send OTP Button */}
+          <button
+            type="submit"
+            className="w-full bg-[var(--color-primary)] hover:brightness-90 text-white py-2 rounded-md text-sm font-semibold"
+          >
+            Send OTP
+          </button>
+
           {/* Cancel Button */}
           <button
             type="button"
@@ -51,4 +59,3 @@ export default function ForgotPasswordPage() {
     </main>
   );
 }
-

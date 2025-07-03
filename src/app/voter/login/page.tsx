@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Button from "@/components/Button";
 import Image from "next/image";
 
-import EnterVoterCode from "../../assets/EnterVoterCode.png";
+import EnterVoterCode from "@/app/assets/EnterVoterCode.png";
 import OtpInput from "@/components/OtpInput";
 const VoterLoginPage = () => {
   const router = useRouter(); // to go to another route
