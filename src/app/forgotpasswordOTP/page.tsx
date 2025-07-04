@@ -29,52 +29,52 @@ export default function ForgotPasswordPage() {
         </div>
 
         {/* Form */}
-        <form className="space-y-4 text-left">
+        <form className="space-y-4 text-left flex flex-col items-center">
           {/* OTP Inputs */}
-          <div>
+          <div className="w-[380px]">
             <label className="block text-sm font-medium text-[var(--color-black)] mb-1">
               One Time Password
             </label>
-            <div className="flex justify-center gap-3">
+            <div className="flex gap-4 justify-center">
               {[1, 2, 3, 4].map((box) => (
                 <input
                   key={box}
                   type="text"
                   maxLength={1}
-                  className="w-12 h-12 text-center border border-[var(--color-secondary)] text-[var(--color-secondary)] font-bold rounded-md text-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
+                  className="w-11 h-11 text-center border border-[var(--color-secondary)] text-[var(--color-secondary)] font-bold rounded-md text-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
                 />
               ))}
             </div>
           </div>
 
           {/* Password */}
-          <div>
+          <div className="w-[380px]">
             <label className="block text-sm font-medium text-[var(--color-black)] mb-1">
               Password
             </label>
             <input
               type="password"
               placeholder="••••••••"
-              className="w-full border border-[var(--color-secondary)] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
+              className="w-full h-[44px] border border-[var(--color-secondary)] rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
             />
           </div>
 
           {/* Confirm Password */}
-          <div>
+          <div className="w-[380px]">
             <label className="block text-sm font-medium text-[var(--color-black)] mb-1">
               Confirm Password
             </label>
             <input
               type="password"
               placeholder="••••••••"
-              className="w-full border border-[var(--color-secondary)] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
+              className="w-full h-[44px] border border-[var(--color-secondary)] rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
             />
           </div>
 
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-[var(--color-primary)] hover:brightness-90 text-white py-2 rounded-md text-sm font-semibold"
+            className="w-[380px] h-[44px] bg-[var(--color-primary)] hover:brightness-90 text-white rounded-md text-sm font-semibold"
           >
             Change Password
           </button>
