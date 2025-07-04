@@ -20,7 +20,7 @@ const ElectionTermsCondition = () => {
           You're voting in the 2025 Election of Provident
         </p>
       </div>
-      <div className="w-3/5">
+      <div className="lg:w-3/5">
         <div className="mb-10">
           <p className="voter-election-desc">
             <strong>Last updated: May 21, 2025</strong>
@@ -36,6 +36,7 @@ const ElectionTermsCondition = () => {
             </ul>
           </li>
         </div>
+        {/* List of terms loop*/}
 
         <div className="space-y-10">
           {termsAndConditionList.map((term, index) => (
@@ -49,7 +50,7 @@ const ElectionTermsCondition = () => {
             </div>
           ))}
         </div>
-        <div className="mt-20">
+        <div className="mt-10">
           <li className="list-none voter-election-desc space-y-3 mt-2">
             <ul>
               By using this system, you acknowledge that you have read,
@@ -62,8 +63,6 @@ const ElectionTermsCondition = () => {
           </li>
         </div>
       </div>
-
-      {/* List of terms loop*/}
 
       <div className="pt-5 flex flex-col gap-4 w-4/5 xs:w-auto xs:items-center">
         <div className="flex gap-3 justify-center items-center">
@@ -84,7 +83,7 @@ const ElectionTermsCondition = () => {
         <Button
           variant="long_primary"
           disabled={!isChecked}
-          onClick={() => router.push("/voter/login")}
+          onClick={() => router.push("/voter/ballot-form")}
         >
           Start Voting
         </Button>

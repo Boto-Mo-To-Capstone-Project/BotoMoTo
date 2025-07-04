@@ -23,8 +23,7 @@ const Button = ({
     primary: "bg-primary text-white xs:w-39",
     long_primary: "bg-primary text-white xs:w-86",
     long_secondary: "border border-gray text-gray xs:w-86",
-    secondary:
-      "bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-400",
+    secondary: "border border-gray text-gray xs:w-39",
   };
 
   return (

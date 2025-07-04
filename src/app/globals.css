@@ -111,17 +111,29 @@ body {
 }
 
 .voter-election-heading {
-  @apply text-dxs font-semibold text-black;
+  @apply text-dxs font-semibold text-black md:text-dsm;
 }
 
 .voter-election-subheading {
-  @apply text-md font-semibold text-primary;
+  @apply text-md font-semibold text-primary md:text-lg;
 }
 
 .voter-election-item {
-  @apply text-lg font-semibold text-black;
+  @apply text-md font-semibold text-black md:text-lg;
 }
 
 .voter-election-desc {
-  @apply text-lg font-normal text-gray;
+  @apply text-sm font-normal text-gray sm:text-md md:text-lg;
+}
+
+.candidate-category-heading {
+  @apply text-sm font-medium text-black md:text-lg;
+}
+
+.candidate-category-name {
+  @apply text-sm font-medium text-gray md:text-lg;
+}
+
+.candidate-category-desc {
+  @apply text-sm font-medium text-gray;
 }
