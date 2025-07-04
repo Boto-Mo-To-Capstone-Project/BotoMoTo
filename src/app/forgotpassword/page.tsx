@@ -27,22 +27,22 @@ export default function ForgotPasswordPage() {
         </div>
 
         {/* Form */}
-        <form className="space-y-4 text-left">
-          <div>
+        <form className="space-y-4 text-left flex flex-col items-center">
+          <div className="w-[380px]">
             <label className="block text-sm font-medium text-[var(--color-black)] mb-1">
               Email Address
             </label>
             <input
               type="email"
               placeholder="Enter your email"
-              className="w-full border border-[var(--color-secondary)] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
+              className="w-full h-[44px] border border-[var(--color-secondary)] rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
             />
           </div>
 
           {/* Send OTP Button */}
           <button
             type="submit"
-            className="w-full bg-[var(--color-primary)] hover:brightness-90 text-white py-2 rounded-md text-sm font-semibold"
+            className="w-[380px] h-[44px] bg-[var(--color-primary)] hover:brightness-90 text-white rounded-md text-sm font-semibold"
           >
             Send OTP
           </button>
@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
           {/* Cancel Button */}
           <button
             type="button"
-            className="w-full flex items-center justify-center border border-gray-300 rounded-md py-2 text-sm gap-2 hover:bg-gray-50"
+            className="w-[380px] h-[44px] flex items-center justify-center border border-gray-300 rounded-md text-sm gap-2 hover:bg-gray-50"
           >
             Cancel
           </button>
