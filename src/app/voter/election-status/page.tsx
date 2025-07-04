@@ -9,7 +9,7 @@ import VotingOpen from "@/app/assets/VotingOpen.png"; // example image for open 
 import { useRouter } from "next/navigation";
 
 const ElectionStatus = () => {
-  const isOpen = true; // condition if election is now open
+  const isOpen = false; // condition if election is now open
   const router = useRouter(); // to go to another route
 
   return (
