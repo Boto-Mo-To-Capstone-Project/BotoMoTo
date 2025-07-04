@@ -78,7 +78,7 @@ export default function SignupPage() {
           </button>
         </form>
 
-        {/* Divider Buttons */}
+        Divider Buttons
         <div className="space-y-3">
           <button className="w-full flex items-center justify-center border border-gray-300 rounded-md py-2 text-sm gap-2 hover:bg-gray-50">
             <Image src={GoogleIcon} alt="Google" className="w-5 h-5" />
