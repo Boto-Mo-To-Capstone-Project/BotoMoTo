@@ -58,12 +58,17 @@ export default function SignupPage() {
             Create your account
           </p>
           <p className="text-sm text-[var(--color-gray)]">
-            Register to manage your organization's elections.
+            Register to manage your organization&apos;s elections.
           </p>
         </div>
 
         {/* Form */}
-        <form className="space-y-4 text-left flex flex-col items-center">
+        {error && (
+          <div className="text-red-500 text-sm mb-4">
+            {error}
+          </div>
+        )}
+        <form onSubmit={handleSignup} className="space-y-4 text-left flex flex-col items-center">
           <div className="w-[380px]">
             <label className="block text-sm font-medium text-[var(--color-black)] mb-1">
               Full Name
@@ -127,12 +132,12 @@ export default function SignupPage() {
       {/* Divider Buttons (Centered & Side by Side) */}
       <div className="flex justify-center">
         <div className="w-[380px] flex justify-between">
-          <button className="w-[187px] h-[44px] flex items-center justify-center border border-gray-300 rounded-md text-sm gap-2 hover:bg-gray-50">
+          <button onClick={() => signIn("google")} className="w-[187px] h-[44px] flex items-center justify-center border border-gray-300 rounded-md text-sm gap-2 hover:bg-gray-50">
             <Image src={GoogleIcon} alt="Google" className="w-5 h-5" />
             Google
           </button>
 
-          <button className="w-[187px] h-[44px] flex items-center justify-center border border-gray-300 rounded-md text-sm gap-2 hover:bg-gray-50">
+          <button onClick={() => signIn("facebook")} className="w-[187px] h-[44px] flex items-center justify-center border border-gray-300 rounded-md text-sm gap-2 hover:bg-gray-50">
             <Image src={FacebookIcon} alt="Facebook" className="w-5 h-5" />
             Facebook
           </button>
