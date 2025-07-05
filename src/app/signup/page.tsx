@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
 import Logomark from "@/app/assets/Logomark.png";
 import GoogleIcon from "@/app/assets/google-icon.png";
 import FacebookIcon from "@/app/assets/facebook-icon.png";
+import { useRouter } from "next/navigation";
 
 export default function SignupPage() {
   const [fullName, setFullName] = useState("");
@@ -14,38 +14,40 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
-  const Router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
+      setIsLoading(false);
       return;
     }
 
-    const res = await fetch("/api/auth/signup", {
-      method: "POST",
-      body: JSON.stringify({ fullName, email, password }),
-    });
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        name: fullName,
+        redirect: false,
+      });
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      setError(data.error || "Something went wrong");
-      return;
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        router.push("/");
+      }
+    } catch (err) {
+      setError(`An unexpected error occurred. Please try again. ${err}`);
+    } finally {
+      setIsLoading(false);
     }
-
-    Router.push("/login"); // Redirect to login after successful signup
-
-    // Optional: Auto-login after signup
-    // await signIn("credentials", {
-    //   email,
-    //   password,
-    //   callbackUrl: "/", // Redirect after login
-    // });
   };
-
+  
   return (
     <main className="min-h-screen flex items-center justify-center px-4 bg-[var(--background)] text-[var(--foreground)]">
       <div className="w-full max-w-md text-center space-y-6">
@@ -123,9 +125,12 @@ export default function SignupPage() {
 
           <button
             type="submit"
-            className="w-[380px] h-[44px] bg-[var(--color-primary)] hover:brightness-90 text-white rounded-md text-sm font-semibold"
+            disabled={isLoading}
+            className={`w-[380px] h-[44px] bg-[var(--color-primary)] hover:brightness-90 text-white rounded-md text-sm font-semibold ${
+              isLoading ? "opacity-70 cursor-not-allowed" : ""
+            }`}
           >
-            Sign Up
+            {isLoading ? "Signing Up..." : "Sign Up"}
           </button>
         </form>
 
