@@ -5,7 +5,7 @@ import EnterPassphrase from "@/app/assets/EnterPassphrase.png";
 import OtpInput from "@/components/OtpInput";
 const Passphrase2fa = () => {
   return (
-    <main className=" flex flex-col items-center justify-center gap-10 px-10 py-20">
+    <main className=" flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
       <div className="text-center space-y-2">
         <p className="voterlogin-heading">Enter passphrase</p>
         <p className="voterlogin-subheading">

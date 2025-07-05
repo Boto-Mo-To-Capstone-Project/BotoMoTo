@@ -10,7 +10,7 @@ const VoterLoginPage = () => {
   const router = useRouter(); // to go to another route
 
   return (
-    <main className=" flex flex-col items-center justify-center gap-10 px-10 py-20">
+    <main className=" flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
       <div className="text-center space-y-2">
         <p className="voterlogin-heading">Enter Voter Code</p>
         <p className="voterlogin-subheading">
