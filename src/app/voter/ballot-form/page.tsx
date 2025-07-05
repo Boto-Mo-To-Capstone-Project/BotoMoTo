@@ -60,7 +60,7 @@ const BallotForm = () => {
     // Add more if needed
   };
   return (
-    <main className="flex flex-col items-center gap-10 px-10 py-20 text-justify">
+    <main className="flex flex-col items-center gap-10 px-10 pb-20 pt-40 text-justify">
       <div className="text-center space-y-2">
         <p className="voter-election-heading">Official Ballot Form</p>
         <p className="voter-election-subheading">
@@ -103,7 +103,7 @@ const BallotForm = () => {
         <div className="flex gap-4 justify-end">
           <Button
             variant="secondary"
-            onClick={() => router.push("/voter/election-terms-condition")}
+            onClick={() => router.push("/voter/election-terms-conditions")}
           >
             Cancel
           </Button>

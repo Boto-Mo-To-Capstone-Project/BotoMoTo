@@ -12,7 +12,7 @@ export default function HomePage() {
   const router = useRouter(); // to go to another route
 
   return (
-    <main className="flex flex-col gap-8 md:justify-between">
+    <main className="flex flex-col gap-8 md:justify-between pt-20">
       <div className="flex flex-col items-center pt-20">
         <div className="text-center px-10">
           <p className="landing-title">Boto Mo 'To, Boses Mo ‘To!</p>
