@@ -21,7 +21,7 @@ export default function HomePage() {
           </p>
         </div>
         <div className="flex flex-col gap-4 pt-10 w-3/5 xs:flex-row xs:w-auto">
-          <Button variant="primary">Admin</Button>
+          <Button onClick={() => router.push("/signup")}>Admin</Button>
           <Button onClick={() => router.push("/voter/login")}>Voter</Button>
         </div>
       </div>
