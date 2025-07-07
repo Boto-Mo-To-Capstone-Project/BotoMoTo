@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
 import Logomark from "@/app/assets/Logomark.png";
 import GoogleIcon from "@/app/assets/google-icon.png";
 import FacebookIcon from "@/app/assets/facebook-icon.png";
+import { useRouter } from "next/navigation";
 
 export default function SignupPage() {
   const [fullName, setFullName] = useState("");
@@ -14,38 +14,61 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
-  const Router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
+      setIsLoading(false);
       return;
     }
 
-    const res = await fetch("/api/auth/signup", {
-      method: "POST",
-      body: JSON.stringify({ fullName, email, password }),
-    });
+    try {
+      // Create user account
+      const signupResponse = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: fullName,
+          email,
+          password,
+        }),
+      });
 
-    const data = await res.json();
+      const signupResult = await signupResponse.json();
 
-    if (!res.ok) {
-      setError(data.error || "Something went wrong");
-      return;
+      if (!signupResponse.ok) {
+        setError(signupResult.error || "Failed to create account");
+        return;
+      }
+
+      // Sign in the user
+      const signInResult = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (signInResult?.error) {
+        setError(signInResult.error);
+      } else {
+        // Redirect to organization creation for new admin users
+        router.push("/organization/create");
+      }
+    } catch (err) {
+      setError(`An unexpected error occurred. Please try again. ${err}`);
+    } finally {
+      setIsLoading(false);
     }
-
-    Router.push("/login"); // Redirect to login after successful signup
-
-    // Optional: Auto-login after signup
-    // await signIn("credentials", {
-    //   email,
-    //   password,
-    //   callbackUrl: "/", // Redirect after login
-    // });
   };
-
+  
   return (
     <main className="min-h-screen flex items-center justify-center px-4 bg-[var(--background)] text-[var(--foreground)]">
       <div className="w-full max-w-md text-center space-y-6">
@@ -122,22 +145,31 @@ export default function SignupPage() {
           </div>
 
           <button
-            type="submit"
-            className="w-[380px] h-[44px] bg-[var(--color-primary)] hover:brightness-90 text-white rounded-md text-sm font-semibold"
-          >
-            Sign Up
-          </button>
+          type="submit"
+          disabled={isLoading}
+          className={`w-[380px] h-[44px] bg-[var(--color-primary)] hover:brightness-90 text-white rounded-md text-sm font-semibold ${
+            isLoading ? "opacity-70 cursor-not-allowed" : ""
+          }`}
+        >
+          {isLoading ? "Signing Up..." : "Sign Up"}
+        </button>
         </form>
 
       {/* Divider Buttons (Centered & Side by Side) */}
       <div className="flex justify-center">
         <div className="w-[380px] flex justify-between">
-          <button onClick={() => signIn("google")} className="w-[187px] h-[44px] flex items-center justify-center border border-gray-300 rounded-md text-sm gap-2 hover:bg-gray-50">
+          <button 
+            onClick={() => signIn("google", { callbackUrl: "/organization/create" })} 
+            className="w-[187px] h-[44px] flex items-center justify-center border border-gray-300 rounded-md text-sm gap-2 hover:bg-gray-50"
+          >
             <Image src={GoogleIcon} alt="Google" className="w-5 h-5" />
             Google
           </button>
 
-          <button onClick={() => signIn("facebook")} className="w-[187px] h-[44px] flex items-center justify-center border border-gray-300 rounded-md text-sm gap-2 hover:bg-gray-50">
+          <button 
+            onClick={() => signIn("facebook", { callbackUrl: "/organization/create" })} 
+            className="w-[187px] h-[44px] flex items-center justify-center border border-gray-300 rounded-md text-sm gap-2 hover:bg-gray-50"
+          >
             <Image src={FacebookIcon} alt="Facebook" className="w-5 h-5" />
             Facebook
           </button>
