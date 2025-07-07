@@ -95,8 +95,7 @@ export default function LoginPage() {
         <p className="text-sm text-[var(--color-gray)]">
           Don’t have an account?{" "}
           <a
-            href="#"
-            className="text-[var(--color-primary)] font-medium hover:underline"
+            href="/signup" className="text-[var(--color-primary)] font-medium hover:underline"
           >
             Sign up
           </a>
