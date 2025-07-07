@@ -29,17 +29,38 @@ export default function SignupPage() {
     }
 
     try {
-      const result = await signIn("credentials", {
+      // Create user account
+      const signupResponse = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: fullName,
+          email,
+          password,
+        }),
+      });
+
+      const signupResult = await signupResponse.json();
+
+      if (!signupResponse.ok) {
+        setError(signupResult.error || "Failed to create account");
+        return;
+      }
+
+      // Sign in the user
+      const signInResult = await signIn("credentials", {
         email,
         password,
-        name: fullName,
         redirect: false,
       });
 
-      if (result?.error) {
-        setError(result.error);
+      if (signInResult?.error) {
+        setError(signInResult.error);
       } else {
-        router.push("/");
+        // Redirect to organization creation for new admin users
+        router.push("/organization/create");
       }
     } catch (err) {
       setError(`An unexpected error occurred. Please try again. ${err}`);
@@ -124,25 +145,31 @@ export default function SignupPage() {
           </div>
 
           <button
-            type="submit"
-            disabled={isLoading}
-            className={`w-[380px] h-[44px] bg-[var(--color-primary)] hover:brightness-90 text-white rounded-md text-sm font-semibold ${
-              isLoading ? "opacity-70 cursor-not-allowed" : ""
-            }`}
-          >
-            {isLoading ? "Signing Up..." : "Sign Up"}
-          </button>
+          type="submit"
+          disabled={isLoading}
+          className={`w-[380px] h-[44px] bg-[var(--color-primary)] hover:brightness-90 text-white rounded-md text-sm font-semibold ${
+            isLoading ? "opacity-70 cursor-not-allowed" : ""
+          }`}
+        >
+          {isLoading ? "Signing Up..." : "Sign Up"}
+        </button>
         </form>
 
       {/* Divider Buttons (Centered & Side by Side) */}
       <div className="flex justify-center">
         <div className="w-[380px] flex justify-between">
-          <button onClick={() => signIn("google")} className="w-[187px] h-[44px] flex items-center justify-center border border-gray-300 rounded-md text-sm gap-2 hover:bg-gray-50">
+          <button 
+            onClick={() => signIn("google", { callbackUrl: "/organization/create" })} 
+            className="w-[187px] h-[44px] flex items-center justify-center border border-gray-300 rounded-md text-sm gap-2 hover:bg-gray-50"
+          >
             <Image src={GoogleIcon} alt="Google" className="w-5 h-5" />
             Google
           </button>
 
-          <button onClick={() => signIn("facebook")} className="w-[187px] h-[44px] flex items-center justify-center border border-gray-300 rounded-md text-sm gap-2 hover:bg-gray-50">
+          <button 
+            onClick={() => signIn("facebook", { callbackUrl: "/organization/create" })} 
+            className="w-[187px] h-[44px] flex items-center justify-center border border-gray-300 rounded-md text-sm gap-2 hover:bg-gray-50"
+          >
             <Image src={FacebookIcon} alt="Facebook" className="w-5 h-5" />
             Facebook
           </button>
