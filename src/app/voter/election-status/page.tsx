@@ -9,11 +9,11 @@ import VotingOpen from "@/app/assets/VotingOpen.png"; // example image for open 
 import { useRouter } from "next/navigation";
 
 const ElectionStatus = () => {
-  const isOpen = false; // condition if election is now open
+  const isOpen = true; // condition if election is now open
   const router = useRouter(); // to go to another route
 
   return (
-    <main className=" flex flex-col items-center justify-center gap-10 px-10 py-20">
+    <main className=" flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
       {isOpen ? (
         <>
           <div className="text-center space-y-2">

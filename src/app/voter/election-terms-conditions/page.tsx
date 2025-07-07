@@ -13,7 +13,7 @@ const ElectionTermsCondition = () => {
   const router = useRouter(); // to go to another route
 
   return (
-    <main className="flex flex-col items-center gap-10 px-10 py-20 text-justify">
+    <main className="flex flex-col items-center gap-10 px-10 pb-20 pt-40 text-justify">
       <div className="text-center space-y-2">
         <p className="voter-election-heading">Terms and Conditions</p>
         <p className="voter-election-subheading">

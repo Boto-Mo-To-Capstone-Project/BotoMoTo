@@ -17,7 +17,7 @@ const DefaultNavbar = () => {
   const toggleMenu = () => setIsOpen(!isOpen);
 
   return (
-    <nav className="h-20 bg-white flex justify-between items-center shadow-sm px-4 md:px-15">
+    <nav className="fixed top-0 left-0 w-full h-20 bg-white flex justify-between items-center shadow-sm px-4 md:px-15 z-3">
       {/* Logo */}
       <div className="">
         <Image src={BotoMoToLogo} height={50} alt="BotoMoToLogo" />
@@ -30,7 +30,7 @@ const DefaultNavbar = () => {
             <NavLink href="/">Home</NavLink>
           </li>
           <li>
-            <NavLink href="/about">About Us</NavLink>
+            <NavLink href="/about-us">About Us</NavLink>
           </li>
           <li>
             <NavLink href="/contact">Contact</NavLink>
@@ -48,7 +48,7 @@ const DefaultNavbar = () => {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="absolute top-20 left-0 w-full bg-white shadow-md md:hidden z-2">
+        <div className="absolute top-20 left-0 w-full bg-white shadow-md md:hidden z-3">
           <ul className="flex flex-col gap-4 p-4 nav-text">
             <li>
               <NavLink href="/">Home</NavLink>
