@@ -571,37 +571,108 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ### 🚀 Recommended Best Practice Structure
 
-**Why Change?** The current structure mixes different user types under `/dashboard`. Following industry best practices, we recommend separating routes by user role for better security, maintainability, and scalability.
+**Why Change?** The current structure mixes different user types under `/dashboard` and authentication pages are scattered. Following industry best practices, we recommend organizing routes by domain for better security, maintainability, and scalability.
 
 **Recommended Structure:**
 
 ```
-/admin/dashboard          # Admin dashboard
-/admin/organizations      # Admin org management
-/admin/elections          # Admin election management
-/admin/voters             # Admin voter management
+/                       # Landing page
 
-/superadmin/dashboard     # Super admin dashboard
-/superadmin/organizations # Super admin org oversight
-/superadmin/elections     # Super admin election oversight
-/superadmin/users         # User management
-/superadmin/audits        # System audits
+/public/                 # Public pages
+├── /about-us           # About page
+├── /contact            # Contact page
+├── /live-dashboard     # Live dashboard (under construction)
 
-/voter/*                  # All voter-related routes (unchanged)
+
+/auth                  # Authentication pages
+├── /login              # Admin login
+├── /signup             # Admin registration
+├── /forgot-password    # Enter email to reset password
+|   ├── /otp            # Enter OTP to change password
+
+/admin                 # Admin pages
+├── /dashboard         # Admin dashboard
+├── /organizations     # Admin org management
+├── /elections         # Admin election management
+├── /voters            # Admin voter management
+├── /settings          # Admin settings
+
+/superadmin
+├── /dashboard         # Super admin dashboard
+├── /organizations     # Super admin org oversight
+├── /elections         # Super admin election oversight
+├── /users             # User management
+├── /audits            # System audits
+├── /settings          # System settings
+
+/voter                 # Voter pages
+├── /login             # Voter authentication
+├── /ballot-form       # Voter ballot form
+├── /election-status   # Voter election status
+├── /election-terms    # Voter election terms
+├── /receipt-form      # Voter receipt
+├── /survey-form       # Voter survey
 ```
 
 **Benefits of Recommended Structure:**
 
-- ✅ **Clear Separation**: Each user type has their own namespace
+- ✅ **Clear Separation**: Each domain has its own namespace
 - ✅ **Better Security**: Easier to implement role-based middleware
 - ✅ **Scalability**: Easy to add new features under each namespace
 - ✅ **Developer Experience**: Clearer code organization
 - ✅ **Industry Standard**: Follows patterns used by major companies
 
+**Why `/auth/*` Routes?**
+
+The `/auth/*` pattern is widely adopted by major platforms:
+
+- **Security**: Easier to implement authentication-specific middleware
+- **User Experience**: Clear indication of authentication-related pages
+- **SEO**: Better for search engines to understand page purpose
+- **Analytics**: Easier to track authentication flows
+- **Maintenance**: Centralized authentication logic
+
+**Example Middleware Implementation:**
+
+```typescript
+// Redirect authenticated users away from auth pages
+if (pathname.startsWith("/auth") && isAuthenticated) {
+  redirect("/dashboard");
+}
+
+// Redirect unauthenticated users away from protected pages
+if (pathname.startsWith("/admin") && !isAuthenticated) {
+  redirect("/auth/login");
+}
+```
+
 **Migration Path:**
 
-1. Create new route structure
-2. Update middleware and permissions
-3. Update navigation components
-4. Redirect old routes to new ones
-5. Remove old routes after transition period
+1. **Create new route structure**
+
+   - Move `/login` → `/auth/login`
+   - Move `/signup` → `/auth/signup`
+   - Move `/forgotpassword` → `/auth/forgot-password`
+   - Move `/forgotpasswordOTP` → `/auth/reset-password`
+
+2. **Update middleware and permissions**
+
+   - Add auth-specific middleware
+   - Update route permissions in constants
+
+3. **Update navigation components**
+
+   - Update all internal links
+   - Update redirect logic
+
+4. **Add redirects for old routes**
+
+   ```typescript
+   // In middleware or pages
+   if (pathname === "/login") redirect("/auth/login");
+   if (pathname === "/signup") redirect("/auth/signup");
+   ```
+
+5. **Remove old routes after transition period**
+   - Monitor analytics to ensure no broken links
+   - Remove old route files after 3-6 months
