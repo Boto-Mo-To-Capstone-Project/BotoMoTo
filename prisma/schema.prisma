@@ -14,22 +14,87 @@ datasource db {
   url      = env("DATABASE_URL_SQLITE")
 }
 
-// this is just a sample schema na tinry ko lang for a crud app 
-// needed to test the prisma client and next-auth integration
+// Enhanced User model for RBAC system
 model User {
   id            String          @id @default(cuid())
   name          String?
   email         String?         @unique
-  password      String?  // Add this field for credentials login
+  password      String?  // For credentials login
+  role          UserRole        @default(VOTER) // Enhanced role system
   emailVerified DateTime?
   image         String?
+  isActive      Boolean         @default(true)
+  isApproved    Boolean         @default(false) // For admin approval workflow
+  
+  // Organization relationship for admins
+  organization  Organization?
+  
   accounts      Account[]
   sessions      Session[]
-  // Optional for WebAuthn support
   Authenticator Authenticator[]
  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Enhanced role enum
+enum UserRole {
+  VOTER
+  ADMIN
+  SUPER_ADMIN
+}
+
+// Organization approval status enum
+enum OrganizationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+// Election status enum
+enum ElectionStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  CLOSED
+  ARCHIVED
+}
+
+// MFA method enum
+enum MfaMethod {
+  EMAIL
+  TOTP
+  SMS
+}
+
+// Voting scope type enum
+enum VotingScopeType {
+  LEVEL_1
+  LEVEL_2
+  LEVEL_3
+  CUSTOM
+}
+
+// Ticket status enum
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+// Audit action enum
+enum AuditAction {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  VOTE
+  APPROVE
+  REJECT
 }
  
 model Account {
@@ -73,7 +138,6 @@ model VerificationToken {
   @@unique([identifier, token])
 }
  
-// Optional for WebAuthn support
 model Authenticator {
   credentialID         String  @unique
   userId               String
@@ -89,47 +153,28 @@ model Authenticator {
   @@id([userId, credentialID])
 }
 
-model Admin {
-  id         Int      @id @default(autoincrement())
-  email      String   @unique
-  password   String
-  provider   String
-  providerId String
-  fullName   String
-  photoUrl   String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  deletedAt  DateTime?
-  isDeleted  Boolean  @default(false)
-
-  organization Organization? // An admin can be associated with an organization
-  tickets      Ticket[] // An admin can have multiple tickets
-}
-
-model ChiefAdministrator {
-  id       Int    @id @default(autoincrement())
-  email    String @unique
-  password String
-}
-
+// Enhanced Organization model
 model Organization {
   id            Int                  @id @default(autoincrement())
-  adminId       Int                  @unique
+  adminId       String               @unique // Changed to String to match User.id
   name          String
   description   String
   membersCount  Int
-  status        String
-  photoUrl      String
+  status        OrganizationStatus   @default(PENDING)
+  photoUrl      String?
+  letterUrl     String? // For approval documents
+  frequency     String? // Election frequency
+  theme         Json? // UI theme configuration
+  
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
   deletedAt     DateTime?
   isDeleted     Boolean              @default(false)
-  letterUrl     String
-  frequency     String
 
-  admin          Admin              @relation(fields: [adminId], references: [id])
+  admin          User                @relation(fields: [adminId], references: [id])
   contactDetails OrgContactDetails[]
   elections      Election[]
+  tickets        Ticket[]
 }
 
 model OrgContactDetails {
@@ -143,15 +188,18 @@ model OrgContactDetails {
 }
 
 model Election {
-  id          Int          @id @default(autoincrement())
+  id          Int            @id @default(autoincrement())
   orgId       Int
   name        String
   description String
-  status      String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  status      ElectionStatus @default(DRAFT)
+  isLive      Boolean        @default(false) // For real-time voting
+  allowSurvey Boolean        @default(false) // Enable post-vote survey
+  
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
   deletedAt   DateTime?
-  isDeleted   Boolean       @default(false)
+  isDeleted   Boolean        @default(false)
 
   organization Organization @relation(fields: [orgId], references: [id])
   schedule     ElectionSched?
@@ -162,6 +210,8 @@ model Election {
   parties      Party[]
   candidates   Candidate[]
   voteResponses VoteResponse[]
+  surveyForm   SurveyForm?
+  broadcasts   Broadcast[]
 }
 
 model ElectionSched {
@@ -176,17 +226,18 @@ model ElectionSched {
 model MfaSettings {
   id          Int       @id @default(autoincrement())
   electionId  Int       @unique
-  mfaEnabled  Boolean
-  mfaMethod   String
+  mfaEnabled  Boolean   @default(false)
+  mfaMethod   MfaMethod @default(EMAIL)
+  totpSecret  String?   // For TOTP setup
 
   election Election @relation(fields: [electionId], references: [id])
 }
 
 model VotingScope {
-  id          Int       @id @default(autoincrement())
+  id          Int             @id @default(autoincrement())
   electionId  Int
   name        String
-  type        String
+  type        VotingScopeType
   description String
 
   election   Election  @relation(fields: [electionId], references: [id])
@@ -197,22 +248,24 @@ model VotingScope {
 model Voter {
   id              Int       @id @default(autoincrement())
   electionId      Int
-  code            String
-  email           String
-  contactNum      String
+  code            String    @unique // Globally unique voter code
+  email           String?
+  contactNum      String?
   firstName       String
-  middleName      String
+  middleName      String?
   lastName        String
-  codeSendStatus  String
-  isVerified      Boolean
+  codeSendStatus  String    @default("PENDING")
+  isVerified      Boolean   @default(false)
   votingScopeId   Int?
-  address         String
-  isActive        Boolean
+  address         String?
+  isActive        Boolean   @default(true)
+  hasVoted        Boolean   @default(false)
+  votedAt         DateTime?
+  
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
   isDeleted       Boolean   @default(false)
-  hasVoted        Boolean   @default(false)
 
   election       Election    @relation(fields: [electionId], references: [id])
   votingScope    VotingScope? @relation(fields: [votingScopeId], references: [id])
@@ -226,9 +279,11 @@ model Position {
   electionId     Int
   name           String
   description    String
-  voteLimit      Int
-  numOfWinners   Int
+  voteLimit      Int          @default(1)
+  numOfWinners   Int          @default(1)
   votingScopeId  Int?
+  order          Int          @default(0) // For ballot ordering
+  
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   deletedAt      DateTime?
@@ -245,9 +300,11 @@ model Candidate {
   electionId  Int
   voterId     Int       @unique
   positionId  Int
-  isNew       Boolean
+  isNew       Boolean   @default(false)
   partyId     Int?
-  imageUrl    String
+  imageUrl    String?
+  bio         String?   // Candidate biography
+  
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
@@ -268,7 +325,9 @@ model Party {
   electionId  Int
   name        String
   color       String
-  logoUrl     String
+  logoUrl     String?
+  description String?
+  
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
@@ -284,6 +343,7 @@ model CandidateLeadershipExperience {
   organization  String
   position      String
   dateRange     String
+  description   String?
 
   candidate Candidate @relation(fields: [candidateId], references: [id])
 }
@@ -294,6 +354,7 @@ model CandidateWorkExperience {
   company     String
   role        String
   dateRange   String
+  description String?
 
   candidate Candidate @relation(fields: [candidateId], references: [id])
 }
@@ -304,6 +365,7 @@ model CandidateEducationLevel {
   school        String
   educationLevel String
   dateRange     String
+  description   String?
 
   candidate Candidate @relation(fields: [candidateId], references: [id])
 }
@@ -314,6 +376,8 @@ model VoteResponse {
   voterId     Int
   candidateId Int
   positionId  Int
+  voteHash    String    // For vote integrity
+  timestamp   DateTime  @default(now())
 
   election   Election   @relation(fields: [electionId], references: [id])
   voter      Voter      @relation(fields: [voterId], references: [id])
@@ -323,14 +387,18 @@ model VoteResponse {
 
 model SurveyForm {
   id          Int       @id @default(autoincrement())
+  electionId  Int       @unique
   title       String
   description String
   formSchema  Json
+  isActive    Boolean   @default(true)
+  
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
 
+  election        Election         @relation(fields: [electionId], references: [id])
   surveyResponses SurveyResponse[]
 }
 
@@ -346,37 +414,48 @@ model SurveyResponse {
 }
 
 model Ticket {
-  id        Int      @id @default(autoincrement())
-  adminId   Int
+  id        Int         @id @default(autoincrement())
+  orgId     Int
   subject   String
   message   String
-  status    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status    TicketStatus @default(OPEN)
+  priority  String      @default("MEDIUM")
+  response  String?     // SuperAdmin response
+  
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
   closedAt  DateTime?
 
-  admin Admin @relation(fields: [adminId], references: [id])
+  organization Organization @relation(fields: [orgId], references: [id])
 }
 
 model Broadcast {
   id          Int       @id @default(autoincrement())
+  electionId  Int
   title       String
   message     String
   scheduledAt DateTime
   sentAt      DateTime?
   isSent      Boolean   @default(false)
+  
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  election Election @relation(fields: [electionId], references: [id])
 }
 
 model Audits {
-  id         Int       @id @default(autoincrement())
-  actorId    Int
-  actorRole  String
-  action     String
-  ipAdress   String
+  id         Int        @id @default(autoincrement())
+  actorId    String     // User ID who performed the action
+  actorRole  UserRole   // Role of the actor
+  action     AuditAction
+  ipAddress  String
   userAgent  String
-  timestamp  DateTime  @default(now())
+  resource   String?    // What resource was affected
+  resourceId String?    // ID of the affected resource
+  details    Json?      // Additional details
+  
+  timestamp  DateTime   @default(now())
 
   affectedTables AuditTableAffected[]
 }
@@ -385,7 +464,7 @@ model AuditTableAffected {
   id            Int     @id @default(autoincrement())
   auditId       Int
   tableAffected String
-  recordId      Int
+  recordId      String
   changes       Json
 
   audit Audits @relation(fields: [auditId], references: [id])
