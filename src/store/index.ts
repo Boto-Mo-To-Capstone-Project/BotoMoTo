@@ -7,6 +7,7 @@ import ballotReducer from "./ballotSlice";
 // - Stores everything in an object called `store`.
 // - You’ll later provide this store to your React app via `<Provider>`.
 export const store = configureStore({
+  // The whole slice is often called a "reducer" (ballotReducer)
   reducer: {
     ballot: ballotReducer,
   },

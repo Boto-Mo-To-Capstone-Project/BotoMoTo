@@ -14,7 +14,7 @@ export interface BallotState {
   // “An object whose keys are type K and whose values are type V.”
   // e.g. { President: Candidate | null,}
 
-  selections: Record<string, Candidate | null>;
+  selections: Record<string, Candidate[] | null>;
 }
 
 // sets the initial state of ballot
@@ -36,6 +36,7 @@ const ballotSlice = createSlice({
 
   // reducer is a function that takes:
   // the old state, an action, and returns a new state.
+  // The individual functions inside are called "reducers"
   reducers: {
     selectCandidate(
       // state: the current state of this slice
@@ -43,17 +44,36 @@ const ballotSlice = createSlice({
       state,
       action: PayloadAction<{ position: string; candidate: Candidate }>
     ) {
-      // This is the logic of `selectCandidate`.
-      // - It takes:
-      //   - `action.payload.position` -> e.g. `"President"`
-      //   - `action.payload.candidate` -> the candidate object
-      // - And saves it to your state:
+      // initialize position if not yet selected
+      const { position, candidate } = action.payload;
+        if (!state.selections[position]) {
+        state.selections[position] = [];
+      }
 
-      // Example outcome:
-      // state.selections["President"] = {
-      //   name: "Posa Catler", ....
-      // }
-      state.selections[action.payload.position] = action.payload.candidate;
+      // prevent duplicate selection
+      const alreadySelected = state.selections[position].some(
+        (c) => c.name === candidate.name
+      );
+      if (!alreadySelected) {
+        state.selections[position].push(candidate);
+      }
+    },
+    // when deselecting a candidate
+    deselectCandidate(
+      state, 
+      action: PayloadAction<{ position: string; candidateName: string }>
+    ) {
+      const { position, candidateName } = action.payload;
+      if (state.selections[position]) {
+        // Remove candidate by name
+        state.selections[position] = state.selections[position].filter(
+          (c) => c.name !== candidateName
+        );
+        // If no candidates remain, remove the position from state
+        if (state.selections[position].length === 0) {
+          delete state.selections[position];
+        }
+  }
     },
 
     // another reducer: clearSelections.
@@ -65,6 +85,6 @@ const ballotSlice = createSlice({
   },
 });
 
-export const { selectCandidate, clearSelections } = ballotSlice.actions;
+export const { selectCandidate, deselectCandidate, clearSelections } = ballotSlice.actions;
 
 export default ballotSlice.reducer;

@@ -1,3 +1,4 @@
+// this is used in ballot-form
 "use client";
 
 import { useState } from "react";
@@ -9,12 +10,16 @@ type CandidateCategoryProps = {
   position: string;
   selectCount: number;
   candidateList: Candidate[];
+  onSelectCandidate: (candidate: Candidate) => void;
+  onDeselectCandidate: (candidate: Candidate) => void;
 };
 
 const CandidateCategory = ({
   position,
   selectCount,
   candidateList,
+  onSelectCandidate,
+  onDeselectCandidate,
 }: CandidateCategoryProps) => {
   const [openIndexes, setOpenIndexes] = useState<number[]>([]); // open accordion
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
@@ -25,15 +30,20 @@ const CandidateCategory = ({
     ); // to open and close accordion
   };
 
-  const handleSelect = (candidateName: string) => {
+  const handleSelect = (candidate: Candidate) => {
+    const candidateName = candidate.name; // get the name from candidate object
+
     if (selectedCandidates.includes(candidateName)) {
       // Deselect
       setSelectedCandidates((prev) =>
         prev.filter((name) => name !== candidateName)
       );
+      onDeselectCandidate(candidate);
     } else {
+      // check if voter exceeds the select count of the position
       if (selectedCandidates.length < selectCount) {
         setSelectedCandidates((prev) => [...prev, candidateName]);
+        onSelectCandidate(candidate);
       } else {
         alert(`You can only select up to ${selectCount} candidate(s).`);
       }
@@ -52,7 +62,9 @@ const CandidateCategory = ({
       <table className="min-w-full divide-y divide-gray-200 border border-gray-300 bg-gray-100">
         <thead className="">
           <tr>
-            <th className="px-4 py-2 candidate-category-desc w-3/5">Name</th>
+            <th className="px-4 py-2 candidate-category-desc w-3/5">
+              Candidate
+            </th>
             <th className="px-4 py-2 candidate-category-desc w-1/5">Party</th>
             <th className="px-4 py-2 text-center candidate-category-desc w-1/5">
               View Credentials
@@ -68,10 +80,13 @@ const CandidateCategory = ({
                     type="checkbox"
                     checked={selectedCandidates.includes(candidate.name)}
                     className="h-4 w-4 lg:h-5 lg:w-5 appearance-none rounded-xl border-2 border-gray checked:border-primary checked:bg-primary focus:ring-3 focus:ring-primary focus:ring-offset-1 cursor-pointer flex-none "
-                    onChange={() => handleSelect(candidate.name)}
+                    onChange={() => handleSelect(candidate)}
                   />
                   <img
-                    src={candidate.img || "https://via.placeholder.com/40"}
+                    src={
+                      candidate.img ||
+                      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaHfpIhAPZHSbZstaGEgFBIjZZ-Y-K533dag&s"
+                    }
                     alt={`${candidate.name} photo`}
                     className="w-10 h-10 object-cover rounded-full"
                   />
