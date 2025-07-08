@@ -17,7 +17,7 @@ const ElectionTermsCondition = () => {
       <div className="text-center space-y-2">
         <p className="voter-election-heading">Terms and Conditions</p>
         <p className="voter-election-subheading">
-          You're voting in the 2025 Election of Provident
+          You&apos;re voting in the 2025 Election of Provident
         </p>
       </div>
       <div className="lg:w-3/5">
