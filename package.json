@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
+    "@reduxjs/toolkit": "^2.8.2",
     "@prisma/client": "^6.11.1",
     "@supabase/supabase-js": "^2.49.4",
     "@types/speakeasy": "^2.0.10",
@@ -25,7 +26,8 @@
     "prisma": "^6.11.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "speakeasy": "^2.0.0"
+    "speakeasy": "^2.0.0",
+    "react-redux": "^9.2.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
