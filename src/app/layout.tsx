@@ -1,9 +1,9 @@
 "use client";
 
-import DefaultNavbar from "@/components/DefaultNavbar";
 import "./globals.css";
 import { Provider } from "react-redux";
 import { store } from "@/store";
+import NavbarWrapper from "@/components/NavbarWrapper";
 
 export default function RootLayout({
   children,
@@ -14,7 +14,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Provider store={store}>
-          <DefaultNavbar />
+          <NavbarWrapper />
           {children}
         </Provider>
       </body>

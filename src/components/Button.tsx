@@ -4,7 +4,13 @@ import { ButtonHTMLAttributes } from "react";
 // Para hindi na isusulat isa isa ang props ng isang html button.
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "long_primary" | "secondary" | "long_secondary";
+  variant?:
+    | "primary"
+    | "secondary"
+    | "long_primary"
+    | "long_secondary"
+    | "short_primary"
+    | "short_secondary";
 };
 
 const Button = ({
@@ -21,9 +27,11 @@ const Button = ({
 
   const variants = {
     primary: "bg-primary text-white xs:w-39",
+    secondary: "border border-gray text-gray xs:w-39",
     long_primary: "bg-primary text-white xs:w-86",
     long_secondary: "border border-gray text-gray xs:w-86",
-    secondary: "border border-gray text-gray xs:w-39",
+    short_primary: "bg-primary text-white xs:w-24",
+    short_secondary: "border border-gray text-gray xs:w-24",
   };
 
   return (
