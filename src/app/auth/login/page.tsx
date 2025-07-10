@@ -88,12 +88,13 @@ export default function LoginPage() {
 
         <OAuthButtons />
 
-        <AuthFooter 
-          question="Don't have an account?" 
-          link="/signup" 
-          linkText="Sign up" 
-        />
+      <AuthFooter 
+        question="Don't have an account?" 
+        link="/auth/signup" 
+        linkText="Sign up" 
+      />
       </div>
     </main>
   );
 }
+
