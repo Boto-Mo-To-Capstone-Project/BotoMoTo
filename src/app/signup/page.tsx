@@ -70,8 +70,8 @@ export default function SignupPage() {
   };
   
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 bg-[var(--background)] text-[var(--foreground)]">
-      <div className="w-full max-w-md text-center space-y-6">
+    <main className="min-h-screen flex justify-center px-4 bg-[var(--background)] text-[var(--foreground)]">
+      <div className="w-full max-w-md text-center space-y-6 pt-40">
         <div className="flex justify-center">
           <Image src={Logomark} alt="Boto Mo ‘To Logo" className="w-16 h-16" />
         </div>
