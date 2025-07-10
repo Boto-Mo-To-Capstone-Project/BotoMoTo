@@ -11,7 +11,9 @@
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
     "@prisma/client": "^6.11.1",
+    "@reduxjs/toolkit": "^2.8.2",
     "@supabase/supabase-js": "^2.49.4",
+    "@types/speakeasy": "^2.0.10",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
     "cookie": "^1.0.2",
@@ -21,9 +23,11 @@
     "lucide-react": "^0.525.0",
     "next": "15.3.1",
     "next-auth": "^4.24.11",
-    "prisma": "^6.11.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "prisma": "^6.11.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-redux": "^9.2.0",
+    "speakeasy": "^2.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

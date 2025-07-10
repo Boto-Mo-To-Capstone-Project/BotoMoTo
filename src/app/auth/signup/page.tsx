@@ -179,7 +179,7 @@ export default function SignupPage() {
         {/* Footer */}
         <p className="text-sm text-[var(--color-gray)]">
           Have an account?{" "}
-          <a href="/login" className="text-[var(--color-primary)] font-medium hover:underline">
+          <a href="/auth/login" className="text-[var(--color-primary)] font-medium hover:underline">
             Log In
           </a>
         </p>

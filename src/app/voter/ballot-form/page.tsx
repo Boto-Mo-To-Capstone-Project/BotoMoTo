@@ -2,11 +2,21 @@
 
 import Button from "@/components/Button";
 
+import { useEffect } from "react"; // to clear selection
+
 import { useRouter } from "next/navigation";
 
 import { Candidate } from "@/types";
 import Dropdown from "@/components/Dropdown";
 import CandidateCategory from "@/components/CandidateCategory";
+
+import { useDispatch } from "react-redux"; //  lets you send actions to Redux
+import { AppDispatch } from "@/store"; // typed version of dispatch
+import {
+  selectCandidate,
+  deselectCandidate,
+  clearSelections,
+} from "@/store/ballotSlice"; // your action creator
 
 const candidates: Candidate[] = [
   {
@@ -17,10 +27,10 @@ const candidates: Candidate[] = [
     position: "President",
   },
   {
-    name: "Chou Gods",
-    img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS26Io42jEczj06-pfPIpiNeS-sFBnV8QBivA&s",
+    name: "Chou",
+    img: "https://i.pinimg.com/736x/bc/6f/a3/bc6fa3e52e1c84c9f21ebc9919f49813.jpg",
     party: "Makakalikasan",
-    credentials: `hule na!`,
+    credentials: `Speed defines the winner`,
     position: "President",
   },
   {
@@ -31,15 +41,53 @@ const candidates: Candidate[] = [
     position: "Vice President",
   },
   {
-    name: "Gatot Only",
-    img: "https://i.pinimg.com/736x/80/8b/63/808b6327fc2dba47ce30dcbef5f0c6ab.jpg",
+    name: "Alice",
+    img: "https://i.pinimg.com/474x/7e/4d/c6/7e4dc69f99c591b425b04445db7c2f63.jpg",
     party: "Makakalikasan",
-    credentials: `set ko sa tore`,
+    credentials: `Darkness is closing in`,
+    position: "Councilor",
+  },
+  {
+    name: "Gatotcaca",
+    img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvVCrVxk5caTDS39LsfSIIfeS7vbA9w3_WeQ&s",
+    party: "Makakalikasan",
+    credentials: `No pain no gain`,
     position: "Vice President",
+  },
+
+  {
+    name: "Uranus",
+    img: "https://cdn.oneesports.gg/cdn-data/2021/09/MLBB_CelestialBastionUranus-1024x623.jpeg",
+    party: "Makakalikasan",
+    credentials: `Uranus has awaken`,
+    position: "Councilor",
+  },
+  {
+    name: "Garfield",
+    img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQrOy5z90iLbiRND-3MHN7sCb7pV45Db0wY9g&s",
+    party: "Makatao",
+    credentials: `meow meow`,
+    position: "Councilor",
   },
 ];
 const BallotForm = () => {
   const router = useRouter(); // to go to another route
+  const dispatch = useDispatch<AppDispatch>(); // used to redux dispatch
+
+  // CLEAR selections whenever the form loads
+  useEffect(() => {
+    dispatch(clearSelections());
+  }, [dispatch]);
+
+  // use redux dispatch when selecting a candidate
+  const handleSelectCandidate = (position: string, candidate: Candidate) => {
+    dispatch(selectCandidate({ position, candidate }));
+  };
+
+  // use redux dispatch when deselecting a candidate
+  const handleDeselectCandidate = (position: string, candidateName: string) => {
+    dispatch(deselectCandidate({ position, candidateName }));
+  };
 
   // Group candidates by position
   const candidatesByPosition: Record<string, Candidate[]> = candidates.reduce(
@@ -57,6 +105,7 @@ const BallotForm = () => {
   const selectionLimits: Record<string, number> = {
     President: 1,
     "Vice President": 1,
+    Councilor: 2,
     // Add more if needed
   };
   return (
@@ -96,6 +145,12 @@ const BallotForm = () => {
               position={position}
               selectCount={selectionLimits[position] || 1}
               candidateList={list}
+              onSelectCandidate={(candidate) =>
+                handleSelectCandidate(position, candidate)
+              }
+              onDeselectCandidate={(candidate) =>
+                handleDeselectCandidate(position, candidate.name)
+              }
             />
           ))}
         </div>
@@ -109,7 +164,7 @@ const BallotForm = () => {
           </Button>
           <Button
             variant="primary"
-            onClick={() => router.push("/voter/ballot-form")}
+            onClick={() => router.push("/voter/ballot-form/review")}
           >
             Review Vote
           </Button>
