@@ -47,7 +47,12 @@ const VoteReceipt = () => {
               <p className="candidate-category-heading px-6 py-5 bg-gray-100 mt-3">
                 {position}
               </p>
-              <table className="w-full divide-y divide-gray-200 border border-gray-300 bg-gray-10">
+              <table className="w-full divide-y divide-gray-200 border border-gray-300 bg-gray-10 table-fixed">
+                <colgroup>
+                  <col className="w-1/2 md:w-3/5" />
+                  <col className="w-1/2 md:w-2/5" />
+                </colgroup>
+
                 <thead>
                   {/* uncomment nalang kung gusto makita ung candidate at party */}
                   {/* <tr>
