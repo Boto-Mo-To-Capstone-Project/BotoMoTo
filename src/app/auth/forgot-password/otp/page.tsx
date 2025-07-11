@@ -46,7 +46,7 @@ export default function ForgotPasswordOtpPage() {
 
   return (
     <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] pt-40 pb-40">
-      <div className="w-full max-w-[380px] mx-auto text-center space-y-6 pt-10 pb-10">
+      <div className="w-full max-w-[380px] mx-auto text-center space-y-6 pt-10 pb-10 px-4">
         
         <AuthHeading
           title="Forgot Password"
@@ -74,7 +74,15 @@ export default function ForgotPasswordOtpPage() {
             <label className="block text-sm font-medium text-[var(--color-black)] mb-1">
               One Time Password
             </label>
-            <OtpInput length={4} />
+            <OtpInput
+              value={otp}
+              onChange={(index, val) => {
+                const newOtp = [...otp];
+                newOtp[index] = val;
+                setOtp(newOtp);
+              }}
+              length={4}
+            />
           </div>
 
           {/* Password */}

@@ -12,5 +12,11 @@ export default async function AdminDashboardPage() {
 
   // display the user for dbgging
     console.log('User:', user);
-  return <ElectionList orgId={user.org_id} />;
+  return (
+    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] pt-40 pb-40">
+      <div className="w-full max-w-[380px] mx-auto text-center space-y-6 pt-10 pb-10 px-4">
+        <ElectionList orgId={user.org_id} />
+      </div>
+    </main>
+  );
 }

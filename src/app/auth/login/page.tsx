@@ -53,8 +53,8 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)]">
-      <div className="w-full max-w-[380px] mx-auto text-center space-y-6 pt-10 pb-10">
+    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] pt-40 pb-40">
+      <div className="w-full max-w-[380px] mx-auto text-center space-y-6 pt-10 pb-10 px-4">
         <Logo />
         <AuthHeading 
           title="Log in to your account"
