@@ -1,21 +1,54 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import ForgotPasswordImage from "@/app/assets/ForgotPassword.png";
 
+import { AuthHeading } from "@/components/AuthHeading";
+import { InputField } from "@/components/InputField";
+import { SubmitButton } from "@/components/SubmitButton";
+import { AuthFooter } from "@/components/AuthFooter";
+import { ErrorMessage } from "@/components/ErrorMessage";
+
 export default function ForgotPasswordPage() {
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    try {
+      // TODO: Implement forgot password logic
+      console.log("Sending OTP to:", email);
+      // For now, just simulate success
+      router.push("/auth/forgot-password/otp");
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    router.push("/auth/login");
+  };
+
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 bg-[var(--background)] text-[var(--foreground)]">
-      <div className="w-full max-w-md text-center space-y-6">
-        {/* Heading */}
-        <div>
-          <p className="text-2xl font-semibold text-[var(--color-black)]">
-            Forgot Password
-          </p>
-          <p className="text-sm text-[var(--color-gray)]">
-            Enter your email account to reset password.
-          </p>
-        </div>
+    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] pt-40 pb-40">
+      <div className="w-full max-w-[380px] mx-auto text-center space-y-6 pt-10 pb-10">
+
+        
+        <AuthHeading
+          title="Forgot Password"
+          subtitle="Enter your email account to reset password."
+        />
+
+        {error && <ErrorMessage message={error} />}
 
         {/* Image */}
         <div className="flex justify-center">
@@ -27,34 +60,36 @@ export default function ForgotPasswordPage() {
         </div>
 
         {/* Form */}
-        <form className="space-y-4 text-left flex flex-col items-center">
-          <div className="w-[380px]">
-            <label className="block text-sm font-medium text-[var(--color-black)] mb-1">
-              Email Address
-            </label>
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="w-full h-[44px] border border-[var(--color-secondary)] rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
-            />
-          </div>
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4 text-left flex flex-col items-center w-full"
+        >
+          <InputField
+            label="Email Address"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email"
+            autoComplete="email"
+          />
 
-          {/* Send OTP Button */}
-          <button
-            type="submit"
-            className="w-[380px] h-[44px] bg-[var(--color-primary)] hover:brightness-90 text-white rounded-md text-sm font-semibold"
-          >
-            Send OTP
-          </button>
+          <SubmitButton label="Send OTP" isLoading={isLoading} className="w-full" />
 
           {/* Cancel Button */}
           <button
             type="button"
-            className="w-[380px] h-[44px] flex items-center justify-center border border-gray-300 rounded-md text-sm gap-2 hover:bg-gray-50"
+            onClick={handleCancel}
+            className="w-full max-w-[380px] h-[44px] flex items-center justify-center border border-gray-300 rounded-md text-sm gap-2 hover:bg-gray-50"
           >
             Cancel
           </button>
         </form>
+
+        <AuthFooter
+          question="Remember your password?"
+          link="/auth/login"
+          linkText="Log In"
+        />
       </div>
     </main>
   );
