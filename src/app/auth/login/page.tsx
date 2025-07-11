@@ -11,6 +11,7 @@ import { SubmitButton } from "@/components/SubmitButton";
 import { OAuthButtons } from "@/components/OAuthButtons";
 import { AuthFooter } from "@/components/AuthFooter";
 import { ErrorMessage } from "@/components/ErrorMessage";
+import { RememberMeAndForgotPassword } from "@/components/RememberMeAndForgotPassword";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -83,6 +84,10 @@ export default function LoginPage() {
             placeholder="••••••••"
             autoComplete="current-password"
           />
+
+          <div className="w-full max-w-[380px]">
+            <RememberMeAndForgotPassword />
+          </div>
 
           <SubmitButton label="Login" isLoading={isLoading} className="w-full" />
         </form>
