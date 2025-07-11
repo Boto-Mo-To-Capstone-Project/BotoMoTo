@@ -71,23 +71,27 @@ export default function SignupPage() {
   };
 
   return (
-    <main className="min-h-screen flex justify-center px-4 bg-[var(--background)] text-[var(--foreground)]">
-      <div className="w-full max-w-md text-center space-y-6 pt-40 pb-40">
+    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] pt-40 pb-40">
+      <div className="w-full max-w-[380px] mx-auto text-center space-y-6 pt-10 pb-10">
         <Logo />
-        <AuthHeading 
+        <AuthHeading
           title="Create your account"
           subtitle="Register to manage your organization's elections."
         />
 
         {error && <ErrorMessage message={error} />}
 
-        <form onSubmit={handleSignup} className="space-y-4 text-left flex flex-col items-center">
+        <form
+          onSubmit={handleSignup}
+          className="space-y-4 text-left flex flex-col items-center w-full"
+        >
           <InputField
             label="Full Name"
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder="Enter your full name"
+            autoComplete="name"
           />
 
           <InputField
@@ -96,6 +100,7 @@ export default function SignupPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
+            autoComplete="email"
           />
 
           <InputField
@@ -104,6 +109,7 @@ export default function SignupPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
+            autoComplete="new-password"
           />
 
           <InputField
@@ -112,17 +118,18 @@ export default function SignupPage() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="••••••••"
+            autoComplete="new-password"
           />
 
-          <SubmitButton label="Sign Up" isLoading={isLoading} />
+          <SubmitButton label="Sign Up" isLoading={isLoading} className="w-full" />
         </form>
 
         <OAuthButtons />
 
-        <AuthFooter 
-          question="Have an account?" 
-          link="/auth/login" 
-          linkText="Log In" 
+        <AuthFooter
+          question="Have an account?"
+          link="/auth/login"
+          linkText="Log In"
         />
       </div>
     </main>

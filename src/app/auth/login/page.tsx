@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn, signOut } from "next-auth/react";
@@ -8,7 +7,6 @@ import { signIn, signOut } from "next-auth/react";
 import Logo from "@/components/Logo";
 import { AuthHeading } from "@/components/AuthHeading";
 import { InputField } from "@/components/InputField";
-import { RememberMeAndForgotPassword } from "@/components/RememberMeAndForgotPassword";
 import { SubmitButton } from "@/components/SubmitButton";
 import { OAuthButtons } from "@/components/OAuthButtons";
 import { AuthFooter } from "@/components/AuthFooter";
@@ -54,8 +52,8 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 bg-[var(--background)] text-[var(--foreground)]">
-      <div className="w-full max-w-md text-center space-y-6">
+    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)]">
+      <div className="w-full max-w-[380px] mx-auto text-center space-y-6 pt-10 pb-10">
         <Logo />
         <AuthHeading 
           title="Log in to your account"
@@ -64,13 +62,17 @@ export default function LoginPage() {
 
         {error && <ErrorMessage message={error} />}
 
-        <form onSubmit={handleLogin} className="space-y-4 text-left flex flex-col items-center">
+        <form
+          onSubmit={handleLogin}
+          className="space-y-4 text-left flex flex-col items-center w-full"
+        >
           <InputField
             label="Email Address"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
+            autoComplete="email"
           />
 
           <InputField
@@ -79,22 +81,20 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
+            autoComplete="current-password"
           />
 
-          <RememberMeAndForgotPassword />
-
-          <SubmitButton label="Log In" isLoading={isLoading} />
+          <SubmitButton label="Login" isLoading={isLoading} className="w-full" />
         </form>
 
         <OAuthButtons />
 
-      <AuthFooter 
-        question="Don't have an account?" 
-        link="/auth/signup" 
-        linkText="Sign up" 
-      />
+        <AuthFooter
+          question="Don't have an account?"
+          link="/auth/signup"
+          linkText="Sign Up"
+        />
       </div>
     </main>
   );
 }
-
