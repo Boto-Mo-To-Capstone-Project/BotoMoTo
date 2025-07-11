@@ -137,3 +137,7 @@ body {
 .candidate-category-desc {
   @apply text-sm font-medium text-gray;
 }
+
+.survey-section {
+  @apply text-md font-medium text-black md:text-lg;
+}
