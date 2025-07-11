@@ -1,23 +1,59 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import ForgotPasswordImage from "@/app/assets/ForgotPasswordOtp.png";
 
-export default function ForgotPasswordPage() {
+import { AuthHeading } from "@/components/AuthHeading";
+import { InputField } from "@/components/InputField";
+import { SubmitButton } from "@/components/SubmitButton";
+import { AuthFooter } from "@/components/AuthFooter";
+import { ErrorMessage } from "@/components/ErrorMessage";
+import OtpInput from "@/components/OtpInput";
+
+export default function ForgotPasswordOtpPage() {
+  const [otp, setOtp] = useState(["", "", "", ""]);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // TODO: Implement password reset logic
+      console.log("OTP:", otp.join(""));
+      console.log("New password:", password);
+      // For now, just simulate success
+      router.push("/auth/login");
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 bg-[var(--background)] text-[var(--foreground)]">
-      <div className="w-full max-w-md text-center space-y-6">
+    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] pt-40 pb-40">
+      <div className="w-full max-w-[380px] mx-auto text-center space-y-6 pt-10 pb-10">
         
-        {/* Heading */}
-        <div>
-          <p className="text-2xl font-semibold text-[var(--color-black)]">
-            Forgot Password
-          </p>
-          <p className="text-sm text-[var(--color-gray)]">
-            Enter your One Time Password (OTP) sent to your email to continue
-            changing your password.
-          </p>
-        </div>
+        <AuthHeading
+          title="Forgot Password"
+          subtitle="Enter your One Time Password (OTP) sent to your email to continue changing your password."
+        />
+
+        {error && <ErrorMessage message={error} />}
 
         {/* Image */}
         <div className="flex justify-center">
@@ -29,56 +65,46 @@ export default function ForgotPasswordPage() {
         </div>
 
         {/* Form */}
-        <form className="space-y-4 text-left flex flex-col items-center">
-          {/* OTP Inputs */}
-          <div className="w-[380px]">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4 text-left flex flex-col items-center w-full"
+        >
+          {/* OTP Input */}
+          <div className="w-full max-w-[380px]">
             <label className="block text-sm font-medium text-[var(--color-black)] mb-1">
               One Time Password
             </label>
-            <div className="flex gap-4 justify-center">
-              {[1, 2, 3, 4].map((box) => (
-                <input
-                  key={box}
-                  type="text"
-                  maxLength={1}
-                  className="w-11 h-11 text-center border border-[var(--color-secondary)] text-[var(--color-secondary)] font-bold rounded-md text-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
-                />
-              ))}
-            </div>
+            <OtpInput length={4} />
           </div>
 
           {/* Password */}
-          <div className="w-[380px]">
-            <label className="block text-sm font-medium text-[var(--color-black)] mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              className="w-full h-[44px] border border-[var(--color-secondary)] rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
-            />
-          </div>
+          <InputField
+            label="Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            autoComplete="new-password"
+          />
 
           {/* Confirm Password */}
-          <div className="w-[380px]">
-            <label className="block text-sm font-medium text-[var(--color-black)] mb-1">
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              className="w-full h-[44px] border border-[var(--color-secondary)] rounded-md px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
-            />
-          </div>
+          <InputField
+            label="Confirm Password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="••••••••"
+            autoComplete="new-password"
+          />
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            className="w-[380px] h-[44px] bg-[var(--color-primary)] hover:brightness-90 text-white rounded-md text-sm font-semibold"
-          >
-            Change Password
-          </button>
+          <SubmitButton label="Change Password" isLoading={isLoading} className="w-full" />
         </form>
+
+        <AuthFooter
+          question="Remember your password?"
+          link="/auth/login"
+          linkText="Log In"
+        />
       </div>
     </main>
   );
