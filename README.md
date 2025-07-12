@@ -534,26 +534,160 @@ When adding new types, follow these guidelines:
 
 ## 📚 API Endpoints
 
-### Authentication
+### Authentication & Authorization
 
-- `POST /api/auth/signin` - User login
+- `GET /api/auth/[...nextauth]` - NextAuth authentication (login, callback, logout)
 - `POST /api/auth/signup` - User registration
+- `POST /api/auth/verify-session` - Verify current session
+- `POST /api/auth/refresh` - Refresh session token
 
-### Admin
+### Admin APIs
 
-- `GET /api/admin/elections` - List elections
-- `POST /api/admin/elections` - Create election
-- `POST /api/admin/voters` - Register voters
+#### Onboarding
+- `GET /api/admin/onboard/status` - Get onboarding status
+- `POST /api/admin/onboard/organization` - Create organization
+- `GET /api/admin/onboard/processing` - Check approval status
 
-### SuperAdmin
+#### Elections Management
+- `GET /api/admin/elections` - List all elections for admin's organization
+- `POST /api/admin/elections` - Create new election
+- `GET /api/admin/elections/[id]` - Get specific election details
+- `PUT /api/admin/elections/[id]` - Update election
+- `DELETE /api/admin/elections/[id]` - Delete election
 
-- `GET /api/superadmin/organizations` - List organizations
-- `PUT /api/superadmin/organizations/:id/approve` - Approve organization
+#### Election Setup
+- `GET /api/admin/elections/[id]/setup` - Get election setup status
+- `POST /api/admin/elections/[id]/setup/scope` - Create voting scope
+- `GET /api/admin/elections/[id]/setup/scope` - List voting scopes
+- `PUT /api/admin/elections/[id]/setup/scope/[scopeId]` - Update voting scope
+- `DELETE /api/admin/elections/[id]/setup/scope/[scopeId]` - Delete voting scope
 
-### Voter
+- `POST /api/admin/elections/[id]/setup/party` - Create party
+- `GET /api/admin/elections/[id]/setup/party` - List parties
+- `PUT /api/admin/elections/[id]/setup/party/[partyId]` - Update party
+- `DELETE /api/admin/elections/[id]/setup/party/[partyId]` - Delete party
 
-- `POST /api/voter/verify-code` - Verify voter code
-- `POST /api/voter/submit-vote` - Submit vote
+- `POST /api/admin/elections/[id]/setup/voter` - Register voter
+- `GET /api/admin/elections/[id]/setup/voter` - List voters
+- `POST /api/admin/elections/[id]/setup/voter/bulk` - Bulk register voters (CSV)
+- `PUT /api/admin/elections/[id]/setup/voter/[voterId]` - Update voter
+- `DELETE /api/admin/elections/[id]/setup/voter/[voterId]` - Delete voter
+- `POST /api/admin/elections/[id]/setup/voter/send-codes` - Send voter codes via email/SMS
+
+- `POST /api/admin/elections/[id]/setup/position` - Create position
+- `GET /api/admin/elections/[id]/setup/position` - List positions
+- `PUT /api/admin/elections/[id]/setup/position/[positionId]` - Update position
+- `DELETE /api/admin/elections/[id]/setup/position/[positionId]` - Delete position
+
+- `POST /api/admin/elections/[id]/setup/candidates` - Create candidate
+- `GET /api/admin/elections/[id]/setup/candidates` - List candidates
+- `PUT /api/admin/elections/[id]/setup/candidates/[candidateId]` - Update candidate
+- `DELETE /api/admin/elections/[id]/setup/candidates/[candidateId]` - Delete candidate
+
+#### Election Management
+- `GET /api/admin/elections/[id]/manage` - Get election management data
+- `POST /api/admin/elections/[id]/manage/activate` - Activate election
+- `POST /api/admin/elections/[id]/manage/pause` - Pause election
+- `POST /api/admin/elections/[id]/manage/close` - Close election
+
+- `GET /api/admin/elections/[id]/manage/ballot-preview` - Get ballot preview
+- `PUT /api/admin/elections/[id]/manage/ballot-preview` - Update ballot configuration
+- `GET /api/admin/elections/[id]/manage/ballot-preview/receipt` - Get receipt form
+- `PUT /api/admin/elections/[id]/manage/ballot-preview/receipt` - Update receipt form
+- `GET /api/admin/elections/[id]/manage/ballot-preview/survey` - Get survey form
+- `PUT /api/admin/elections/[id]/manage/ballot-preview/survey` - Update survey form
+
+- `POST /api/admin/elections/[id]/manage/email-send` - Send emails to voters
+- `GET /api/admin/elections/[id]/manage/email-send/status` - Get email sending status
+
+- `GET /api/admin/elections/[id]/manage/live-dashboard` - Get live dashboard data
+- `GET /api/admin/elections/[id]/manage/live-dashboard/candidate/[candidateId]` - Get candidate stats
+- `GET /api/admin/elections/[id]/manage/live-dashboard/voting-scope/[scopeId]` - Get scope stats
+
+- `GET /api/admin/elections/[id]/manage/2fa-settings` - Get 2FA settings
+- `PUT /api/admin/elections/[id]/manage/2fa-settings` - Update 2FA settings
+
+#### Support Tickets
+- `GET /api/admin/tickets` - List admin's tickets
+- `POST /api/admin/tickets` - Create support ticket
+- `GET /api/admin/tickets/[id]` - Get ticket details
+- `PUT /api/admin/tickets/[id]` - Update ticket
+- `POST /api/admin/tickets/[id]/message` - Add message to ticket
+
+### SuperAdmin APIs
+
+#### Dashboard
+- `GET /api/superadmin/dashboard` - Get dashboard overview
+- `GET /api/superadmin/dashboard/stats` - Get system statistics
+
+#### Organization Management
+- `GET /api/superadmin/organizations` - List all organizations
+- `GET /api/superadmin/organizations/[id]` - Get organization details
+- `PUT /api/superadmin/organizations/[id]/approve` - Approve organization
+- `PUT /api/superadmin/organizations/[id]/reject` - Reject organization
+- `PUT /api/superadmin/organizations/[id]/suspend` - Suspend organization
+- `DELETE /api/superadmin/organizations/[id]` - Delete organization
+
+#### Election Oversight
+- `GET /api/superadmin/elections` - List all elections
+- `GET /api/superadmin/elections/[id]` - Get election details
+- `PUT /api/superadmin/elections/[id]/status` - Update election status
+- `GET /api/superadmin/elections/[id]/results` - Get election results
+
+#### Support Tickets
+- `GET /api/superadmin/tickets` - List all tickets
+- `GET /api/superadmin/tickets/[id]` - Get ticket details
+- `PUT /api/superadmin/tickets/[id]/status` - Update ticket status
+- `POST /api/superadmin/tickets/[id]/message` - Reply to ticket
+- `PUT /api/superadmin/tickets/[id]/assign` - Assign ticket
+
+#### System Management
+- `GET /api/superadmin/audits` - Get audit logs
+- `GET /api/superadmin/audits/[id]` - Get specific audit entry
+- `GET /api/superadmin/users` - List all users
+- `PUT /api/superadmin/users/[id]/role` - Update user role
+- `PUT /api/superadmin/users/[id]/status` - Update user status
+- `GET /api/superadmin/surveys` - List all surveys
+- `GET /api/superadmin/surveys/[id]` - Get survey results
+
+### Voter APIs
+
+#### Authentication
+- `POST /api/voter/auth/verify-code` - Verify voter code
+- `POST /api/voter/auth/2fa/email` - Email 2FA verification
+- `POST /api/voter/auth/2fa/otp` - OTP 2FA verification
+- `POST /api/voter/auth/2fa/text` - SMS 2FA verification
+- `POST /api/voter/auth/2fa/passphrase` - Passphrase 2FA verification
+- `POST /api/voter/auth/logout` - Voter logout
+
+#### Election Access
+- `GET /api/voter/elections/[code]` - Get election details by voter code
+- `GET /api/voter/elections/[code]/status` - Get election status
+- `GET /api/voter/elections/[code]/terms` - Get election terms and conditions
+- `GET /api/voter/elections/[code]/ballot` - Get ballot form
+- `POST /api/voter/elections/[code]/vote` - Submit vote
+- `GET /api/voter/elections/[code]/receipt` - Get vote receipt
+- `POST /api/voter/elections/[code]/survey` - Submit survey response
+- `GET /api/voter/elections/[code]/live-dashboard` - Get live results (if enabled)
+
+### Public APIs
+
+- `GET /api/public/about` - Get about page data
+- `POST /api/public/contact` - Submit contact form
+
+### File Upload APIs
+
+- `POST /api/upload/voter-csv` - Upload voter CSV file
+- `POST /api/upload/candidate-image` - Upload candidate image
+- `POST /api/upload/party-logo` - Upload party logo
+- `POST /api/upload/organization-document` - Upload organization document
+
+### Utility APIs
+
+- `GET /api/utils/generate-voter-codes` - Generate voter codes
+- `POST /api/utils/send-email` - Send email notifications
+- `POST /api/utils/send-sms` - Send SMS notifications
+- `GET /api/utils/export-results/[electionId]` - Export election results as PDF
 
 ## 🔒 Security
 
