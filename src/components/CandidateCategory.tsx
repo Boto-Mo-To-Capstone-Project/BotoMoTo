@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Candidate } from "@/types";
 import React from "react";
 import { Eye, EyeOff } from "lucide-react";
+import SectionHeaderContainer from "./SectionHeaderContainer";
 
 type CandidateCategoryProps = {
   position: string;
@@ -52,12 +53,12 @@ const CandidateCategory = ({
 
   return (
     <div className="w-full my-3">
-      <p className="candidate-category-heading px-6 py-5 bg-secondary text-black rouned">
+      <SectionHeaderContainer variant="yellow">
         {position}{" "}
         <span className="bg-primary/5 text-sm align-center font-bold ml-2 rounded-xl py-1 px-2 text-primary">
           Select up to {selectCount}
         </span>
-      </p>
+      </SectionHeaderContainer>
 
       <table className="min-w-full divide-y divide-gray-200 border border-gray-300 bg-gray-100">
         <thead className="">
