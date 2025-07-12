@@ -1,0 +1,178 @@
+# BotoMoTo - Cursor Rules Documentation
+
+## Overview
+
+This directory contains comprehensive rules and guidelines for the BotoMoTo RBAC voting system. These rules are designed to be used with Cursor IDE to provide consistent AI assistance and maintain code quality across the project.
+
+## Rules Structure
+
+### Main Rules File
+- **`rules`** - Core principles and main rules file that establishes the foundation
+
+### System Architecture Rules
+- **`system-overview`** - Core architecture principles, technology stack, and system components
+- **`user-roles`** - Detailed user role definitions, permissions, and access control
+- **`authentication`** - Authentication flows, security measures, and session management
+- **`routes`** - Frontend routing structure and route protection rules
+- **`api-endpoints`** - Backend API organization and endpoint standards
+
+### Technical Implementation Rules
+- **`database-schema`** - Database models, relationships, and schema management
+- **`security`** - Security measures, best practices, and compliance requirements
+- **`development`** - Coding standards, development workflows, and best practices
+- **`deployment`** - Production deployment guidelines and infrastructure management
+
+## How to Use These Rules
+
+### For Developers
+1. **Reference during development** - Use these rules as a guide for implementing features
+2. **Code review checklist** - Ensure code follows established patterns and standards
+3. **Architecture decisions** - Consult rules when making system design decisions
+4. **Security implementation** - Follow security guidelines for all features
+
+### For AI Assistance
+1. **Cursor IDE integration** - These rules are automatically loaded by Cursor
+2. **Consistent responses** - AI will follow these rules when providing assistance
+3. **Code generation** - Generated code will adhere to established patterns
+4. **Best practices** - AI will suggest improvements based on these guidelines
+
+### For Project Management
+1. **Onboarding new developers** - Use rules as training material
+2. **Quality assurance** - Reference rules during code reviews
+3. **Documentation** - Rules serve as living documentation
+4. **Compliance** - Ensure adherence to security and development standards
+
+## Key Principles
+
+### 1. Consistency First
+- All code, documentation, and configurations must be consistent
+- Follow established patterns and conventions
+- Maintain uniformity across the entire system
+
+### 2. Security by Design
+- Every feature must prioritize security
+- Implement defense in depth
+- Follow security best practices
+
+### 3. User Experience
+- Intuitive interfaces for all user types
+- Accessibility and usability considerations
+- Performance optimization
+
+### 4. Scalability
+- Architecture must support growth
+- Multi-tenant design principles
+- Performance considerations
+
+### 5. Maintainability
+- Clean, well-documented code
+- Clear separation of concerns
+- Type-safe development
+
+## Documentation Synchronization
+
+### README.md Updates
+- **README.md MUST be updated** whenever rules change
+- **No redundant information** between README and rules
+- **Consistent terminology** across all documentation
+- **Version control** all documentation changes
+
+### Multi-Page Response Guidelines
+- **Split long responses** across multiple pages when content exceeds reasonable length
+- **Maintain context** between pages with clear section references
+- **Use page numbers** and navigation hints
+- **Prioritize readability** over single-page responses
+
+## Database Flexibility
+
+### Development vs Production
+- **SQLite for development** (file:./prisma/dev.db)
+- **Freedom for production** (PostgreSQL, MySQL, etc.)
+- **Environment-based configuration**
+- **Migration safety** with proper rollback support
+
+## Quick Reference
+
+### Critical Commands
+```bash
+# SuperAdmin Creation
+node scripts/create-superadmin.mjs
+
+# Database Setup
+npx prisma generate
+npx prisma migrate dev
+
+# Development
+npm run dev
+
+# Type Generation
+npx prisma generate
+```
+
+### User Types
+- **SuperAdmin**: Global oversight, organization approval, system management
+- **Admin**: Organization management, election creation, voter registration
+- **Voter**: Election participation, secure voting, 2FA authentication
+
+### Key Technologies
+- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes, Prisma ORM
+- **Authentication**: NextAuth.js v4
+- **Database**: SQLite (dev), PostgreSQL (prod)
+- **Real-time**: WebSocket / Server-Sent Events
+
+## Current Rules Status
+
+### ✅ **Fully Operational**
+All rules are properly configured and Cursor can read them:
+
+- **Main rules file**: `.cursor/rules` (no extension)
+- **All specialized rules**: Properly named without extensions
+- **Structure**: Clean and organized
+- **Content**: Comprehensive and up-to-date
+
+### 📋 **Available Rules**
+1. **`rules`** - Main rules and core principles
+2. **`system-overview`** - Architecture and technology stack
+3. **`user-roles`** - Role definitions and permissions
+4. **`authentication`** - Authentication flows and security
+5. **`routes`** - Frontend routing structure
+6. **`api-endpoints`** - Backend API organization
+7. **`database-schema`** - Data modeling and relationships
+8. **`security`** - Security measures and best practices
+9. **`development`** - Coding standards and workflows
+10. **`deployment`** - Production deployment guidelines
+
+## Maintenance
+
+### Rule Updates
+- **Regular review** of rules for accuracy
+- **Update when architecture changes**
+- **Synchronize with README.md**
+- **Version control all changes**
+
+### Rule Validation
+- **Test rules** with actual development scenarios
+- **Validate consistency** across all rule files
+- **Ensure completeness** of coverage
+- **Review for clarity** and usability
+
+## Support
+
+### Getting Help
+- **Review relevant rule files** for specific guidance
+- **Check README.md** for project overview
+- **Consult development team** for clarification
+- **Update rules** when gaps are identified
+
+### Contributing to Rules
+- **Follow established patterns** when adding new rules
+- **Maintain consistency** with existing rules
+- **Update related files** when making changes
+- **Test rules** in practice before finalizing
+
+---
+
+**BotoMoTo** - Secure, Scalable, and Modern Voting Solutions
+
+*These rules are living documentation that evolves with the project. Regular updates ensure they remain relevant and useful for all team members and AI assistance.* 
