@@ -6,6 +6,7 @@ import Button from "@/components/Button";
 import { useRouter } from "next/navigation";
 import CandidateRow from "@/components/CandidateRow";
 import { useState } from "react";
+import SectionHeaderContainer from "@/components/SectionHeaderContainer";
 
 const VoteReceipt = () => {
   const router = useRouter(); // to go to another route
@@ -44,9 +45,10 @@ const VoteReceipt = () => {
         <div className="mt-5 space-y-3 w-full">
           {Object.entries(selections).map(([position, candidates]) => (
             <div key={position} className="">
-              <p className="candidate-category-heading px-6 py-5 bg-gray-100 mt-3">
+              <SectionHeaderContainer variant="gray">
                 {position}
-              </p>
+              </SectionHeaderContainer>
+
               <table className="w-full divide-y divide-gray-200 border border-gray-300 bg-gray-10 table-fixed">
                 <colgroup>
                   <col className="w-1/2 md:w-3/5" />

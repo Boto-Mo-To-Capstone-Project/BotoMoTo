@@ -6,6 +6,7 @@ import Button from "@/components/Button";
 import { useRouter } from "next/navigation";
 import CandidateRow from "@/components/CandidateRow";
 import { useState } from "react";
+import SectionHeaderContainer from "@/components/SectionHeaderContainer";
 
 const ReviewPage = () => {
   const [isChecked, setIsChecked] = useState(false); // so checkbutton must be clicked before proceeding
@@ -47,12 +48,13 @@ const ReviewPage = () => {
         <div className="mt-5 space-y-3 w-full">
           {Object.entries(selections).map(([position, candidates]) => (
             <div key={position} className="">
-              <p className="candidate-category-heading px-6 py-5 bg-secondary mt-3">
+              <SectionHeaderContainer variant="yellow">
                 {position}
                 <span className="bg-primary/5 text-sm align-center font-bold ml-2 rounded-xl py-1 px-2 text-primary">
                   You selected {candidates?.length}
                 </span>
-              </p>
+              </SectionHeaderContainer>
+
               <table className="w-full divide-y divide-gray-200 border border-gray-300 bg-gray-10">
                 <thead>
                   <tr>

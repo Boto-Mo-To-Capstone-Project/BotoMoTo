@@ -4,6 +4,7 @@
 import React from "react";
 import { SurveySection } from "@/types";
 import SurveyItem from "./SurveyItem";
+import SectionHeaderContainer from "./SectionHeaderContainer";
 
 type Props = {
   section: SurveySection;
@@ -13,9 +14,7 @@ type Props = {
 const SurveyTable: React.FC<Props> = ({ section, sectionIndex }) => {
   return (
     <div className="mb-8">
-      <p className="mb-4 survey-section border px-6 py-5 border-gray-200">
-        {section.title}
-      </p>
+      <SectionHeaderContainer>{section.title}</SectionHeaderContainer>
 
       {/* Desktop table */}
       <table className="hidden md:table w-full border border-gray-200 table-fixed">

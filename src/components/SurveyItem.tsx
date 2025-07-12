@@ -22,7 +22,7 @@ const SurveyItem: React.FC<Props> = ({ id, question, name }) => {
           {options.map((opt) => (
             <label
               key={opt}
-              className="inline-flex items-center flex flex-col gap-1"
+              className="inline-flex items-center flex-col gap-1"
             >
               <input
                 type="radio"
@@ -45,7 +45,7 @@ const SurveyItem: React.FC<Props> = ({ id, question, name }) => {
           {options.map((opt) => (
             <label
               key={opt}
-              className="inline-flex items-center flex flex-col gap-1"
+              className="inline-flex items-center flex-col gap-1"
             >
               <input
                 type="radio"
