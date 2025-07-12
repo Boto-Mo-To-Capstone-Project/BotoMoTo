@@ -1,21 +1,23 @@
 // Folder: your-project/app/admin/dashboard/page.tsx
 import { redirect } from 'next/navigation';
-import { getUserFromCookie } from '@/lib/auth';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import ElectionList from '@/components/admin/ElectionList';
 
 export default async function AdminDashboardPage() {
-  const user = await getUserFromCookie();
+  const session = await getServerSession(authOptions);
 
-  if (!user || user.role !== 'admin') {
-    redirect('/admin/login');
+  if (!session || session.user.role !== 'ADMIN') {
+    redirect('/auth/login');
   }
 
-  // display the user for dbgging
-    console.log('User:', user);
+  // display the user for debugging
+  console.log('User:', session.user);
+  
   return (
     <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] pt-40 pb-40">
       <div className="w-full max-w-[380px] mx-auto text-center space-y-6 pt-10 pb-10 px-4">
-        <ElectionList orgId={user.org_id} />
+        <ElectionList orgId={session.user.organization?.id?.toString() || ""} />
       </div>
     </main>
   );

@@ -2,6 +2,18 @@
 import { ReactNode } from "react";
 import { User, UserRole } from "./auth";
 
+// for survey form
+export interface SurveyQuestion {
+  id: number;
+  question: string;
+}
+// for survey form
+export interface SurveySection {
+  title: string;
+  questions: SurveyQuestion[];
+}
+
+
 // Navigation components
 export interface NavbarProps {
   user?: User;

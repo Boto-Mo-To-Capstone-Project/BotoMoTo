@@ -1,9 +1,17 @@
+"use client";
+
 import Button from "@/components/Button";
 import Image from "next/image";
 
 import EnterEmail from "@/app/assets/EnterEmail.png";
-import OtpInput from "@/components/OtpInput";
+import { InputField } from "@/components/InputField";
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import GoogleIcon from "@/app/assets/google-icon.png";
+
 const Email2fa = () => {
+  const [email, setEmail] = useState("");
+
   return (
     <main className=" flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
       <div className="text-center space-y-2">
@@ -16,14 +24,27 @@ const Email2fa = () => {
 
       <Image src={EnterEmail} height={300} alt="BotoMoToLogo" />
       <div className="flex flex-col gap-2">
-        {" "}
-        <p className="voterlogin-label">Email Address TEXT INPUT</p>
-        <OtpInput length={4} />
+        <InputField
+          label="Email Address"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Enter your email"
+        />
       </div>
 
       <div className="flex flex-col gap-4 w-4/5 xs:w-auto">
         <Button variant="long_primary">Submit</Button>
         <Button variant="long_secondary">Cancel</Button>
+      </div>
+      <div className="flex flex-col gap-4 w-4/5 xs:w-auto mt-2">
+        <Button
+          variant="oauth"
+          icon={GoogleIcon}
+          onClick={() => signIn("google")}
+        >
+          Google
+        </Button>
       </div>
     </main>
   );
