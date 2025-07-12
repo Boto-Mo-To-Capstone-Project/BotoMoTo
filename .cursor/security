@@ -1,0 +1,290 @@
+# Security Rules
+
+## Security Overview
+
+### Security-First Approach
+- **Security by design** in all system components
+- **Defense in depth** with multiple security layers
+- **Regular security audits** and vulnerability assessments
+- **Compliance with** security best practices and standards
+
+### Security Principles
+- **Least privilege** access control
+- **Zero trust** security model
+- **Secure by default** configurations
+- **Continuous monitoring** and threat detection
+
+## Authentication Security
+
+### Password Security
+- **bcrypt hashing** with salt rounds (minimum 12 rounds)
+- **Minimum password requirements**:
+  - At least 8 characters
+  - Mix of uppercase, lowercase, numbers, and symbols
+  - No common passwords or patterns
+- **Password strength validation** on registration and changes
+- **Secure password reset** flow with time-limited tokens
+
+### Session Security
+- **Database-stored sessions** (not JWT tokens)
+- **Secure session cookies** with proper flags:
+  - `httpOnly: true`
+  - `secure: true` (in production)
+  - `sameSite: 'lax'`
+- **Session timeout** after inactivity (30 minutes)
+- **Session rotation** on privilege escalation
+- **Cross-tab session** synchronization
+
+### Multi-Factor Authentication (2FA)
+- **Election-based 2FA** configuration
+- **Multiple 2FA methods**:
+  - Email verification
+  - SMS verification
+  - OTP verification
+  - Passphrase verification
+- **Secure 2FA token** generation and validation
+- **Rate limiting** for 2FA attempts
+- **Fallback mechanisms** for 2FA failures
+
+## Authorization Security
+
+### Role-Based Access Control (RBAC)
+- **Strict role enforcement** at all levels
+- **API-level authorization** checks
+- **Frontend route** protection
+- **Database-level** access control
+- **Organization isolation** for admin users
+
+### Permission Matrix
+- **SuperAdmin**: Global system access
+- **Admin**: Organization-specific access only
+- **Voter**: Election-specific access only
+- **No cross-role** access or privilege escalation
+
+### Access Control Implementation
+- **Middleware-based** protection for all routes
+- **Session validation** on each request
+- **Role verification** before resource access
+- **Automatic redirects** for unauthorized access
+
+## Data Security
+
+### Data Encryption
+- **Password hashing** with bcrypt
+- **Sensitive data encryption** at rest
+- **Transport layer security** (HTTPS/TLS)
+- **Database encryption** for production environments
+
+### Vote Integrity
+- **Chain hashing** for vote verification
+- **Cryptographic signatures** for vote authenticity
+- **Immutable vote records** once submitted
+- **Audit trail** for all voting activities
+
+### Data Privacy
+- **Personal data minimization** principles
+- **Data retention** policies
+- **User consent** for data processing
+- **GDPR compliance** considerations
+
+## Input Validation & Sanitization
+
+### Server-Side Validation
+- **All inputs validated** on the server
+- **Type checking** with TypeScript
+- **Schema validation** for API requests
+- **Business logic validation** for complex operations
+
+### Input Sanitization
+- **HTML entity encoding** for user inputs
+- **SQL injection prevention** via Prisma ORM
+- **XSS prevention** through proper encoding
+- **File upload validation** and scanning
+
+### Validation Rules
+- **Email format** validation
+- **Phone number** format validation
+- **Voter code** format validation
+- **Date range** validation
+- **File type** and size validation
+
+## API Security
+
+### API Protection
+- **Rate limiting** for all API endpoints
+- **Authentication required** for protected routes
+- **CORS configuration** for cross-origin requests
+- **Request size limits** to prevent abuse
+
+### API Security Headers
+- **Content Security Policy (CSP)**
+- **X-Frame-Options**: DENY
+- **X-Content-Type-Options**: nosniff
+- **Referrer-Policy**: strict-origin-when-cross-origin
+- **Permissions-Policy**: appropriate restrictions
+
+### Error Handling
+- **No sensitive information** in error responses
+- **Generic error messages** for security
+- **Proper HTTP status codes**
+- **Error logging** for debugging
+
+## Database Security
+
+### Database Access Control
+- **Principle of least privilege** for database users
+- **Connection pooling** with proper limits
+- **Read-only access** where appropriate
+- **Database user isolation** by environment
+
+### SQL Injection Prevention
+- **Prisma ORM** for all database operations
+- **Parameterized queries** only
+- **No raw SQL** execution
+- **Input validation** before database operations
+
+### Database Encryption
+- **Encryption at rest** for sensitive data
+- **Encryption in transit** for database connections
+- **Key management** for encryption keys
+- **Backup encryption** for data protection
+
+## Network Security
+
+### Transport Security
+- **HTTPS enforcement** in production
+- **TLS 1.3** for secure communications
+- **Certificate validation** and monitoring
+- **HSTS headers** for HTTPS enforcement
+
+### Network Protection
+- **Firewall rules** for network access
+- **DDoS protection** and mitigation
+- **Rate limiting** at network level
+- **IP whitelisting** where appropriate
+
+### API Gateway Security
+- **Request validation** at gateway level
+- **Authentication verification** before routing
+- **Rate limiting** and throttling
+- **Request logging** and monitoring
+
+## File Upload Security
+
+### File Validation
+- **File type validation** (MIME type checking)
+- **File size limits** to prevent abuse
+- **Virus scanning** for uploaded files
+- **Content validation** for file contents
+
+### File Storage Security
+- **Secure file storage** with access controls
+- **File access permissions** based on user roles
+- **File encryption** for sensitive documents
+- **Secure file URLs** with expiration
+
+### Upload Restrictions
+- **Allowed file types** only
+- **Maximum file sizes** enforced
+- **Upload rate limiting** per user
+- **File quarantine** for suspicious uploads
+
+## Audit & Logging
+
+### Security Logging
+- **Authentication events** logged
+- **Authorization failures** logged
+- **Data access** and modification logged
+- **Security incidents** logged
+
+### Audit Trail
+- **Complete audit trail** for all actions
+- **User activity** tracking
+- **Data changes** logged with timestamps
+- **Audit log integrity** protection
+
+### Monitoring & Alerting
+- **Real-time security monitoring**
+- **Anomaly detection** for suspicious activities
+- **Security alert** notifications
+- **Incident response** procedures
+
+## Vulnerability Management
+
+### Security Testing
+- **Regular security assessments**
+- **Penetration testing** for critical systems
+- **Vulnerability scanning** for dependencies
+- **Code security reviews**
+
+### Dependency Security
+- **Regular dependency updates**
+- **Security vulnerability** monitoring
+- **Automated security scanning** in CI/CD
+- **Vulnerability patching** procedures
+
+### Security Updates
+- **Regular security patches** applied
+- **Security update** testing procedures
+- **Rollback plans** for security updates
+- **Security update** documentation
+
+## Incident Response
+
+### Security Incident Procedures
+- **Incident detection** and reporting
+- **Incident classification** and prioritization
+- **Response team** activation procedures
+- **Communication plans** for incidents
+
+### Data Breach Response
+- **Data breach detection** procedures
+- **Breach notification** requirements
+- **Data recovery** and restoration
+- **Post-incident** analysis and lessons learned
+
+### Business Continuity
+- **System recovery** procedures
+- **Data backup** and restoration
+- **Service continuity** plans
+- **Disaster recovery** procedures
+
+## Compliance & Standards
+
+### Security Standards
+- **OWASP Top 10** compliance
+- **NIST Cybersecurity Framework** alignment
+- **ISO 27001** security standards
+- **GDPR compliance** for data protection
+
+### Security Policies
+- **Security policy** documentation
+- **User security** guidelines
+- **Administrative security** procedures
+- **Security training** requirements
+
+### Compliance Monitoring
+- **Regular compliance** assessments
+- **Security policy** enforcement
+- **Compliance reporting** procedures
+- **Audit preparation** and support
+
+## Development Security
+
+### Secure Development Practices
+- **Security code reviews** for all changes
+- **Secure coding** guidelines and standards
+- **Security testing** in development pipeline
+- **Security documentation** for all features
+
+### CI/CD Security
+- **Automated security scanning** in pipelines
+- **Security testing** in deployment process
+- **Secure deployment** procedures
+- **Security monitoring** in production
+
+### Code Security
+- **No hardcoded secrets** in code
+- **Environment variable** management
+- **Secure configuration** management
+- **Security-focused** code organization 
