@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import ForgotPasswordImage from "@/app/assets/ForgotPassword.png";
+import HiThereImage from "@/app/assets/hiThere.png";
 
 import { AuthHeading } from "@/components/AuthHeading";
 import { InputField } from "@/components/InputField";
@@ -11,7 +11,7 @@ import { SubmitButton } from "@/components/SubmitButton";
 import { AuthFooter } from "@/components/AuthFooter";
 import { ErrorMessage } from "@/components/ErrorMessage";
 
-export default function ForgotPasswordPage() {
+export default function HiTherePage() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -23,10 +23,10 @@ export default function ForgotPasswordPage() {
     setError("");
 
     try {
-      // TODO: Implement forgot password logic
-      console.log("Sending OTP to:", email);
+      // TODO: Implement organization verification logic
+      console.log("Adding organization with email:", email);
       // For now, just simulate success
-      router.push("/auth/forgot-password/otp");
+      router.push("/admin/dashboard");
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
     } finally {
@@ -35,17 +35,16 @@ export default function ForgotPasswordPage() {
   };
 
   const handleCancel = () => {
-    router.push("/auth/login");
+    router.push("/admin/dashboard");
   };
 
   return (
     <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] pt-40 pb-40">
       <div className="w-full max-w-[380px] mx-auto text-center space-y-6 pt-10 pb-10 px-4">
-
         
         <AuthHeading
-          title="Forgot Password"
-          subtitle="Enter your email account to reset password."
+          title="Hi there!"
+          subtitle="Before you can use our voting system, we just need to verify that your organization is legit. This helps us keep things secure and running smoothly for everyone. Thanks for understanding!"
         />
 
         {error && <ErrorMessage message={error} />}
@@ -53,8 +52,8 @@ export default function ForgotPasswordPage() {
         {/* Image */}
         <div className="flex justify-center">
           <Image
-            src={ForgotPasswordImage}
-            alt="Forgot Password"
+            src={HiThereImage}
+            alt="Hi there"
             className="w-[294.98px] h-[297px]"
           />
         </div>
@@ -73,7 +72,7 @@ export default function ForgotPasswordPage() {
             autoComplete="email"
           />
 
-          <SubmitButton label="Send OTP" isLoading={isLoading} className="w-full" />
+          <SubmitButton label="Add Organization" isLoading={isLoading} className="w-full" />
 
           {/* Cancel Button */}
           <button
@@ -86,9 +85,9 @@ export default function ForgotPasswordPage() {
         </form>
 
         <AuthFooter
-          question="Remember your password?"
-          link="/auth/login"
-          linkText="Log In"
+          question="Need help?"
+          link="/contact"
+          linkText="Contact Support"
         />
       </div>
     </main>
