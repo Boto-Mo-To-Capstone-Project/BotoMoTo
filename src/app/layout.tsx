@@ -4,6 +4,7 @@ import "./globals.css";
 import { Provider } from "react-redux";
 import { store } from "@/store";
 import NavbarWrapper from "@/components/NavbarWrapper";
+import SidebarWrapper from "@/components/sidebars/SidebarWrapper";
 
 export default function RootLayout({
   children,
@@ -15,7 +16,10 @@ export default function RootLayout({
       <body suppressHydrationWarning={true}>
         <Provider store={store}>
           <NavbarWrapper />
-          {children}
+          <div className="flex">
+            <SidebarWrapper />
+            {children}
+          </div>
         </Provider>
       </body>
     </html>

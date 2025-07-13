@@ -26,7 +26,7 @@ const SectionHeaderContainer = ({
 
   return (
     <p
-      className={`survey-section border px-6 py-5 border-gray-200 mb-2${backgroundClass}`}
+      className={`survey-section border px-6 py-5 border-gray-200 mb-2 ${backgroundClass}`}
     >
       {children}
     </p>
