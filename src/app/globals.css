@@ -157,3 +157,7 @@ body {
 .dashboard-candidate-desc {
   @apply text-sm font-medium text-black;
 }
+
+.sidebar-items {
+  @apply text-md font-semibold;
+}

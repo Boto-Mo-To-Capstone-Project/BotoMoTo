@@ -1,0 +1,203 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import BotoMoToLogo from "@/app/assets/BotoMoToLogo_light.png";
+import {
+  LayoutDashboard,
+  ListChecks,
+  PlusCircle,
+  Ticket,
+  User,
+  X,
+  Menu,
+} from "lucide-react";
+
+type AdminSidebarProps = {
+  variant: "default" | "selectedElection";
+  electionId?: string;
+};
+
+const AdminSidebar = ({ variant, electionId }: AdminSidebarProps) => {
+  const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
+
+  const defaultLinks = [
+    { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+    {
+      name: "All Elections",
+      href: "/admin/dashboard/elections",
+      icon: ListChecks,
+    },
+    {
+      name: "Create Election",
+      href: "/admin/dashboard/elections/create",
+      icon: PlusCircle,
+    },
+    {
+      name: "Tickets",
+      href: "/admin/dashboard/elections/tickets",
+      icon: Ticket,
+    },
+    {
+      name: "Profile",
+      href: "/admin/dashboard/elections/profile",
+      icon: User,
+    },
+  ];
+
+  const setupLinks = [
+    "Overview",
+    "Scope",
+    "Parties",
+    "Voters",
+    "Positions",
+    "Candidates",
+  ].map((sub) => ({
+    name: sub,
+    href: `/admin/dashboard/elections/${electionId}/setup/${sub.toLowerCase()}`,
+  }));
+
+  const manageLinks = [
+    "Overview",
+    "Security",
+    "Ballot Preview",
+    "Live Results",
+    "Election Status",
+  ].map((sub) => ({
+    name: sub,
+    href: `/admin/dashboard/elections/${electionId}/manage/${sub
+      .toLowerCase()
+      .replace(" ", "-")}`,
+  }));
+
+  return (
+    <>
+      {/* Hamburger button - mobile only */}
+      <button
+        className="lg:hidden fixed top-4 left-4 z-50 text-primary"
+        onClick={() => setIsOpen(true)}
+      >
+        <Menu className="w-8 h-8" />
+      </button>
+
+      {/* Overlay */}
+      <div
+        className={`
+    fixed inset-0 bg-black transition-opacity duration-300
+    ${
+      isOpen
+        ? "opacity-50 pointer-events-auto"
+        : "opacity-0 pointer-events-none"
+    }
+    lg:hidden
+  `}
+        onClick={() => setIsOpen(false)}
+      ></div>
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed top-0 left-0 h-full min-h-screen w-68 bg-primary px-4 py-6 space-y-5
+          transform transition-transform duration-300 z-50
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}
+          lg:translate-x-0 lg:static lg:flex-shrink-0
+        `}
+      >
+        {/* Mobile close button */}
+        <div className="flex justify-between items-center lg:hidden">
+          <Image src={BotoMoToLogo} height={45} alt="BotoMoToLogo" />
+          <button onClick={() => setIsOpen(false)}>
+            <X className="w-8 h-8 text-white" />
+          </button>
+        </div>
+
+        {/* Desktop logo => this is hidden because there is already one in mobile*/}
+        <div className="hidden lg:block">
+          <Image src={BotoMoToLogo} height={45} alt="BotoMoToLogo" />
+        </div>
+
+        {/* Links */}
+        <nav className="space-y-2">
+          {defaultLinks.map((link) => {
+            const Icon = link.icon;
+            const isActive = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`flex items-center gap-2 sidebar-items p-2 rounded
+                  ${
+                    isActive
+                      ? "bg-white text-primary"
+                      : "hover:font-semibold text-white"
+                  }`}
+                onClick={() => setIsOpen(false)} // close sidebar on mobile after click
+              >
+                <Icon className="h-5 w-5" />
+                <span>{link.name}</span>
+              </Link>
+            );
+          })}
+
+          {variant === "selectedElection" && electionId && (
+            <>
+              <div>
+                <p className="mt-6 sidebar-items text-white uppercase">Setup</p>
+                <nav className="space-y-1 mt-2 bg-white rounded-lg">
+                  {setupLinks.map((link) => {
+                    const isActive = pathname === link.href;
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className={`block pl-4 sidebar-items rounded-lg p-2
+                          ${
+                            isActive
+                              ? "text-primary"
+                              : "text-gray hover:text-primary"
+                          }`}
+                        onClick={() => setIsOpen(false)}
+                      >
+                        {link.name}
+                      </Link>
+                    );
+                  })}
+                </nav>
+              </div>
+              <div>
+                <p className="mt-6 sidebar-items text-white uppercase">
+                  Manage
+                </p>
+                <nav className="space-y-1 mt-2 bg-white rounded-lg">
+                  {manageLinks.map((link) => {
+                    const isActive = pathname === link.href;
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className={`block pl-4 sidebar-items rounded-lg p-2
+                          ${
+                            isActive
+                              ? "text-primary"
+                              : "text-gray hover:text-primary"
+                          }`}
+                        onClick={() => setIsOpen(false)}
+                      >
+                        {link.name}
+                      </Link>
+                    );
+                  })}
+                </nav>
+              </div>
+            </>
+          )}
+        </nav>
+      </aside>
+    </>
+  );
+};
+
+export default AdminSidebar;
