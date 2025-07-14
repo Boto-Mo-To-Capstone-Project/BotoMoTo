@@ -13,6 +13,7 @@ import {
   User,
   X,
   Menu,
+  BadgeAlert,
 } from "lucide-react";
 
 type AdminSidebarProps = {
@@ -39,7 +40,7 @@ const AdminSidebar = ({ variant, electionId }: AdminSidebarProps) => {
     {
       name: "Tickets",
       href: "/admin/dashboard/elections/tickets",
-      icon: Ticket,
+      icon: BadgeAlert,
     },
     {
       name: "Profile",

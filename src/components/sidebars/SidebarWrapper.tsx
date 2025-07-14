@@ -23,6 +23,15 @@ const SidebarWrapper = () => {
     "/admin/dashboard/elections/profile",
   ];
 
+  const superAdminBaseRoutes = [
+    "/superadmin/dashboard",
+    "/superadmin/dashboard/organization-requests",
+    "/superadmin/dashboard/elections",
+    "/superadmin/dashboard/tickets",
+    "/superadmin/dashboard/audits",
+    "/superadmin/dashboard/survey",
+  ];
+
   const isAdminDefault = adminBaseRoutes.includes(pathname);
   const isAdminElectionSelected =
     pathname.startsWith("/admin/dashboard/elections/") &&
@@ -30,6 +39,11 @@ const SidebarWrapper = () => {
     // the ElectionSelected links wont appear for routes in the reserved
     // example: /admin/dashboard/elections/create => ElectionSelected wont appear here
     !reserved.includes(parts[4].toLowerCase());
+
+  // super admin logic sidebar
+  const isSuperAdmin =
+    superAdminBaseRoutes.includes(pathname) ||
+    pathname.startsWith("/superadmin/dashboard/");
 
   if (isAdminDefault || isAdminElectionSelected) {
     return (
@@ -45,10 +59,9 @@ const SidebarWrapper = () => {
       />
     );
   }
-
-  // Add logic for superadmin sidebar here
-  // Example: if (pathname.startsWith("/superadmin")) return <SuperAdminSidebar />
-
+  if (isSuperAdmin) {
+    return <SuperAdminSidebar />;
+  }
   return null;
 };
 
