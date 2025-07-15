@@ -69,6 +69,7 @@ const PositionSection = () => {
               <div className="flex flex-col gap-4">
                 {pos.candidates.map((candidate) => (
                   <CandidateDashboardCard
+                    id={candidate.id}
                     key={candidate.id}
                     imgSrc={candidate.imgSrc}
                     name={candidate.name}
