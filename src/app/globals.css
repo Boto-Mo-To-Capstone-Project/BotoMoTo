@@ -139,11 +139,11 @@ body {
 }
 
 .survey-section {
-  @apply text-md font-semibold text-black md:text-lg;
+  @apply text-md font-medium text-black md:text-lg;
 }
 
 .kpi-label {
-  @apply text-md font-semibold text-black xs:text-lg md:text-lg;
+  @apply text-md font-semibold text-black xs:text-lg;
 }
 
 .kpi-value {

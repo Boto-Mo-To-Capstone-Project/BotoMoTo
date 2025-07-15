@@ -12,35 +12,35 @@ const DemographicSection = () => {
         name="Level 1"
         value={"40%"}
         icon={MapPinHouse}
-        href=""
+        href="/voter/live-dashboard/voting-scope/1"
       />
       <KpiCard
         variant={"demographic"}
         name="Level 1"
         value={"40%"}
         icon={MapPinHouse}
-        href=""
+        href="/voter/live-dashboard/voting-scope/1"
       />
       <KpiCard
         variant={"demographic"}
         name="Level 1"
         value={"40%"}
         icon={MapPinHouse}
-        href=""
+        href="/voter/live-dashboard/voting-scope/1"
       />
       <KpiCard
         variant={"demographic"}
         name="Level 1"
         value={"40%"}
         icon={MapPinHouse}
-        href=""
+        href="/voter/live-dashboard/voting-scope/1"
       />
       <KpiCard
         variant={"demographic"}
         name="Level 1"
         value={"40%"}
         icon={MapPinHouse}
-        href=""
+        href="/voter/live-dashboard/voting-scope/1"
       />
     </section>
   );

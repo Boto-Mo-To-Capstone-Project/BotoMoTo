@@ -45,8 +45,5 @@ export function useSidebarVisible() {
     return true;
   }
 
-  // Add more logic here for SuperAdmin sidebar
-  // if (pathname.startsWith("/superadmin")) return true;
-
   return false;
 }
