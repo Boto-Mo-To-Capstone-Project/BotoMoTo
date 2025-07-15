@@ -10,7 +10,7 @@ import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
 import { AuthFooter } from "@/components/AuthFooter";
 import { ErrorMessage } from "@/components/ErrorMessage";
-import OtpInput from "@/components/OtpInput";
+import OtpInput, { OtpInputFour } from "@/components/OtpInput";
 
 export default function ForgotPasswordOtpPage() {
   const [otp, setOtp] = useState(["", "", "", ""]);
@@ -46,7 +46,7 @@ export default function ForgotPasswordOtpPage() {
 
   return (
     <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] pt-40 pb-40">
-      <div className="w-full max-w-[380px] mx-auto text-center space-y-6 pt-10 pb-10 px-4">
+      <div className="w-full max-w-[380px] mx-auto text-center space-y-6 px-4">
         
         <AuthHeading
           title="Forgot Password"
@@ -74,9 +74,9 @@ export default function ForgotPasswordOtpPage() {
             <label className="block text-sm font-medium text-[var(--color-black)] mb-1">
               One Time Password
             </label>
-            <OtpInput
+            <OtpInputFour
               value={otp}
-              onChange={(index, val) => {
+              onChange={(index: number, val: string) => {
                 const newOtp = [...otp];
                 newOtp[index] = val;
                 setOtp(newOtp);

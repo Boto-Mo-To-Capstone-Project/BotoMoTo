@@ -1,5 +1,7 @@
+import { ReactNode } from "react";
+
 interface AuthHeadingProps {
-  title: string;
+  title: string | ReactNode;
   subtitle: string;
 }
 
