@@ -143,11 +143,15 @@ body {
 }
 
 .kpi-label {
-  @apply text-md font-semibold text-black xs:text-lg;
+  @apply text-md font-semibold text-black;
 }
 
 .kpi-value {
-  @apply text-lg font-semibold text-black xs:text-dsm md:text-dmd;
+  @apply text-lg font-semibold text-black xs:text-dsm;
+}
+
+.kpi-desc {
+  @apply text-sm font-medium;
 }
 
 .dashboard-candidate-name {
@@ -160,4 +164,12 @@ body {
 
 .sidebar-items {
   @apply text-md font-semibold;
+}
+
+.superadmin-heading {
+  @apply text-dxs font-semibold text-black md:text-dsm;
+}
+
+.superadmin-subheading {
+  @apply text-md font-normal text-gray md:text-lg;
 }
