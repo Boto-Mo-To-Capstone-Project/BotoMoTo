@@ -25,4 +25,29 @@ const NavLink = ({
   );
 };
 
+const NavButton = ({
+  onClick,
+  children,
+  className = "",
+  href,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+  className?: string;
+  href?: string;
+}) => {
+  const pathname = usePathname();
+  const isActive = href ? pathname === href : false;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`hover:brightness-110 ${isActive ? "text-primary" : "nav-text"} ${className}`}
+    >
+      {children}
+    </button>
+  );
+};
+
+export { NavButton };
 export default NavLink;

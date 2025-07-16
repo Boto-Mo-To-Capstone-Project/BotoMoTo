@@ -4,7 +4,6 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
-  isApproved: boolean;
   organization?: Organization;
   createdAt: Date;
   updatedAt: Date;
@@ -24,7 +23,6 @@ export interface SessionUser {
   email: string;
   name: string;
   role: UserRole;
-  isApproved: boolean;
   organization?: {
     id: number;
     name: string;

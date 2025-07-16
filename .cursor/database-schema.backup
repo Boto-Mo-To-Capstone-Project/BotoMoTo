@@ -24,14 +24,12 @@ model User {
   name          String
   password      String
   role          UserRole
-  isActive      Boolean  @default(true) // For account-level suspension control
-  // One-to-one relationship with Organization
-  organization  Organization? @relation(fields: [id], references: [adminId])
+  isApproved    Boolean  @default(false)
+  organizationId Int?
+  organization  Organization? @relation(fields: [organizationId], references: [id])
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  // One-to-one relationship with Admin User
-  admin       User @relation(fields: [adminId], references: [id])
   // Relations
   sessions      Session[]
   tickets       Ticket[]
@@ -39,7 +37,7 @@ model User {
 
   @@index([email])
   @@index([role])
-  // One-to-one relationship indexed by adminId
+  @@index([organizationId])
 }
 ```
 
@@ -55,8 +53,6 @@ model Organization {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // One-to-one relationship with Admin User
-  admin       User @relation(fields: [adminId], references: [id])
   // Relations
   users       User[]
   elections   Election[]
@@ -81,8 +77,6 @@ model Election {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // One-to-one relationship with Admin User
-  admin       User @relation(fields: [adminId], references: [id])
   // Relations
   votingScopes    VotingScope[]
   parties         Party[]
@@ -93,7 +87,7 @@ model Election {
   surveys         Survey[]
   tickets         Ticket[]
 
-  // One-to-one relationship indexed by adminId
+  @@index([organizationId])
   @@index([status])
   @@index([startDate, endDate])
 }
@@ -113,8 +107,6 @@ model VotingScope {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // One-to-one relationship with Admin User
-  admin       User @relation(fields: [adminId], references: [id])
   // Relations
   voters      Voter[]
   votes       Vote[]
@@ -137,8 +129,6 @@ model Party {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // One-to-one relationship with Admin User
-  admin       User @relation(fields: [adminId], references: [id])
   // Relations
   candidates  Candidate[]
 
@@ -160,8 +150,6 @@ model Position {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // One-to-one relationship with Admin User
-  admin       User @relation(fields: [adminId], references: [id])
   // Relations
   candidates  Candidate[]
 
@@ -187,8 +175,6 @@ model Candidate {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // One-to-one relationship with Admin User
-  admin       User @relation(fields: [adminId], references: [id])
   // Relations
   votes       Vote[]
 
@@ -214,8 +200,6 @@ model Voter {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // One-to-one relationship with Admin User
-  admin       User @relation(fields: [adminId], references: [id])
   // Relations
   votes       Vote[]
   surveys     Survey[]
@@ -293,7 +277,7 @@ model Ticket {
   priority    TicketPriority @default(MEDIUM)
   userId      String
   user        User @relation(fields: [userId], references: [id])
-  // One-to-one relationship with Organization
+  organizationId Int?
   organization Organization? @relation(fields: [organizationId], references: [id])
   electionId  String?
   election    Election? @relation(fields: [electionId], references: [id])
@@ -301,13 +285,11 @@ model Ticket {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // One-to-one relationship with Admin User
-  admin       User @relation(fields: [adminId], references: [id])
   // Relations
   messages    TicketMessage[]
 
   @@index([userId])
-  // One-to-one relationship indexed by adminId
+  @@index([organizationId])
   @@index([electionId])
   @@index([status])
 }
@@ -501,27 +483,3 @@ enum TicketPriority {
 - **Row-level security** considerations
 - **Data partitioning** strategies
 - **Cross-organization** access prevention 
-### Approval and Suspension Logic
-
-#### Single Approval Point
-- **Organization approval** is the single approval point for admin access
-- **User.isActive** provides granular account-level control
-- **No double approval** required - better for scalability
-
-#### Account-Level Control (User.isActive)
-- **Account suspension**: Set `User.isActive = false`
-- **Compromised admin**: Suspend just the account
-- **Admin departure**: Deactivate account without affecting organization
-- **Account recovery**: Reactivate account independently
-
-#### Organization-Level Control (Organization.status)
-- **Organization suspension**: Set `Organization.status = SUSPENDED`
-- **Compliance issues**: Suspend organization features
-- **Temporary issues**: Pause organization operations
-- **Organization recovery**: Reactivate organization independently
-
-#### Security Benefits
-- **Granular control** without double approval complexity
-- **Independent suspension** of accounts vs organizations
-- **Clear separation** of account issues vs organization issues
-- **Scalable approach** for growing systems

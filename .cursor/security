@@ -26,14 +26,14 @@
 - **Secure password reset** flow with time-limited tokens
 
 ### Session Security
-- **Database-stored sessions** (not JWT tokens)
+- **JWT-based sessions** (not database-stored sessions)
 - **Secure session cookies** with proper flags:
   - `httpOnly: true`
   - `secure: true` (in production)
   - `sameSite: 'lax'`
-- **Session timeout** after inactivity (30 minutes)
-- **Session rotation** on privilege escalation
-- **Cross-tab session** synchronization
+- **Session timeout** after JWT expiry (e.g., 30 minutes or as configured)
+- **Session rotation** on privilege escalation (by issuing new JWT)
+- **Cross-tab session** synchronization via JWT
 
 ### Multi-Factor Authentication (2FA)
 - **Election-based 2FA** configuration

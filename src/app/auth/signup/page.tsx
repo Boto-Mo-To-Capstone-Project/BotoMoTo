@@ -62,7 +62,7 @@ export default function SignupPage() {
       if (signInResult?.error) {
         setError(signInResult.error);
       } else {
-        router.push("/organization/create");
+        router.push("/admin/dashboard/");
       }
     } catch (err) {
       setError(`An unexpected error occurred. Please try again. ${err}`);

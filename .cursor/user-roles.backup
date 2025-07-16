@@ -109,8 +109,7 @@
 #### Authentication
 - **Email/password** or **OAuth** (Google, Facebook)
 - **One-time onboarding** process required
-- **Organization approval** by SuperAdmin (single approval point)
-- **Account suspension** via User.isActive (granular control)
+- **Organization approval** by SuperAdmin
 - **Session-based** authentication
 
 #### Access Restrictions
