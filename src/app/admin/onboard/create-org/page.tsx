@@ -11,11 +11,12 @@ import { ErrorMessage } from "@/components/ErrorMessage";
 import { AuthButtons } from "@/components/AuthButtons";
 import { UploadedFileDisplay } from "@/components/UploadedFileDisplay";
 import { FileDropzone } from "@/components/FileDropzone";
+import AuthContainer from '@/components/AuthContainer';
 
 export default function OrganizationProfile() {
   return (
-    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] pt-40 pb-40">
-      <div className="w-full max-w-[380px] mx-auto text-center space-y-6 px-4">
+    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40">
+      <AuthContainer>
         <div className="flex justify-center mb-2"><Logo /></div>
         <AuthHeading
           title="Organization Profile"
@@ -140,7 +141,7 @@ export default function OrganizationProfile() {
           link="/contact"
           linkText="Contact Support"
         />
-      </div>
+      </AuthContainer>
     </main>
   );
 }

@@ -10,6 +10,7 @@ import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
 import { AuthFooter } from "@/components/AuthFooter";
 import { ErrorMessage } from "@/components/ErrorMessage";
+import AuthContainer from '@/components/AuthContainer';
 
 export default function HiTherePage() {
   const [email, setEmail] = useState("");
@@ -39,17 +40,13 @@ export default function HiTherePage() {
   };
 
   return (
-    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] pt-40 pb-40">
-      <div className="w-full max-w-[380px] mx-auto text-center space-y-6 px-4">
-        
+    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40">
+      <AuthContainer>
         <AuthHeading
           title="Hi there!"
           subtitle="Before you can use our voting system, we just need to verify that your organization is legit. This helps us keep things secure and running smoothly for everyone. Thanks for understanding!"
         />
-
         {error && <ErrorMessage message={error} />}
-
-        {/* Image */}
         <div className="flex justify-center">
           <Image
             src={HiThereImage}
@@ -57,8 +54,6 @@ export default function HiTherePage() {
             className="w-[294.98px] h-[297px]"
           />
         </div>
-
-        {/* Form */}
         <form
           onSubmit={handleSubmit}
           className="space-y-4 text-left flex flex-col items-center w-full"
@@ -71,10 +66,7 @@ export default function HiTherePage() {
             placeholder="Enter your email"
             autoComplete="email"
           />
-
           <SubmitButton label="Add Organization" isLoading={isLoading} className="w-full" />
-
-          {/* Cancel Button */}
           <button
             type="button"
             onClick={handleCancel}
@@ -83,13 +75,12 @@ export default function HiTherePage() {
             Cancel
           </button>
         </form>
-
         <AuthFooter
           question="Need help?"
           link="/contact"
           linkText="Contact Support"
         />
-      </div>
+      </AuthContainer>
     </main>
   );
 }

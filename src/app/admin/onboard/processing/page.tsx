@@ -12,6 +12,7 @@ import { SubmitButton } from "@/components/SubmitButton";
 import { AuthHeading } from "@/components/AuthHeading";
 import Logo from "@/components/Logo";
 import { AuthFooter } from "@/components/AuthFooter";
+import AuthContainer from '@/components/AuthContainer';
 
 function StatusTabs({ status, setStatus }: { status: string; setStatus: (s: string) => void }) {
   return (
@@ -106,8 +107,8 @@ export default function OnboardProcessingPage() {
   const name = "Brian King";
 
   return (
-    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] pt-40 pb-40">
-      <div className="w-full max-w-[380px] mx-auto text-center space-y-6 px-4">
+    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40">
+      <AuthContainer>
         <h1 className="text-2xl font-bold text-gray-800 mb-1">Hi, {name}!</h1>
         <p className="text-[var(--color-primary)] mb-4">Application Status: Track your progress</p>
         <div className="flex justify-center my-2">
@@ -115,7 +116,7 @@ export default function OnboardProcessingPage() {
         </div>
         <AccordionStepper approved={approved} onComplete={handleComplete} onProceed={handleProceed} />
         <AuthFooter question="Need help?" link="/contact" linkText="Contact Support" />
-      </div>
+      </AuthContainer>
       <CompleteTaskModal open={showModal} onClose={() => setShowModal(false)} onSave={handleModalSave} />
     </main>
   );
