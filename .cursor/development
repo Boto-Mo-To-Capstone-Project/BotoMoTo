@@ -1,0 +1,331 @@
+# Development Rules
+
+## Development Overview
+
+### Technology Stack
+- **Next.js 15** with App Router
+- **React 19** with latest features
+- **TypeScript** for type safety
+- **Tailwind CSS** for styling
+- **Prisma ORM** for database operations
+- **NextAuth.js v4** for authentication
+
+### Development Principles
+- **Type-safe development** with TypeScript
+- **Component-based architecture** with React
+- **Clean code** principles and best practices
+- **Consistent coding** standards across the project
+
+## Code Organization
+
+### Project Structure
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes
+│   ├── auth/              # Authentication pages
+│   ├── admin/             # Admin pages
+│   ├── superadmin/        # SuperAdmin pages
+│   ├── voter/             # Voter interface
+│   └── public/            # Public pages
+├── components/            # Reusable components
+├── lib/                  # Utility libraries
+├── types/                # TypeScript definitions
+└── generated/            # Generated Prisma client
+```
+
+### File Naming Conventions
+- **PascalCase** for components: `Button.tsx`, `ElectionList.tsx`
+- **camelCase** for utilities: `prisma.ts`, `constants.ts`
+- **kebab-case** for pages: `election-status.tsx`, `ballot-form.tsx`
+- **snake_case** for database: `migration.sql`, `schema.prisma`
+
+### Component Organization
+- **One component per file** for clarity
+- **Index files** for barrel exports
+- **Component folders** for complex components
+- **Shared components** in `/components/ui`
+
+## TypeScript Standards
+
+### Type Definitions
+- **Strict TypeScript** configuration
+- **No `any` types** without justification
+- **Proper interface** definitions for all data structures
+- **Generic types** for reusable components
+
+### Type Organization
+```typescript
+// src/types/index.ts - Barrel exports
+export * from "./auth";
+export * from "./api";
+export * from "./components";
+export * from "./database";
+
+// src/types/auth.ts - Authentication types
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  isApproved: boolean;
+  organization?: Organization;
+}
+
+// src/types/api.ts - API types
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
+  statusCode: number;
+}
+```
+
+### Type Safety Guidelines
+- **Type all function parameters** and return values
+- **Use union types** for better type safety
+- **Implement proper error types** for error handling
+- **Type all API responses** and requests
+
+## React Development
+
+### Component Standards
+- **Functional components** with hooks
+- **Proper prop typing** with TypeScript
+- **Component composition** over inheritance
+- **Single responsibility** principle
+
+### Hook Usage
+- **Custom hooks** for reusable logic
+- **Proper dependency arrays** in useEffect
+- **Memoization** for expensive operations
+- **Error boundaries** for error handling
+
+### State Management
+- **React state** for local component state
+- **Context API** for global state when needed
+- **Server state** management with proper caching
+- **Optimistic updates** for better UX
+
+## API Development
+
+### API Route Standards
+- **RESTful design** principles
+- **Proper HTTP methods** (GET, POST, PUT, DELETE)
+- **Consistent response format** across all endpoints
+- **Error handling** with appropriate status codes
+
+### API Response Format
+```typescript
+// Success response
+{
+  success: true,
+  data: { /* response data */ },
+  message: "Operation successful",
+  statusCode: 200
+}
+
+// Error response
+{
+  success: false,
+  error: "ERROR_CODE",
+  message: "User-friendly error message",
+  statusCode: 400
+}
+```
+
+### API Security
+- **Authentication middleware** for protected routes
+- **Input validation** for all requests
+- **Rate limiting** for API endpoints
+- **CORS configuration** for cross-origin requests
+
+## Database Development
+
+### Prisma Usage
+- **Type-safe queries** with Prisma Client
+- **Proper relationships** in schema design
+- **Migration-based** schema changes
+- **Seed data** for development
+
+### Database Operations
+- **Connection pooling** for performance
+- **Transaction handling** for data integrity
+- **Error handling** for database operations
+- **Query optimization** for performance
+
+### Schema Management
+- **Incremental migrations** for schema changes
+- **Backward compatibility** considerations
+- **Data seeding** for development environments
+- **Migration testing** before deployment
+
+## Styling Standards
+
+### Tailwind CSS Usage
+- **Utility-first** approach with Tailwind
+- **Custom components** for reusable styles
+- **Responsive design** with Tailwind breakpoints
+- **Dark mode** support where appropriate
+
+### CSS Organization
+- **Component-scoped** styles when needed
+- **Global styles** in `globals.css`
+- **CSS variables** for theming
+- **Consistent spacing** and typography
+
+### Design System
+- **Consistent color palette** across components
+- **Typography scale** for text elements
+- **Spacing system** for layout consistency
+- **Component variants** for different states
+
+## Testing Standards
+
+### Testing Strategy
+- **Unit tests** for utility functions
+- **Component tests** for React components
+- **Integration tests** for API endpoints
+- **E2E tests** for critical user flows
+
+### Testing Tools
+- **Jest** for unit and integration testing
+- **React Testing Library** for component testing
+- **Playwright** for E2E testing
+- **MSW** for API mocking
+
+### Test Organization
+```
+tests/
+├── unit/                 # Unit tests
+├── integration/          # Integration tests
+├── e2e/                 # End-to-end tests
+└── __mocks__/           # Mock files
+```
+
+## Code Quality
+
+### Linting & Formatting
+- **ESLint** for code linting
+- **Prettier** for code formatting
+- **TypeScript ESLint** for TypeScript rules
+- **Consistent formatting** across the project
+
+### Code Review Standards
+- **Pull request** reviews for all changes
+- **Code quality** checks in CI/CD
+- **Security review** for sensitive changes
+- **Performance review** for optimization
+
+### Documentation
+- **JSDoc comments** for functions and components
+- **README updates** for new features
+- **API documentation** for endpoints
+- **Component documentation** for complex components
+
+## Performance Standards
+
+### Frontend Performance
+- **Code splitting** for route-based loading
+- **Image optimization** with Next.js Image
+- **Lazy loading** for heavy components
+- **Bundle size** optimization
+
+### Backend Performance
+- **Database query** optimization
+- **Caching strategies** for frequently accessed data
+- **Connection pooling** for database connections
+- **API response** optimization
+
+### Monitoring
+- **Performance metrics** tracking
+- **Error monitoring** and alerting
+- **User experience** metrics
+- **System health** monitoring
+
+## Security Development
+
+### Secure Coding Practices
+- **Input validation** for all user inputs
+- **Output encoding** to prevent XSS
+- **SQL injection** prevention with Prisma
+- **Authentication** and authorization checks
+
+### Security Testing
+- **Security code reviews** for all changes
+- **Vulnerability scanning** in CI/CD
+- **Penetration testing** for critical features
+- **Security audit** procedures
+
+### Environment Security
+- **Environment variables** for sensitive data
+- **No hardcoded secrets** in code
+- **Secure configuration** management
+- **Access control** for development environments
+
+## Deployment & DevOps
+
+### CI/CD Pipeline
+- **Automated testing** in deployment pipeline
+- **Code quality** checks before deployment
+- **Security scanning** in CI/CD
+- **Automated deployment** to staging and production
+
+### Environment Management
+- **Environment-specific** configurations
+- **Database migrations** in deployment
+- **Environment variable** management
+- **Rollback procedures** for failed deployments
+
+### Monitoring & Logging
+- **Application logging** for debugging
+- **Error tracking** and alerting
+- **Performance monitoring** in production
+- **User analytics** and insights
+
+## Development Workflow
+
+### Git Workflow
+- **Feature branches** for new development
+- **Pull request** reviews for all changes
+- **Squash merging** for clean history
+- **Semantic commit** messages
+
+### Development Environment
+- **Local development** setup with Docker
+- **Hot reloading** for development
+- **Debugging tools** and configurations
+- **Development database** with seed data
+
+### Collaboration
+- **Code review** process for all changes
+- **Documentation** updates for new features
+- **Knowledge sharing** sessions
+- **Team coding** standards enforcement
+
+## Best Practices
+
+### General Guidelines
+- **DRY principle** (Don't Repeat Yourself)
+- **SOLID principles** for object-oriented design
+- **Clean code** principles
+- **Consistent naming** conventions
+
+### Error Handling
+- **Proper error boundaries** in React
+- **Graceful error handling** in APIs
+- **User-friendly error messages**
+- **Error logging** for debugging
+
+### Accessibility
+- **WCAG compliance** for accessibility
+- **Semantic HTML** usage
+- **Keyboard navigation** support
+- **Screen reader** compatibility
+
+### Internationalization
+- **i18n support** for multiple languages
+- **Localization** for different regions
+- **RTL support** for right-to-left languages
+- **Cultural considerations** in design 

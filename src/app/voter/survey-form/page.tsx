@@ -82,7 +82,7 @@ const SurveyForm = () => {
       <div className="pt-5 flex flex-col gap-4 w-4/5 xs:w-auto xs:items-center">
         <Button
           variant="long_primary"
-          onClick={() => router.push("/voter/ballot-form")}
+          onClick={() => router.push("/voter/live-dashboard")}
         >
           Submit
         </Button>

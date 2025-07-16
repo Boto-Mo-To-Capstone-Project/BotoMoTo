@@ -141,3 +141,23 @@ body {
 .survey-section {
   @apply text-md font-medium text-black md:text-lg;
 }
+
+.kpi-label {
+  @apply text-md font-semibold text-black xs:text-lg;
+}
+
+.kpi-value {
+  @apply text-lg font-semibold text-black xs:text-dsm md:text-dmd;
+}
+
+.dashboard-candidate-name {
+  @apply text-md font-medium text-black;
+}
+
+.dashboard-candidate-desc {
+  @apply text-sm font-medium text-black;
+}
+
+.sidebar-items {
+  @apply text-md font-semibold;
+}

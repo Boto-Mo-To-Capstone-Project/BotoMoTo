@@ -29,7 +29,7 @@ const Button = ({
   const variants = {
     primary: "bg-primary text-white xs:w-39",
     secondary: "border border-gray text-gray xs:w-39",
-    long_primary: "bg-primary text-white xs:w-86",
+    long_primary: "w-full bg-primary text-white xs:w-86",
     long_secondary: "border border-gray text-gray xs:w-86",
     short_primary: "bg-primary text-white xs:w-24",
     short_secondary: "border border-gray text-gray xs:w-24",
