@@ -172,6 +172,10 @@ This system is governed by comprehensive rules organized into the following cate
 - **Performance optimization** monitoring
 - **Backup and recovery** procedures
 
+## Frontend Styling Change Policy
+
+- Do not revise, add, or remove frontend styling (CSS classes, inline styles, etc.) unless explicitly requested by the frontend team or user. This is to avoid interfering with frontend design decisions.
+
 ---
 
 **BotoMoTo** - Secure, Scalable, and Modern Voting Solutions

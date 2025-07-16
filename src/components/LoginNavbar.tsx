@@ -7,9 +7,10 @@ import Image from "next/image";
 
 import BotoMoToLogo from "../app/assets/BotoMoToLogo.png";
 
-import NavLink from "@/components/NavLink";
+import NavLink, { NavButton } from "@/components/NavLink";
 import Button from "@/components/Button";
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 
 type LoginNavbarProps = {
   buttons?: "auth" | "logout" | null;
@@ -24,9 +25,9 @@ const LoginNavbar: React.FC<LoginNavbarProps> = ({ buttons }) => {
 
   const router = useRouter(); // to go to another route
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     console.log("Logging out...");
-    // Add logout logic here (e.g., clear token, redirect)
+    await signOut();
   };
 
   return (
@@ -93,27 +94,25 @@ const LoginNavbar: React.FC<LoginNavbarProps> = ({ buttons }) => {
               <NavLink href="/">Home</NavLink>
             </li>
             <li>
-              <NavLink href="/about">About Us</NavLink>
+              <NavLink href="/public/about-us">About Us</NavLink>
             </li>
             <li>
-              <NavLink href="/contact">Contact</NavLink>
+              <NavLink href="/public/contact">Contact</NavLink>
             </li>
             {buttons === "auth" && (
               <>
                 <li>
-                  <NavLink href="/login">Login</NavLink>
+                  <NavLink href="/auth/login">Login</NavLink>
                 </li>
                 <li>
-                  <NavLink href="/signup">Signup</NavLink>
+                  <NavLink href="/auth/signup">Signup</NavLink>
                 </li>
               </>
             )}
             {buttons === "logout" && (
               <>
                 <li>
-                  <NavLink href="/https://www.youtube.com/watch?v=dQw4w9WgXcQ">
-                    Logout
-                  </NavLink>
+                  <NavButton onClick={handleLogout} href="/">Logout</NavButton>
                 </li>
               </>
             )}
