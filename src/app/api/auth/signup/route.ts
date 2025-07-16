@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
 import { ROLES } from "@/lib/constants";
 
+const JWT_SECRET = process.env.JWT_SECRET!;
+
 export async function POST(request: NextRequest) {
   try {
     const { name, email, password } = await request.json();
@@ -37,8 +39,6 @@ export async function POST(request: NextRequest) {
         email,
         password: hashedPassword,
         role: ROLES.ADMIN,
-        isActive: true,
-        isApproved: false, // Needs approval
       },
     });
 
@@ -72,7 +72,6 @@ export async function POST(request: NextRequest) {
         name: user.name,
         email: user.email,
         role: user.role,
-        isApproved: user.isApproved,
       },
     });
   } catch (error) {

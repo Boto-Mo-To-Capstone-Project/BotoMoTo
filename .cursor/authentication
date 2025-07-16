@@ -3,10 +3,11 @@
 ## Authentication Overview
 
 ### Multi-Provider System
-- **NextAuth.js v4** as the core authentication framework
+- **NextAuth.js v4** as the core authentication framework for OAuth providers
+- **Custom/manual API** for credentials (email/password) authentication
 - **Multiple authentication methods** for different user types
 - **Role-based authentication** flows
-- **Secure session management** with database storage
+- **Secure session management** with JWTs in HTTP-only cookies
 
 ## Authentication Flows by User Type
 
@@ -102,22 +103,23 @@
 ## Session Management
 
 ### Session Storage
-- **Database-based** sessions (not JWT)
-- **Prisma session** model
-- **Automatic cleanup** of expired sessions
-- **Cross-tab** session synchronization
+- **JWT-based sessions** (not database sessions)
+- **No Prisma session model**
+- **JWTs stored in HTTP-only cookies**
+- **Automatic cleanup** by JWT expiry
+- **Cross-tab** session synchronization via JWT
 
 ### Session Security
 - **HTTPS-only** in production
 - **Secure cookies** with proper flags
 - **CSRF protection** enabled
-- **Session rotation** on privilege escalation
+- **Session rotation** on privilege escalation (by issuing new JWT)
 
 ### Session Lifecycle
-- **Creation**: On successful authentication
-- **Validation**: On each request
-- **Refresh**: Automatic token refresh
-- **Destruction**: On logout or expiry
+- **Creation**: On successful authentication, JWT is issued
+- **Validation**: On each request, JWT is verified
+- **Refresh**: Automatic token refresh if implemented
+- **Destruction**: On logout or expiry, JWT is removed from cookie
 
 ## Security Measures
 
