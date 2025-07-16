@@ -25,7 +25,7 @@ const DemographicDashboard = () => {
           {/* <Button variant="long_primary">Export Results</Button> */}
         </div>
         {/* kpi section */}
-        <div className="flex flex-wrap justify-center gap-4 mt-10 xl:w-4/5">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 w-full mt-10">
           <KpiCard name="Vote Count" value={100} icon={Vote} />
           <KpiCard name="Registered Voters" value={100} icon={Users} />
           <KpiCard name="Voter Turnout" value="100%" icon={BarChart2} />
