@@ -13,6 +13,8 @@ const NavbarWrapper = () => {
       "/auth/signup",
       "/auth/forgotpassword",
       "/auth/forgotpasswordOTP",
+      "/auth/forgot-password",
+      "/auth/forgot-password/otp",
     ].includes(pathname)
   ) {
     return <LoginNav buttons="auth" />;
