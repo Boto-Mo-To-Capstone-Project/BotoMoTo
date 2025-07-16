@@ -10,6 +10,7 @@ import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
 import { AuthFooter } from "@/components/AuthFooter";
 import { ErrorMessage } from "@/components/ErrorMessage";
+import AuthContainer from '@/components/AuthContainer';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -39,18 +40,13 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] pt-40 pb-40">
-      <div className="w-full max-w-[380px] mx-auto text-center space-y-6 px-4">
-
-        
+    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40">
+      <AuthContainer>
         <AuthHeading
           title="Forgot Password"
           subtitle="Enter your email account to reset password."
         />
-
         {error && <ErrorMessage message={error} />}
-
-        {/* Image */}
         <div className="flex justify-center">
           <Image
             src={ForgotPasswordImage}
@@ -58,8 +54,6 @@ export default function ForgotPasswordPage() {
             className="w-[294.98px] h-[297px]"
           />
         </div>
-
-        {/* Form */}
         <form
           onSubmit={handleSubmit}
           className="space-y-4 text-left flex flex-col items-center w-full"
@@ -72,10 +66,7 @@ export default function ForgotPasswordPage() {
             placeholder="Enter your email"
             autoComplete="email"
           />
-
           <SubmitButton label="Send OTP" isLoading={isLoading} className="w-full" />
-
-          {/* Cancel Button */}
           <button
             type="button"
             onClick={handleCancel}
@@ -84,13 +75,12 @@ export default function ForgotPasswordPage() {
             Cancel
           </button>
         </form>
-
         <AuthFooter
           question="Remember your password?"
           link="/auth/login"
           linkText="Log In"
         />
-      </div>
+      </AuthContainer>
     </main>
   );
 }

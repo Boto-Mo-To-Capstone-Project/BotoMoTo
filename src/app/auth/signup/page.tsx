@@ -11,6 +11,7 @@ import { SubmitButton } from "@/components/SubmitButton";
 import { OAuthButtons } from "@/components/OAuthButtons";
 import { AuthFooter } from "@/components/AuthFooter";
 import { ErrorMessage } from "@/components/ErrorMessage";
+import AuthContainer from '@/components/AuthContainer';
 
 export default function SignupPage() {
   const [fullName, setFullName] = useState("");
@@ -71,16 +72,14 @@ export default function SignupPage() {
   };
 
   return (
-    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] pt-40 pb-40">
-      <div className="w-full max-w-[380px] mx-auto text-center space-y-6 px-4">
+    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40">
+      <AuthContainer>
         <Logo />
         <AuthHeading
           title="Create your account"
           subtitle="Register to manage your organization's elections."
         />
-
         {error && <ErrorMessage message={error} />}
-
         <form
           onSubmit={handleSignup}
           className="space-y-4 text-left flex flex-col items-center w-full"
@@ -93,7 +92,6 @@ export default function SignupPage() {
             placeholder="Enter your full name"
             autoComplete="name"
           />
-
           <InputField
             label="Email Address"
             type="email"
@@ -102,7 +100,6 @@ export default function SignupPage() {
             placeholder="Enter your email"
             autoComplete="email"
           />
-
           <InputField
             label="Password"
             type="password"
@@ -111,7 +108,6 @@ export default function SignupPage() {
             placeholder="••••••••"
             autoComplete="new-password"
           />
-
           <InputField
             label="Confirm Password"
             type="password"
@@ -120,18 +116,15 @@ export default function SignupPage() {
             placeholder="••••••••"
             autoComplete="new-password"
           />
-
           <SubmitButton label="Sign Up" isLoading={isLoading} className="w-full" />
         </form>
-
         <OAuthButtons />
-
         <AuthFooter
           question="Have an account?"
           link="/auth/login"
           linkText="Log In"
         />
-      </div>
+      </AuthContainer>
     </main>
   );
 }

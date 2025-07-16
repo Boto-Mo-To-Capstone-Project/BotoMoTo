@@ -6,9 +6,13 @@ import { UploadedFileDisplay } from "@/components/UploadedFileDisplay";
 import Image from "next/image";
 import ProcessingImage from "@/app/assets/processing.png";
 import ApprovedImage from "@/app/assets/approved.png";
-import Logo from "@/components/Logo";
+import { FileDropzone } from "@/components/FileDropzone";
+import { CompleteTaskModal } from "@/components/CompleteTaskModal";
 import { SubmitButton } from "@/components/SubmitButton";
 import { AuthHeading } from "@/components/AuthHeading";
+import Logo from "@/components/Logo";
+import { AuthFooter } from "@/components/AuthFooter";
+import AuthContainer from '@/components/AuthContainer';
 
 function StatusTabs({ status, setStatus }: { status: string; setStatus: (s: string) => void }) {
   return (
@@ -41,10 +45,10 @@ function StatusIcon({ status }: { status: string }) {
 }
 
 function AccordionStepper({ approved, onComplete, onProceed }: { approved: boolean; onComplete: () => void; onProceed: () => void; }) {
-  const [openStep, setOpenStep] = useState(0);
+  const [openStep, setOpenStep] = useState(-1);
   return (
-    <div className="flex flex-col gap-2">
-      {/* Step 1: Under review */}
+    <div className="flex flex-col gap-5 py-2">
+      {/* Step 1: Fill this form*/}
       <div>
         <button
           type="button"
@@ -52,19 +56,13 @@ function AccordionStepper({ approved, onComplete, onProceed }: { approved: boole
           onClick={() => setOpenStep(openStep === 0 ? -1 : 0)}
         >
           <span className={`w-6 h-6 flex items-center justify-center rounded-full mr-3 text-sm font-bold ${openStep === 0 ? 'bg-[var(--color-primary)] text-white' : 'bg-gray-200 text-gray-500'}`}>1</span>
-          Under review
+          Fill this form
           <span className="ml-auto">{openStep === 0 ? '▲' : '▼'}</span>
         </button>
         {openStep === 0 && (
-          <div className="pl-9 pb-4">
-            <div className="text-gray-500 text-sm mb-3">Our team is reviewing your documents. Once your loan is conditionally approved, our team will contact you for next steps.</div>
-            <button
-              type="button"
-              className="w-full max-w-[380px] h-[44px] bg-[var(--color-primary)] hover:brightness-90 text-white rounded-md text-sm font-semibold"
-              onClick={onComplete}
-            >
-              Complete my task <span aria-hidden>→</span>
-            </button>
+          <div className="flex flex-col items-center pb-4 text-center">
+            <div className="text-gray-500 text-sm mb-3 max-w-xs">Complete this task. Once your request is conditionally approved, this page will appear as 'Approved' which is number 2 — you will be able to access the page once it is approved.</div>
+            <SubmitButton label="Complete my task →" isLoading={false} className="w-full" onClick={onComplete} type="button" />
           </div>
         )}
       </div>
@@ -100,87 +98,26 @@ function AccordionStepper({ approved, onComplete, onProceed }: { approved: boole
   );
 }
 
-function Modal({ open, onClose, onSave }: { open: boolean; onClose: () => void; onSave: (data: any) => void }) {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [orgEmail, setOrgEmail] = useState("");
-  const [logo, setLogo] = useState<File | null>(null);
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setLogo(file);
-    }
-  };
-
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-      <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md relative">
-        <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-700" onClick={onClose}>&times;</button>
-        <AuthHeading title="Complete your task" subtitle="Fill in the details below to proceed." />
-        <form
-          onSubmit={e => {
-            e.preventDefault();
-            onSave({ firstName, lastName, orgEmail, logo });
-          }}
-          className="flex flex-col gap-3"
-        >
-          <InputField label="First Name" value={firstName} onChange={e => setFirstName(e.target.value)} />
-          <InputField label="Last Name" value={lastName} onChange={e => setLastName(e.target.value)} />
-          <InputField label="Organization Email" value={orgEmail} onChange={e => setOrgEmail(e.target.value)} type="email" />
-          <div className="w-full max-w-[380px]">
-            <label className="block text-sm font-medium text-[var(--color-black)] mb-1">
-              Organization Logo
-            </label>
-            <p className="text-xs text-[var(--color-gray)] mb-2">
-              Upload your organization logo (image file).
-            </p>
-            <div className="w-full border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center py-8 text-sm text-[var(--color-gray)] hover:bg-gray-50 transition cursor-pointer">
-              <div className="text-center">
-                <Logo />
-                <div>Click to upload or drag and drop</div>
-                <div className="text-xs text-gray-400 mt-1">Image (max. 5MB)</div>
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileUpload}
-                className="hidden"
-                id="logo-upload"
-              />
-            </div>
-            {logo && (
-              <span className="text-xs mt-2 block">{logo.name}</span>
-            )}
-          </div>
-          <SubmitButton
-            label="Save"
-            isLoading={false}
-            className="w-full"
-          />
-        </form>
-      </div>
-    </div>
-  );
-}
-
 export default function OnboardProcessingPage() {
   const [showModal, setShowModal] = useState(false);
   const [approved, setApproved] = useState(false);
   const handleComplete = () => setShowModal(true);
   const handleModalSave = () => { setShowModal(false); setApproved(true); };
   const handleProceed = () => {};
+  const name = "Brian King";
 
   return (
-    <div className="flex min-h-screen bg-gray-50 items-center justify-center">
-      <main className="flex flex-col items-center justify-center px-4 py-10 md:py-20 w-full">
-        <div className="w-full max-w-sm bg-white rounded-xl shadow p-6">
-          <AuthHeading title={<span className="text-[var(--color-primary)]">Application Status</span>} subtitle="Track your onboarding progress." />
-          <AccordionStepper approved={approved} onComplete={handleComplete} onProceed={handleProceed} />
+    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40">
+      <AuthContainer>
+        <h1 className="text-2xl font-bold text-gray-800 mb-1">Hi, {name}!</h1>
+        <p className="text-[var(--color-primary)] mb-4">Application Status: Track your progress</p>
+        <div className="flex justify-center my-2">
+          <Image src={ProcessingImage} alt="Processing" width={200} height={200} />
         </div>
-        <Modal open={showModal} onClose={() => setShowModal(false)} onSave={handleModalSave} />
-      </main>
-    </div>
+        <AccordionStepper approved={approved} onComplete={handleComplete} onProceed={handleProceed} />
+        <AuthFooter question="Need help?" link="/contact" linkText="Contact Support" />
+      </AuthContainer>
+      <CompleteTaskModal open={showModal} onClose={() => setShowModal(false)} onSave={handleModalSave} />
+    </main>
   );
 }

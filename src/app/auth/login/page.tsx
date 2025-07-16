@@ -12,6 +12,7 @@ import { OAuthButtons } from "@/components/OAuthButtons";
 import { AuthFooter } from "@/components/AuthFooter";
 import { ErrorMessage } from "@/components/ErrorMessage";
 import { RememberMeAndForgotPassword } from "@/components/RememberMeAndForgotPassword";
+import AuthContainer from '@/components/AuthContainer';
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -53,16 +54,14 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] pt-40 pb-40">
-      <div className="w-full max-w-[380px] mx-auto text-center space-y-6 px-4">
+    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40">
+      <AuthContainer>
         <Logo />
         <AuthHeading 
           title="Log in to your account"
           subtitle="Welcome back! Please enter your details." 
         />
-
         {error && <ErrorMessage message={error} />}
-
         <form
           onSubmit={handleLogin}
           className="space-y-4 text-left flex flex-col items-center w-full"
@@ -75,7 +74,6 @@ export default function LoginPage() {
             placeholder="Enter your email"
             autoComplete="email"
           />
-
           <InputField
             label="Password"
             type="password"
@@ -84,22 +82,18 @@ export default function LoginPage() {
             placeholder="••••••••"
             autoComplete="current-password"
           />
-
           <div className="w-full max-w-[380px]">
             <RememberMeAndForgotPassword />
           </div>
-
           <SubmitButton label="Login" isLoading={isLoading} className="w-full" />
         </form>
-
         <OAuthButtons />
-
         <AuthFooter
           question="Don't have an account?"
           link="/auth/signup"
           linkText="Sign Up"
         />
-      </div>
+      </AuthContainer>
     </main>
   );
 }
