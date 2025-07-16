@@ -15,7 +15,7 @@ const SidebarWrapper = () => {
 
   // Admin Sidebar routes
   const adminBaseRoutes = [
-    "/admin/onboard/processing",
+    // "/admin/onboard/processing", // removed for now, requested by mc
     "/admin/dashboard",
     "/admin/dashboard/elections",
     "/admin/dashboard/elections/create",

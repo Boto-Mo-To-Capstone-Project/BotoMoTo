@@ -11,8 +11,6 @@ const NavbarWrapper = () => {
     [
       "/auth/login",
       "/auth/signup",
-      "/auth/forgotpassword",
-      "/auth/forgotpasswordOTP",
       "/auth/forgot-password",
       "/auth/forgot-password/otp",
     ].includes(pathname)
@@ -20,7 +18,7 @@ const NavbarWrapper = () => {
     return <LoginNav buttons="auth" />;
   }
 
-  if (["/organization/welcome", "/organization/create"].includes(pathname)) {
+  if (["/admin/onboard", "/admin/onboard/create-org", "/admin/onboard/processing", "/admin/onboard/success"].includes(pathname)) {
     return <LoginNav buttons="logout" />;
   }
 
