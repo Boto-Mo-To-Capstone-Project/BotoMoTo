@@ -23,6 +23,8 @@ model User {
   role          UserRole        @default(VOTER) // Enhanced role system
   emailVerified DateTime?
   image         String?
+  isActive      Boolean         @default(true)
+  isApproved    Boolean         @default(false) // For admin approval workflow
   
   // Organization relationship for admins
   organization  Organization?

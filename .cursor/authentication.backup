@@ -41,7 +41,7 @@
 3. Complete registration form
 4. Redirect to onboarding process
 5. Create organization
-6. Wait for organization approval by SuperAdmin
+6. Wait for SuperAdmin approval
 7. Access granted after approval
 ```
 
@@ -58,16 +58,14 @@
    - Google OAuth (if configured)
    - Facebook OAuth (if configured)
 3. Complete authentication
-4. Check user account status (isActive)
-5. Check organization approval status
+4. Check organization approval status
 5. Redirect to appropriate dashboard
 ```
 
 #### Onboarding Process
 - **One-time process** for new admins
 - **Organization creation** required
-- **Organization approval** by SuperAdmin (single approval point)
-- **Account suspension** via User.isActive (granular control)
+- **SuperAdmin approval** mandatory
 - **Access restriction** until approved
 
 ### 3. Voter Authentication
