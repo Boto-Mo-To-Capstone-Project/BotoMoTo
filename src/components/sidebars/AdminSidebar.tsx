@@ -77,40 +77,45 @@ const AdminSidebar = ({ variant, electionId }: AdminSidebarProps) => {
   return (
     <>
       {/* Hamburger button - mobile only */}
-      <button
-        className="lg:hidden fixed top-4 left-4 z-50 text-primary"
-        onClick={() => setIsOpen(true)}
-      >
-        <Menu className="w-8 h-8" />
-      </button>
+      <div className="lg:hidden flex items-center h-20 px-4 w-full bg-white shadow-sm fixed top-0 left-0 z-[100]">
+        <button
+          className="text-primary bg-white rounded-full p-2 shadow-md"
+          onClick={() => setIsOpen(true)}
+          aria-label="Open sidebar"
+        >
+          <Menu className="w-8 h-8" />
+        </button>
+      </div>
 
       {/* Overlay */}
       <div
         className={`
-    fixed inset-0 bg-black transition-opacity duration-300
+    fixed inset-0 bg-black/50 transition-opacity duration-300
     ${
       isOpen
-        ? "opacity-50 pointer-events-auto"
+        ? "opacity-100 pointer-events-auto"
         : "opacity-0 pointer-events-none"
     }
     lg:hidden
   `}
         onClick={() => setIsOpen(false)}
+        aria-label="Close sidebar overlay"
       ></div>
 
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 h-full min-h-screen w-68 bg-primary px-4 py-6 space-y-5
-          transform transition-transform duration-300 z-50
+          fixed top-0 left-0 h-full min-h-screen w-full max-w-xs bg-primary px-4 py-6 space-y-5
+          transform transition-transform duration-300 z-[101]
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0 lg:static lg:flex-shrink-0
+          lg:translate-x-0 lg:static lg:flex-shrink-0 lg:w-68 lg:max-w-none
         `}
+        aria-label="Sidebar navigation"
       >
         {/* Mobile close button */}
         <div className="flex justify-between items-center lg:hidden">
           <Image src={BotoMoToLogo} height={45} alt="BotoMoToLogo" />
-          <button onClick={() => setIsOpen(false)}>
+          <button onClick={() => setIsOpen(false)} aria-label="Close sidebar">
             <X className="w-8 h-8 text-white" />
           </button>
         </div>

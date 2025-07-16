@@ -11,6 +11,7 @@ import { SubmitButton } from "@/components/SubmitButton";
 import { AuthFooter } from "@/components/AuthFooter";
 import { ErrorMessage } from "@/components/ErrorMessage";
 import OtpInput, { OtpInputFour } from "@/components/OtpInput";
+import AuthContainer from '@/components/AuthContainer';
 
 export default function ForgotPasswordOtpPage() {
   const [otp, setOtp] = useState(["", "", "", ""]);
@@ -45,22 +46,19 @@ export default function ForgotPasswordOtpPage() {
   };
 
   return (
-    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] pt-40 pb-40">
-      <div className="w-full max-w-[380px] mx-auto text-center space-y-6 px-4">
-        
+    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40">
+      <AuthContainer>
         <AuthHeading
           title="Forgot Password"
           subtitle="Enter your One Time Password (OTP) sent to your email to continue changing your password."
         />
-
         {error && <ErrorMessage message={error} />}
-
         {/* Image */}
         <div className="flex justify-center">
           <Image
             src={ForgotPasswordImage}
             alt="Forgot Password"
-            className="w-[294.98px] h-[297px]"
+            className="w-[180px] h-[180px] md:w-[294.98px] md:h-[297px]"
           />
         </div>
 
@@ -113,7 +111,7 @@ export default function ForgotPasswordOtpPage() {
           link="/auth/login"
           linkText="Log In"
         />
-      </div>
+      </AuthContainer>
     </main>
   );
 }

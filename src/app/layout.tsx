@@ -6,13 +6,22 @@ import { store } from "@/store";
 import NavbarWrapper from "@/components/NavbarWrapper";
 import SidebarWrapper from "@/components/sidebars/SidebarWrapper";
 import { useSidebarVisible } from "@/hooks/useSidebarVisible";
+import { useEffect, useState } from "react";
+
+function useIsHydrated() {
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
+  return hydrated;
+}
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const sidebarVisible = useSidebarVisible();
+  const hydrated = useIsHydrated();
+  const sidebarVisibleValue = useSidebarVisible();
+  const sidebarVisible = hydrated ? sidebarVisibleValue : true;
 
   return (
     <html lang="en">
@@ -20,12 +29,12 @@ export default function RootLayout({
         <Provider store={store}>
           <NavbarWrapper />
           {sidebarVisible ? (
-            <div className="flex min-h-screen">
+            <div className="flex flex-col md:flex-row min-h-screen">
               <SidebarWrapper />
-              <main className="flex-1">{children}</main>
+              <main className="flex-1 pt-20 md:pt-0">{children}</main>
             </div>
           ) : (
-            <main>{children}</main>
+            <main className="pt-20 md:pt-0">{children}</main>
           )}
         </Provider>
       </body>
