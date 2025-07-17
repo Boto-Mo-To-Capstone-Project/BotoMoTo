@@ -36,35 +36,26 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, description, membersCount, frequency, contactDetails } = body;
+    const { name, email, membersCount } = body;
 
     // Validate required fields
-    if (!name || !description || !membersCount) {
+    if (!name || !email || !membersCount) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    // Create organization with contact details
+    // Create organization
     const organization = await prisma.organization.create({
       data: {
         adminId: session.user.id,
         name,
-        description,
-        membersCount,
-        frequency,
+        email,
+        membersCount: Number(membersCount),
         status: ORGANIZATION_STATUS.PENDING,
-        contactDetails: {
-          create: contactDetails.map((contact: any) => ({
-            name: contact.name,
-            email: contact.email,
-            contactNum: contact.contactNum,
-          })),
-        },
       },
       include: {
-        contactDetails: true,
         admin: true,
       },
     });

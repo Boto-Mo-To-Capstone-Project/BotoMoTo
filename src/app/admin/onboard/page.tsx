@@ -172,7 +172,7 @@ export default function OnboardProcessingPage() {
   }, []);
 
   const handleComplete = () => setShowModal(true);
-  const handleModalSave = (data: { firstName: string; lastName: string; organizationName: string; organizationEmail: string; organizationLetter: File | null; logo: File | null }) => { 
+  const handleModalSave = (data: { organizationName: string; organizationEmail: string; membersCount: number; organizationLetter: File | null; logo: File | null }) => { 
     setShowModal(false); 
     setStatus('submitted');
     console.log("Modal data:", data);

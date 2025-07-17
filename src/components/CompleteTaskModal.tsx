@@ -9,14 +9,13 @@ import { UploadedFileDisplay } from "@/components/UploadedFileDisplay";
 interface CompleteTaskModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (data: { firstName: string; lastName: string; organizationName: string; organizationEmail: string; organizationLetter: File | null; logo: File | null }) => void;
+  onSave: (data: { organizationName: string; organizationEmail: string; membersCount: number; organizationLetter: File | null; logo: File | null }) => void;
 }
 
 export function CompleteTaskModal({ open, onClose, onSave }: CompleteTaskModalProps) {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
   const [organizationName, setOrganizationName] = useState("");
   const [organizationEmail, setOrganizationEmail] = useState("");
+  const [membersCount, setMembersCount] = useState("");
   const [organizationLetter, setOrganizationLetter] = useState<File | null>(null);
   // Add sample letter state
   const [sampleLetter, setSampleLetter] = useState<File | null>(null);
@@ -55,26 +54,10 @@ export function CompleteTaskModal({ open, onClose, onSave }: CompleteTaskModalPr
         <form
           onSubmit={e => {
             e.preventDefault();
-            onSave({ firstName, lastName, organizationName, organizationEmail, organizationLetter, logo });
+            onSave({ organizationName, organizationEmail, membersCount: Number(membersCount), organizationLetter, logo });
           }}
           className="flex flex-col gap-4 text-left w-full"
         >
-          <InputField 
-            label="First name" 
-            type="text"
-            value={firstName} 
-            onChange={e => setFirstName(e.target.value)} 
-            placeholder="Enter your first name"
-            autoComplete="given-name"
-          />
-          <InputField 
-            label="Last name" 
-            type="text"
-            value={lastName} 
-            onChange={e => setLastName(e.target.value)} 
-            placeholder="Enter your last name"
-            autoComplete="family-name"
-          />
           <InputField 
             label="Organization Name" 
             type="text"
@@ -90,6 +73,29 @@ export function CompleteTaskModal({ open, onClose, onSave }: CompleteTaskModalPr
             onChange={e => setOrganizationEmail(e.target.value)} 
             placeholder="Enter your organization email address"
             autoComplete="email"
+          />
+          <InputField
+            label="Members Count"
+            type="text"
+            value={membersCount}
+            onChange={e => {
+              // Only allow numbers
+              const value = e.target.value;
+              if (/^\d*$/.test(value)) {
+                setMembersCount(value);
+              }
+            }}
+            onPaste={e => {
+              const paste = e.clipboardData.getData('text');
+              if (!/^\d+$/.test(paste)) {
+                e.preventDefault();
+              }
+            }}
+            placeholder="Enter number of members"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            required
+            minLength={1}
           />
           {/* Logo upload first */}
           <FileDropzone
