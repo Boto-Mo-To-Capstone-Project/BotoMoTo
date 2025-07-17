@@ -1,18 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
-import { InputField } from "@/components/InputField";
-import { AuthButtons } from "@/components/AuthButtons";
-import { UploadedFileDisplay } from "@/components/UploadedFileDisplay";
-import Image from "next/image";
-import ProcessingImage from "@/app/assets/processing.png";
-import ApprovedImage from "@/app/assets/approved.png";
-import { FileDropzone } from "@/components/FileDropzone";
 import { CompleteTaskModal } from "@/components/CompleteTaskModal";
-import { SubmitButton } from "@/components/SubmitButton";
-import { AuthHeading } from "@/components/AuthHeading";
-import Logo from "@/components/Logo";
 import { AuthFooter } from "@/components/AuthFooter";
 import AuthContainer from '@/components/AuthContainer';
+import { SubmitButton } from "@/components/SubmitButton";
 
 type ApplicationStatus = 'getting_started' | 'submitted' | 'reviewing' | 'approved' | 'rejected';
 
@@ -157,7 +148,10 @@ function ApplicationStepper({
 export default function OnboardProcessingPage() {
   const [showModal, setShowModal] = useState(false);
   const [status, setStatus] = useState<ApplicationStatus>('getting_started');
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedLogo, setUploadedLogo] = useState<File | null>(null);
+  const [uploadedLetter, setUploadedLetter] = useState<File | null>(null);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const [letterError, setLetterError] = useState<string | null>(null);
   
   // Calculate progress based on status
   const getProgress = (status: ApplicationStatus) => {
@@ -173,7 +167,8 @@ export default function OnboardProcessingPage() {
   
   useEffect(() => {
     // Set initial uploaded file for demo
-    setUploadedFile(new File([""], "Sample_Letter.pdf", { type: "application/pdf", lastModified: new Date().getTime() }));
+    setUploadedLogo(new File([""], "Sample_Logo.png", { type: "image/png", lastModified: new Date().getTime() }));
+    setUploadedLetter(new File([""], "Sample_Letter.pdf", { type: "application/pdf", lastModified: new Date().getTime() }));
   }, []);
 
   const handleComplete = () => setShowModal(true);
@@ -194,12 +189,7 @@ export default function OnboardProcessingPage() {
     // Add navigation logic here
   };
   
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setUploadedFile(file);
-    }
-  };
+
   const name = "Brian King";
 
   return (
