@@ -30,21 +30,12 @@ export const TICKET_STATUS = {
   CLOSED: "CLOSED",
 } as const;
 
-// Route permissions following RESTful conventions
+// Route permissions (reflects latest route structure)
 export const ROUTE_PERMISSIONS = {
-  // Public routes (no auth required)
   PUBLIC: [
-    "/",
-    "/login",
-    "/signup",
-    "/about-us",
-    "/contact",
-    "/forgotpassword",
-    "/forgotpasswordOTP",
-    "/hiThere",
+    "/", "/login", "/signup", "/about-us", "/contact",
+    "/forgotpassword", "/forgotpasswordOTP", "/hiThere"
   ],
-
-  // Admin routes (requires ADMIN role + organization + approval)
   ADMIN: [
     "/admin",
     "/admin/dashboard",
@@ -56,14 +47,20 @@ export const ROUTE_PERMISSIONS = {
     "/admin/reports",
     "/admin/settings",
     "/admin/profile",
-    "/organization/create", // Only for admins without organization
-    "/pending-approval", // Only for admins with pending organization
+    "/admin/onboard", // Onboarding landing
+    "/admin/onboard/add-org", // Create org
+    "/admin/onboard/processing", // Approval pending
+    "/organization/create", // Only for admins without org
+    "/pending-approval", // Only for admins with pending org
   ],
-
-  // Super Admin routes (requires SUPER_ADMIN role)
   SUPER_ADMIN: [
     "/superadmin",
     "/superadmin/dashboard",
+    "/superadmin/dashboard/org-request",
+    "/superadmin/dashboard/elections",
+    "/superadmin/dashboard/tickets",
+    "/superadmin/dashboard/audits",
+    "/superadmin/dashboard/survey-form",
     "/superadmin/organizations",
     "/superadmin/elections",
     "/superadmin/tickets",
@@ -74,8 +71,6 @@ export const ROUTE_PERMISSIONS = {
     "/superadmin/analytics",
     "/superadmin/logs",
   ],
-
-  // Voter routes (requires VOTER role)
   VOTER: [
     "/voter/login",
     "/voter/login/2fa-email",
@@ -87,16 +82,16 @@ export const ROUTE_PERMISSIONS = {
     "/voter/ballot-form",
     "/voter/receipt-form",
     "/voter/survey-form",
+    "/voter/live-dashboard",
   ],
-
-  // Organization onboarding routes (for new admins)
-  ONBOARDING: ["/organization/welcome", "/organization/create"],
-} as const;
-
-// Default pagination
-export const DEFAULT_PAGINATION = {
-  PAGE_SIZE: 10,
-  MAX_PAGE_SIZE: 100,
+  ONBOARDING: [
+    "/admin/onboard",
+    "/admin/onboard/add-org",
+    "/admin/onboard/processing",
+    "/admin/onboard/success",
+    "/organization/welcome",
+    "/organization/create"
+  ],
 } as const;
 
 // File upload limits
@@ -113,13 +108,7 @@ export const ALLOWED_FILE_TYPES = {
   PDF: ["application/pdf"],
 } as const;
 
-// Session settings
-export const SESSION_SETTINGS = {
-  MAX_AGE: 30 * 24 * 60 * 60, // 30 days
-  UPDATE_AGE: 24 * 60 * 60, // 24 hours
-} as const;
-
-// Audit actions
+// Audit actions (sync with Prisma schema)
 export const AUDIT_ACTIONS = {
   CREATE: "CREATE",
   READ: "READ",
@@ -130,13 +119,13 @@ export const AUDIT_ACTIONS = {
   VOTE: "VOTE",
   APPROVE: "APPROVE",
   REJECT: "REJECT",
+  UPLOAD: "UPLOAD",
 } as const;
 
 // Error messages
 export const ERROR_MESSAGES = {
   UNAUTHORIZED: "You are not authorized to access this resource.",
-  FORBIDDEN:
-    "Access denied. You do not have permission to perform this action.",
+  FORBIDDEN: "Access denied. You do not have permission to perform this action.",
   NOT_FOUND: "The requested resource was not found.",
   VALIDATION_ERROR: "Please check your input and try again.",
   SERVER_ERROR: "An unexpected error occurred. Please try again later.",
@@ -164,7 +153,19 @@ export const SUCCESS_MESSAGES = {
   SETTINGS_UPDATED: "Settings updated successfully.",
 } as const;
 
-// Helper functions for route permissions
+// Default pagination
+export const DEFAULT_PAGINATION = {
+  PAGE_SIZE: 10,
+  MAX_PAGE_SIZE: 100,
+} as const;
+
+// Session settings
+export const SESSION_SETTINGS = {
+  MAX_AGE: 30 * 24 * 60 * 60, // 30 days
+  UPDATE_AGE: 24 * 60 * 60, // 24 hours
+} as const;
+
+// Helper functions for route permissions (unchanged)
 export const canAccessRoute = (
   userRole: string,
   pathname: string,
@@ -173,47 +174,17 @@ export const canAccessRoute = (
     isApproved?: boolean;
   }
 ): boolean => {
-  // Public routes - always accessible
-  if (ROUTE_PERMISSIONS.PUBLIC.some((route) => pathname === route)) {
-    return true;
-  }
-
-  // Super Admin routes
-  if (userRole === ROLES.SUPER_ADMIN) {
-    return ROUTE_PERMISSIONS.SUPER_ADMIN.some((route) =>
-      pathname.startsWith(route)
-    );
-  }
-
-  // Admin routes - need organization and approval
+  if (ROUTE_PERMISSIONS.PUBLIC.some((route) => pathname === route)) return true;
+  if (userRole === ROLES.SUPER_ADMIN)
+    return ROUTE_PERMISSIONS.SUPER_ADMIN.some((route) => pathname.startsWith(route));
   if (userRole === ROLES.ADMIN) {
-    // Special case: organization creation for admins without org
-    if (pathname === "/organization/create" && !userState?.hasOrganization) {
-      return true;
-    }
-
-    // Special case: pending approval for admins with org but not approved
-    if (
-      pathname === "/pending-approval" &&
-      userState?.hasOrganization &&
-      !userState?.isApproved
-    ) {
-      return true;
-    }
-
-    // Regular admin routes - need org and approval
-    if (userState?.hasOrganization && userState?.isApproved) {
-      return ROUTE_PERMISSIONS.ADMIN.some((route) =>
-        pathname.startsWith(route)
-      );
-    }
+    if (pathname === "/organization/create" && !userState?.hasOrganization) return true;
+    if (pathname === "/pending-approval" && userState?.hasOrganization && !userState?.isApproved) return true;
+    if (userState?.hasOrganization && userState?.isApproved)
+      return ROUTE_PERMISSIONS.ADMIN.some((route) => pathname.startsWith(route));
   }
-
-  // Voter routes
-  if (userRole === ROLES.VOTER) {
+  if (userRole === ROLES.VOTER)
     return ROUTE_PERMISSIONS.VOTER.some((route) => pathname.startsWith(route));
-  }
-
   return false;
 };
 
@@ -224,23 +195,12 @@ export const getRedirectPath = (
     isApproved?: boolean;
   }
 ): string => {
-  if (userRole === ROLES.SUPER_ADMIN) {
-    return "/superadmin/dashboard";
-  }
-
+  if (userRole === ROLES.SUPER_ADMIN) return "/superadmin/dashboard";
   if (userRole === ROLES.ADMIN) {
-    if (!userState?.hasOrganization) {
-      return "/organization/create";
-    }
-    if (!userState?.isApproved) {
-      return "/pending-approval";
-    }
+    if (!userState?.hasOrganization) return "/organization/create";
+    if (!userState?.isApproved) return "/pending-approval";
     return "/admin/dashboard";
   }
-
-  if (userRole === ROLES.VOTER) {
-    return "/voter/login";
-  }
-
+  if (userRole === ROLES.VOTER) return "/voter/login";
   return "/login";
 };

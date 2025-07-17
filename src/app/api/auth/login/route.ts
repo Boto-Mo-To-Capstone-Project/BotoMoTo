@@ -8,6 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET!;
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
+    console.log('Login API request:', { email });
     if (!email || !password) {
       return NextResponse.json({ success: false, error: "Missing credentials" }, { status: 400 });
     }
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
     });
+    console.log('Login API success:', { userId: user.id, email: user.email });
     return response;
   } catch (error) {
     console.error("Login error:", error);

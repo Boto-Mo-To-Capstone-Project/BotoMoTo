@@ -27,25 +27,20 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
+      // Use custom credentials login API
+      const loginResponse = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
-
-      if (result?.error) {
-        setError(result.error);
-      } else {
-        const res = await fetch("/api/auth/session");
-        const session = await res.json();
-
-        if (session.user?.role === "ADMIN" || session.user?.role === "SUPER_ADMIN") {
-          router.push("/dashboard");
-        } else {
-          setError("You don't have permission to access this system");
-          await signOut({ redirect: false });
-        }
+      const loginResult = await loginResponse.json();
+      if (!loginResponse.ok || !loginResult.success) {
+        setError(loginResult.error || "Login failed");
+        setIsLoading(false);
+        return;
       }
+      // On success, go to onboarding page
+      router.push("/admin/onboard");
     } catch (err) {
       setError("An unexpected error occurred");
     } finally {
