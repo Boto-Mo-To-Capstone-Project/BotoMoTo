@@ -86,11 +86,11 @@ export default function ElectionTable({ title = 'All Elections', ...props }: Ele
               >
                 <td className="py-2 px-3 align-middle"><input type="checkbox" /></td>
                 <td className="py-2 px-3 align-middle truncate max-w-[180px]">{election.name}</td>
-                <td className="py-2 px-3 align-middle">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1
+                <td className="py-2 px-3 align-middle text-center">
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium w-full block text-center
     ${election.status === "Finished" ? "bg-green-100 text-green-700" : election.status === "Ongoing" ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-700"}
   `}>
-    {election.status === "Finished" ? "🟢" : election.status === "Ongoing" ? "🟡" : "⚪"} {election.status}
+    {election.status === "Finished" ? "Ended" : election.status}
   </span>
                 </td>
                 <td className="py-2 px-3 align-middle truncate max-w-[140px]">{election.votingDate}</td>
@@ -102,14 +102,14 @@ export default function ElectionTable({ title = 'All Elections', ...props }: Ele
         </table>
       </div>
       {/* Pagination - moved outside the scrollable table wrapper */}
-      <div className="flex items-center gap-2 mt-4 overflow-visible z-10 w-full relative">
+      <div className="flex items-center gap-2 mt-4 w-full relative xxs:flex-wrap">
         <button onClick={props.onFirst} disabled={props.page === 1} title="First"><MdFirstPage size={22} /></button>
         <button onClick={props.onPrev} disabled={props.page === 1} title="Prev"><MdChevronLeft size={22} /></button>
         <span>{props.page}</span>
         <span>of {props.totalPages}</span>
         <button onClick={props.onNext} disabled={props.page === props.totalPages} title="Next"><MdChevronRight size={22} /></button>
         <button onClick={props.onLast} disabled={props.page === props.totalPages} title="Last"><MdLastPage size={22} /></button>
-        <span className="ml-auto text-sm text-gray-500 flex items-center gap-1">
+        <span className="text-sm text-gray-500 flex items-center gap-1 sm:ml-auto xxs:w-full xxs:mt-1">
           Page Size:
           <select
             value={props.pageSize}
