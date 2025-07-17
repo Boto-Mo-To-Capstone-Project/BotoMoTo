@@ -4,6 +4,7 @@ import { CompleteTaskModal } from "@/components/CompleteTaskModal";
 import { AuthFooter } from "@/components/AuthFooter";
 import AuthContainer from '@/components/AuthContainer';
 import { SubmitButton } from "@/components/SubmitButton";
+import { useRouter } from "next/navigation";
 
 type ApplicationStatus = 'getting_started' | 'submitted' | 'reviewing' | 'approved' | 'rejected';
 
@@ -146,12 +147,14 @@ function ApplicationStepper({
 }
 
 export default function OnboardProcessingPage() {
+  const router = useRouter();
   const [showModal, setShowModal] = useState(false);
   const [status, setStatus] = useState<ApplicationStatus>('getting_started');
   const [uploadedLogo, setUploadedLogo] = useState<File | null>(null);
   const [uploadedLetter, setUploadedLetter] = useState<File | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
   const [letterError, setLetterError] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>("");
   
   // Calculate progress based on status
   const getProgress = (status: ApplicationStatus) => {
@@ -170,6 +173,38 @@ export default function OnboardProcessingPage() {
     setUploadedLogo(new File([""], "Sample_Logo.png", { type: "image/png", lastModified: new Date().getTime() }));
     setUploadedLetter(new File([""], "Sample_Letter.pdf", { type: "application/pdf", lastModified: new Date().getTime() }));
   }, []);
+
+  useEffect(() => {
+    async function checkOnboardingStatus() {
+      try {
+        const res = await fetch("/api/organizations");
+        const data = await res.json();
+        if (data?.data?.status === "APPROVED") {
+          router.replace("/admin/dashboard");
+        }
+      } catch (e) {
+        // Optionally handle error
+      }
+    }
+    checkOnboardingStatus();
+    // Fetch user session for name
+    async function fetchUserName() {
+      try {
+        const res = await fetch("/api/auth/session");
+        const data = await res.json();
+        console.log("/api/auth/session response for name:", data);
+        if (data?.user?.name) {
+          setUserName(data.user.name);
+          console.log("Extracted user name:", data.user.name);
+        } else {
+          console.log("No user name found in response");
+        }
+      } catch (err) {
+        console.error("Error fetching user name:", err);
+      }
+    }
+    fetchUserName();
+  }, [router]);
 
   const handleComplete = () => setShowModal(true);
   const handleModalSave = (data: { organizationName: string; organizationEmail: string; membersCount: number; organizationLetter: File | null; logo: File | null }) => { 
@@ -190,12 +225,10 @@ export default function OnboardProcessingPage() {
   };
   
 
-  const name = "Brian King";
-
   return (
     <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40">
       <AuthContainer>
-        <h1 className="text-2xl font-bold text-gray-800 mb-1">Hi, {name}!</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-1">Hi, {userName || "there"}!</h1>
         <p className="text-gray-600 mb-4">Application Status: Track your progress</p>
         
         {/* Status Badge */}

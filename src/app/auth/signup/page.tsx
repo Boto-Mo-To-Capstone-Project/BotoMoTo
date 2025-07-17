@@ -34,6 +34,7 @@ export default function SignupPage() {
     }
 
     try {
+      console.log("Sending signup request", { fullName, email, password });
       const signupResponse = await fetch("/api/auth/signup", {
         method: "POST",
         headers: {
@@ -47,25 +48,18 @@ export default function SignupPage() {
       });
 
       const signupResult = await signupResponse.json();
+      console.log("Signup API response", signupResponse.status, signupResult);
 
       if (!signupResponse.ok) {
         setError(signupResult.error || "Failed to create account");
         return;
       }
 
-      const signInResult = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
-
-      if (signInResult?.error) {
-        setError(signInResult.error);
-      } else {
-        router.push("/admin/dashboard/");
-      }
+      // Remove signIn('credentials', ...) and go directly to dashboard
+      router.push("/admin/onboard");
     } catch (err) {
       setError(`An unexpected error occurred. Please try again. ${err}`);
+      console.error("Signup error", err);
     } finally {
       setIsLoading(false);
     }

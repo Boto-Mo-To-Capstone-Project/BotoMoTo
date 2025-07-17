@@ -10,7 +10,6 @@ import BotoMoToLogo from "../app/assets/BotoMoToLogo.png";
 import NavLink, { NavButton } from "@/components/NavLink";
 import Button from "@/components/Button";
 import { useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
 
 type LoginNavbarProps = {
   buttons?: "auth" | "logout" | null;
@@ -26,8 +25,17 @@ const LoginNavbar: React.FC<LoginNavbarProps> = ({ buttons }) => {
   const router = useRouter(); // to go to another route
 
   const handleLogout = async () => {
-    console.log("Logging out...");
-    await signOut();
+    try {
+      console.log("Logging out...");
+      const res = await fetch('/api/auth/logout', { method: 'POST' });
+      const data = await res.json();
+      console.log('Logout API response:', data);
+      console.log('Redirecting to /auth/login');
+      router.push('/auth/login');
+      console.log('Redirected to /auth/login');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
   };
 
   return (
