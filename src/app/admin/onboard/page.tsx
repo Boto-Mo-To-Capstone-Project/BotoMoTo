@@ -1,86 +1,231 @@
 "use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import HiThereImage from "@/app/assets/hiThere.png";
-
-import { AuthHeading } from "@/components/AuthHeading";
+import { useState, useEffect } from "react";
 import { InputField } from "@/components/InputField";
+import { AuthButtons } from "@/components/AuthButtons";
+import { UploadedFileDisplay } from "@/components/UploadedFileDisplay";
+import Image from "next/image";
+import ProcessingImage from "@/app/assets/processing.png";
+import ApprovedImage from "@/app/assets/approved.png";
+import { FileDropzone } from "@/components/FileDropzone";
+import { CompleteTaskModal } from "@/components/CompleteTaskModal";
 import { SubmitButton } from "@/components/SubmitButton";
+import { AuthHeading } from "@/components/AuthHeading";
+import Logo from "@/components/Logo";
 import { AuthFooter } from "@/components/AuthFooter";
-import { ErrorMessage } from "@/components/ErrorMessage";
 import AuthContainer from '@/components/AuthContainer';
 
-export default function HiTherePage() {
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+type ApplicationStatus = 'getting_started' | 'submitted' | 'reviewing' | 'approved' | 'rejected';
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError("");
-
-    try {
-      // TODO: Implement organization verification logic
-      console.log("Adding organization with email:", email);
-      // For now, just simulate success
-      router.push("/admin/dashboard");
-    } catch (err) {
-      setError("An unexpected error occurred. Please try again.");
-    } finally {
-      setIsLoading(false);
+function StatusBadge({ status }: { status: ApplicationStatus }) {
+  const getStatusConfig = (status: ApplicationStatus) => {
+    switch (status) {
+      case 'getting_started':
+        return { text: 'Getting Started', bg: 'bg-gray-100', textColor: 'text-gray-800' };
+      case 'submitted':
+        return { text: 'Submitted', bg: 'bg-blue-100', textColor: 'text-blue-800' };
+      case 'reviewing':
+        return { text: 'Under Review', bg: 'bg-yellow-100', textColor: 'text-yellow-800' };
+      case 'approved':
+        return { text: 'Approved', bg: 'bg-green-100', textColor: 'text-green-800' };
+      case 'rejected':
+        return { text: 'Rejected', bg: 'bg-red-100', textColor: 'text-red-800' };
+      default:
+        return { text: 'Unknown', bg: 'bg-gray-100', textColor: 'text-gray-800' };
     }
   };
 
-  const handleCancel = () => {
-    router.push("/admin/dashboard");
+  const config = getStatusConfig(status);
+  
+  return (
+    <span className={`px-3 py-1 rounded-full text-sm font-medium ${config.bg} ${config.textColor}`}>
+      {config.text}
+    </span>
+  );
+}
+
+function ProgressBar({ progress }: { progress: number }) {
+  return (
+    <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
+      <div 
+        className="h-2 rounded-full transition-all duration-500" 
+        style={{width: `${progress}%`, backgroundColor: 'var(--color-secondary)'}}
+      ></div>
+    </div>
+  );
+}
+
+function ApplicationStepper({ 
+  status, 
+  onComplete, 
+  onSubmit, 
+  onAccessDashboard 
+}: { 
+  status: ApplicationStatus; 
+  onComplete: () => void; 
+  onSubmit: () => void;
+  onAccessDashboard: () => void;
+}) {
+  const [openStep, setOpenStep] = useState(-1);
+  
+  const steps = [
+    {
+      id: 0,
+      title: "Complete Profile",
+      description: "Fill out your organization details and upload required documents",
+      action: "Complete Profile",
+      isActive: status === 'getting_started',
+      isCompleted: ['submitted', 'reviewing', 'approved'].includes(status),
+      onClick: onComplete
+    },
+    {
+      id: 1,
+      title: "Submit for Review",
+      description: "Submit your completed profile for admin review",
+      action: "Submit for Review",
+      isActive: status === 'submitted',
+      isCompleted: ['reviewing', 'approved'].includes(status),
+      onClick: onSubmit
+    },
+    {
+      id: 2,
+      title: "Awaiting Approval",
+      description: "Your application is being reviewed by our team",
+      action: "Under Review",
+      isActive: status === 'reviewing',
+      isCompleted: ['approved'].includes(status),
+      onClick: null
+    },
+    {
+      id: 3,
+      title: "Access Dashboard",
+      description: "Your application has been approved. Access your admin dashboard",
+      action: "Access Dashboard",
+      isActive: status === 'approved',
+      isCompleted: false,
+      onClick: onAccessDashboard
+    }
+  ];
+
+  return (
+    <div className="flex flex-col gap-5 py-2">
+      {steps.map((step) => (
+        <div key={step.id}>
+          <button
+            type="button"
+            className={`flex items-center w-full py-2 text-left font-semibold ${
+              step.isActive ? 'text-[var(--color-primary)]' : 
+              step.isCompleted ? 'text-green-600' : 'text-gray-400'
+            }`}
+            onClick={() => step.onClick ? step.onClick() : setOpenStep(openStep === step.id ? -1 : step.id)}
+            disabled={!step.isActive && !step.isCompleted}
+          >
+            <span className={`w-6 h-6 flex items-center justify-center rounded-full mr-3 text-sm font-bold ${
+              step.isActive ? 'bg-[var(--color-primary)] text-white' :
+              step.isCompleted ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-400'
+            }`}>
+              {step.isCompleted ? '✓' : step.id + 1}
+            </span>
+            {step.title}
+            <span className="ml-auto">{openStep === step.id ? '▲' : '▼'}</span>
+          </button>
+          {openStep === step.id && (
+            <div className="pl-9 pb-4">
+              <div className="text-gray-500 text-sm mb-3 max-w-xs">{step.description}</div>
+              {step.onClick && step.isActive && (
+                <SubmitButton 
+                  label={step.action} 
+                  isLoading={false} 
+                  className="w-full" 
+                  onClick={step.onClick} 
+                  type="button" 
+                />
+              )}
+              {step.isCompleted && !step.onClick && (
+                <span className="text-green-600 text-sm">✓ Completed</span>
+              )}
+              {!step.isActive && !step.isCompleted && (
+                <span className="text-gray-400 text-sm">⏳ Waiting...</span>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function OnboardProcessingPage() {
+  const [showModal, setShowModal] = useState(false);
+  const [status, setStatus] = useState<ApplicationStatus>('getting_started');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  
+  // Calculate progress based on status
+  const getProgress = (status: ApplicationStatus) => {
+    switch (status) {
+      case 'getting_started': return 25;
+      case 'submitted': return 50;
+      case 'reviewing': return 75;
+      case 'approved': return 100;
+      case 'rejected': return 25;
+      default: return 0;
+    }
   };
+  
+  useEffect(() => {
+    // Set initial uploaded file for demo
+    setUploadedFile(new File([""], "Sample_Letter.pdf", { type: "application/pdf", lastModified: new Date().getTime() }));
+  }, []);
+
+  const handleComplete = () => setShowModal(true);
+  const handleModalSave = (data: { firstName: string; lastName: string; organizationName: string; organizationEmail: string; organizationLetter: File | null; logo: File | null }) => { 
+    setShowModal(false); 
+    setStatus('submitted');
+    console.log("Modal data:", data);
+  };
+  const handleSubmit = () => {
+    setStatus('reviewing');
+    // Simulate admin review process
+    setTimeout(() => {
+      setStatus('approved');
+    }, 3000);
+  };
+  const handleAccessDashboard = () => {
+    console.log("Redirecting to dashboard...");
+    // Add navigation logic here
+  };
+  
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadedFile(file);
+    }
+  };
+  const name = "Brian King";
 
   return (
     <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40">
       <AuthContainer>
-        <AuthHeading
-          title="Hi there!"
-          subtitle="Before you can use our voting system, we just need to verify that your organization is legit. This helps us keep things secure and running smoothly for everyone. Thanks for understanding!"
-        />
-        {error && <ErrorMessage message={error} />}
-        <div className="flex justify-center">
-          <Image
-            src={HiThereImage}
-            alt="Hi there"
-            className="w-[294.98px] h-[297px]"
-          />
+        <h1 className="text-2xl font-bold text-gray-800 mb-1">Hi, {name}!</h1>
+        <p className="text-gray-600 mb-4">Application Status: Track your progress</p>
+        
+        {/* Status Badge */}
+        <div className="flex justify-center mb-4">
+          <StatusBadge status={status} />
         </div>
-        <form
+        
+        {/* Progress Bar */}
+        <ProgressBar progress={getProgress(status)} />
+        
+        <ApplicationStepper 
+          status={status}
+          onComplete={handleComplete} 
           onSubmit={handleSubmit}
-          className="space-y-4 text-left flex flex-col items-center w-full"
-        >
-          <InputField
-            label="Email Address"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
-            autoComplete="email"
-          />
-          <SubmitButton label="Add Organization" isLoading={isLoading} className="w-full" />
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="w-full max-w-[380px] h-[44px] flex items-center justify-center border border-gray-300 rounded-md text-sm gap-2 hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-        </form>
-        <AuthFooter
-          question="Need help?"
-          link="/contact"
-          linkText="Contact Support"
+          onAccessDashboard={handleAccessDashboard}
         />
+        
+        <AuthFooter question="Need help?" link="/contact" linkText="Contact Support" />
       </AuthContainer>
+      <CompleteTaskModal open={showModal} onClose={() => setShowModal(false)} onSave={handleModalSave} />
     </main>
   );
 }
