@@ -26,8 +26,8 @@ export function CompleteTaskModal({ open, onClose, onSave }: CompleteTaskModalPr
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-      <div className="bg-white rounded-xl shadow-lg w-full max-w-[380px] relative px-4 pt-8 pb-8 mx-auto text-center space-y-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-[380px] relative px-4 pt-8 pb-8 mx-auto text-center space-y-6 border border-gray-200">
         <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-700" onClick={onClose}>&times;</button>
         <AuthHeading title="Complete your task" subtitle="Fill in the details below to proceed." />
         <form
