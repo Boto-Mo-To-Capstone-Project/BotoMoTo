@@ -4,6 +4,7 @@ import { MdFirstPage, MdLastPage, MdChevronLeft, MdChevronRight, MdAdd, MdDownlo
 import { SubmitButton } from '@/components/SubmitButton';
 import SearchBar from '@/components/SearchBar';
 import ElectionTable from '@/components/ElectionTable';
+import { CreateElectionModal } from '@/components/CreateElectionModal';
 // import AdminSidebar from '@/components/sidebars/AdminSidebar';
 
 //naglagay lang pala ako ng emeng data para sa table
@@ -67,6 +68,7 @@ export default function ElectionDashboardPage() {
   const [sortCol, setSortCol] = useState<'name' | 'status' | 'votingDate' | 'time' | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const totalPages = Math.ceil(elections.length / pageSize);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const handleFirst = () => setPage(1);
   const handlePrev = () => setPage((p) => Math.max(1, p - 1));
@@ -148,7 +150,7 @@ export default function ElectionDashboardPage() {
             variant="action"
             icon={<MdAdd size={20} />}
             title="Add"
-            onClick={() => {}}
+            onClick={() => setShowCreateModal(true)}
           />
           <SubmitButton
             label=""
@@ -189,6 +191,11 @@ export default function ElectionDashboardPage() {
         pageSize={pageSize}
         onPageSizeChange={handlePageSizeChange}
         onRowClick={election => console.log('Clicked election:', election)}
+      />
+      <CreateElectionModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSave={() => setShowCreateModal(false)}
       />
     </main>
   );
