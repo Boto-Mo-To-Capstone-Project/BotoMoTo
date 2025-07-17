@@ -19,7 +19,7 @@ export function SubmitButton({
   isLoading = false,
   className = '',
   onClick,
-  type = 'button',
+  type = 'submit',
   icon,
   title
 }: SubmitButtonProps) {

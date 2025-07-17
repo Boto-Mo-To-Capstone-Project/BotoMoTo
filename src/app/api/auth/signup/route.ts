@@ -8,6 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET!;
 export async function POST(request: NextRequest) {
   try {
     const { name, email, password } = await request.json();
+    console.log('Signup API request:', { name, email });
 
     // Validate input
     if (!name || !email || !password) {
@@ -64,6 +65,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    console.log('Signup API success:', { userId: user.id, email: user.email });
     return NextResponse.json({
       success: true,
       message: "User created successfully",

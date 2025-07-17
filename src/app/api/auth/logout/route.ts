@@ -9,6 +9,7 @@ export async function POST(request: NextRequest) {
   try {
     let userId = null;
     let userRole = null;
+    console.log('Logout API request');
     const authToken = request.cookies.get("auth_token")?.value;
     if (authToken) {
       try {
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
     response.cookies.set("auth_token", "", { maxAge: 0, path: "/" });
     response.cookies.set("next-auth.session-token", "", { maxAge: 0, path: "/" });
     response.cookies.set("__Secure-next-auth.session-token", "", { maxAge: 0, path: "/" });
+    console.log('Logout API success:', { userId });
     return response;
   } catch (error) {
     console.error("Logout error:", error);
