@@ -14,107 +14,215 @@ import Logo from "@/components/Logo";
 import { AuthFooter } from "@/components/AuthFooter";
 import AuthContainer from '@/components/AuthContainer';
 
-function StatusTabs({ status, setStatus }: { status: string; setStatus: (s: string) => void }) {
+type ApplicationStatus = 'getting_started' | 'submitted' | 'reviewing' | 'approved' | 'rejected';
+
+function StatusBadge({ status }: { status: ApplicationStatus }) {
+  const getStatusConfig = (status: ApplicationStatus) => {
+    switch (status) {
+      case 'getting_started':
+        return { text: 'Getting Started', bg: 'bg-gray-100', textColor: 'text-gray-800' };
+      case 'submitted':
+        return { text: 'Submitted', bg: 'bg-blue-100', textColor: 'text-blue-800' };
+      case 'reviewing':
+        return { text: 'Under Review', bg: 'bg-yellow-100', textColor: 'text-yellow-800' };
+      case 'approved':
+        return { text: 'Approved', bg: 'bg-green-100', textColor: 'text-green-800' };
+      case 'rejected':
+        return { text: 'Rejected', bg: 'bg-red-100', textColor: 'text-red-800' };
+      default:
+        return { text: 'Unknown', bg: 'bg-gray-100', textColor: 'text-gray-800' };
+    }
+  };
+
+  const config = getStatusConfig(status);
+  
   return (
-    <div className="flex gap-2 mb-6">
-      <button
-        className={`px-4 py-1 rounded-full border border-gray-300 font-semibold transition-colors ${status === "processing" ? "text-red-700 bg-red-50 border-red-700" : "text-gray-500 bg-gray-50"}`}
-        onClick={() => setStatus("processing")}
-      >
-        Processing
-      </button>
-      <button
-        className={`px-4 py-1 rounded-full border border-gray-300 font-semibold transition-colors ${status === "approved" ? "text-red-700 bg-red-50 border-red-700" : "text-gray-500 bg-gray-50"}`}
-        onClick={() => setStatus("approved")}
-      >
-        Approved
-      </button>
+    <span className={`px-3 py-1 rounded-full text-sm font-medium ${config.bg} ${config.textColor}`}>
+      {config.text}
+    </span>
+  );
+}
+
+function ProgressBar({ progress }: { progress: number }) {
+  return (
+    <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
+      <div 
+        className="h-2 rounded-full transition-all duration-500" 
+        style={{width: `${progress}%`, backgroundColor: 'var(--color-secondary)'}}
+      ></div>
     </div>
   );
 }
 
-function StatusIcon({ status }: { status: string }) {
-  if (status === "approved") {
-    return <span className="text-5xl mb-2" role="img" aria-label="approved">✅</span>;
-  }
-  if (status === "declined") {
-    return <span className="text-5xl mb-2" role="img" aria-label="declined">❌</span>;
-  }
-  // processing or default
-  return <span className="text-5xl mb-2" role="img" aria-label="processing">⏳</span>;
-}
-
-function AccordionStepper({ approved, onComplete, onProceed }: { approved: boolean; onComplete: () => void; onProceed: () => void; }) {
+function ApplicationStepper({ 
+  status, 
+  onComplete, 
+  onSubmit, 
+  onAccessDashboard 
+}: { 
+  status: ApplicationStatus; 
+  onComplete: () => void; 
+  onSubmit: () => void;
+  onAccessDashboard: () => void;
+}) {
   const [openStep, setOpenStep] = useState(-1);
+  
+  const steps = [
+    {
+      id: 0,
+      title: "Complete Profile",
+      description: "Fill out your organization details and upload required documents",
+      action: "Complete Profile",
+      isActive: status === 'getting_started',
+      isCompleted: ['submitted', 'reviewing', 'approved'].includes(status),
+      onClick: onComplete
+    },
+    {
+      id: 1,
+      title: "Submit for Review",
+      description: "Submit your completed profile for admin review",
+      action: "Submit for Review",
+      isActive: status === 'submitted',
+      isCompleted: ['reviewing', 'approved'].includes(status),
+      onClick: onSubmit
+    },
+    {
+      id: 2,
+      title: "Awaiting Approval",
+      description: "Your application is being reviewed by our team",
+      action: "Under Review",
+      isActive: status === 'reviewing',
+      isCompleted: ['approved'].includes(status),
+      onClick: null
+    },
+    {
+      id: 3,
+      title: "Access Dashboard",
+      description: "Your application has been approved. Access your admin dashboard",
+      action: "Access Dashboard",
+      isActive: status === 'approved',
+      isCompleted: false,
+      onClick: onAccessDashboard
+    }
+  ];
+
   return (
     <div className="flex flex-col gap-5 py-2">
-      {/* Step 1: Fill this form*/}
-      <div>
-        <button
-          type="button"
-          className={`flex items-center w-full py-2 text-left font-semibold ${openStep === 0 ? 'text-[var(--color-primary)]' : 'text-gray-700'}`}
-          onClick={() => setOpenStep(openStep === 0 ? -1 : 0)}
-        >
-          <span className={`w-6 h-6 flex items-center justify-center rounded-full mr-3 text-sm font-bold ${openStep === 0 ? 'bg-[var(--color-primary)] text-white' : 'bg-gray-200 text-gray-500'}`}>1</span>
-          Fill this form
-          <span className="ml-auto">{openStep === 0 ? '▲' : '▼'}</span>
-        </button>
-        {openStep === 0 && (
-          <div className="flex flex-col items-center pb-4 text-center">
-            <div className="text-gray-500 text-sm mb-3 max-w-xs">Complete this task. Once your request is conditionally approved, this page will appear as 'Approved' which is number 2 — you will be able to access the page once it is approved.</div>
-            <SubmitButton label="Complete my task →" isLoading={false} className="w-full" onClick={onComplete} type="button" />
-          </div>
-        )}
-      </div>
-      {/* Step 2: Initial approval */}
-      <div>
-        <button
-          type="button"
-          className={`flex items-center w-full py-2 text-left font-semibold ${approved ? (openStep === 1 ? 'text-[var(--color-primary)]' : 'text-gray-700') : 'text-gray-400'}`}
-          onClick={() => approved ? setOpenStep(openStep === 1 ? -1 : 1) : null}
-          disabled={!approved}
-        >
-          <span className={`w-6 h-6 flex items-center justify-center rounded-full mr-3 text-sm font-bold ${approved ? (openStep === 1 ? 'bg-[var(--color-primary)] text-white' : 'bg-gray-200 text-gray-500') : 'bg-gray-200 text-gray-400'}`}>2</span>
-          Initial approval
-          <span className="ml-auto">{openStep === 1 ? '▲' : '▼'}</span>
-        </button>
-        {openStep === 1 && (
-          <div className="pl-9 pb-4">
-            {approved ? (
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 px-5 h-[38px] bg-[var(--color-primary)] hover:brightness-90 text-white rounded-full text-sm font-semibold shadow-sm transition-all"
-                onClick={onProceed}
-              >
-                Proceed to homepage
-              </button>
-            ) : (
-              <span className="text-xl align-middle">⏳</span>
-            )}
-          </div>
-        )}
-      </div>
+      {steps.map((step) => (
+        <div key={step.id}>
+          <button
+            type="button"
+            className={`flex items-center w-full py-2 text-left font-semibold ${
+              step.isActive ? 'text-[var(--color-primary)]' : 
+              step.isCompleted ? 'text-green-600' : 'text-gray-400'
+            }`}
+            onClick={() => step.onClick ? step.onClick() : setOpenStep(openStep === step.id ? -1 : step.id)}
+            disabled={!step.isActive && !step.isCompleted}
+          >
+            <span className={`w-6 h-6 flex items-center justify-center rounded-full mr-3 text-sm font-bold ${
+              step.isActive ? 'bg-[var(--color-primary)] text-white' :
+              step.isCompleted ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-400'
+            }`}>
+              {step.isCompleted ? '✓' : step.id + 1}
+            </span>
+            {step.title}
+            <span className="ml-auto">{openStep === step.id ? '▲' : '▼'}</span>
+          </button>
+          {openStep === step.id && (
+            <div className="pl-9 pb-4">
+              <div className="text-gray-500 text-sm mb-3 max-w-xs">{step.description}</div>
+              {step.onClick && step.isActive && (
+                <SubmitButton 
+                  label={step.action} 
+                  isLoading={false} 
+                  className="w-full" 
+                  onClick={step.onClick} 
+                  type="button" 
+                />
+              )}
+              {step.isCompleted && !step.onClick && (
+                <span className="text-green-600 text-sm">✓ Completed</span>
+              )}
+              {!step.isActive && !step.isCompleted && (
+                <span className="text-gray-400 text-sm">⏳ Waiting...</span>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
 
 export default function OnboardProcessingPage() {
   const [showModal, setShowModal] = useState(false);
-  const [approved, setApproved] = useState(false);
+  const [status, setStatus] = useState<ApplicationStatus>('getting_started');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  
+  // Calculate progress based on status
+  const getProgress = (status: ApplicationStatus) => {
+    switch (status) {
+      case 'getting_started': return 25;
+      case 'submitted': return 50;
+      case 'reviewing': return 75;
+      case 'approved': return 100;
+      case 'rejected': return 25;
+      default: return 0;
+    }
+  };
+  
+  useEffect(() => {
+    // Set initial uploaded file for demo
+    setUploadedFile(new File([""], "Sample_Letter.pdf", { type: "application/pdf", lastModified: new Date().getTime() }));
+  }, []);
+
   const handleComplete = () => setShowModal(true);
-  const handleModalSave = () => { setShowModal(false); setApproved(true); };
-  const handleProceed = () => {};
+  const handleModalSave = (data: { firstName: string; lastName: string; organizationName: string; organizationEmail: string; organizationLetter: File | null; logo: File | null }) => { 
+    setShowModal(false); 
+    setStatus('submitted');
+    console.log("Modal data:", data);
+  };
+  const handleSubmit = () => {
+    setStatus('reviewing');
+    // Simulate admin review process
+    setTimeout(() => {
+      setStatus('approved');
+    }, 3000);
+  };
+  const handleAccessDashboard = () => {
+    console.log("Redirecting to dashboard...");
+    // Add navigation logic here
+  };
+  
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadedFile(file);
+    }
+  };
   const name = "Brian King";
 
   return (
     <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40">
       <AuthContainer>
         <h1 className="text-2xl font-bold text-gray-800 mb-1">Hi, {name}!</h1>
-        <p className="text-[var(--color-primary)] mb-4">Application Status: Track your progress</p>
-        <div className="flex justify-center my-2">
-          <Image src={ProcessingImage} alt="Processing" width={200} height={200} />
+        <p className="text-gray-600 mb-4">Application Status: Track your progress</p>
+        
+        {/* Status Badge */}
+        <div className="flex justify-center mb-4">
+          <StatusBadge status={status} />
         </div>
-        <AccordionStepper approved={approved} onComplete={handleComplete} onProceed={handleProceed} />
+        
+        {/* Progress Bar */}
+        <ProgressBar progress={getProgress(status)} />
+        
+        <ApplicationStepper 
+          status={status}
+          onComplete={handleComplete} 
+          onSubmit={handleSubmit}
+          onAccessDashboard={handleAccessDashboard}
+        />
+        
         <AuthFooter question="Need help?" link="/contact" linkText="Contact Support" />
       </AuthContainer>
       <CompleteTaskModal open={showModal} onClose={() => setShowModal(false)} onSave={handleModalSave} />
