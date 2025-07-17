@@ -2,9 +2,10 @@
 import { useState } from 'react';
 import { MdFirstPage, MdLastPage, MdChevronLeft, MdChevronRight, MdAdd, MdDownload, MdFilterList, MdDelete, MdSearch, MdUnfoldMore, MdArrowDropUp, MdArrowDropDown } from "react-icons/md";
 import { SubmitButton } from '@/components/SubmitButton';
+import { ElectionModal } from '@/components/ElectionModal';
 import SearchBar from '@/components/SearchBar';
 import ElectionTable from '@/components/ElectionTable';
-import { CreateElectionModal } from '@/components/CreateElectionModal';
+
 // import AdminSidebar from '@/components/sidebars/AdminSidebar';
 
 //naglagay lang pala ako ng emeng data para sa table
@@ -192,7 +193,7 @@ export default function ElectionDashboardPage() {
         onPageSizeChange={handlePageSizeChange}
         onRowClick={election => console.log('Clicked election:', election)}
       />
-      <CreateElectionModal
+      <ElectionModal
         open={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSave={() => setShowCreateModal(false)}
