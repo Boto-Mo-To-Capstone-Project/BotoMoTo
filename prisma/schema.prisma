@@ -93,6 +93,7 @@ enum AuditAction {
   VOTE
   APPROVE
   REJECT
+  UPLOAD
 }
  
 model Account {
