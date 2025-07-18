@@ -173,3 +173,11 @@ body {
 .superadmin-subheading {
   @apply text-md font-normal text-gray md:text-lg;
 }
+
+/* styles/globals.css or in your global stylesheet */
+.scrollbar-hidden {
+  scrollbar-width: none; /* Firefox */
+}
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}

@@ -14,6 +14,8 @@ import {
   X,
   Menu,
   BadgeAlert,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 type AdminSidebarProps = {
@@ -24,6 +26,8 @@ type AdminSidebarProps = {
 const AdminSidebar = ({ variant, electionId }: AdminSidebarProps) => {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [showSetup, setShowSetup] = useState(false);
+  const [showManage, setShowManage] = useState(false);
 
   const defaultLinks = [
     { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -89,27 +93,20 @@ const AdminSidebar = ({ variant, electionId }: AdminSidebarProps) => {
 
       {/* Overlay */}
       <div
-        className={`
-    fixed inset-0 bg-black/50 transition-opacity duration-300
-    ${
-      isOpen
-        ? "opacity-100 pointer-events-auto"
-        : "opacity-0 pointer-events-none"
-    }
-    lg:hidden
-  `}
+        className={`fixed inset-0 bg-black/50 transition-opacity duration-300 ${
+          isOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
+        } lg:hidden`}
         onClick={() => setIsOpen(false)}
         aria-label="Close sidebar overlay"
       ></div>
 
       {/* Sidebar */}
       <aside
-        className={`
-          fixed top-0 left-0 h-full min-h-screen w-full max-w-xs bg-primary px-4 py-6 space-y-5
-          transform transition-transform duration-300 z-[101]
-          ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0 lg:static lg:flex-shrink-0 lg:w-68 lg:max-w-none
-        `}
+        className={`overflow-y-auto scrollbar-hidden fixed top-0 left-0 h-full min-h-screen w-full max-w-xs bg-primary px-4 py-6 space-y-5 transform transition-transform duration-300 z-[101] ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        } lg:translate-x-0 lg:flex-shrink-0 lg:w-68 lg:max-w-none`}
         aria-label="Sidebar navigation"
       >
         {/* Mobile close button */}
@@ -120,7 +117,7 @@ const AdminSidebar = ({ variant, electionId }: AdminSidebarProps) => {
           </button>
         </div>
 
-        {/* Desktop logo => this is hidden because there is already one in mobile*/}
+        {/* Desktop logo */}
         <div className="hidden lg:block">
           <Image src={BotoMoToLogo} height={45} alt="BotoMoToLogo" />
         </div>
@@ -134,13 +131,12 @@ const AdminSidebar = ({ variant, electionId }: AdminSidebarProps) => {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`flex items-center gap-2 sidebar-items p-2 rounded
-                  ${
-                    isActive
-                      ? "bg-white text-primary"
-                      : "hover:font-semibold text-white"
-                  }`}
-                onClick={() => setIsOpen(false)} // close sidebar on mobile after click
+                className={`flex items-center gap-2 sidebar-items p-2 rounded ${
+                  isActive
+                    ? "bg-white text-primary"
+                    : "hover:font-semibold text-white"
+                }`}
+                onClick={() => setIsOpen(false)}
               >
                 <Icon className="h-5 w-5" />
                 <span>{link.name}</span>
@@ -150,53 +146,76 @@ const AdminSidebar = ({ variant, electionId }: AdminSidebarProps) => {
 
           {variant === "selectedElection" && electionId && (
             <>
-              <div>
-                <p className="mt-6 sidebar-items text-white uppercase">Setup</p>
-                <nav className="space-y-1 mt-2 bg-white rounded-lg">
-                  {setupLinks.map((link) => {
-                    const isActive = pathname === link.href;
-                    return (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className={`block pl-4 sidebar-items rounded-lg p-2
-                          ${
+              {/* Setup Dropdown */}
+              <div className="mt-6">
+                <button
+                  onClick={() => setShowSetup(!showSetup)}
+                  className="flex justify-between items-center w-full sidebar-items text-white uppercase"
+                >
+                  Setup Election
+                  {showSetup ? (
+                    <ChevronUp className="w-4 h-4" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4" />
+                  )}
+                </button>
+                {showSetup && (
+                  <nav className="space-y-1 mt-2 bg-white rounded-lg">
+                    {setupLinks.map((link) => {
+                      const isActive = pathname === link.href;
+                      return (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          className={`block pl-4 sidebar-items rounded-lg p-2 ${
                             isActive
                               ? "text-primary"
                               : "text-gray hover:text-primary"
                           }`}
-                        onClick={() => setIsOpen(false)}
-                      >
-                        {link.name}
-                      </Link>
-                    );
-                  })}
-                </nav>
+                          onClick={() => setIsOpen(false)}
+                        >
+                          {link.name}
+                        </Link>
+                      );
+                    })}
+                  </nav>
+                )}
               </div>
-              <div>
-                <p className="mt-6 sidebar-items text-white uppercase">
-                  Manage
-                </p>
-                <nav className="space-y-1 mt-2 bg-white rounded-lg">
-                  {manageLinks.map((link) => {
-                    const isActive = pathname === link.href;
-                    return (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className={`block pl-4 sidebar-items rounded-lg p-2
-                          ${
+
+              {/* Manage Dropdown */}
+              <div className="mt-4">
+                <button
+                  onClick={() => setShowManage(!showManage)}
+                  className="flex justify-between items-center w-full sidebar-items text-white uppercase"
+                >
+                  Manage Election
+                  {showManage ? (
+                    <ChevronUp className="w-4 h-4" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4" />
+                  )}
+                </button>
+                {showManage && (
+                  <nav className="space-y-1 mt-2 bg-white rounded-lg">
+                    {manageLinks.map((link) => {
+                      const isActive = pathname === link.href;
+                      return (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          className={`block pl-4 sidebar-items rounded-lg p-2 ${
                             isActive
                               ? "text-primary"
                               : "text-gray hover:text-primary"
                           }`}
-                        onClick={() => setIsOpen(false)}
-                      >
-                        {link.name}
-                      </Link>
-                    );
-                  })}
-                </nav>
+                          onClick={() => setIsOpen(false)}
+                        >
+                          {link.name}
+                        </Link>
+                      );
+                    })}
+                  </nav>
+                )}
               </div>
             </>
           )}

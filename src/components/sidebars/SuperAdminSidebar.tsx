@@ -84,7 +84,7 @@ const SuperAdminSidebar = () => {
           fixed top-0 left-0 h-full min-h-screen w-68 bg-primary px-4 py-6 space-y-5
           transform transition-transform duration-300 z-50
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0 lg:static lg:flex-shrink-0
+          lg:translate-x-0 lg:flex-shrink-0
         `}
       >
         {/* Mobile close button */}
