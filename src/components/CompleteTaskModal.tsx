@@ -43,7 +43,7 @@ export function CompleteTaskModal({ open, onClose, onSave }: CompleteTaskModalPr
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 backdrop-blur-sm pt-8"
       onClick={e => {
         if (e.target === e.currentTarget) onClose();
       }}
