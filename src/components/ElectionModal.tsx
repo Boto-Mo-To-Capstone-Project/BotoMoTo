@@ -24,20 +24,19 @@ export function ElectionModal({ open, onClose, onSave }: ElectionModalProps) {
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-sm"
       onClick={e => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-[380px] relative px-4 pt-8 pb-8 mx-auto text-center space-y-6 border border-gray-200 overflow-y-auto max-h-[90vh] sm:max-h-[80vh]">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm sm:max-w-[380px] relative px-4 pt-8 pb-8 mx-4 text-center space-y-6 border border-gray-200 overflow-y-auto max-h-[90vh]">
         <button
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl font-bold"
+          className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
           onClick={onClose}
-          aria-label="Close"
         >
           &times;
         </button>
-        <AuthHeading title="Create Election" subtitle="Fill out the form to create a new election." />
+        <AuthHeading title="Complete your task" subtitle="Fill in the details below to proceed." />
         <form
           onSubmit={e => {
             e.preventDefault();
