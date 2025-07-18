@@ -36,7 +36,7 @@ export function ElectionModal({ open, onClose, onSave }: ElectionModalProps) {
         >
           &times;
         </button>
-        <AuthHeading title="Complete your task" subtitle="Fill in the details below to proceed." />
+        <AuthHeading title="Election Form" subtitle="Keep track of, manage, and register elections — use this form to register a new one." />
         <form
           onSubmit={e => {
             e.preventDefault();
