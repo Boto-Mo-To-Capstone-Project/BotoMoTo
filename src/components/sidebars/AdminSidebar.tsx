@@ -105,10 +105,10 @@ const AdminSidebar = ({ variant, electionId }: AdminSidebarProps) => {
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 h-full min-h-screen w-full max-w-xs bg-primary px-4 py-6 space-y-5
+          overflow-y-auto scrollbar-hidden fixed top-0 left-0 h-full min-h-screen w-full max-w-xs bg-primary px-4 py-6 space-y-5
           transform transition-transform duration-300 z-[101]
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0 lg:static lg:flex-shrink-0 lg:w-68 lg:max-w-none
+          lg:translate-x-0 lg:flex-shrink-0 lg:w-68 lg:max-w-none
         `}
         aria-label="Sidebar navigation"
       >
