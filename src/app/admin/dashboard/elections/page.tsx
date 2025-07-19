@@ -5,7 +5,6 @@ import { SubmitButton } from '@/components/SubmitButton';
 import { ElectionModal } from '@/components/ElectionModal';
 import SearchBar from '@/components/SearchBar';
 import ElectionTable from '@/components/ElectionTable';
-
 // import AdminSidebar from '@/components/sidebars/AdminSidebar';
 
 //naglagay lang pala ako ng emeng data para sa table
@@ -119,85 +118,88 @@ export default function ElectionDashboardPage() {
   const paginatedElections = filteredElections.slice((page - 1) * pageSize, page * pageSize);
 
   return (
-    <main className="flex-1 bg-white p-8 w-full min-w-0">
-      <h1 className="text-2xl font-bold mb-1">Hi, Administrator!</h1>
-      <p className="text-gray-600 mb-6">Polytechnic University of the Philippines (PUP) Provident Fund</p>
+    <div className="flex min-h-screen">
+      {/* <AdminSidebar variant="default" /> */}
+      <main className="flex-1 bg-white p-8 w-full min-w-0">
+        <h1 className="text-2xl font-bold mb-1">Hi, Administrator!</h1>
+        <p className="text-gray-600 mb-6">Polytechnic University of the Philippines (PUP) Provident Fund</p>
 
-      {/* Search and actions */}
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4 mb-6">
-        {/* Tabs */}
-        <div className="w-full md:w-auto flex justify-center md:block">
-          <div className="inline-flex w-full max-w-[380px] md:w-auto rounded-md border border-gray-300 overflow-hidden bg-white">
-            {['All', 'Ongoing', 'Finished'].map((t, i) => (
-              <SubmitButton
-                key={t}
-                label={t}
-                variant="tab"
-                isActive={tab === t}
-                onClick={() => setTab(t)}
-                className={`w-full h-[44px] md:w-[90px] md:h-10 ${i !== 0 ? 'border-l border-gray-200' : ''}`}
-              />
-            ))}
+        {/* Search and actions */}
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4 mb-6">
+          {/* Tabs */}
+          <div className="w-full md:w-auto flex justify-center md:block">
+            <div className="inline-flex w-full max-w-[380px] md:w-auto rounded-md border border-gray-300 overflow-hidden bg-white">
+              {['All', 'Ongoing', 'Finished'].map((t, i) => (
+                <SubmitButton
+                  key={t}
+                  label={t}
+                  variant="tab"
+                  isActive={tab === t}
+                  onClick={() => setTab(t)}
+                  className={`w-full h-[44px] md:w-[90px] md:h-10 ${i !== 0 ? 'border-l border-gray-200' : ''}`}
+                />
+              ))}
+            </div>
+          </div>
+          {/* Search bar */}
+          <div className="w-full md:w-auto">
+            <SearchBar value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+          {/* Action Buttons */}
+          <div className="w-full flex gap-2 md:w-auto md:ml-auto">
+            <SubmitButton
+              label=""
+              variant="action"
+              icon={<MdAdd size={20} />}
+              title="Add"
+              onClick={() => setShowCreateModal(true)}
+            />
+            <SubmitButton
+              label=""
+              variant="action"
+              icon={<MdDownload size={20} />}
+              title="Download"
+              onClick={() => {}}
+            />
+            <SubmitButton
+              label=""
+              variant="action"
+              icon={<MdFilterList size={20} />}
+              title="Filter"
+              onClick={() => {}}
+            />
+            <SubmitButton
+              label=""
+              variant="action"
+              icon={<MdDelete size={20} />}
+              title="Delete"
+              onClick={() => {}}
+            />
           </div>
         </div>
-        {/* Search bar */}
-        <div className="w-full md:w-auto">
-          <SearchBar value={search} onChange={e => setSearch(e.target.value)} />
-        </div>
-        {/* Action Buttons */}
-        <div className="w-full flex gap-2 md:w-auto md:ml-auto">
-          <SubmitButton
-            label=""
-            variant="action"
-            icon={<MdAdd size={20} />}
-            title="Add"
-            onClick={() => setShowCreateModal(true)}
-          />
-          <SubmitButton
-            label=""
-            variant="action"
-            icon={<MdDownload size={20} />}
-            title="Download"
-            onClick={() => {}}
-          />
-          <SubmitButton
-            label=""
-            variant="action"
-            icon={<MdFilterList size={20} />}
-            title="Filter"
-            onClick={() => {}}
-          />
-          <SubmitButton
-            label=""
-            variant="action"
-            icon={<MdDelete size={20} />}
-            title="Delete"
-            onClick={() => {}}
-          />
-        </div>
-      </div>
 
-      {/* Table */}
-      <ElectionTable
-        elections={paginatedElections}
-        sortCol={sortCol}
-        sortDir={sortDir}
-        onSort={handleSort}
-        page={page}
-        totalPages={totalPages}
-        onFirst={handleFirst}
-        onPrev={handlePrev}
-        onNext={handleNext}
-        onLast={handleLast}
-        pageSize={pageSize}
-        onPageSizeChange={handlePageSizeChange}
-        onRowClick={election => console.log('Clicked election:', election)}
-      />
-      <ElectionModal
-        open={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSave={() => setShowCreateModal(false)}
-      />
-    </main>
+        {/* Table */}
+        <ElectionTable
+          elections={paginatedElections}
+          sortCol={sortCol}
+          sortDir={sortDir}
+          onSort={handleSort}
+          page={page}
+          totalPages={totalPages}
+          onFirst={handleFirst}
+          onPrev={handlePrev}
+          onNext={handleNext}
+          onLast={handleLast}
+          pageSize={pageSize}
+          onPageSizeChange={handlePageSizeChange}
+          onRowClick={election => console.log('Clicked election:', election)}
+        />
+        <ElectionModal
+          open={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSave={() => setShowCreateModal(false)}
+        />
+      </main>
+    </div>
   );
 }
