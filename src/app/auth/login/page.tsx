@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn, signOut } from "next-auth/react";
+import { signIn} from "next-auth/react";
 
 import Logo from "@/components/Logo";
 import { AuthHeading } from "@/components/AuthHeading";
@@ -27,22 +27,18 @@ export default function LoginPage() {
     setError("");
 
     try {
-      // Use custom credentials login API
-      const loginResponse = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      console.log("Attempting login", { email });
+      const res = await signIn("credentials", {
+        email,
+        password,
+        callbackUrl: "/admin/onboard"
       });
-      const loginResult = await loginResponse.json();
-      if (!loginResponse.ok || !loginResult.success) {
-        setError(loginResult.error || "Login failed");
-        setIsLoading(false);
-        return;
-      }
-      // On success, go to onboarding page
-      router.push("/admin/onboard");
+
+      console.log("Login successful", res);
+      
     } catch (err) {
-      setError("An unexpected error occurred");
+      setError(`An unexpected error occurred. Please try again. ${err}`);
+      console.error("Login error", err);
     } finally {
       setIsLoading(false);
     }
