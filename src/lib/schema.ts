@@ -15,14 +15,14 @@ import { z } from "zod";
 // Login schema and type
 const loginSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z.string().min(1),
 });
 type LoginSchema = z.infer<typeof loginSchema>;
 
 // Signup schema and type
 const signupSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z.string().min(1),
 });
 type SignupSchema = z.infer<typeof signupSchema>;
 
