@@ -1,8 +1,8 @@
 // Main types index - exports all interfaces
-export * from "./auth";
 export * from "./api";
+export * from "./auth";
 export * from "./components";
-export * from "./database";
+export * from "./next-auth.d"
 
 // Legacy types (keeping for backward compatibility)
 export type Candidate = {

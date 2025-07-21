@@ -37,31 +37,3 @@ export type OrganizationStatus =
   | "APPROVED"
   | "REJECTED"
   | "SUSPENDED";
-
-// Authentication state
-export interface AuthState {
-  user: User | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-}
-
-// Login/Registration forms
-export interface LoginFormData {
-  email: string;
-  password: string;
-  rememberMe?: boolean;
-}
-
-export interface SignupFormData {
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  organizationName?: string;
-  organizationDescription?: string;
-}
-
-export interface MFAFormData {
-  code: string;
-  method: "email" | "otp" | "passphrase" | "text";
-}
