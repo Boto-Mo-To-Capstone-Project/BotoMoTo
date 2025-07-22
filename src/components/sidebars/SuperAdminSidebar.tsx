@@ -8,7 +8,6 @@ import BotoMoToLogo from "@/app/assets/BotoMoToLogo_light.png";
 import {
   LayoutDashboard,
   ListChecks,
-  Ticket,
   ShieldCheck,
   ClipboardList,
   X,
