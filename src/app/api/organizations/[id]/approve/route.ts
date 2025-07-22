@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import db from "@/lib/db/db";
 import { ROLES, ORGANIZATION_STATUS } from "@/lib/constants";
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session) {
+    const session = await auth();
+    if (!session || !session.user) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
@@ -26,7 +21,7 @@ export async function PUT(
       );
     }
 
-    const { id } = await params;
+    const { id } = params;
     const body = await request.json();
     const { action, reason } = body; // action: "approve" or "reject"
 
@@ -38,7 +33,7 @@ export async function PUT(
     }
 
     // Find the organization
-    const organization = await prisma.organization.findUnique({
+    const organization = await db.organization.findUnique({
       where: { id: parseInt(id) },
       include: { admin: true },
     });
@@ -56,17 +51,13 @@ export async function PUT(
         ? ORGANIZATION_STATUS.APPROVED
         : ORGANIZATION_STATUS.REJECTED;
 
-    const updatedOrg = await prisma.organization.update({
+    const updatedOrg = await db.organization.update({
       where: { id: parseInt(id) },
       data: { status: newStatus },
       include: { admin: true },
     });
 
-    // Update user approval status
-    await prisma.user.update({
-      where: { id: organization.adminId },
-      data: { isApproved: action === "approve" },
-    });
+    // (No user.isApproved field to update)
 
     // Create audit log
     const ipAddress =
@@ -74,10 +65,10 @@ export async function PUT(
       request.headers.get("x-real-ip") ||
       "unknown";
     const userAgent = request.headers.get("user-agent") || "unknown";
-    await prisma.audits.create({
+    await db.audits.create({
       data: {
         actorId: session.user.id,
-        actorRole: session.user.role,
+        actorRole: session.user.role || 'ADMIN',
         action: action === "approve" ? "APPROVE" : "REJECT",
         ipAddress,
         userAgent,
