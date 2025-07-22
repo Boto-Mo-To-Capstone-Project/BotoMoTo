@@ -10,7 +10,7 @@ import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
 import { AuthFooter } from "@/components/AuthFooter";
 import { ErrorMessage } from "@/components/ErrorMessage";
-import OtpInput, { OtpInputFour } from "@/components/OtpInput";
+import { OtpInputFour } from "@/components/OtpInput";
 import AuthContainer from '@/components/AuthContainer';
 
 export default function ForgotPasswordOtpPage() {
@@ -38,7 +38,7 @@ export default function ForgotPasswordOtpPage() {
       console.log("New password:", password);
       // For now, just simulate success
       router.push("/auth/login");
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);

@@ -1,31 +1,10 @@
 "use client";
-// import { getUserFromCookie } from "@/lib/auth";
-// import { redirect } from "next/navigation";
-// import { supabase } from "@/lib/supabase";
 
 import KpiCard from "@/components/KpiCard";
 import SectionHeaderContainer from "@/components/SectionHeaderContainer";
 import { Ban, CloudCheck } from "lucide-react";
 
 export default function SuperadminDashboard() {
-  // const user = await getUserFromCookie();
-
-  // if (!user || user.role !== 'superadmin') {
-  //   redirect('/login');
-  // }
-
-  // const { data: organizations, error } = await supabase
-  //   .from('organizations')
-  //   .select(`
-  //     id,
-  //     name,
-  //     admins (id, email),
-  //     elections (id, title, isActive)
-  //   `);
-
-  // if (error) {
-  //   return <div className="p-4 text-red-500">Error loading organizations</div>;
-  // }
 
   return (
     <main className="pt-16 px-8">

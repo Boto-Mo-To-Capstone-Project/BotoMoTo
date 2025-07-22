@@ -9,7 +9,6 @@ import {
   LayoutDashboard,
   ListChecks,
   PlusCircle,
-  Ticket,
   User,
   X,
   Menu,

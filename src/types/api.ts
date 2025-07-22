@@ -2,13 +2,13 @@
 import { User, Organization } from "./auth";
 
 // Generic API response wrapper
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: string;
-  statusCode: number;
-}
+export type ApiResponse<T> = {
+    success: boolean;
+    data?: T;
+    error?: string;
+    message?: string;
+    details?: Record<string, unknown>;
+};
 
 // Pagination interfaces
 export interface PaginationParams {
@@ -117,12 +117,12 @@ export interface SubmitVoteRequest {
 export interface ApiError {
   code: string;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 // Search interfaces
 export interface SearchParams {
   query: string;
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
   pagination?: PaginationParams;
 }

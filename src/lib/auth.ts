@@ -1,18 +1,14 @@
-import { v4 as uuid } from "uuid";
 import bcrypt from "bcryptjs";
-
 import db from "@/lib/db/db";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import NextAuth from "next-auth";
-
 import Credentials from "next-auth/providers/credentials";
 import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 import Facebook from "next-auth/providers/facebook";
-
 import { loginSchema } from "@/lib/schema";
-import { SignupSchema } from "@/lib/schema";
 import { requestContext } from "@/lib/requestContext";
+import { UserRole } from "@prisma/client";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(db),
@@ -32,6 +28,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const validated = loginSchema.parse(credentials);
         const user = await db.user.findUnique({
           where: { email: validated.email },
+          include: { organization: true }
         });
 
         if (!user || !user.password) throw new Error("Invalid credentials");
@@ -44,26 +41,29 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           email: user.email,
           name: user.name,
           role: user.role,
+          organization: user.organization
         };
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
-        token.role = (user as any).role;
+        token.role = user.role;
+        token.organization = user.organization;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = (token as any).id;
-        session.user.name = token.name;
-        session.user.email = (token as any).email;
-        session.user.role = (token as any).role;
+        session.user.id = token.id as string;
+        session.user.name = token.name as string;
+        session.user.email = token.email as string;
+        session.user.role = token.role as UserRole;
+        session.user.organization = token.organization;
       }
       return session;
     },
@@ -74,8 +74,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const ctx = requestContext.getStore();
         await db.audits.create({
           data: {
-            actorId: (user as any).id,
-            actorRole: (user as any).role,
+            actorId: user.id,
+            actorRole: user.role || "ADMIN",
             action: "LOGIN",
             ipAddress: ctx?.ip || "unknown",
             userAgent: ctx?.userAgent || "unknown",
@@ -91,23 +91,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         console.error("Audit log error (signIn):", e);
       }
     },
-    async signOut(event) {
-      const token = (event as any).token;
+    async signOut(message) {
+      // Handle both v4 and v5 signOut event shapes
+      const token = 'token' in message ? message.token : null;
       if (!token) return;
+      
       try {
         const ctx = requestContext.getStore();
         await db.audits.create({
           data: {
-            actorId: token.id ?? "",
-            actorRole: token.role ?? "ADMIN",
+            actorId: token.id as string,
+            actorRole: (token.role as UserRole) || "ADMIN",
             action: "LOGOUT",
             ipAddress: ctx?.ip || "unknown",
             userAgent: ctx?.userAgent || "unknown",
             resource: "user",
-            resourceId: token.id ?? "",
+            resourceId: token.id as string,
             details: {
-              email: token.email ?? "unknown",
-              loginMethod: token.provider ?? "unknown",
+              email: token.email as string || "unknown",
+              loginMethod: (token as any).provider || "unknown",
             },
           },
         });
@@ -117,6 +119,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   },
   session: {
-    strategy: "jwt", 
+    strategy: "jwt",
   },
 });

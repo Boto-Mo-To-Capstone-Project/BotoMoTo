@@ -1,8 +1,5 @@
 "use client";
 import Button from "@/components/Button";
-
-import { useRouter } from "next/navigation";
-
 import { Vote, Users, BarChart2, Clock } from "lucide-react";
 import KpiCard from "@/components/KpiCard";
 import PositionSection from "@/components/PositionSection";
@@ -10,8 +7,6 @@ import DemographicSection from "@/components/DemographicSection";
 import SectionHeaderContainer from "@/components/SectionHeaderContainer";
 
 const LiveDashboard = () => {
-  const router = useRouter(); // to go to another route
-
   return (
     <main className="flex flex-col items-center gap-10 pb-20 pt-40 text-justify px-10">
       <div className="w-4/5 flex flex-col items-center ">

@@ -1,6 +1,5 @@
 "use client";
 import { useRef, useState } from "react";
-import { MdCloudUpload, MdDownload, MdCheckCircle } from "react-icons/md";
 import { SubmitButton } from '@/components/SubmitButton';
 import { FileDropzone } from '@/components/FileDropzone';
 import { UploadedFileDisplay } from "@/components/UploadedFileDisplay";
@@ -10,7 +9,6 @@ import Voter from "@/app/assets/Voter.png";
 import Position from "@/app/assets/Position.png";
 import Candidate from "@/app/assets/Candidate.png";
 import ElectionStatus from "@/app/assets/ElectionStatus.png";
-import Image from "next/image";
 import { StepsSection } from '@/components/StepsSection';
 import { SetupCard } from '@/components/SetupCard';
 
@@ -62,7 +60,9 @@ const setupCards = [
 ];
 
 export default function ElectionSetupOverview() {
+  // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
   const fileInputRef = useRef(null);
+  // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
