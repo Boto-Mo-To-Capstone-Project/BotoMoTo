@@ -1,13 +1,9 @@
 "use client";
-import Button from "@/components/Button";
-
-import { useRouter } from "next/navigation";
 
 import { Vote, Users, BarChart2, Clock } from "lucide-react";
 import KpiCard from "@/components/KpiCard";
 import PositionSection from "@/components/PositionSection";
-import DemographicSection from "@/components/DemographicSection";
-import SectionHeaderContainer from "@/components/SectionHeaderContainer";
+
 const DemographicDashboard = () => {
   return (
     <main className="flex flex-col items-center gap-10 pb-20 pt-40 text-justify px-10">

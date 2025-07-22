@@ -165,6 +165,7 @@ export default function OnboardProcessingPage() {
         }
       } catch (e) {
         // Optionally handle error
+        console.error("Error checking onboarding status:", e);
       }
     }
     checkOnboardingStatus();

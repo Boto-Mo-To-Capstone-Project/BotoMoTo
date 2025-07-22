@@ -23,7 +23,7 @@ export function SubmitButton({
   icon,
   title
 }: SubmitButtonProps) {
-  let base = 'transition-colors focus:outline-none font-semibold';
+  const base = 'transition-colors focus:outline-none font-semibold';
   let styles = '';
   if (variant === 'primary') {
     styles = `w-full max-w-[380px] h-[44px] bg-[var(--color-primary)] hover:brightness-90 text-white rounded-[8px] text-sm ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`;

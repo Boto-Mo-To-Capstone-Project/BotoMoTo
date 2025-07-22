@@ -1,23 +1,18 @@
 // Folder: your-project/app/admin/dashboard/page.tsx
-import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
-export default async function AdminDashboardPage() {
-  const session = await getServerSession(authOptions);
+export default async function AdminDashboard() {
+    const session = await auth();
 
-  if (!session || session.user.role !== 'ADMIN') {
-    redirect('/auth/login');
-  }
+    if (!session) {
+        redirect("/api/auth/signin");
+    }
 
-  // display the user for debugging
-  console.log('User:', session.user);
-  
-  return (
-    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] pt-40 pb-40">
-      <div className="w-full max-w-[380px] mx-auto text-center space-y-6 pt-10 pb-10 px-4">
-        
-      </div>
-    </main>
-  );
+    return (
+        <div>
+            <h1>Admin Dashboard</h1>
+            <p>Welcome, {session.user?.name}</p>
+        </div>
+    );
 }

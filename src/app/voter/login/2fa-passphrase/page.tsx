@@ -3,7 +3,6 @@ import Button from "@/components/Button";
 import Image from "next/image";
 
 import EnterPassphrase from "@/app/assets/EnterPassphrase.png";
-import OtpInput from "@/components/OtpInput";
 import { InputField } from "@/components/InputField";
 import { useState } from "react";
 
