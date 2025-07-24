@@ -1,12 +1,11 @@
-import { PrismaClient } from "../src/generated/prisma/index.js";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 
-const prisma = new PrismaClient();
-
-const superadminEmail =
-  process.env.SUPERADMIN_EMAIL || "superadmin@botomoto.com";
+const db = new PrismaClient();
+const superadminEmail = process.env.SUPERADMIN_EMAIL || "superadmin@botomoto.com";
 const superadminPassword = process.env.SUPERADMIN_PASSWORD || "superadmin123";
 
+// Warn if default credentials are used
 if (!process.env.SUPERADMIN_EMAIL || !process.env.SUPERADMIN_PASSWORD) {
   console.warn(
     "[WARN] Using default superadmin email/password. Set SUPERADMIN_EMAIL and SUPERADMIN_PASSWORD in your .env for production."
@@ -16,7 +15,7 @@ if (!process.env.SUPERADMIN_EMAIL || !process.env.SUPERADMIN_PASSWORD) {
 async function createSuperAdmin() {
   try {
     // Check if SuperAdmin already exists
-    const existingSuperAdmin = await prisma.user.findFirst({
+    const existingSuperAdmin = await db.user.findFirst({
       where: {
         role: "SUPER_ADMIN",
         email: superadminEmail,
@@ -31,14 +30,12 @@ async function createSuperAdmin() {
     // Create SuperAdmin user
     const hashedPassword = await bcrypt.hash(superadminPassword, 12);
 
-    const superAdmin = await prisma.user.create({
+    const superAdmin = await db.user.create({
       data: {
         email: superadminEmail,
         name: "Super Admin",
         password: hashedPassword,
         role: "SUPER_ADMIN",
-        isActive: true,
-        isApproved: true, // SuperAdmin is auto-approved
       },
     });
 
@@ -49,7 +46,7 @@ async function createSuperAdmin() {
   } catch (error) {
     console.error("Error creating SuperAdmin:", error);
   } finally {
-    await prisma.$disconnect();
+    await db.$disconnect();
   }
 }
 

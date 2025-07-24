@@ -158,7 +158,6 @@ model Organization {
   name          String
   email         String               // <--- Added email field
   membersCount  Int
-  isApproved    Boolean              @default(false) 
   status        OrganizationStatus   @default(PENDING)
   photoUrl      String?
   letterUrl     String? 
