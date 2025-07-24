@@ -1,20 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import db from "@/lib/db/db";
 import { hash } from "bcryptjs";
 import { ROLES } from "@/lib/constants";
+import { apiResponse } from "@/lib/apiResponse";
+import { validateWithZod } from "@/lib/validateWithZod";
+import { signupSchema } from "@/lib/schema";
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password } = await request.json();
-    console.log('Signup API request:', { name, email });
+    // parse request body
+    const body = await request.json();
+    console.log('Signup API request:', body);
 
-    // Validate input
-    if (!name || !email || !password) {
-      return NextResponse.json(
-        { success: false, error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
+    // Validate input using Zod schema and helper
+    const validation = validateWithZod(signupSchema, body);
+    if (!('data' in validation)) return validation;
+    const { name, email, password } = validation.data;
 
     // Check if user already exists
     const existingUser = await db.user.findUnique({
@@ -22,10 +23,13 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { success: false, error: "User already exists" },
-        { status: 400 }
-      );
+      return apiResponse({
+        success: false,
+        message: "User already exists",
+        data: null,
+        error: null,
+        status: 400
+      });
     }
 
     // Hash password
@@ -44,7 +48,7 @@ export async function POST(request: NextRequest) {
     // Create audit log
     const ipAddress = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
     const userAgent = request.headers.get("user-agent") || "unknown";
-    await db.audits.create({
+    const audit = await db.audits.create({
       data: {
         actorId: user.id,
         actorRole: user.role,
@@ -61,7 +65,8 @@ export async function POST(request: NextRequest) {
     });
 
     console.log('Signup API success:', { userId: user.id, email: user.email });
-    return NextResponse.json({
+    // Success response with user data and audit log
+    return apiResponse({
       success: true,
       message: "User created successfully",
       data: {
@@ -69,13 +74,20 @@ export async function POST(request: NextRequest) {
         name: user.name,
         email: user.email,
         role: user.role,
+        audit,
       },
+      error: null,
+      status: 201
     });
   } catch (error) {
+    // Error response with error details (no stack trace)
     console.error("Signup error:", error);
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 }
-    );
+    return apiResponse({
+      success: false,
+      message: "Failed to create user",
+      data: null,
+      error: typeof error === "string" ? error : "Internal server error",
+      status: 500
+    });
   }
 }

@@ -25,7 +25,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: {},
       },
       authorize: async (credentials) => {
-        const validated = loginSchema.parse(credentials);
+        // Validate credentials using zod schema
+        const result = loginSchema.safeParse(credentials);
+        if (!result.success) {
+          // If validation fails, throw an error with details
+          throw new Error("Invalid credentials: " + JSON.stringify(result.error.format()));
+        }
+        const validated = result.data;
         const user = await db.user.findUnique({
           where: { email: validated.email },
           include: { organization: true }
