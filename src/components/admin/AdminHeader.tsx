@@ -1,6 +1,3 @@
-import { useState } from 'react';
-import { Menu } from 'lucide-react';
-
 export default function AdminHeader() {
   return (
     <header className="flex flex-col items-center justify-center px-4 pt-0 pb-1 md:pt-2 md:pb-2 bg-white sticky top-0 z-10 border-b md:static md:border-none">

@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-
 import Logo from "@/components/Logo";
 import { AuthHeading } from "@/components/AuthHeading";
 import { InputField } from "@/components/InputField";
@@ -20,7 +18,6 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +32,7 @@ export default function SignupPage() {
 
     try {
       console.log("Sending signup request", { fullName, email, password });
-      const signupResponse = await fetch("/api/auth/signup", {
+      const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -47,16 +44,21 @@ export default function SignupPage() {
         }),
       });
 
-      const signupResult = await signupResponse.json();
-      console.log("Signup API response", signupResponse.status, signupResult);
+      const result = await res.json();
+      
+      console.log("Signup API response", res.status, result);
 
-      if (!signupResponse.ok) {
-        setError(signupResult.error || "Failed to create account");
+      if (!res.ok) {
+        setError(result.error || "Failed to create account");
         return;
       }
 
-      // Remove signIn('credentials', ...) and go directly to dashboard
-      router.push("/admin/onboard");
+      // After successful signup
+      await signIn("credentials", {
+        email,
+        password,
+        callbackUrl: "/admin/onboard",
+      });
     } catch (err) {
       setError(`An unexpected error occurred. Please try again. ${err}`);
       console.error("Signup error", err);

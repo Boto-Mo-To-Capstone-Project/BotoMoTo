@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import db from "@/lib/db/db";
 import { hash } from "bcryptjs";
 import { ROLES } from "@/lib/constants";
-
-const JWT_SECRET = process.env.JWT_SECRET!;
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await db.user.findUnique({
       where: { email },
     });
 
@@ -34,7 +32,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await hash(password, 12);
 
     // Create user with ADMIN role (default for signup)
-    const user = await prisma.user.create({
+    const user = await db.user.create({
       data: {
         name,
         email,
@@ -44,12 +42,9 @@ export async function POST(request: NextRequest) {
     });
 
     // Create audit log
-    const ipAddress =
-      request.headers.get("x-forwarded-for") ||
-      request.headers.get("x-real-ip") ||
-      "unknown";
+    const ipAddress = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
     const userAgent = request.headers.get("user-agent") || "unknown";
-    await prisma.audits.create({
+    await db.audits.create({
       data: {
         actorId: user.id,
         actorRole: user.role,

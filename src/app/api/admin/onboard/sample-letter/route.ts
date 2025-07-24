@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (err) {
+    console.error("Error serving sample letter:", err);
     return new Response("File not found", { status: 404 });
   }
 } 

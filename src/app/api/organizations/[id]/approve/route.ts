@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import db from "@/lib/db/db";
 import { ROLES, ORGANIZATION_STATUS } from "@/lib/constants";
 
 export async function PUT(
@@ -9,9 +8,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session) {
+    const session = await auth();
+    if (!session?.user) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
@@ -26,10 +24,27 @@ export async function PUT(
       );
     }
 
+    // Get params asynchronously
     const { id } = await params;
-    const body = await request.json();
-    const { action, reason } = body; // action: "approve" or "reject"
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "Organization ID is required" },
+        { status: 400 }
+      );
+    }
 
+    // Parse request body
+    let body;
+    try {
+      body = await request.json();
+    } catch (error) {
+      return NextResponse.json(
+        { success: false, error: "Invalid JSON body" },
+        { status: 400 }
+      );
+    }
+
+    const { action, reason } = body;
     if (!["approve", "reject"].includes(action)) {
       return NextResponse.json(
         { success: false, error: "Invalid action" },
@@ -38,8 +53,16 @@ export async function PUT(
     }
 
     // Find the organization
-    const organization = await prisma.organization.findUnique({
-      where: { id: parseInt(id) },
+    const organizationId = parseInt(id);
+    if (isNaN(organizationId)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid organization ID" },
+        { status: 400 }
+      );
+    }
+
+    const organization = await db.organization.findUnique({
+      where: { id: organizationId },
       include: { admin: true },
     });
 
@@ -51,30 +74,23 @@ export async function PUT(
     }
 
     // Update organization status
-    const newStatus =
-      action === "approve"
-        ? ORGANIZATION_STATUS.APPROVED
-        : ORGANIZATION_STATUS.REJECTED;
+    const newStatus = action === "approve"
+      ? ORGANIZATION_STATUS.APPROVED
+      : ORGANIZATION_STATUS.REJECTED;
 
-    const updatedOrg = await prisma.organization.update({
-      where: { id: parseInt(id) },
+    const updatedOrg = await db.organization.update({
+      where: { id: organizationId },
       data: { status: newStatus },
       include: { admin: true },
     });
 
-    // Update user approval status
-    await prisma.user.update({
-      where: { id: organization.adminId },
-      data: { isApproved: action === "approve" },
-    });
-
     // Create audit log
-    const ipAddress =
-      request.headers.get("x-forwarded-for") ||
-      request.headers.get("x-real-ip") ||
-      "unknown";
+    const ipAddress = request.headers.get("x-forwarded-for") || 
+                     request.headers.get("x-real-ip") || 
+                     "unknown";
     const userAgent = request.headers.get("user-agent") || "unknown";
-    await prisma.audits.create({
+
+    await db.audits.create({
       data: {
         actorId: session.user.id,
         actorRole: session.user.role,

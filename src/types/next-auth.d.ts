@@ -1,32 +1,54 @@
 // types/next-auth.d.ts
-import { DefaultSession } from "next-auth";
-import { UserRole, SessionUser } from "./auth";
+import { UserRole, OrganizationStatus } from "@prisma/client";
+import "next-auth";
 
 declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string;
-      email?: string | null;
-      name?: string | null;
-      image?: string | null;
-      role?: UserRole;
-      organization?: {
-        id: number;
-        name: string;
-        status: string;
-      };
-    };
-  }
-}
-
-declare module "next-auth/jwt" {
-  interface JWT {
+  interface User {
     id: string;
-    role?: UserRole;
+    name?: string | null;
+    email?: string | null;
+    role: UserRole;
     organization?: {
       id: number;
       name: string;
-      status: string;
-    };
+      email: string;
+      status: OrganizationStatus;
+      photoUrl?: string | null;
+      letterUrl?: string | null;
+    } | null;
+  }
+
+  interface Session {
+    user: {
+      id: string;
+      name?: string | null;
+      email?: string | null;
+      role: UserRole;
+      organization?: {
+        id: number;
+        name: string;
+        email: string;
+        status: OrganizationStatus;
+        photoUrl?: string | null;
+        letterUrl?: string | null;
+      } | null;
+    } & DefaultSession["user"];
+  }
+}
+
+declare module "@auth/core/jwt" {
+  interface JWT {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    role: UserRole;
+    organization?: {
+      id: number;
+      name: string;
+      email: string;
+      status: OrganizationStatus;
+      photoUrl?: string | null;
+      letterUrl?: string | null;
+    } | null;
   }
 }

@@ -1,45 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import db from "@/lib/db/db";
 import { ROLES, ORGANIZATION_STATUS } from "@/lib/constants";
-import { getUnifiedSession } from "@/lib/getUnifiedSession";
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUnifiedSession(request);
+    const session = await auth();
+    const user = session?.user;
+
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
-    // Only allow ADMIN users to create organizations
+
     if (user.role !== ROLES.ADMIN) {
       return NextResponse.json(
         { success: false, error: "Only admin users can create organizations" },
         { status: 403 }
       );
     }
-    // Check if user already has an organization
-    const existingOrg = await prisma.organization.findUnique({
+
+    const existingOrg = await db.organization.findUnique({
       where: { adminId: user.id },
     });
+
     if (existingOrg) {
       return NextResponse.json(
         { success: false, error: "User already has an organization" },
         { status: 400 }
       );
     }
+
     const body = await request.json();
     const { name, email, membersCount, photoUrl, letterUrl } = body;
-    // Validate required fields
+
     if (!name || !email || !membersCount || !photoUrl || !letterUrl) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
         { status: 400 }
       );
     }
-    // Create organization
-    const organization = await prisma.organization.create({
+
+    const organization = await db.organization.create({
       data: {
         adminId: user.id,
         name,
@@ -53,13 +57,14 @@ export async function POST(request: NextRequest) {
         admin: true,
       },
     });
-    // Create audit log
+
     const ipAddress =
       request.headers.get("x-forwarded-for") ||
       request.headers.get("x-real-ip") ||
       "unknown";
     const userAgent = request.headers.get("user-agent") || "unknown";
-    await prisma.audits.create({
+
+    await db.audits.create({
       data: {
         actorId: user.id,
         actorRole: user.role,
@@ -74,6 +79,7 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
     return NextResponse.json({
       success: true,
       message: "Organization created successfully",
@@ -92,18 +98,20 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const user = await getUnifiedSession(request);
+    const session = await auth();
+    const user = session?.user;
+
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
-    // SuperAdmin can see all organizations
+
     if (user.role === ROLES.SUPER_ADMIN) {
-      const organizations = await prisma.organization.findMany({
+      const organizations = await db.organization.findMany({
         include: {
           admin: true,
           elections: {
@@ -116,14 +124,15 @@ export async function GET(request: NextRequest) {
         },
         orderBy: { createdAt: "desc" },
       });
+
       return NextResponse.json({
         success: true,
         data: organizations,
       });
     }
-    // Admin can only see their own organization
+
     if (user.role === ROLES.ADMIN) {
-      const organization = await prisma.organization.findUnique({
+      const organization = await db.organization.findUnique({
         where: { adminId: user.id },
         include: {
           admin: true,
@@ -136,11 +145,13 @@ export async function GET(request: NextRequest) {
           },
         },
       });
+
       return NextResponse.json({
         success: true,
         data: organization,
       });
     }
+
     return NextResponse.json(
       { success: false, error: "Access denied" },
       { status: 403 }

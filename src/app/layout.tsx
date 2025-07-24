@@ -7,6 +7,7 @@ import NavbarWrapper from "@/components/NavbarWrapper";
 import SidebarWrapper from "@/components/sidebars/SidebarWrapper";
 import { useSidebarVisible } from "@/hooks/useSidebarVisible";
 import { useEffect, useState } from "react";
+import { SessionProvider } from "next-auth/react"
 
 function useIsHydrated() {
   const [hydrated, setHydrated] = useState(false);
@@ -28,6 +29,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body suppressHydrationWarning={true}>
+        
+       <SessionProvider>
         <Provider store={store}>
           <NavbarWrapper />
           {sidebarVisible ? (
@@ -39,6 +42,8 @@ export default function RootLayout({
             <main className="pt-20 md:pt-0">{children}</main>
           )}
         </Provider>
+        </SessionProvider>
+
       </body>
     </html>
   );

@@ -1,33 +1,24 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+
 import { CompleteTaskModal } from "@/components/CompleteTaskModal";
 import { AuthFooter } from "@/components/AuthFooter";
 import AuthContainer from '@/components/AuthContainer';
 import { SubmitButton } from "@/components/SubmitButton";
-import { useRouter } from "next/navigation";
 
 type ApplicationStatus = 'getting_started' | 'submitted' | 'reviewing' | 'approved' | 'rejected';
 
 function StatusBadge({ status }: { status: ApplicationStatus }) {
-  const getStatusConfig = (status: ApplicationStatus) => {
-    switch (status) {
-      case 'getting_started':
-        return { text: 'Getting Started', bg: 'bg-gray-100', textColor: 'text-gray-800' };
-      case 'submitted':
-        return { text: 'Submitted', bg: 'bg-blue-100', textColor: 'text-blue-800' };
-      case 'reviewing':
-        return { text: 'Under Review', bg: 'bg-yellow-100', textColor: 'text-yellow-800' };
-      case 'approved':
-        return { text: 'Approved', bg: 'bg-green-100', textColor: 'text-green-800' };
-      case 'rejected':
-        return { text: 'Rejected', bg: 'bg-red-100', textColor: 'text-red-800' };
-      default:
-        return { text: 'Unknown', bg: 'bg-gray-100', textColor: 'text-gray-800' };
-    }
-  };
+  const config = {
+    getting_started: { text: 'Getting Started', bg: 'bg-gray-100', textColor: 'text-gray-800' },
+    submitted: { text: 'Submitted', bg: 'bg-blue-100', textColor: 'text-blue-800' },
+    reviewing: { text: 'Under Review', bg: 'bg-yellow-100', textColor: 'text-yellow-800' },
+    approved: { text: 'Approved', bg: 'bg-green-100', textColor: 'text-green-800' },
+    rejected: { text: 'Rejected', bg: 'bg-red-100', textColor: 'text-red-800' },
+  }[status] || { text: 'Unknown', bg: 'bg-gray-100', textColor: 'text-gray-800' };
 
-  const config = getStatusConfig(status);
-  
   return (
     <span className={`px-3 py-1 rounded-full text-sm font-medium ${config.bg} ${config.textColor}`}>
       {config.text}
@@ -148,15 +139,11 @@ function ApplicationStepper({
 
 export default function OnboardProcessingPage() {
   const router = useRouter();
+  const { data: session, status: sessionStatus } = useSession();
+
   const [showModal, setShowModal] = useState(false);
   const [status, setStatus] = useState<ApplicationStatus>('getting_started');
-  const [uploadedLogo, setUploadedLogo] = useState<File | null>(null);
-  const [uploadedLetter, setUploadedLetter] = useState<File | null>(null);
-  const [logoError, setLogoError] = useState<string | null>(null);
-  const [letterError, setLetterError] = useState<string | null>(null);
-  const [userName, setUserName] = useState<string>("");
-  
-  // Calculate progress based on status
+
   const getProgress = (status: ApplicationStatus) => {
     switch (status) {
       case 'getting_started': return 25;
@@ -169,12 +156,6 @@ export default function OnboardProcessingPage() {
   };
   
   useEffect(() => {
-    // Set initial uploaded file for demo
-    setUploadedLogo(new File([""], "Sample_Logo.png", { type: "image/png", lastModified: new Date().getTime() }));
-    setUploadedLetter(new File([""], "Sample_Letter.pdf", { type: "application/pdf", lastModified: new Date().getTime() }));
-  }, []);
-
-  useEffect(() => {
     async function checkOnboardingStatus() {
       try {
         const res = await fetch("/api/organizations");
@@ -184,26 +165,10 @@ export default function OnboardProcessingPage() {
         }
       } catch (e) {
         // Optionally handle error
+        console.error("Error checking onboarding status:", e);
       }
     }
     checkOnboardingStatus();
-    // Fetch user session for name
-    async function fetchUserName() {
-      try {
-        const res = await fetch("/api/auth/session");
-        const data = await res.json();
-        console.log("/api/auth/session response for name:", data);
-        if (data?.user?.name) {
-          setUserName(data.user.name);
-          console.log("Extracted user name:", data.user.name);
-        } else {
-          console.log("No user name found in response");
-        }
-      } catch (err) {
-        console.error("Error fetching user name:", err);
-      }
-    }
-    fetchUserName();
   }, [router]);
 
   const handleComplete = () => setShowModal(true);
@@ -214,29 +179,26 @@ export default function OnboardProcessingPage() {
   };
   const handleSubmit = () => {
     setStatus('reviewing');
-    // Simulate admin review process
     setTimeout(() => {
       setStatus('approved');
     }, 3000);
   };
   const handleAccessDashboard = () => {
-    console.log("Redirecting to dashboard...");
-    // Add navigation logic here
+    router.push("/admin/dashboard");
   };
-  
+
+  if (sessionStatus === "loading") return <p>Loading session...</p>;
 
   return (
     <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40">
       <AuthContainer>
-        <h1 className="text-2xl font-bold text-gray-800 mb-1">Hi, {userName || "there"}!</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-1">Hi, {session?.user?.name || "there"}!</h1>
         <p className="text-gray-600 mb-4">Application Status: Track your progress</p>
         
-        {/* Status Badge */}
         <div className="flex justify-center mb-4">
           <StatusBadge status={status} />
         </div>
         
-        {/* Progress Bar */}
         <ProgressBar progress={getProgress(status)} />
         
         <ApplicationStepper 

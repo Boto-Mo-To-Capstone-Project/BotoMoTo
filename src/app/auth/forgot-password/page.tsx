@@ -18,17 +18,17 @@ export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
     try {
-      // TODO: Implement forgot password logic
-      console.log("Sending OTP to:", email);
+      // TODO: Implement API call to send forgot password email
+      console.log("Sending forgot password email to:", email);
       // For now, just simulate success
       router.push("/auth/forgot-password/otp");
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
@@ -55,7 +55,7 @@ export default function ForgotPasswordPage() {
           />
         </div>
         <form
-          onSubmit={handleSubmit}
+          onSubmit={handleForgotPassword}
           className="space-y-4 text-left flex flex-col items-center w-full"
         >
           <InputField

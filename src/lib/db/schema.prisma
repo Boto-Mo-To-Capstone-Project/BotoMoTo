@@ -6,12 +6,11 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL_SQLITE")
+  url      = env("DATABASE_URL")
 }
 
 // Enhanced User model for RBAC system
@@ -20,11 +19,9 @@ model User {
   name          String?
   email         String?         @unique
   password      String?  // For credentials login
-  role          UserRole        @default(VOTER) // Enhanced role system
+  role          UserRole        @default(ADMIN) // Enhanced role system
   emailVerified DateTime?
   image         String?
-  isActive      Boolean         @default(true)
-  isApproved    Boolean         @default(false) // For admin approval workflow
   
   // Organization relationship for admins
   organization  Organization?
@@ -95,6 +92,7 @@ enum AuditAction {
   VOTE
   APPROVE
   REJECT
+  UPLOAD
 }
  
 model Account {
@@ -158,34 +156,34 @@ model Organization {
   id            Int                  @id @default(autoincrement())
   adminId       String               @unique // Changed to String to match User.id
   name          String
-  description   String
+  email         String               // <--- Added email field
   membersCount  Int
+  isApproved    Boolean              @default(false) 
   status        OrganizationStatus   @default(PENDING)
   photoUrl      String?
-  letterUrl     String? // For approval documents
-  frequency     String? // Election frequency
-  theme         Json? // UI theme configuration
-  
+  letterUrl     String? 
+
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
   deletedAt     DateTime?
   isDeleted     Boolean              @default(false)
 
   admin          User                @relation(fields: [adminId], references: [id])
-  contactDetails OrgContactDetails[]
+  // contactDetails OrgContactDetails[]
   elections      Election[]
   tickets        Ticket[]
 }
 
-model OrgContactDetails {
-  id        Int          @id @default(autoincrement())
-  orgId     Int
-  name      String
-  email     String
-  contactNum String
-
-  organization Organization @relation(fields: [orgId], references: [id])
-}
+// hassle step
+// model OrgContactDetails {
+//   id        Int          @id @default(autoincrement())
+//   orgId     Int
+//   name      String
+//   email     String
+//   contactNum String
+//
+//   organization Organization @relation(fields: [orgId], references: [id])
+// }
 
 model Election {
   id          Int            @id @default(autoincrement())

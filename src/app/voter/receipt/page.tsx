@@ -5,7 +5,6 @@ import { RootState } from "@/store";
 import Button from "@/components/Button";
 import { useRouter } from "next/navigation";
 import CandidateRow from "@/components/CandidateRow";
-import { useState } from "react";
 import SectionHeaderContainer from "@/components/SectionHeaderContainer";
 
 const VoteReceipt = () => {
