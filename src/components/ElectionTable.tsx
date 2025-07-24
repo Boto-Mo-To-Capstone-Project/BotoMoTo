@@ -23,9 +23,27 @@ interface ElectionTableProps {
   onPageSizeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onRowClick?: (election: Election) => void;
   title?: string;
+  selectedIds?: number[];
+  onCheckboxChange?: (id: number) => void;
 }
 
-export default function ElectionTable({ title = 'All Elections', ...props }: ElectionTableProps) {
+export default function ElectionTable({ title = 'All Elections', selectedIds = [], onCheckboxChange, ...props }: ElectionTableProps) {
+  // Helper for header checkbox
+  const allChecked = props.elections.length > 0 && props.elections.every(e => selectedIds.includes(e.id));
+  const someChecked = props.elections.some(e => selectedIds.includes(e.id));
+
+  const handleHeaderCheckbox = () => {
+    if (allChecked) {
+      // Uncheck all
+      props.elections.forEach(e => onCheckboxChange && onCheckboxChange(e.id));
+    } else {
+      // Check all
+      props.elections.forEach(e => {
+        if (!selectedIds.includes(e.id)) onCheckboxChange && onCheckboxChange(e.id);
+      });
+    }
+  };
+
   return (
     <div>
       {title && <h2 className="text-lg font-semibold mb-2">{title}</h2>}
@@ -33,7 +51,14 @@ export default function ElectionTable({ title = 'All Elections', ...props }: Ele
         <table className="w-full text-sm border-separate border-spacing-0">
           <thead className="bg-gray-50">
             <tr className="text-left text-gray-700 border-b font-semibold text-base">
-              <th className="py-2 px-3 border-b border-gray-200"><input type="checkbox" /></th>
+              <th className="py-2 px-3 border-b border-gray-200">
+                <input
+                  type="checkbox"
+                  checked={allChecked}
+                  ref={el => { if (el) el.indeterminate = !allChecked && someChecked; }}
+                  onChange={handleHeaderCheckbox}
+                />
+              </th>
               <th className="py-2 px-3 border-b border-gray-200 whitespace-nowrap cursor-pointer select-none" onClick={() => props.onSort('name')}>
                 <span className="flex items-center gap-1">
                   Election
@@ -82,9 +107,19 @@ export default function ElectionTable({ title = 'All Elections', ...props }: Ele
               <tr
                 key={election.id + '-' + idx}
                 className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
-                onClick={() => props.onRowClick && props.onRowClick(election)}
+                onClick={e => {
+                  // Prevent double toggle if checkbox is clicked
+                  if ((e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
+                  onCheckboxChange && onCheckboxChange(election.id);
+                }}
               >
-                <td className="py-2 px-3 align-middle"><input type="checkbox" /></td>
+                <td className="py-2 px-3 align-middle">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(election.id)}
+                    onChange={() => onCheckboxChange && onCheckboxChange(election.id)}
+                  />
+                </td>
                 <td className="py-2 px-3 align-middle truncate max-w-[180px]">{election.name}</td>
                 <td className="py-2 px-3 align-middle text-center">
                   <span className={`px-3 py-1 rounded-full text-sm font-medium w-full block text-center

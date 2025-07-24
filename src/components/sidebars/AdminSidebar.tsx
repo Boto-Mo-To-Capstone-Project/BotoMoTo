@@ -21,11 +21,12 @@ import {
 type AdminSidebarProps = {
   variant: "default" | "selectedElection";
   electionId?: string;
+  open?: boolean;
+  onClose?: () => void;
 };
 
-const AdminSidebar = ({ variant, electionId }: AdminSidebarProps) => {
+const AdminSidebar = ({ variant, electionId, open = false, onClose }: AdminSidebarProps) => {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
   const [showSetup, setShowSetup] = useState(false);
   const [showManage, setShowManage] = useState(false);
 
@@ -80,39 +81,28 @@ const AdminSidebar = ({ variant, electionId }: AdminSidebarProps) => {
 
   return (
     <>
-      {/* Hamburger button - mobile only */}
-      <div className="lg:hidden flex items-center h-20 px-4 w-full bg-white shadow-sm fixed top-0 left-0 z-[100]">
-        <button
-          className="text-primary bg-white rounded-full p-2 shadow-md"
-          onClick={() => setIsOpen(true)}
-          aria-label="Open sidebar"
-        >
-          <Menu className="w-8 h-8" />
-        </button>
-      </div>
-
       {/* Overlay */}
       <div
         className={`fixed inset-0 bg-black/50 transition-opacity duration-300 ${
-          isOpen
+          open
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
         } lg:hidden`}
-        onClick={() => setIsOpen(false)}
+        onClick={onClose}
         aria-label="Close sidebar overlay"
       ></div>
 
       {/* Sidebar */}
       <aside
-        className={`overflow-y-auto scrollbar-hidden fixed top-0 left-0 h-full min-h-screen w-full max-w-xs bg-primary px-4 py-6 space-y-5 transform transition-transform duration-300 z-[101] ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 lg:flex-shrink-0 lg:w-68 lg:max-w-none`}
+        className={`overflow-y-auto scrollbar-hidden fixed top-0 left-0 h-full w-full bg-[#800000] px-4 py-6 space-y-5 transform transition-transform duration-300 z-[101] ${
+          open ? "translate-x-0" : "-translate-x-full"
+        } lg:w-68 lg:max-w-none lg:translate-x-0 lg:flex-shrink-0`}
         aria-label="Sidebar navigation"
       >
         {/* Mobile close button */}
         <div className="flex justify-between items-center lg:hidden">
           <Image src={BotoMoToLogo} height={45} alt="BotoMoToLogo" />
-          <button onClick={() => setIsOpen(false)} aria-label="Close sidebar">
+          <button onClick={onClose} aria-label="Close sidebar">
             <X className="w-8 h-8 text-white" />
           </button>
         </div>
@@ -136,7 +126,7 @@ const AdminSidebar = ({ variant, electionId }: AdminSidebarProps) => {
                     ? "bg-white text-primary"
                     : "hover:font-semibold text-white"
                 }`}
-                onClick={() => setIsOpen(false)}
+                onClick={onClose}
               >
                 <Icon className="h-5 w-5" />
                 <span>{link.name}</span>
@@ -172,7 +162,7 @@ const AdminSidebar = ({ variant, electionId }: AdminSidebarProps) => {
                               ? "text-primary"
                               : "text-gray hover:text-primary"
                           }`}
-                          onClick={() => setIsOpen(false)}
+                          onClick={onClose}
                         >
                           {link.name}
                         </Link>
@@ -208,7 +198,7 @@ const AdminSidebar = ({ variant, electionId }: AdminSidebarProps) => {
                               ? "text-primary"
                               : "text-gray hover:text-primary"
                           }`}
-                          onClick={() => setIsOpen(false)}
+                          onClick={onClose}
                         >
                           {link.name}
                         </Link>
