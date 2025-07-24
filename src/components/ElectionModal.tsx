@@ -3,6 +3,13 @@ import { useState } from "react";
 import { AuthHeading } from "@/components/AuthHeading";
 import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
+import {
+  PlusIcon,
+  PencilSquareIcon,
+  ArrowDownTrayIcon,
+  FunnelIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline';
 
 interface ElectionModalProps {
   open: boolean;
@@ -24,12 +31,12 @@ export function ElectionModal({ open, onClose, onSave }: ElectionModalProps) {
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-sm lg:ml-68"
       onClick={e => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm sm:max-w-[380px] relative px-4 pt-8 pb-8 mx-4 text-center space-y-6 border border-gray-200 overflow-y-auto max-h-[90vh]">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-[95vw] sm:max-w-md md:max-w-lg lg:max-w-xl relative px-4 sm:px-6 pt-8 pb-8 mx-2 sm:mx-4 text-center space-y-6 border border-gray-200 overflow-y-auto max-h-[90vh] overflow-x-hidden break-words">
         <button
           className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
           onClick={onClose}
