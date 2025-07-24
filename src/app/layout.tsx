@@ -29,19 +29,21 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body suppressHydrationWarning={true}>
-        <SessionProvider>
-          <Provider store={store}>
-            <NavbarWrapper />
-            {sidebarVisible ? (
-              <div className="flex flex-col md:flex-row min-h-screen">
-                <SidebarWrapper />
-                <main className="flex-1 pt-20 md:pt-0 lg:ml-68">{children}</main>
-              </div>
-            ) : (
-              <main className="pt-20 md:pt-0">{children}</main>
-            )}
-          </Provider>
+        
+       <SessionProvider>
+        <Provider store={store}>
+          <NavbarWrapper />
+          {sidebarVisible ? (
+            <div className="flex flex-col md:flex-row min-h-screen">
+              <SidebarWrapper />
+              <main className="flex-1 pt-0 md:pt-0 lg:ml-68">{children}</main>
+            </div>
+          ) : (
+            <main className="pt-20 md:pt-0">{children}</main>
+          )}
+        </Provider>
         </SessionProvider>
+
       </body>
     </html>
   );
