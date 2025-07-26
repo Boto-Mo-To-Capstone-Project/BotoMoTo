@@ -7,11 +7,6 @@ export interface SurveyQuestion {
   id: number;
   question: string;
 }
-// for survey form
-export interface SurveySection {
-  title: string;
-  questions: SurveyQuestion[];
-}
 
 
 // Navigation components
