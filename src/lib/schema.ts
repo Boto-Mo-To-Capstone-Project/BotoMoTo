@@ -13,19 +13,19 @@ const field = {
       max?: string;
     }
   }) => {
-    const schema = z.string({
+    let schema = z.string({
       required_error: options?.messages?.required ?? `${name} is required`,
       invalid_type_error: options?.messages?.invalid ?? `${name} must be a string`,
     });
 
     if (options?.min !== undefined) {
-      schema.min(options.min, {
+      schema = schema.min(options.min, {
         message: options?.messages?.min ?? `${name} must be at least ${options.min} characters`
       });
     }
 
     if (options?.max !== undefined) {
-      schema.max(options.max, {
+      schema = schema.max(options.max, {
         message: options?.messages?.max ?? `${name} must be at most ${options.max} characters`
       });
     }
@@ -40,10 +40,12 @@ const field = {
       invalid?: string;
     }
   }) => {
-    const schema = z.string({
+    let schema = z.string({
       required_error: options?.messages?.required ?? `${name} is required`,
       invalid_type_error: options?.messages?.invalid ?? `${name} must be a string`,
-    }).email({
+    });
+
+    schema = schema.email({
       message: options?.messages?.invalid ?? `${name} must be a valid email address`
     });
 
@@ -57,10 +59,12 @@ const field = {
       invalid?: string;
     }
   }) => {
-    const schema = z.string({
+    let schema = z.string({
       required_error: options?.messages?.required ?? `${name} is required`,
       invalid_type_error: options?.messages?.invalid ?? `${name} must be a string`,
-    }).url({
+    });
+
+    schema = schema.url({
       message: options?.messages?.invalid ?? `${name} must be a valid URL`
     });
 
@@ -78,19 +82,19 @@ const field = {
       max?: string;
     }
   }) => {
-    const schema = z.number({
+    let schema = z.number({
       required_error: options?.messages?.required ?? `${name} is required`,
       invalid_type_error: options?.messages?.invalid ?? `${name} must be a number`,
     });
 
     if (options?.min !== undefined) {
-      schema.min(options.min, {
+      schema = schema.min(options.min, {
         message: options?.messages?.min ?? `${name} must be at least ${options.min}`
       });
     }
 
     if (options?.max !== undefined) {
-      schema.max(options.max, {
+      schema = schema.max(options.max, {
         message: options?.messages?.max ?? `${name} must be at most ${options.max}`
       });
     }
@@ -109,10 +113,12 @@ const field = {
       special?: string;
     }
   }) => {
-    const schema = z.string({
+    let schema = z.string({
       required_error: options?.messages?.required ?? `${name} is required`,
       invalid_type_error: options?.messages?.invalid ?? `${name} must be a string`,
-    })
+    });
+
+    schema = schema
       .min(8, { message: options?.messages?.min ?? `${name} must be at least 8 characters` })
       .regex(/[A-Z]/, { message: options?.messages?.uppercase ?? `${name} must contain at least one uppercase letter` })
       .regex(/[a-z]/, { message: options?.messages?.lowercase ?? `${name} must contain at least one lowercase letter` })

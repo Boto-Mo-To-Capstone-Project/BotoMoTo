@@ -41,6 +41,14 @@ enum UserRole {
   SUPER_ADMIN
 }
 
+enum AuditResource {
+  ORGANIZATION
+  USER
+  ELECTION
+  CANDIDATE
+  // Add other resources as needed
+}
+
 // Organization approval status enum
 enum OrganizationStatus {
   PENDING
@@ -87,6 +95,7 @@ enum AuditAction {
   READ
   UPDATE
   DELETE
+  SIGNUP
   LOGIN
   LOGOUT
   VOTE
@@ -450,7 +459,7 @@ model Audits {
   userAgent  String
   resource   String?    // What resource was affected
   resourceId String?    // ID of the affected resource
-  details    Json?      // Additional details
+  details    Json?      // Additional details  // should edit this if i switch to postgres
   
   timestamp  DateTime   @default(now())
 
