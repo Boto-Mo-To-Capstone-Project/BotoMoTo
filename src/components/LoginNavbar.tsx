@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import Link from "next/link";
 
 import Image from "next/image";
 
@@ -45,9 +46,11 @@ const LoginNavbar: React.FC<LoginNavbarProps> = ({ buttons }) => {
     <nav className="fixed top-0 left-0 w-full h-20 bg-white flex justify-between items-center shadow-sm px-4 md:px-15 z-3">
       <div className="flex gap-10 items-center">
         {/* Logo */}
+        <Link href="/">
         <div className="">
           <Image src={BotoMoToLogo} height={50} alt="BotoMoToLogo" />
         </div>
+        </Link>
         {/* Desktop Menu */}
         <div>
           <ul className="hidden md:flex gap-6 nav-text">
