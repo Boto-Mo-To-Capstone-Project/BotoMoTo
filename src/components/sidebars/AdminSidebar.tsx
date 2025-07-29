@@ -24,7 +24,12 @@ type AdminSidebarProps = {
   onClose?: () => void;
 };
 
-const AdminSidebar = ({ variant, electionId, open = false, onClose }: AdminSidebarProps) => {
+const AdminSidebar = ({
+  variant,
+  electionId,
+  open = false,
+  onClose,
+}: AdminSidebarProps) => {
   const pathname = usePathname();
   const [showSetup, setShowSetup] = useState(false);
   const [showManage, setShowManage] = useState(false);
@@ -93,9 +98,9 @@ const AdminSidebar = ({ variant, electionId, open = false, onClose }: AdminSideb
 
       {/* Sidebar */}
       <aside
-        className={`overflow-y-auto scrollbar-hidden fixed top-0 left-0 h-full w-full bg-[#800000] px-4 py-6 space-y-5 transform transition-transform duration-300 z-[101] ${
+        className={`overflow-y-auto scrollbar-hidden fixed top-0 left-0 h-full w-full bg-primary px-4 py-6 space-y-5 transform transition-transform duration-300 z-[101] ${
           open ? "translate-x-0" : "-translate-x-full"
-        } lg:w-68 lg:max-w-none lg:translate-x-0 lg:flex-shrink-0`}
+        } lg:w-68 lg:max-w-none lg:translate-x-0 `}
         aria-label="Sidebar navigation"
       >
         {/* Mobile close button */}
