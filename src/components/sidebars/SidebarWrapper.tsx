@@ -1,21 +1,25 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import AdminSidebar from "./AdminSidebar";
-import SuperAdminSidebar from "./SuperAdminSidebar";
+import SuperAdminSidebar from "./SuperAdminSidebar"; // use real component
+import AppHeader from "../AppHeader";
 
-const SidebarWrapper = () => {
+export default function SidebarWrapper({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-
-  // to prevent showing isSelected option for these routes
-  const reserved = ["create", "tickets", "profile"];
-
-  // to prevent showing isSelected for "reserved" routes
   const parts = pathname.split("/");
 
-  // Admin Sidebar routes
+  // === OLD LOGIC MERGED ===
+
+  const reserved = ["create", "tickets", "profile"];
+
   const adminBaseRoutes = [
-    // "/admin/onboard/processing", // removed for now, requested by mc
     "/admin/dashboard",
     "/admin/dashboard/elections",
     "/admin/dashboard/elections/create",
@@ -33,36 +37,66 @@ const SidebarWrapper = () => {
   ];
 
   const isAdminDefault = adminBaseRoutes.includes(pathname);
+
   const isAdminElectionSelected =
     pathname.startsWith("/admin/dashboard/elections/") &&
     parts.length >= 5 &&
-    // the ElectionSelected links wont appear for routes in the reserved
-    // example: /admin/dashboard/elections/create => ElectionSelected wont appear here
-    !reserved.includes(parts[4].toLowerCase());
+    !reserved.includes(parts[4]?.toLowerCase());
 
-  // super admin logic sidebar
   const isSuperAdmin =
     superAdminBaseRoutes.includes(pathname) ||
     pathname.startsWith("/superadmin/dashboard/");
 
-  if (isAdminDefault || isAdminElectionSelected) {
-    return (
-      <AdminSidebar
-        variant={isAdminElectionSelected ? "selectedElection" : "default"}
-        electionId={
-          // This line decides what value to give to the electionId prop of your <AdminSidebar /> component.
-          // If isAdminElectionSelected is true, we want the election ID from the URL.
-          // If not, we don’t pass any election ID (so it’s undefined).
+  // === PAGE TITLE LOGIC ===
+  const pageTitle = (() => {
+    if (pathname === "/admin/dashboard") return "Admin Dashboard";
+    if (pathname === "/admin/dashboard/elections") return "Admin Elections";
+    if (pathname === "/admin/dashboard/elections/create") return "Admin Create";
+    if (pathname === "/admin/dashboard/elections/tickets")
+      return "Admin Tickets";
+    if (pathname === "/admin/dashboard/elections/profile")
+      return "Admin Profile";
 
-          isAdminElectionSelected ? pathname.split("/")[4] : undefined
-        }
-      />
-    );
-  }
-  if (isSuperAdmin) {
-    return <SuperAdminSidebar />;
-  }
-  return null;
-};
+    if (pathname === "/superadmin/dashboard") return "Super Admin Dashboard";
+    if (pathname === "/superadmin/dashboard/organization-requests")
+      return "Super Admin Organization Requests";
+    if (pathname === "/superadmin/dashboard/elections")
+      return "Super Admin Elections";
+    if (pathname === "/superadmin/dashboard/tickets")
+      return "Super Admin Tickets";
+    if (pathname === "/superadmin/dashboard/audits")
+      return "Super Admin Audits";
+    if (pathname === "/superadmin/dashboard/survey")
+      return "Super Admin Survey";
 
-export default SidebarWrapper;
+    // Add more as needed
+    return "Default, Check sidebar wrapper";
+  })();
+
+  return (
+    <div className="flex min-h-screen">
+      {/* Sidebar */}
+      {(isAdminDefault || isAdminElectionSelected) && (
+        <AdminSidebar
+          variant={isAdminElectionSelected ? "selectedElection" : "default"}
+          //electionId={isAdminElectionSelected ? parts[4] : undefined}
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {isSuperAdmin && (
+        <SuperAdminSidebar
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Main Content */}
+      <div className="flex flex-col w-screen overflow-x-auto">
+        <AppHeader title={pageTitle} onMenuClick={() => setSidebarOpen(true)} />
+        <main className="lg:ml-68 ">{children}</main>
+      </div>
+    </div>
+  );
+}

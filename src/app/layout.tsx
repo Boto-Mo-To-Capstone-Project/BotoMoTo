@@ -33,12 +33,9 @@ export default function RootLayout({
           <Provider store={store}>
             <NavbarWrapper />
             {sidebarVisible ? (
-              <div className="flex flex-col md:flex-row min-h-screen">
-                <SidebarWrapper />
-                <main className="flex-1 pt-0 md:pt-0 lg:ml-68">{children}</main>
-              </div>
+              <SidebarWrapper>{children}</SidebarWrapper>
             ) : (
-              <main className="">{children}</main>
+              <main>{children}</main>
             )}
           </Provider>
         </SessionProvider>
