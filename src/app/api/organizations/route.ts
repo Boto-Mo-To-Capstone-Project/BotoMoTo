@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     // Fetch organizations for super admin (can view all organizations)
     if (user.role === ROLES.SUPER_ADMIN) {
       const organizations = await db.organization.findMany({
+        where: { isDeleted: false }, // Only non-deleted orgs
         include: {
           admin: true,
           elections: {
@@ -66,7 +67,10 @@ export async function GET(request: NextRequest) {
     // Fetch organization for admin (can't view all organizations)
     if (user.role === ROLES.ADMIN) {
       const organization = await db.organization.findUnique({
-        where: { adminId: user.id },
+        where: { 
+          adminId: user.id,
+          isDeleted: false // Only return if not deleted
+        },
         include: {
           admin: true,
           elections: {
@@ -83,7 +87,7 @@ export async function GET(request: NextRequest) {
       if (!organization) {
         return apiResponse({ 
           success: false, 
-          message: "Organization not found", 
+          message: "Organization not found or has been deleted", 
           data: null, 
           error: "Not Found", 
           status: 404 });
@@ -162,8 +166,40 @@ export async function POST(request: NextRequest) {
     // Check if the user already has an organization
     const existingOrg = await db.organization.findUnique({
       where: { adminId: user.id },
+      include: { admin: true },
     });
 
+    // If exists but deleted, restore it
+    if (existingOrg?.isDeleted) {
+      const restoredOrg = await db.organization.update({
+        where: { id: existingOrg.id },
+        data: { 
+          isDeleted: false,
+          deletedAt: null,
+          ...(await request.json()) // Update with new data
+        },
+        include: { admin: true },
+      });
+
+      const audit = await createAuditLog({
+        user,
+        action: "RESTORE",
+        request,
+        resource: "ORGANIZATION",
+        resourceId: restoredOrg.id,
+        message: "Restored deleted organization",
+      });
+
+      return apiResponse({
+        success: true,
+        message: "Organization restored successfully",
+        data: { organization: restoredOrg, audit },
+        error: null,
+        status: 200
+      });
+    }
+
+    // if exists and not deleted
     if (existingOrg) {
       return apiResponse({
         success: false,
@@ -337,7 +373,7 @@ export async function DELETE(request: NextRequest) {
 
 // things to do:
 // if deleted na ang org, dapat di na sya accessible ng admin user
-// create a conditional to check the field `isDeleted` in the organization model
+// create a conditional to check the field `isDeleted` in the organization model for all the apis
 // if isDeleted is true, return an error response indicating the organization has been deleted
 // if they created again, it should make the isDeleted field false and restore the organization
 

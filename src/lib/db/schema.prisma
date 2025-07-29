@@ -95,6 +95,7 @@ enum AuditAction {
   READ
   UPDATE
   DELETE
+  RESTORE
   SIGNUP
   LOGIN
   LOGOUT
