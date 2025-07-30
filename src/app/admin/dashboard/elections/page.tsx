@@ -18,7 +18,7 @@ import {
   MdClose,
   MdEdit,
 } from "react-icons/md";
-import { MdAdd, MdDownload, MdFilterList, MdDelete } from "react-icons/md";
+
 import { SubmitButton } from "@/components/SubmitButton";
 import { ElectionModal } from "@/components/ElectionModal";
 import SearchBar from "@/components/SearchBar";
