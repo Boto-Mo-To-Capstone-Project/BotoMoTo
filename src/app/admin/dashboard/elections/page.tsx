@@ -1,32 +1,14 @@
 "use client";
-
-import { useState } from "react";
-import {
-  MdFirstPage,
-  MdLastPage,
-  MdChevronLeft,
-  MdChevronRight,
-  MdAdd,
-  MdDownload,
-  MdFilterList,
-  MdDelete,
-  MdSearch,
-  MdUnfoldMore,
-  MdArrowDropUp,
-  MdArrowDropDown,
-  MdCheckCircle,
-  MdClose,
-  MdEdit,
-} from "react-icons/md";
-import { MdAdd, MdDownload, MdFilterList, MdDelete } from "react-icons/md";
-import { SubmitButton } from "@/components/SubmitButton";
-import { ElectionModal } from "@/components/ElectionModal";
-import SearchBar from "@/components/SearchBar";
-import ElectionTable from "@/components/ElectionTable";
-import AppHeader from "@/components/AppHeader";
-import AdminSidebar from "@/components/sidebars/AdminSidebar";
-import toast, { Toaster } from "react-hot-toast";
-import CustomToast from "@/components/CustomToast";
+import { useState } from 'react';
+import { MdAdd, MdDownload, MdFilterList, MdDelete, MdEdit } from "react-icons/md";
+import { SubmitButton } from '@/components/SubmitButton';
+import { ElectionModal } from '@/components/ElectionModal';
+import SearchBar from '@/components/SearchBar';
+import ElectionTable from '@/components/ElectionTable';
+import AppHeader from '@/components/AppHeader';
+import AdminSidebar from '@/components/sidebars/AdminSidebar';
+import toast, { Toaster } from 'react-hot-toast';
+import CustomToast from '@/components/CustomToast';
 
 //naglagay lang pala ako ng emeng data para sa table
 const elections = [
