@@ -93,7 +93,7 @@ export default function SidebarWrapper({
       )}
 
       {/* Main Content */}
-      <div className="flex flex-col w-screen overflow-x-auto">
+      <div className="flex flex-col w-screen ">
         <AppHeader title={pageTitle} onMenuClick={() => setSidebarOpen(true)} />
         <main className="lg:ml-68 ">{children}</main>
       </div>
