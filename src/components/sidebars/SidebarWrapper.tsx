@@ -51,7 +51,7 @@ export default function SidebarWrapper({
   const pageTitle = (() => {
     if (pathname === "/admin/dashboard") return "Admin Dashboard";
     if (pathname === "/admin/dashboard/elections") return "Admin Elections";
-    if (pathname === "/admin/dashboard/elections/create") return "Admin Create";
+    if (pathname === "/admin/dashboard/elections/create") return "Election Form";
     if (pathname === "/admin/dashboard/elections/tickets")
       return "Admin Tickets";
     if (pathname === "/admin/dashboard/elections/profile")
@@ -79,7 +79,7 @@ export default function SidebarWrapper({
       {(isAdminDefault || isAdminElectionSelected) && (
         <AdminSidebar
           variant={isAdminElectionSelected ? "selectedElection" : "default"}
-          //electionId={isAdminElectionSelected ? parts[4] : undefined}
+          electionId={isAdminElectionSelected ? parts[4] : undefined}
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
