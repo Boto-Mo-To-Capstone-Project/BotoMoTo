@@ -149,17 +149,79 @@ const organizationSchema = z.object({
   letterUrl: field.url("Letter URL")
 });
 
+const electionSchema = z.object({
+  name: field.string("Election name", { min: 3, max: 100 }),
+  description: field.string("Election description", { min: 10, max: 500 }),
+  status: z.enum(["DRAFT", "ACTIVE", "PAUSED", "CLOSED", "ARCHIVED"], {
+    required_error: "Election status is required",
+    invalid_type_error: "Invalid election status"
+  }).default("DRAFT"),
+  isLive: z.boolean().default(false),
+  allowSurvey: z.boolean().default(false)
+});
+
+const userSchema = z.object({
+  name: field.string("Name", { min: 2, max: 100 }),
+  email: field.email("Email"),
+  role: z.enum(["VOTER", "ADMIN", "SUPER_ADMIN"], {
+    required_error: "User role is required",
+    invalid_type_error: "Invalid user role"
+  }),
+  password: field.string("Password", { required: false, min: 8 })
+});
+
+const partySchema = z.object({
+  name: field.string("Party name", { min: 2, max: 100 }),
+  color: field.string("Party color", { min: 3, max: 7 }), // For hex colors like #FF0000
+  logoUrl: field.url("Logo URL", { required: false }),
+  description: field.string("Party description", { required: false, min: 5, max: 500 })
+});
+
+const votingScopeSchema = z.object({
+  electionId: z.number().int().positive("Election ID must be a positive integer"),
+  type: z.enum(["AREA", "LEVEL", "DEPARTMENT", "CUSTOM"], {
+    required_error: "Voting scope type is required",
+    invalid_type_error: "Invalid voting scope type"
+  }),
+  name: field.string("Voting scope name", { min: 2, max: 100 }),
+  description: field.string("Voting scope description", { min: 5, max: 500 })
+});
+
+const votingScopeUpdateSchema = z.object({
+  type: z.enum(["AREA", "LEVEL", "DEPARTMENT", "CUSTOM"], {
+    required_error: "Voting scope type is required",
+    invalid_type_error: "Invalid voting scope type"
+  }),
+  name: field.string("Voting scope name", { min: 2, max: 100 }),
+  description: field.string("Voting scope description", { min: 5, max: 500 })
+});
+
 // Types
 type LoginSchema = z.infer<typeof loginSchema>;
 type SignupSchema = z.infer<typeof signupSchema>;
 type OrganizationSchema = z.infer<typeof organizationSchema>;
+type ElectionSchema = z.infer<typeof electionSchema>;
+type UserSchema = z.infer<typeof userSchema>;
+type PartySchema = z.infer<typeof partySchema>;
+type VotingScopeSchema = z.infer<typeof votingScopeSchema>;
+type VotingScopeUpdateSchema = z.infer<typeof votingScopeUpdateSchema>;
 
 export {
   field,
   loginSchema,
   signupSchema,
   organizationSchema,
+  electionSchema,
+  userSchema,
+  partySchema,
+  votingScopeSchema,
+  votingScopeUpdateSchema,
   type LoginSchema,
   type SignupSchema,
-  type OrganizationSchema
+  type OrganizationSchema,
+  type ElectionSchema,
+  type UserSchema,
+  type PartySchema,
+  type VotingScopeSchema,
+  type VotingScopeUpdateSchema
 };

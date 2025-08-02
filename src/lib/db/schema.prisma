@@ -46,6 +46,8 @@ enum AuditResource {
   USER
   ELECTION
   CANDIDATE
+  PARTY
+  VOTING_SCOPE
   // Add other resources as needed
 }
 
@@ -75,9 +77,9 @@ enum MfaMethod {
 
 // Voting scope type enum
 enum VotingScopeType {
-  LEVEL_1
-  LEVEL_2
-  LEVEL_3
+  AREA
+  LEVEL
+  DEPARTMENT
   CUSTOM
 }
 
@@ -243,9 +245,14 @@ model MfaSettings {
 model VotingScope {
   id          Int             @id @default(autoincrement())
   electionId  Int
-  name        String
   type        VotingScopeType
+  name        String
   description String
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
 
   election   Election  @relation(fields: [electionId], references: [id])
   voters     Voter[]

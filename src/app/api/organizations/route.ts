@@ -6,7 +6,7 @@ import { ROLES, ORGANIZATION_STATUS } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
 import { validateWithZod } from "@/lib/validateWithZod";
 import { organizationSchema } from "@/lib/schema";
-import { createAuditLog } from "@/lib/audit"; // Assuming you have a utility for creating audit logs
+import { createAuditLog } from "@/lib/audit";
 
 // Handle GET request to fetch organization details
 export async function GET(request: NextRequest) {
