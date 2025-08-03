@@ -48,6 +48,7 @@ enum AuditResource {
   CANDIDATE
   PARTY
   VOTING_SCOPE
+  VOTER
   // Add other resources as needed
 }
 

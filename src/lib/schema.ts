@@ -196,6 +196,42 @@ const votingScopeUpdateSchema = z.object({
   description: field.string("Voting scope description", { min: 5, max: 500 })
 });
 
+const voterSchema = z.object({
+  electionId: z.number().int().positive("Election ID must be a positive integer"),
+  email: field.email("Email", { required: false }),
+  contactNum: field.string("Contact number", { required: false, min: 10, max: 15 }),
+  firstName: field.string("First name", { min: 2, max: 50 }),
+  middleName: field.string("Middle name", { required: false, min: 1, max: 50 }),
+  lastName: field.string("Last name", { min: 2, max: 50 }),
+  votingScopeId: z.number().int().positive("Voting scope ID must be a positive integer").optional(),
+  address: field.string("Address", { required: false, min: 5, max: 255 }),
+  isActive: z.boolean().default(true)
+});
+
+const voterUpdateSchema = z.object({
+  email: field.email("Email", { required: false }),
+  contactNum: field.string("Contact number", { required: false, min: 10, max: 15 }),
+  firstName: field.string("First name", { min: 2, max: 50 }),
+  middleName: field.string("Middle name", { required: false, min: 1, max: 50 }),
+  lastName: field.string("Last name", { min: 2, max: 50 }),
+  votingScopeId: z.number().int().positive("Voting scope ID must be a positive integer").optional(),
+  address: field.string("Address", { required: false, min: 5, max: 255 }),
+  isActive: z.boolean().default(true)
+});
+
+const voterBulkUploadSchema = z.object({
+  electionId: z.number().int().positive("Election ID must be a positive integer"),
+  voters: z.array(z.object({
+    email: field.email("Email", { required: false }),
+    contactNum: field.string("Contact number", { required: false, min: 10, max: 15 }),
+    firstName: field.string("First name", { min: 2, max: 50 }),
+    middleName: field.string("Middle name", { required: false, min: 1, max: 50 }),
+    lastName: field.string("Last name", { min: 2, max: 50 }),
+    votingScopeId: z.number().int().positive("Voting scope ID must be a positive integer").optional(),
+    address: field.string("Address", { required: false, min: 5, max: 255 })
+  })).min(1, "At least one voter is required")
+});
+
 // Types
 type LoginSchema = z.infer<typeof loginSchema>;
 type SignupSchema = z.infer<typeof signupSchema>;
@@ -205,6 +241,9 @@ type UserSchema = z.infer<typeof userSchema>;
 type PartySchema = z.infer<typeof partySchema>;
 type VotingScopeSchema = z.infer<typeof votingScopeSchema>;
 type VotingScopeUpdateSchema = z.infer<typeof votingScopeUpdateSchema>;
+type VoterSchema = z.infer<typeof voterSchema>;
+type VoterUpdateSchema = z.infer<typeof voterUpdateSchema>;
+type VoterBulkUploadSchema = z.infer<typeof voterBulkUploadSchema>;
 
 export {
   field,
@@ -216,6 +255,9 @@ export {
   partySchema,
   votingScopeSchema,
   votingScopeUpdateSchema,
+  voterSchema,
+  voterUpdateSchema,
+  voterBulkUploadSchema,
   type LoginSchema,
   type SignupSchema,
   type OrganizationSchema,
@@ -223,5 +265,8 @@ export {
   type UserSchema,
   type PartySchema,
   type VotingScopeSchema,
-  type VotingScopeUpdateSchema
+  type VotingScopeUpdateSchema,
+  type VoterSchema,
+  type VoterUpdateSchema,
+  type VoterBulkUploadSchema
 };
