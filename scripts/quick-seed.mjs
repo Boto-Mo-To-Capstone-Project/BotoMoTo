@@ -3,6 +3,28 @@ import bcrypt from "bcrypt";
 
 const db = new PrismaClient();
 
+// Generate a unique voter code
+async function generateUniqueVoterCode() {
+  let code;
+  let isUnique = false;
+  
+  while (!isUnique) {
+    // Generate a 6-digit number (100000 to 999999)
+    code = Math.floor(Math.random() * 900000 + 100000).toString();
+    
+    // Check if this code already exists
+    const existingVoter = await db.voter.findUnique({
+      where: { code }
+    });
+    
+    if (!existingVoter) {
+      isUnique = true;
+    }
+  }
+  
+  return code;
+}
+
 async function quickSeed() {
   try {
     console.log("🚀 Quick seeding for API testing...");
@@ -113,10 +135,12 @@ async function quickSeed() {
     // Create voters
     const voters = [];
     for (let i = 1; i <= 20; i++) {
+      const voterCode = await generateUniqueVoterCode();
+      
       const voter = await db.voter.create({
         data: {
           electionId: testElection.id,
-          code: `TEST${String(i).padStart(3, '0')}`,
+          code: voterCode,
           email: `voter${i}@testuniversity.edu`,
           firstName: `Voter${i}`,
           lastName: "Test",

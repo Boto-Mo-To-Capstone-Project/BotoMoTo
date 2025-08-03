@@ -3,6 +3,28 @@ import bcrypt from "bcrypt";
 
 const db = new PrismaClient();
 
+// Generate a unique voter code
+async function generateUniqueVoterCode() {
+  let code;
+  let isUnique = false;
+  
+  while (!isUnique) {
+    // Generate a 6-digit number (100000 to 999999)
+    code = Math.floor(Math.random() * 900000 + 100000).toString();
+    
+    // Check if this code already exists
+    const existingVoter = await db.voter.findUnique({
+      where: { code }
+    });
+    
+    if (!existingVoter) {
+      isUnique = true;
+    }
+  }
+  
+  return code;
+}
+
 // Sample data arrays
 const organizations = [
   {
@@ -91,7 +113,7 @@ const votingScopes = [
 ];
 
 // Generate realistic voter data
-function generateVoters(electionId, count = 100) {
+async function generateVoters(electionId, count = 100) {
   const firstNames = [
     "Alex", "Blake", "Casey", "Dana", "Ellis", "Finley", "Gray", "Harper", 
     "Ian", "Jordan", "Kelly", "Logan", "Morgan", "Noel", "Parker", "Quinn",
@@ -113,9 +135,12 @@ function generateVoters(electionId, count = 100) {
     const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
     const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${i}@${domains[Math.floor(Math.random() * domains.length)]}`;
     
+    // Generate unique voter code
+    const voterCode = await generateUniqueVoterCode();
+    
     voters.push({
       electionId,
-      code: `VOTER${String(i + 1).padStart(6, '0')}`,
+      code: voterCode,
       email,
       firstName,
       lastName,
@@ -302,7 +327,7 @@ async function seedDatabase() {
     // Create voters for each election
     const createdVoters = [];
     for (const election of createdElections) {
-      const voters = generateVoters(election.id, 50); // 50 voters per election
+      const voters = await generateVoters(election.id, 50); // 50 voters per election
       
       for (const voter of voters) {
         const scopesForElection = createdScopes.filter(s => s.electionId === election.id);
