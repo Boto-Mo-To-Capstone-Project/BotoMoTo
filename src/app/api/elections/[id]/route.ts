@@ -2,33 +2,34 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import db from "@/lib/db/db";
-import { ROLES } from "@/lib/constants";
+import { ROLES, ELECTION_STATUS } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
 import { validateWithZod } from "@/lib/validateWithZod";
 import { electionSchema } from "@/lib/schema";
 import { createAuditLog } from "@/lib/audit";
 
-// Handle GET request to fetch a specific election
+// Handle GET request for specific election
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Authenticate the user
     const session = await auth();
     const user = session?.user;
 
     if (!user) {
       return apiResponse({
         success: false,
-        message: "You must be logged in to view this election",
+        message: "You must be logged in to view election details",
         data: null,
         error: "Unauthorized",
         status: 401
       });
     }
 
-    const electionId = parseInt(params.id);
+    const { id } = await params;
+    const electionId = parseInt(id);
+    
     if (isNaN(electionId)) {
       return apiResponse({
         success: false,
@@ -39,7 +40,6 @@ export async function GET(
       });
     }
 
-    // Fetch election with organization info
     const election = await db.election.findUnique({
       where: {
         id: electionId,
@@ -51,12 +51,14 @@ export async function GET(
             id: true,
             name: true,
             email: true,
+            status: true,
             adminId: true,
             admin: {
               select: {
                 id: true,
                 name: true,
-                email: true
+                email: true,
+                role: true
               }
             }
           }
@@ -65,10 +67,18 @@ export async function GET(
         mfaSettings: true,
         _count: {
           select: {
-            voters: true,
-            candidates: true,
-            positions: true,
-            parties: true,
+            voters: {
+              where: { isDeleted: false }
+            },
+            candidates: {
+              where: { isDeleted: false }
+            },
+            positions: {
+              where: { isDeleted: false }
+            },
+            parties: {
+              where: { isDeleted: false }
+            },
             voteResponses: true
           }
         }
@@ -85,7 +95,7 @@ export async function GET(
       });
     }
 
-    // Check permissions
+    // Admin can only get their own elections, superadmin can get others
     if (user.role === ROLES.ADMIN && election.organization.adminId !== user.id) {
       return apiResponse({
         success: false,
@@ -96,11 +106,11 @@ export async function GET(
       });
     }
 
-    // Super admin can view any election, admin can only view their own
-    if (user.role !== ROLES.SUPER_ADMIN && user.role !== ROLES.ADMIN) {
+    // Only admin and superadmin can access this endpoint
+    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
       return apiResponse({
         success: false,
-        message: "You do not have permission to view this election",
+        message: "You do not have permission to view election details",
         data: null,
         error: "Forbidden",
         status: 403
@@ -113,12 +123,14 @@ export async function GET(
       request,
       resource: "ELECTION",
       resourceId: election.id,
-      message: `Viewed election: ${election.name}`,
+      message: user.role === ROLES.SUPER_ADMIN 
+        ? `Viewed election details (superadmin): ${election.name}`
+        : `Viewed own election details (admin): ${election.name}`,
     });
 
     return apiResponse({
       success: true,
-      message: "Election fetched successfully",
+      message: "Election details fetched successfully",
       data: {
         election,
         audit
@@ -127,10 +139,10 @@ export async function GET(
       status: 200
     });
   } catch (error) {
-    console.error("Election fetch error:", error);
+    console.error("Get election error:", error);
     return apiResponse({
       success: false,
-      message: "Failed to fetch election",
+      message: "Failed to fetch election details",
       data: null,
       error: typeof error === "string" ? error : "Internal server error",
       status: 500
@@ -138,38 +150,28 @@ export async function GET(
   }
 }
 
-// Handle PUT request to update a specific election
+// Handle PUT request to update specific election
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Authenticate the user
     const session = await auth();
     const user = session?.user;
 
     if (!user) {
       return apiResponse({
         success: false,
-        message: "You must be logged in to update elections",
+        message: "You must be logged in to update an election",
         data: null,
         error: "Unauthorized",
         status: 401
       });
     }
 
-    // Check if user has admin role
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin users can update elections",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
-
-    const electionId = parseInt(params.id);
+    const { id } = await params;
+    const electionId = parseInt(id);
+    
     if (isNaN(electionId)) {
       return apiResponse({
         success: false,
@@ -180,14 +182,14 @@ export async function PUT(
       });
     }
 
-    // Parse and validate input
+    // Parse and validate request body
     const body = await request.json();
     const validation = validateWithZod(electionSchema, body);
     if (!('data' in validation)) return validation;
+    
     const { name, description, status, isLive, allowSurvey } = validation.data;
 
-    // Fetch existing election
-    const existingElection = await db.election.findUnique({
+    const election = await db.election.findUnique({
       where: {
         id: electionId,
         isDeleted: false
@@ -196,13 +198,22 @@ export async function PUT(
         organization: {
           select: {
             id: true,
-            adminId: true
+            name: true,
+            adminId: true,
+            admin: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true
+              }
+            }
           }
         }
-      }
+      },
     });
 
-    if (!existingElection) {
+    if (!election) {
       return apiResponse({
         success: false,
         message: "Election not found or has been deleted",
@@ -212,8 +223,8 @@ export async function PUT(
       });
     }
 
-    // Check if admin owns this election (through organization)
-    if (user.role === ROLES.ADMIN && existingElection.organization.adminId !== user.id) {
+    // Admin can only update their own elections, superadmin can edit others
+    if (user.role === ROLES.ADMIN && election.organization.adminId !== user.id) {
       return apiResponse({
         success: false,
         message: "You can only update elections from your organization",
@@ -223,34 +234,100 @@ export async function PUT(
       });
     }
 
-    // Update election
+    // Only admin and superadmin can access this endpoint
+    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
+      return apiResponse({
+        success: false,
+        message: "You do not have permission to update elections",
+        data: null,
+        error: "Forbidden",
+        status: 403
+      });
+    }
+
+    // Check if election name already exists in the organization (excluding current election)
+    const nameExists = await db.election.findFirst({
+      where: {
+        orgId: election.organization.id,
+        name,
+        isDeleted: false,
+        NOT: {
+          id: electionId
+        }
+      }
+    });
+
+    if (nameExists) {
+      return apiResponse({
+        success: false,
+        message: "Election name already exists in this organization",
+        data: null,
+        error: "Conflict",
+        status: 409
+      });
+    }
+
+    // Store old data for audit comparison
+    const oldData = {
+      name: election.name,
+      description: election.description,
+      status: election.status,
+      isLive: election.isLive,
+      allowSurvey: election.allowSurvey
+    };
+
     const updatedElection = await db.election.update({
       where: { id: electionId },
-      data: { 
-        name, 
-        description, 
-        status, 
-        isLive, 
-        allowSurvey 
+      data: {
+        name,
+        description,
+        status,
+        isLive,
+        allowSurvey,
       },
       include: {
         organization: {
           select: {
             id: true,
             name: true,
-            email: true
+            email: true,
+            status: true,
+            admin: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true
+              }
+            }
           }
         },
         schedule: true,
         mfaSettings: true,
+        _count: {
+          select: {
+            voters: {
+              where: { isDeleted: false }
+            },
+            candidates: {
+              where: { isDeleted: false }
+            },
+            positions: {
+              where: { isDeleted: false }
+            },
+            parties: {
+              where: { isDeleted: false }
+            }
+          }
+        }
       },
     });
 
     // Compare and log changed fields
     const changedFields: Record<string, { old: any; new: any }> = {};
     for (const key of ["name", "description", "status", "isLive", "allowSurvey"] as const) {
-      if (existingElection[key] !== updatedElection[key]) {
-        changedFields[key] = { old: existingElection[key], new: updatedElection[key] };
+      if (oldData[key] !== updatedElection[key]) {
+        changedFields[key] = { old: oldData[key], new: updatedElection[key] };
       }
     }
 
@@ -261,6 +338,9 @@ export async function PUT(
       resource: "ELECTION",
       resourceId: updatedElection.id,
       changedFields,
+      message: user.role === ROLES.SUPER_ADMIN 
+        ? `Updated election (superadmin): ${updatedElection.name}`
+        : `Updated own election (admin): ${updatedElection.name}`,
     });
 
     return apiResponse({
@@ -285,38 +365,28 @@ export async function PUT(
   }
 }
 
-// Handle DELETE request to soft-delete a specific election
+// Handle DELETE request to soft-delete specific election
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Authenticate the user
     const session = await auth();
     const user = session?.user;
 
     if (!user) {
       return apiResponse({
         success: false,
-        message: "You must be logged in to delete elections",
+        message: "You must be logged in to delete an election",
         data: null,
         error: "Unauthorized",
         status: 401
       });
     }
 
-    // Check if user has admin role
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin users can delete elections",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
-
-    const electionId = parseInt(params.id);
+    const { id } = await params;
+    const electionId = parseInt(id);
+    
     if (isNaN(electionId)) {
       return apiResponse({
         success: false,
@@ -327,8 +397,7 @@ export async function DELETE(
       });
     }
 
-    // Fetch existing election
-    const existingElection = await db.election.findUnique({
+    const election = await db.election.findUnique({
       where: {
         id: electionId,
         isDeleted: false
@@ -337,13 +406,27 @@ export async function DELETE(
         organization: {
           select: {
             id: true,
-            adminId: true
+            name: true,
+            adminId: true,
+            admin: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true
+              }
+            }
+          }
+        },
+        _count: {
+          select: {
+            voteResponses: true
           }
         }
-      }
+      },
     });
 
-    if (!existingElection) {
+    if (!election) {
       return apiResponse({
         success: false,
         message: "Election not found or has been deleted",
@@ -353,14 +436,38 @@ export async function DELETE(
       });
     }
 
-    // Check if admin owns this election (through organization)
-    if (user.role === ROLES.ADMIN && existingElection.organization.adminId !== user.id) {
+    // Admin can only delete their own elections, superadmin can delete others
+    if (user.role === ROLES.ADMIN && election.organization.adminId !== user.id) {
       return apiResponse({
         success: false,
         message: "You can only delete elections from your organization",
         data: null,
         error: "Forbidden",
         status: 403
+      });
+    }
+
+    // Only admin and superadmin can access this endpoint
+    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
+      return apiResponse({
+        success: false,
+        message: "You do not have permission to delete elections",
+        data: null,
+        error: "Forbidden",
+        status: 403
+      });
+    }
+
+    // Check if election has votes
+    if (election._count.voteResponses > 0) {
+      return apiResponse({
+        success: false,
+        message: "Cannot delete election that has votes",
+        data: { 
+          voteCount: election._count.voteResponses 
+        },
+        error: "Conflict",
+        status: 409
       });
     }
 
@@ -371,6 +478,23 @@ export async function DELETE(
         isDeleted: true, 
         deletedAt: new Date() 
       },
+      include: {
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            admin: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true
+              }
+            }
+          }
+        }
+      }
     });
 
     const audit = await createAuditLog({
@@ -380,7 +504,9 @@ export async function DELETE(
       resource: "ELECTION",
       resourceId: deletedElection.id,
       deletionType: "SOFT",
-      message: `Deleted election: ${existingElection.name}`,
+      message: user.role === ROLES.SUPER_ADMIN 
+        ? `Deleted election (superadmin): ${election.name}`
+        : `Deleted own election (admin): ${election.name}`,
     });
 
     return apiResponse({
@@ -404,3 +530,5 @@ export async function DELETE(
     });
   }
 }
+
+

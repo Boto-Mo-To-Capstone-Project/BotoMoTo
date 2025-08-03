@@ -15,110 +15,30 @@ The election status management system provides granular control over election st
 
 ## API Endpoints
 
-### 1. Election Status Management
-**File:** `/src/app/api/elections/[id]/status/route.ts`
 
-#### GET `/api/elections/[id]/status`
-- **Description:** Get current election status and available transitions
-- **Authorization:** Admin (own elections), Super Admin (all elections)
-- **Returns:**
-  - Current election status and details
-  - Available status transitions with descriptions
-  - Election readiness check (if not active)
-  - Comprehensive election statistics
+### Election Status Management (Unified Endpoint)
+**File:** `/src/app/api/elections/[id]/route.ts` (PATCH method)
 
-#### PUT `/api/elections/[id]/status`
-- **Description:** Update election status with validation
+#### PATCH `/api/elections/[id]`
+- **Description:** Update election status (open, close, pause, resume, archive) with strict validation and audit logging
+- **Authorization:** Admin (own org's elections), Super Admin (all elections)
 - **Body Schema:**
   ```typescript
   {
     status: "DRAFT" | "ACTIVE" | "PAUSED" | "CLOSED" | "ARCHIVED",
-    reason?: string // Optional reason (max 500 chars)
-  }
-  ```
-- **Validation:** Ensures valid status transitions
-- **Returns:** Updated election with transition details
-
-### 2. Open Election
-**File:** `/src/app/api/elections/[id]/open/route.ts`
-
-#### POST `/api/elections/[id]/open`
-- **Description:** Open/activate an election (DRAFT → ACTIVE)
-- **Authorization:** Admin (own elections), Super Admin (all elections)
-- **Pre-flight Validation:**
-  - Election has at least one position
-  - All positions have at least one candidate
-  - Election has at least one active voter
-  - Election has a valid schedule
-  - Schedule start date is not in the future
-  - Schedule end date has not passed
-  - Start date is before end date
-- **Action:** Sets status to ACTIVE and isLive to true
-- **Returns:** Updated election data with readiness validation results
-
-### 3. Close Election
-**File:** `/src/app/api/elections/[id]/close/route.ts`
-
-#### POST `/api/elections/[id]/close`
-- **Description:** Close an active or paused election
-- **Body Schema:**
-  ```typescript
-  {
     reason?: string, // Optional reason (max 500 chars)
-    forceClose?: boolean // Default: false
+    forceClose?: boolean // Only for closing early (default: false)
   }
   ```
 - **Validation:**
-  - Cannot close DRAFT, CLOSED, or ARCHIVED elections
-  - Warns if no votes exist (requires forceClose: true)
-  - Warns if closing before scheduled end time (requires forceClose: true)
-- **Action:** Sets status to CLOSED and isLive to false
-- **Returns:** Updated election with final voting statistics
+  - Enforces valid status transitions (see below)
+  - Readiness checks for opening (ACTIVE)
+  - Reason required for PAUSED
+  - forceClose required for closing with no votes or before scheduled end
+  - Cannot archive ACTIVE/PAUSED; DRAFT with votes must be closed first
+- **Returns:** Updated election with transition details and statistics
 
-### 4. Pause Election
-**File:** `/src/app/api/elections/[id]/pause/route.ts`
-
-#### POST `/api/elections/[id]/pause`
-- **Description:** Pause an active election (ACTIVE → PAUSED)
-- **Body Schema:**
-  ```typescript
-  {
-    reason: string // Required reason (max 500 chars)
-  }
-  ```
-- **Validation:** Only ACTIVE elections can be paused
-- **Action:** Sets status to PAUSED and isLive to false
-- **Returns:** Updated election with current vote count
-
-### 5. Resume Election
-**File:** `/src/app/api/elections/[id]/resume/route.ts`
-
-#### POST `/api/elections/[id]/resume`
-- **Description:** Resume a paused election (PAUSED → ACTIVE)
-- **Authorization:** Admin (own elections), Super Admin (all elections)
-- **Validation:**
-  - Only PAUSED elections can be resumed
-  - Schedule end date must not have passed
-  - Election schedule must be valid
-- **Action:** Sets status to ACTIVE and isLive to true
-- **Returns:** Updated election with current vote count
-
-### 6. Archive Election
-**File:** `/src/app/api/elections/[id]/archive/route.ts`
-
-#### POST `/api/elections/[id]/archive`
-- **Description:** Archive a closed election or unused draft
-- **Body Schema:**
-  ```typescript
-  {
-    reason?: string // Optional reason (max 500 chars)
-  }
-  ```
-- **Validation:**
-  - Cannot archive ACTIVE or PAUSED elections
-  - DRAFT elections with votes must be closed first
-- **Action:** Sets status to ARCHIVED and isLive to false
-- **Returns:** Updated election with comprehensive final statistics
+**Note:** All previous individual status endpoints (`/open`, `/close`, `/pause`, `/resume`, `/archive`, `/status`) have been removed. Use the unified PATCH endpoint above for all status changes.
 
 ## Status Transition Rules
 
