@@ -1,0 +1,573 @@
+{
+  "info": {
+    "name": "RBAC Voting System API",
+    "description": "Complete API collection for testing the RBAC voting system",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "electionId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "candidateId", 
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "positionId",
+      "value": "1", 
+      "type": "string"
+    },
+    {
+      "key": "partyId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testadmin@example.com\",\n  \"password\": \"TestAdmin@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/signin",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "signin"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Elections",
+      "item": [
+        {
+          "name": "List Elections",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/elections",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections"]
+            }
+          }
+        },
+        {
+          "name": "Get Election Details",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Election Status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Open Election",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/open",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "open"]
+            }
+          }
+        },
+        {
+          "name": "Pause Election",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Technical maintenance required\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/pause",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "pause"]
+            }
+          }
+        },
+        {
+          "name": "Resume Election",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/resume",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "resume"]
+            }
+          }
+        },
+        {
+          "name": "Close Election",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Voting period ended\",\n  \"forceClose\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/elections/{{electionId}}/close",
+              "host": ["{{baseUrl}}"],
+              "path": ["elections", "{{electionId}}", "close"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Candidates",
+      "item": [
+        {
+          "name": "List Candidates",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/candidates?electionId={{electionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["candidates"],
+              "query": [
+                {
+                  "key": "electionId",
+                  "value": "{{electionId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Candidates with Filters",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/candidates?electionId={{electionId}}&positionId={{positionId}}&page=1&limit=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["candidates"],
+              "query": [
+                {
+                  "key": "electionId",
+                  "value": "{{electionId}}"
+                },
+                {
+                  "key": "positionId",
+                  "value": "{{positionId}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Candidate Details",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/candidates/{{candidateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["candidates", "{{candidateId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Candidate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"electionId\": {{electionId}},\n  \"voterId\": 15,\n  \"positionId\": {{positionId}},\n  \"partyId\": {{partyId}},\n  \"bio\": \"Experienced leader with strong vision for student body\",\n  \"imageUrl\": \"https://example.com/new-candidate.jpg\",\n  \"leaderships\": [\n    {\n      \"organization\": \"Debate Club\",\n      \"position\": \"President\",\n      \"dateRange\": \"2023-2024\",\n      \"description\": \"Led successful debate competitions\"\n    }\n  ],\n  \"workExperiences\": [\n    {\n      \"company\": \"Campus Library\",\n      \"role\": \"Student Assistant\",\n      \"dateRange\": \"2023-Present\",\n      \"description\": \"Customer service and organization\"\n    }\n  ],\n  \"educations\": [\n    {\n      \"school\": \"Test University\",\n      \"educationLevel\": \"Bachelor's in Progress\",\n      \"dateRange\": \"2022-Present\",\n      \"description\": \"Business Administration major\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/candidates",
+              "host": ["{{baseUrl}}"],
+              "path": ["candidates"]
+            }
+          }
+        },
+        {
+          "name": "Update Candidate",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bio\": \"Updated biography with new achievements\",\n  \"leaderships\": [\n    {\n      \"organization\": \"Student Government\",\n      \"position\": \"Vice President\",\n      \"dateRange\": \"2024-Present\",\n      \"description\": \"Current leadership role\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/candidates/{{candidateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["candidates", "{{candidateId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Candidate",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/candidates/{{candidateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["candidates", "{{candidateId}}"]
+            }
+          }
+        },
+        {
+          "name": "Candidate Statistics",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/candidates/stats?electionId={{electionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["candidates", "stats"],
+              "query": [
+                {
+                  "key": "electionId",
+                  "value": "{{electionId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Candidates",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/candidates/search?electionId={{electionId}}&query=leader&hasExperience=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["candidates", "search"],
+              "query": [
+                {
+                  "key": "electionId",
+                  "value": "{{electionId}}"
+                },
+                {
+                  "key": "query",
+                  "value": "leader"
+                },
+                {
+                  "key": "hasExperience",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk Create Candidates",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"candidates\": [\n    {\n      \"electionId\": {{electionId}},\n      \"voterId\": 16,\n      \"positionId\": 2,\n      \"bio\": \"First bulk candidate\"\n    },\n    {\n      \"electionId\": {{electionId}},\n      \"voterId\": 17,\n      \"positionId\": 2,\n      \"partyId\": 2,\n      \"bio\": \"Second bulk candidate\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/candidates/bulk",
+              "host": ["{{baseUrl}}"],
+              "path": ["candidates", "bulk"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          }
+        },
+        {
+          "name": "Get User Details",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Organizations",
+      "item": [
+        {
+          "name": "List Organizations",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/organizations",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations"]
+            }
+          }
+        },
+        {
+          "name": "Get Organization Details",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/organizations/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizations", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Positions",
+      "item": [
+        {
+          "name": "List Positions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/positions?electionId={{electionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["positions"],
+              "query": [
+                {
+                  "key": "electionId",
+                  "value": "{{electionId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Position",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"electionId\": {{electionId}},\n  \"name\": \"Public Relations Officer\",\n  \"description\": \"Manages external communications\",\n  \"voteLimit\": 1,\n  \"numOfWinners\": 1,\n  \"order\": 4,\n  \"votingScopeId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/positions",
+              "host": ["{{baseUrl}}"],
+              "path": ["positions"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Parties",
+      "item": [
+        {
+          "name": "List Parties",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/parties?electionId={{electionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["parties"],
+              "query": [
+                {
+                  "key": "electionId",
+                  "value": "{{electionId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Party",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"electionId\": {{electionId}},\n  \"name\": \"Innovation Party\",\n  \"color\": \"#FF6B6B\",\n  \"description\": \"Focused on technological innovation\",\n  \"logoUrl\": \"https://example.com/innovation-logo.png\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/parties",
+              "host": ["{{baseUrl}}"],
+              "path": ["parties"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Voters",
+      "item": [
+        {
+          "name": "List Voters",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/voter?electionId={{electionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["voter"],
+              "query": [
+                {
+                  "key": "electionId",
+                  "value": "{{electionId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Voter",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"electionId\": {{electionId}},\n  \"firstName\": \"New\",\n  \"lastName\": \"Voter\",\n  \"email\": \"newvoter@testuniversity.edu\",\n  \"contactNum\": \"+15550001234\",\n  \"address\": \"123 New Street\",\n  \"votingScopeId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/voter",
+              "host": ["{{baseUrl}}"],
+              "path": ["voter"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Voting Scopes",
+      "item": [
+        {
+          "name": "List Voting Scopes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/voting-scopes?electionId={{electionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["voting-scopes"],
+              "query": [
+                {
+                  "key": "electionId",
+                  "value": "{{electionId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Voting Scope",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"electionId\": {{electionId}},\n  \"type\": \"DEPARTMENT\",\n  \"name\": \"Engineering Department\",\n  \"description\": \"All engineering students\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/voting-scopes",
+              "host": ["{{baseUrl}}"],
+              "path": ["voting-scopes"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
