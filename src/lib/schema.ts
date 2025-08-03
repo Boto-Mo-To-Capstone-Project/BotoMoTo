@@ -196,6 +196,25 @@ const votingScopeUpdateSchema = z.object({
   description: field.string("Voting scope description", { min: 5, max: 500 })
 });
 
+const positionSchema = z.object({
+  electionId: z.number().int().positive("Election ID must be a positive integer"),
+  name: field.string("Position name", { min: 2, max: 100 }),
+  description: field.string("Position description", { min: 5, max: 500 }),
+  voteLimit: z.number().int().min(1, "Vote limit must be at least 1").default(1),
+  numOfWinners: z.number().int().min(1, "Number of winners must be at least 1").default(1),
+  votingScopeId: z.number().int().positive("Voting scope ID must be a positive integer").optional(),
+  order: z.number().int().min(0, "Order must be non-negative").default(0)
+});
+
+const positionUpdateSchema = z.object({
+  name: field.string("Position name", { min: 2, max: 100 }),
+  description: field.string("Position description", { min: 5, max: 500 }),
+  voteLimit: z.number().int().min(1, "Vote limit must be at least 1").default(1),
+  numOfWinners: z.number().int().min(1, "Number of winners must be at least 1").default(1),
+  votingScopeId: z.number().int().positive("Voting scope ID must be a positive integer").optional(),
+  order: z.number().int().min(0, "Order must be non-negative").default(0)
+});
+
 const voterSchema = z.object({
   electionId: z.number().int().positive("Election ID must be a positive integer"),
   email: field.email("Email", { required: false }),
@@ -241,6 +260,8 @@ type UserSchema = z.infer<typeof userSchema>;
 type PartySchema = z.infer<typeof partySchema>;
 type VotingScopeSchema = z.infer<typeof votingScopeSchema>;
 type VotingScopeUpdateSchema = z.infer<typeof votingScopeUpdateSchema>;
+type PositionSchema = z.infer<typeof positionSchema>;
+type PositionUpdateSchema = z.infer<typeof positionUpdateSchema>;
 type VoterSchema = z.infer<typeof voterSchema>;
 type VoterUpdateSchema = z.infer<typeof voterUpdateSchema>;
 type VoterBulkUploadSchema = z.infer<typeof voterBulkUploadSchema>;
@@ -255,6 +276,8 @@ export {
   partySchema,
   votingScopeSchema,
   votingScopeUpdateSchema,
+  positionSchema,
+  positionUpdateSchema,
   voterSchema,
   voterUpdateSchema,
   voterBulkUploadSchema,
@@ -266,6 +289,8 @@ export {
   type PartySchema,
   type VotingScopeSchema,
   type VotingScopeUpdateSchema,
+  type PositionSchema,
+  type PositionUpdateSchema,
   type VoterSchema,
   type VoterUpdateSchema,
   type VoterBulkUploadSchema
