@@ -1,76 +1,104 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import db from "@/lib/db/db";
 import { ROLES, ORGANIZATION_STATUS } from "@/lib/constants";
+import { apiResponse } from "@/lib/apiResponse";
+import { createAuditLog } from "@/lib/audit";
 
-export async function PUT(
+// Handle PATCH request to approve/reject organization (superadmin only)
+export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
+    const user = session?.user;
+
+    if (!user) {
+      return apiResponse({
+        success: false,
+        message: "You must be logged in to approve/reject organizations",
+        data: null,
+        error: "Unauthorized",
+        status: 401
+      });
     }
 
     // Only SuperAdmin can approve organizations
-    if (session.user.role !== ROLES.SUPER_ADMIN) {
-      return NextResponse.json(
-        { success: false, error: "Only SuperAdmin can approve organizations" },
-        { status: 403 }
-      );
+    if (user.role !== ROLES.SUPER_ADMIN) {
+      return apiResponse({
+        success: false,
+        message: "Only superadmin can approve/reject organizations",
+        data: null,
+        error: "Forbidden",
+        status: 403
+      });
     }
 
-    // Get params asynchronously
     const { id } = await params;
-    if (!id) {
-      return NextResponse.json(
-        { success: false, error: "Organization ID is required" },
-        { status: 400 }
-      );
+    const organizationId = parseInt(id);
+    
+    if (isNaN(organizationId)) {
+      return apiResponse({
+        success: false,
+        message: "Invalid organization ID",
+        data: null,
+        error: "Bad Request",
+        status: 400
+      });
     }
 
     // Parse request body
-    let body;
-    try {
-      body = await request.json();
-    } catch (error) {
-      return NextResponse.json(
-        { success: false, error: "Invalid JSON body" },
-        { status: 400 }
-      );
-    }
-
+    const body = await request.json();
     const { action, reason } = body;
-    if (!["approve", "reject"].includes(action)) {
-      return NextResponse.json(
-        { success: false, error: "Invalid action" },
-        { status: 400 }
-      );
+    
+    if (!action || !["approve", "reject"].includes(action)) {
+      return apiResponse({
+        success: false,
+        message: "Invalid action. Must be 'approve' or 'reject'",
+        data: null,
+        error: "Bad Request",
+        status: 400
+      });
     }
 
     // Find the organization
-    const organizationId = parseInt(id);
-    if (isNaN(organizationId)) {
-      return NextResponse.json(
-        { success: false, error: "Invalid organization ID" },
-        { status: 400 }
-      );
-    }
-
     const organization = await db.organization.findUnique({
-      where: { id: organizationId },
-      include: { admin: true },
+      where: { 
+        id: organizationId,
+        isDeleted: false
+      },
+      include: { 
+        admin: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true
+          }
+        }
+      },
     });
 
     if (!organization) {
-      return NextResponse.json(
-        { success: false, error: "Organization not found" },
-        { status: 404 }
-      );
+      return apiResponse({
+        success: false,
+        message: "Organization not found or has been deleted",
+        data: null,
+        error: "Not Found",
+        status: 404
+      });
+    }
+
+    // Check if organization is in PENDING status
+    if (organization.status !== ORGANIZATION_STATUS.PENDING) {
+      return apiResponse({
+        success: false,
+        message: `Organization is already ${organization.status.toLowerCase()}`,
+        data: { currentStatus: organization.status },
+        error: "Bad Request",
+        status: 400
+      });
     }
 
     // Update organization status
@@ -81,48 +109,57 @@ export async function PUT(
     const updatedOrg = await db.organization.update({
       where: { id: organizationId },
       data: { status: newStatus },
-      include: { admin: true },
+      include: { 
+        admin: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true
+          }
+        }
+      },
     });
 
     // Create audit log
-    const ipAddress = request.headers.get("x-forwarded-for") || 
-                     request.headers.get("x-real-ip") || 
-                     "unknown";
-    const userAgent = request.headers.get("user-agent") || "unknown";
-
-    await db.audits.create({
-      data: {
-        actorId: session.user.id,
-        actorRole: session.user.role,
-        action: action === "approve" ? "APPROVE" : "REJECT",
-        ipAddress,
-        userAgent,
-        resource: "organization",
-        resourceId: id,
-        details: {
-          organizationName: organization.name,
-          adminEmail: organization.admin.email,
-          action,
-          reason: reason || null,
-        },
+    const audit = await createAuditLog({
+      user,
+      action: action === "approve" ? "APPROVE" : "REJECT",
+      request,
+      resource: "ORGANIZATION",
+      resourceId: organizationId,
+      changedFields: {
+        status: { old: organization.status, new: newStatus }
       },
+      message: `${action === "approve" ? "Approved" : "Rejected"} organization: ${organization.name}${reason ? ` - Reason: ${reason}` : ""}`,
     });
 
-    return NextResponse.json({
+    return apiResponse({
       success: true,
       message: `Organization ${action}d successfully`,
       data: {
-        id: updatedOrg.id,
-        name: updatedOrg.name,
-        status: updatedOrg.status,
-        adminEmail: updatedOrg.admin.email,
+        organization: {
+          id: updatedOrg.id,
+          name: updatedOrg.name,
+          status: updatedOrg.status,
+          adminEmail: updatedOrg.admin.email,
+          adminName: updatedOrg.admin.name
+        },
+        action,
+        reason: reason || null,
+        audit
       },
+      error: null,
+      status: 200
     });
   } catch (error) {
     console.error("Organization approval error:", error);
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 }
-    );
+    return apiResponse({
+      success: false,
+      message: "Failed to approve/reject organization",
+      data: null,
+      error: typeof error === "string" ? error : "Internal server error",
+      status: 500
+    });
   }
 }

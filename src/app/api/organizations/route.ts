@@ -8,14 +8,13 @@ import { validateWithZod } from "@/lib/validateWithZod";
 import { organizationSchema } from "@/lib/schema";
 import { createAuditLog } from "@/lib/audit";
 
-// Handle GET request to fetch organization details
+// Handle GET request to fetch all organizations (superadmin only)
 export async function GET(request: NextRequest) {
   try {
     // Authenticate the user
     const session = await auth();
     const user = session?.user;
 
-    // Check if user is authenticated
     if (!user) {
       return apiResponse({
         success: false,
@@ -26,107 +25,69 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Fetch organizations for super admin (can view all organizations)
-    if (user.role === ROLES.SUPER_ADMIN) {
-      const organizations = await db.organization.findMany({
-        where: { isDeleted: false }, // Only non-deleted orgs
-        include: {
-          admin: true,
-          elections: {
-            select: {
-              id: true,
-              name: true,
-              status: true,
-            },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      });
-
-      const audit = await createAuditLog({
-        user,
-        action: "READ",
-        request,
-        resource: "ORGANIZATION",
-        message: "Viewed all organizations (super admin)",
-      });
-
-      // Return success response in consistent format for GET
+    // Only superadmin can view all organizations
+    if (user.role !== ROLES.SUPER_ADMIN) {
       return apiResponse({
-        success: true,
-        message: "Organizations fetched successfully",
-        data: {
-          organizations,
-          audit
-        },
-        error: null,
-        status: 200
+        success: false,
+        message: "Only superadmin can view all organizations",
+        data: null,
+        error: "Forbidden",
+        status: 403
       });
     }
 
-    // Fetch organization for admin (can't view all organizations)
-    if (user.role === ROLES.ADMIN) {
-      const organization = await db.organization.findUnique({
-        where: { 
-          adminId: user.id,
-          isDeleted: false // Only return if not deleted
+    const organizations = await db.organization.findMany({
+      where: { isDeleted: false },
+      include: {
+        admin: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true
+          }
         },
-        include: {
-          admin: true,
-          elections: {
-            select: {
-              id: true,
-              name: true,
-              status: true,
-            },
+        elections: {
+          where: { isDeleted: false },
+          select: {
+            id: true,
+            name: true,
+            status: true,
           },
         },
-      });
+        _count: {
+          select: {
+            elections: true
+          }
+        }
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
-      // if walang organization, return error
-      if (!organization) {
-        return apiResponse({ 
-          success: false, 
-          message: "Organization not found or has been deleted", 
-          data: null, 
-          error: "Not Found", 
-          status: 404 });
-      }
+    const audit = await createAuditLog({
+      user,
+      action: "READ",
+      request,
+      resource: "ORGANIZATION",
+      message: "Viewed all organizations (superadmin)",
+    });
 
-      const audit = await createAuditLog({
-        user,
-        action: "READ",
-        request,
-        resource: "ORGANIZATION",
-        resourceId: organization.id,
-        message: "Viewed own organization (admin)",
-      });
-
-      return apiResponse({
-        success: true,
-        message: "Organization fetched successfully",
-        data: {
-          organization,
-          audit
-        },
-        error: null,
-        status: 200
-      });
-    }
-
-    // Deny access for other roles
     return apiResponse({
-      success: false,
-      message: "You do not have permission to view organizations",
-      data: null,
-      error: "Forbidden",
-      status: 403
+      success: true,
+      message: "Organizations fetched successfully",
+      data: {
+        organizations,
+        totalCount: organizations.length,
+        audit
+      },
+      error: null,
+      status: 200
     });
   } catch (error) {
-    // Error response in consistent format for GET
+    console.error("Get organizations error:", error);
     return apiResponse({
       success: false,
-      message: "Failed to fetch organization(s)",
+      message: "Failed to fetch organizations",
       data: null,
       error: typeof error === "string" ? error : "Internal server error",
       status: 500
@@ -134,14 +95,13 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Handle POST request to create a new organization
+// Handle POST request to create a new organization (admin only)
 export async function POST(request: NextRequest) {
   try {
     // Authenticate the user
     const session = await auth();
     const user = session?.user;
 
-    // Check if user is authenticated
     if (!user) {
       return apiResponse({
         success: false,
@@ -152,11 +112,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Check if user has admin role
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
+    // Only admin users can create organizations (superadmin should not have affiliated org)
+    if (user.role !== ROLES.ADMIN) {
       return apiResponse({
         success: false,
-        message: "Only admin and superadmin users can create organizations",
+        message: "Only admin users can create organizations",
         data: null,
         error: "Forbidden",
         status: 403
@@ -169,16 +129,36 @@ export async function POST(request: NextRequest) {
       include: { admin: true },
     });
 
-    // If exists but deleted, restore it
+    // If exists but deleted, restore it with new data
     if (existingOrg?.isDeleted) {
+      const body = await request.json();
+      const validation = validateWithZod(organizationSchema, body);
+      if (!('data' in validation)) return validation;
+      
+      const { name, email, membersCount, photoUrl, letterUrl } = validation.data;
+
       const restoredOrg = await db.organization.update({
         where: { id: existingOrg.id },
         data: { 
           isDeleted: false,
           deletedAt: null,
-          ...(await request.json()) // Update with new data
+          name,
+          email,
+          membersCount: Number(membersCount),
+          photoUrl,
+          letterUrl,
+          status: ORGANIZATION_STATUS.PENDING, // Reset status on restore
         },
-        include: { admin: true },
+        include: { 
+          admin: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              role: true
+            }
+          }
+        },
       });
 
       const audit = await createAuditLog({
@@ -187,38 +167,56 @@ export async function POST(request: NextRequest) {
         request,
         resource: "ORGANIZATION",
         resourceId: restoredOrg.id,
-        message: "Restored deleted organization",
+        newData: restoredOrg,
+        message: "Restored and updated deleted organization",
       });
 
       return apiResponse({
         success: true,
-        message: "Organization restored successfully",
+        message: "Organization restored and updated successfully",
         data: { organization: restoredOrg, audit },
         error: null,
         status: 200
       });
     }
 
-    // if exists and not deleted
+    // If exists and not deleted
     if (existingOrg) {
       return apiResponse({
         success: false,
         message: "User already has an organization",
         data: null,
-        error: "Already exists",
-        status: 400
+        error: "Conflict",
+        status: 409
       });
     }
 
-    // Parse request body
+    // Parse and validate request body
     const body = await request.json();
-
-    // Validate organization data using helper
     const validation = validateWithZod(organizationSchema, body);
     if (!('data' in validation)) return validation;
+    
     const { name, email, membersCount, photoUrl, letterUrl } = validation.data;
 
-    // Create a new organization in the database
+    // Check if organization name already exists
+    const nameExists = await db.organization.findFirst({
+      where: {
+        name,
+        isDeleted: false
+      }
+    });
+
+    if (nameExists) {
+      return apiResponse({
+        success: false,
+        message: "Organization name already exists",
+        data: null,
+        error: "Conflict",
+        status: 409
+      });
+    }
+
+    // Create a new organization
     const organization = await db.organization.create({
       data: {
         adminId: user.id,
@@ -230,11 +228,17 @@ export async function POST(request: NextRequest) {
         status: ORGANIZATION_STATUS.PENDING,
       },
       include: {
-        admin: true,
+        admin: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true
+          }
+        },
       },
     });
 
-    // Log creation audit
     const audit = await createAuditLog({
       user,
       action: "CREATE",
@@ -242,9 +246,9 @@ export async function POST(request: NextRequest) {
       resource: "ORGANIZATION",
       resourceId: organization.id,
       newData: organization,
+      message: "Created new organization",
     });
 
-    // Return success response in consistent format
     return apiResponse({
       success: true,
       message: "Organization created successfully",
@@ -256,7 +260,6 @@ export async function POST(request: NextRequest) {
       status: 201
     });
   } catch (error) {
-    // Error response in consistent format
     console.error("Organization creation error:", error);
     return apiResponse({
       success: false,
@@ -267,113 +270,3 @@ export async function POST(request: NextRequest) {
     });
   }
 }
-
-// Handle PUT request to update an existing organization
-export async function PUT(request: NextRequest) {
-  try {
-    // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-    if (!user) return apiResponse({ success: false, message: "Unauthorized", data: null, error: "Unauthorized", status: 401 });
-
-    // Parse and validate input
-    const body = await request.json();
-    const validation = validateWithZod(organizationSchema, body);
-    if (!('data' in validation)) return validation;
-    const { name, email, membersCount, photoUrl, letterUrl } = validation.data;
-
-    // Fetch existing org
-    const existingOrg = await db.organization.findUnique({ where: { adminId: user.id } });
-    if (!existingOrg) return apiResponse({ success: false, message: "Organization not found", data: null, error: "Not Found", status: 404 });
-
-    // Update organization
-    const updatedOrg = await db.organization.update({
-      where: { id: existingOrg.id },
-      data: { name, email, membersCount, photoUrl, letterUrl },
-      include: { admin: true },
-    });
-
-    // Compare and log changed fields
-    const changedFields: Record<string, { old: any; new: any }> = {};
-    for (const key of ["name", "email", "membersCount", "photoUrl", "letterUrl"] as const) {
-      if (existingOrg[key] !== updatedOrg[key]) {
-        changedFields[key] = { old: existingOrg[key], new: updatedOrg[key] };
-      }
-    }
-
-    const audit = await createAuditLog({
-      user,
-      action: "UPDATE",
-      request,
-      resource: "ORGANIZATION",
-      resourceId: updatedOrg.id,
-      changedFields,
-    });
-
-    // Respond with success
-    return apiResponse({ 
-      success: true, 
-      message: "Organization updated", 
-      data: {
-        updatedOrg,
-        audit
-      },
-      error: null, 
-      status: 200 
-    });
-  } catch (error) {
-    // Error handling
-    console.error("Organization update error:", error);
-    return apiResponse({ success: false, message: "Failed to update organization", data: null, error: typeof error === "string" ? error : "Internal server error", status: 500 });
-  }
-}
-
-// Handle DELETE request to soft-delete an organization
-export async function DELETE(request: NextRequest) {
-  try {
-    // check if user is authenticated
-    const session = await auth();
-    const user = session?.user;
-    if (!user) return apiResponse({ success: false, message: "Unauthorized", data: null, error: "Unauthorized", status: 401 });
-
-    // check if user has an organization
-    const organization = await db.organization.findUnique({ where: { adminId: user.id } });
-    if (!organization) return apiResponse({ success: false, message: "Organization not found", data: null, error: "Not Found", status: 404 });
-
-    // soft delete organization
-    const deletedOrg = await db.organization.update({
-      where: { id: organization.id },
-      data: { isDeleted: true, deletedAt: new Date() },
-    });
-
-    const audit = await createAuditLog({
-      user,
-      action: "DELETE",
-      request,
-      resource: "ORGANIZATION",
-      resourceId: deletedOrg.id,
-      deletionType: "SOFT",
-    });
-
-    return apiResponse({ 
-      success: true, 
-      message: "Organization deleted", 
-      data: {
-        deletedOrg, 
-        audit
-      },
-      error: null, 
-      status: 200 
-    });
-  } catch (error) {
-    console.error("Organization deletion error:", error);
-    return apiResponse({ success: false, message: "Failed to delete organization", data: null, error: typeof error === "string" ? error : "Internal server error", status: 500 });
-  }
-}
-
-// things to do:
-// if deleted na ang org, dapat di na sya accessible ng admin user
-// create a conditional to check the field `isDeleted` in the organization model for all the apis
-// if isDeleted is true, return an error response indicating the organization has been deleted
-// if they created again, it should make the isDeleted field false and restore the organization
-
