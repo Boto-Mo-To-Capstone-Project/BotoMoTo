@@ -63,11 +63,9 @@ const CandidateCategory = ({
         <table className="min-w-full divide-y divide-gray-200 border border-gray-300 bg-gray-100">
           <thead className="">
             <tr>
-              <th className="px-4 py-2 candidate-category-desc w-3/5">
-                Candidate
-              </th>
-              <th className="px-4 py-2 candidate-category-desc w-1/5">Party</th>
-              <th className="px-4 py-2 text-center candidate-category-desc w-1/5">
+              <th className="px-4 py-2 candidate-category-desc ">Candidate</th>
+              <th className="px-4 py-2 candidate-category-desc ">Party</th>
+              <th className="px-4 py-2 text-center candidate-category-desc ">
                 View Credentials
               </th>
             </tr>
@@ -80,7 +78,7 @@ const CandidateCategory = ({
                     <input
                       type="checkbox"
                       checked={selectedCandidates.includes(candidate.name)}
-                      className="h-4 w-4 lg:h-5 lg:w-5 appearance-none rounded-xl border-2 border-gray checked:border-primary checked:bg-primary focus:ring-3 focus:ring-primary focus:ring-offset-1 cursor-pointer flex-none "
+                      className="accent-primary min-h-5 min-w-5"
                       onChange={() => handleSelect(candidate)}
                     />
                     <img

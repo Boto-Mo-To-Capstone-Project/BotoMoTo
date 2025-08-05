@@ -51,7 +51,8 @@ export default function SidebarWrapper({
   const pageTitle = (() => {
     if (pathname === "/admin/dashboard") return "Admin Dashboard";
     if (pathname === "/admin/dashboard/elections") return "Admin Elections";
-    if (pathname === "/admin/dashboard/elections/create") return "Election Form";
+    if (pathname === "/admin/dashboard/elections/create")
+      return "Election Form";
     if (pathname === "/admin/dashboard/elections/tickets")
       return "Admin Tickets";
     if (pathname === "/admin/dashboard/elections/profile")
@@ -68,6 +69,8 @@ export default function SidebarWrapper({
       return "Super Admin Audits";
     if (pathname === "/superadmin/dashboard/survey")
       return "Super Admin Survey";
+    if (pathname.startsWith("/superadmin/dashboard/tickets/"))
+      return "Ticket Messaging";
 
     // Add more as needed
     return "Default, Check sidebar wrapper";

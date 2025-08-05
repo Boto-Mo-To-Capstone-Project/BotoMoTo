@@ -26,7 +26,7 @@ const OtpInput = ({ length = 6 }: OtpInputProps) => {
   };
 
   return (
-    <div className="flex gap-2 flex-wrap justify-center">
+    <div className="flex gap-1 justify-center xs:gap-2">
       {otp.map((digit, i) => (
         <input
           key={i}
@@ -37,7 +37,7 @@ const OtpInput = ({ length = 6 }: OtpInputProps) => {
           value={digit}
           placeholder="0"
           onChange={(e) => handleChange(e, i)}
-          className="w-12 h-12 text-center text-secondary border border-secondary rounded-md text-dlg focus:outline-none focus:ring-2 focus:ring-primary md:w-13 md:h-15 md:text-dxl"
+          className="w-10 h-10 text-center text-secondary border border-secondary rounded-md text-dmd focus:outline-none focus:ring-2 focus:ring-primary xs:w-13 xs:h-15 xs:text-dxl"
         />
       ))}
     </div>
@@ -51,7 +51,11 @@ interface OtpInputFourProps {
   length?: number;
 }
 
-export const OtpInputFour = ({ value, onChange, length = 4 }: OtpInputFourProps) => {
+export const OtpInputFour = ({
+  value,
+  onChange,
+  length = 4,
+}: OtpInputFourProps) => {
   return (
     <div className="flex gap-4 justify-center w-full max-w-[380px]">
       {Array.from({ length }).map((_, index) => (
