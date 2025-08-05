@@ -1,4 +1,5 @@
 import { MdFirstPage, MdLastPage, MdChevronLeft, MdChevronRight, MdUnfoldMore, MdArrowDropUp, MdArrowDropDown } from 'react-icons/md';
+import { FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 
 interface Election {
   id: number;
@@ -59,47 +60,50 @@ export default function ElectionTable({ title = 'All Elections', selectedIds = [
                   onChange={handleHeaderCheckbox}
                 />
               </th>
-              <th className="py-2 px-3 border-b border-gray-200 whitespace-nowrap cursor-pointer select-none" onClick={() => props.onSort('name')}>
-                <span className="flex items-center gap-1">
-                  Election
-                  {props.sortCol === 'name' ? (
-                    props.sortDir === 'asc' ? <MdArrowDropUp className="text-gray-400 text-base" /> : <MdArrowDropDown className="text-gray-400 text-base" />
-                  ) : (
-                    <MdUnfoldMore className="text-gray-400 text-base" />
-                  )}
-                </span>
+              <th
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                onClick={() => props.onSort("name")}
+              >
+                Election{" "}
+                {props.sortCol === "name" ? (
+                  props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
+                ) : (
+                  <FaSort className="inline opacity-50" />
+                )}
               </th>
-              <th className="py-2 px-3 border-b border-gray-200 whitespace-nowrap cursor-pointer select-none" onClick={() => props.onSort('status')}>
-                <span className="flex items-center gap-1">
-                  Status
-                  {props.sortCol === 'status' ? (
-                    props.sortDir === 'asc' ? <MdArrowDropUp className="text-gray-400 text-base" /> : <MdArrowDropDown className="text-gray-400 text-base" />
-                  ) : (
-                    <MdUnfoldMore className="text-gray-400 text-base" />
-                  )}
-                </span>
+              <th
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                onClick={() => props.onSort("status")}
+              >
+                Status{" "}
+                {props.sortCol === "status" ? (
+                  props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
+                ) : (
+                  <FaSort className="inline opacity-50" />
+                )}
               </th>
-              <th className="py-2 px-3 border-b border-gray-200 whitespace-nowrap cursor-pointer select-none" onClick={() => props.onSort('votingDate')}>
-                <span className="flex items-center gap-1">
-                  Voting date
-                  {props.sortCol === 'votingDate' ? (
-                    props.sortDir === 'asc' ? <MdArrowDropUp className="text-gray-400 text-base" /> : <MdArrowDropDown className="text-gray-400 text-base" />
-                  ) : (
-                    <MdUnfoldMore className="text-gray-400 text-base" />
-                  )}
-                </span>
+              <th
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                onClick={() => props.onSort("votingDate")}
+              >
+                Voting date{" "}
+                {props.sortCol === "votingDate" ? (
+                  props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
+                ) : (
+                  <FaSort className="inline opacity-50" />
+                )}
               </th>
-              <th className="py-2 px-3 border-b border-gray-200 whitespace-nowrap cursor-pointer select-none" onClick={() => props.onSort('time')}>
-                <span className="flex items-center gap-1">
-                  Time
-                  {props.sortCol === 'time' ? (
-                    props.sortDir === 'asc' ? <MdArrowDropUp className="text-gray-400 text-base" /> : <MdArrowDropDown className="text-gray-400 text-base" />
-                  ) : (
-                    <MdUnfoldMore className="text-gray-400 text-base" />
-                  )}
-                </span>
+              <th
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                onClick={() => props.onSort("time")}
+              >
+                Time{" "}
+                {props.sortCol === "time" ? (
+                  props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
+                ) : (
+                  <FaSort className="inline opacity-50" />
+                )}
               </th>
-              {/* Removed View column */}
             </tr>
           </thead>
           <tbody>
@@ -130,7 +134,6 @@ export default function ElectionTable({ title = 'All Elections', selectedIds = [
                 </td>
                 <td className="py-2 px-3 align-middle truncate max-w-[140px]">{election.votingDate}</td>
                 <td className="py-2 px-3 align-middle truncate max-w-[120px]">{election.time}</td>
-                {/* Removed View button */}
               </tr>
             ))}
           </tbody>
@@ -160,4 +163,4 @@ export default function ElectionTable({ title = 'All Elections', selectedIds = [
       </div>
     </div>
   );
-} 
+}

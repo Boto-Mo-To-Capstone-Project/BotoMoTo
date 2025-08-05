@@ -3,50 +3,75 @@ import { useState } from "react";
 import { AuthHeading } from "@/components/AuthHeading";
 import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
-import {
-  PlusIcon,
-  PencilSquareIcon,
-  ArrowDownTrayIcon,
-  FunnelIcon,
-  TrashIcon,
-} from '@heroicons/react/24/outline';
 
 interface ScopeModalProps {    
   open: boolean;
   onClose: () => void;
   onSave: (data: {
     type: string;
-    name: string;
-    description: string;
-    dateBegin: string;
-    dateEnd: string;
+    scopes: { name: string; description: string }[];
   }) => void;
+  disableSave?: boolean;
 }
 
-export function ScopeModal({ open, onClose, onSave }: ScopeModalProps) {
-  const [scopingTypes, setScopingTypes] = useState<string[]>([]);
-  const [inputValue, setInputValue] = useState("");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+export function ScopeModal({ open, onClose, onSave, disableSave }: ScopeModalProps) {
+  const [scopeType, setScopeType] = useState("");
+  const [scopeTypeConfirmed, setScopeTypeConfirmed] = useState(false);
+  const [scopes, setScopes] = useState<{ name: string; description: string }[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [editIndex, setEditIndex] = useState<number | null>(null);
 
-  const handleAddType = (type: string) => {
-    const trimmed = type.trim();
-    if (trimmed && !scopingTypes.includes(trimmed)) {
-      setScopingTypes([...scopingTypes, trimmed]);
-      setInputValue("");
-      setDropdownOpen(false);
+  // Confirm scope type
+  const handleConfirmType = () => {
+    if (scopeType.trim()) setScopeTypeConfirmed(true);
+  };
+
+  // Edit scope type
+  const handleEditType = () => {
+    setScopeTypeConfirmed(false);
+  };
+
+  // Add or update scope entry
+  const handleAddOrUpdate = () => {
+    if (!name.trim()) return;
+    if (editIndex !== null) {
+      setScopes(scopes.map((s, i) => i === editIndex ? { name, description } : s));
+      setEditIndex(null);
+    } else {
+      setScopes([...scopes, { name, description }]);
+    }
+    setName("");
+    setDescription("");
+  };
+
+  // Edit an entry
+  const handleEditScope = (idx: number) => {
+    setEditIndex(idx);
+    setName(scopes[idx].name);
+    setDescription(scopes[idx].description);
+  };
+
+  // Remove an entry
+  const handleRemoveScope = (idx: number) => {
+    setScopes(scopes.filter((_, i) => i !== idx));
+    if (editIndex === idx) {
+      setEditIndex(null);
+      setName("");
+      setDescription("");
     }
   };
 
-  const handleRemoveType = (type: string) => {
-    setScopingTypes(scopingTypes.filter(t => t !== type));
+  // When scope type is edited, update all entries (if any)
+  const handleScopeTypeChange = (val: string) => {
+    setScopeType(val);
+    // If you want to update all entries with new type, you can do it in parent onSave
   };
 
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-sm lg:ml-68"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-sm"
       onClick={e => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -58,91 +83,95 @@ export function ScopeModal({ open, onClose, onSave }: ScopeModalProps) {
         >
           &times;
         </button>
-        <AuthHeading title="Scope Form" subtitle="Keep track of, manage, and register scopes — use this form to register a new one." />
+        <AuthHeading title="Scope Form" subtitle="Set a scope type, then add scope names and descriptions." />
         <form
           onSubmit={e => {
             e.preventDefault();
-            onSave({
-              type: scopingTypes.join(','),
-              name,
-              description,
-              dateBegin: '',
-              dateEnd: '',
-            });
+            onSave({ type: scopeType, scopes });
+            onClose();
           }}
           className="flex flex-col gap-4 text-left w-full"
         >
-          {/* Tag Input for Scope Types */}
+          {/* Scope Type */}
           <div className="mb-4">
-            <label className="font-medium block mb-1">Scope Types</label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {scopingTypes.map(type => (
-                <span key={type} className="flex items-center bg-yellow-100 border border-yellow-400 text-yellow-800 rounded px-2 py-1">
-                  {type}
-                  <button
-                    type="button"
-                    className="ml-1 text-yellow-700 hover:text-red-500"
-                    onClick={() => handleRemoveType(type)}
-                  >
-                    &times;
-                  </button>
-                </span>
-              ))}
-            </div>
-            <div className="relative flex gap-2 items-end">
+            <label className="font-medium block mb-1">Scoping Type</label>
+            <div className="flex gap-2">
               <input
                 type="text"
-                className="w-full px-4 py-2 border border-yellow-400 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-base"
-                placeholder="Add or select type"
-                value={inputValue}
-                onChange={e => {
-                  setInputValue(e.target.value);
-                  setDropdownOpen(true);
-                }}
-                onFocus={() => setDropdownOpen(true)}
-                onBlur={() => setTimeout(() => setDropdownOpen(false), 100)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddType(inputValue);
-                  }
-                }}
+                className="w-full px-4 py-2 border border-secondary rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-base"
+                placeholder="Enter scoping type (e.g., Department)"
+                value={scopeType}
+                onChange={e => setScopeType(e.target.value)}
+                readOnly={scopeTypeConfirmed}
+                tabIndex={scopeTypeConfirmed ? -1 : 0}
+                style={scopeTypeConfirmed ? { backgroundColor: "#f9fafb", cursor: "default" } : {}}
               />
-              {/* Dropdown */}
-              {dropdownOpen && (
-                <div className="absolute w-full top-full bg-white border border-yellow-400 rounded-md shadow z-10 max-h-40 overflow-auto">
-                  {scopingTypes.length === 0 && (
-                    <div className="px-4 py-2 text-gray-400">No types yet</div>
-                  )}
-                  {scopingTypes
-                    .filter(type => type.toLowerCase().includes(inputValue.toLowerCase()))
-                    .map(type => (
-                      <div
-                        key={type}
-                        className="px-4 py-2 hover:bg-yellow-100 cursor-pointer"
-                        onMouseDown={() => handleAddType(type)}
-                      >
-                        {type}
-                      </div>
-                    ))}
-                </div>
+              {scopeTypeConfirmed ? (
+                <SubmitButton
+                  label="Edit"
+                  variant="small"
+                  type="button"
+                  onClick={handleEditType}
+                />
+              ) : (
+                <SubmitButton
+                  label="Confirm"
+                  variant="small"
+                  type="button"
+                  onClick={handleConfirmType}
+                />
               )}
-              <SubmitButton
-                label="Add"
-                variant="small"
-                type="button"
-                onClick={() => handleAddType(inputValue)}
-              />
             </div>
           </div>
-          <InputField label="Scope Name" value={name} onChange={e => setName(e.target.value)} placeholder="Enter your scope name" />
-          <InputField label="Scope Description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Enter a description..." textarea={true} rows={3} />
+          {/* Add/Edit Scope Entry */}
+          {scopeTypeConfirmed && (
+            <>
+              {/* Scope Name */}
+              <div className="mb-4">
+                <label className="font-medium block mb-1">Scope Name</label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-2 border border-secondary rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-base"
+                  placeholder="Enter scope name"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                />
+              </div>
+              {/* Scope Description */}
+              <div className="mb-8">
+                <label className="font-medium block mb-1">Scope Description</label>
+                <textarea
+                  className="w-full px-4 py-2 border border-secondary rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 text-base resize-none"
+                  placeholder="Enter a description..."
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  rows={2}
+                />
+              </div>
+            </>
+          )}
           <div className="flex justify-end gap-2 mt-2">
             <SubmitButton label="Cancel" variant="small-action" type="button" onClick={onClose} />
-            <SubmitButton label="Save" variant="small" type="submit" />
+            <SubmitButton
+              label="Add"
+              variant="small"
+              type="button"
+              onClick={() => {
+                if (scopeTypeConfirmed && name.trim()) {
+                  onSave({
+                    type: scopeType,
+                    scopes: [{ name, description }]
+                  });
+                  onClose();
+                  setName("");
+                  setDescription("");
+                }
+              }}
+      
+            />
           </div>
         </form>
       </div>
     </div>
   );
-} 
+}

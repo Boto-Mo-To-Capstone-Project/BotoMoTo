@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 
 interface SubmitButtonProps {
   label: string;
-  variant?: 'primary' | 'tab' | 'action' | 'small' | 'small-action';
+  variant?: 'primary' | 'tab' | 'action' | 'small' | 'small-action' | 'action-primary'; // <-- added 'action-primary'
   isActive?: boolean; // for tab highlighting
   isLoading?: boolean;
   className?: string;
@@ -31,6 +31,8 @@ export function SubmitButton({
     styles = `w-[90px] h-[44px] md:h-10 flex items-center justify-center text-base rounded-none ${isActive ? 'text-[var(--color-primary)] bg-white' : 'text-gray-700 bg-gray-50 hover:bg-gray-100'} border-0`;
   } else if (variant === 'action') {
     styles = `p-2 bg-white border border-gray-200 rounded-[8px] hover:bg-gray-100 flex items-center justify-center`;
+  } else if (variant === 'action-primary') {
+    styles = `p-2 bg-white border-2 border-[var(--color-primary,#b91c1c)] text-[var(--color-primary,#b91c1c)] fill-[var(--color-primary,#b91c1c)] rounded-[8px] hover:bg-[var(--color-primary,#b91c1c)/10] flex items-center justify-center`; // <-- new style
   } else if (variant === 'small') {
     styles = `w-[80px] h-[40px] flex items-center justify-center rounded-[8px] bg-[var(--color-primary)] text-white text-sm hover:brightness-90`;
   } else if (variant === 'small-action') {
