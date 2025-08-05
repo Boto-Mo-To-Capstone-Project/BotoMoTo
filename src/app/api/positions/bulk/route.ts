@@ -15,24 +15,12 @@ export async function POST(request: NextRequest) {
     const user = session?.user;
 
     if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to perform bulk position operations",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
+      return apiResponse({ success: false, message: "You must be logged in to perform bulk position operations", error: "Unauthorized", status: 401 });
     }
 
     // Check if user has admin role
     if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin users can perform bulk position operations",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
+      return apiResponse({ success: false, message: "Only admin users can perform bulk position operations", error: "Forbidden", status: 403 });
     }
 
     const body = await request.json();
@@ -40,34 +28,16 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!operation) {
-      return apiResponse({
-        success: false,
-        message: "Operation type is required",
-        data: null,
-        error: "Bad Request",
-        status: 400
-      });
+      return apiResponse({ success: false, message: "Operation type is required", error: "Bad Request", status: 400 });
     }
 
     if (!electionId) {
-      return apiResponse({
-        success: false,
-        message: "Election ID is required",
-        data: null,
-        error: "Bad Request",
-        status: 400
-      });
+      return apiResponse({ success: false, message: "Election ID is required", error: "Bad Request", status: 400 });
     }
 
     const electionIdInt = parseInt(electionId);
     if (isNaN(electionIdInt)) {
-      return apiResponse({
-        success: false,
-        message: "Invalid election ID",
-        data: null,
-        error: "Bad Request",
-        status: 400
-      });
+      return apiResponse({ success: false, message: "Invalid election ID", error: "Bad Request", status: 400 });
     }
 
     // Verify election exists and user has access
@@ -89,35 +59,17 @@ export async function POST(request: NextRequest) {
     });
 
     if (!election) {
-      return apiResponse({
-        success: false,
-        message: "Election not found or has been deleted",
-        data: null,
-        error: "Not Found",
-        status: 404
-      });
+      return apiResponse({ success: false, message: "Election not found or has been deleted", error: "Not Found", status: 404 });
     }
 
     // Check if admin owns this election
     if (user.role === ROLES.ADMIN && election.organization.adminId !== user.id) {
-      return apiResponse({
-        success: false,
-        message: "You can only perform bulk operations on positions from your organization's elections",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
+      return apiResponse({ success: false, message: "You can only perform bulk operations on positions from your organization's elections", error: "Forbidden", status: 403 });
     }
 
     // Only approved organizations can modify positions
     if (election.organization.status !== ORGANIZATION_STATUS.APPROVED) {
-      return apiResponse({
-        success: false,
-        message: "Only approved organizations can perform bulk position operations",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
+      return apiResponse({ success: false, message: "Only approved organizations can perform bulk position operations", error: "Forbidden", status: 403 });
     }
 
     let result;
@@ -134,39 +86,21 @@ export async function POST(request: NextRequest) {
         result = await handleBulkReorder(electionIdInt, positionIds, user, request);
         break;
       default:
-        return apiResponse({
-          success: false,
-          message: "Unsupported bulk operation",
-          data: null,
-          error: "Bad Request",
-          status: 400
-        });
+        return apiResponse({ success: false, message: "Unsupported bulk operation", error: "Bad Request", status: 400 });
     }
 
     return result;
 
   } catch (error) {
     console.error("Bulk position operation error:", error);
-    return apiResponse({
-      success: false,
-      message: "Failed to perform bulk position operation",
-      data: null,
-      error: typeof error === "string" ? error : "Internal server error",
-      status: 500
-    });
+    return apiResponse({ success: false, message: "Failed to perform bulk position operation", error: typeof error === "string" ? error : "Internal server error", status: 500 });
   }
 }
 
 // Handle bulk creation of positions
 async function handleBulkCreate(electionId: number, positionsData: any[], user: any, request: NextRequest) {
   if (!positionsData || !Array.isArray(positionsData) || positionsData.length === 0) {
-    return apiResponse({
-      success: false,
-      message: "Positions data is required for bulk creation",
-      data: null,
-      error: "Bad Request",
-      status: 400
-    });
+    return apiResponse({ success: false, message: "Positions data is required for bulk creation", error: "Bad Request", status: 400 });
   }
 
   const validatedPositions = [];
@@ -185,13 +119,7 @@ async function handleBulkCreate(electionId: number, positionsData: any[], user: 
   }
 
   if (errors.length > 0) {
-    return apiResponse({
-      success: false,
-      message: "Validation errors found in position data",
-      data: { errors },
-      error: "Bad Request",
-      status: 400
-    });
+    return apiResponse({ success: false, message: "Validation errors found in position data", data: { errors }, error: "Bad Request", status: 400 });
   }
 
   // Check for duplicate names within the batch and existing positions
@@ -199,13 +127,7 @@ async function handleBulkCreate(electionId: number, positionsData: any[], user: 
   const duplicateNames = names.filter((name, index) => names.indexOf(name) !== index);
   
   if (duplicateNames.length > 0) {
-    return apiResponse({
-      success: false,
-      message: "Duplicate position names found within the batch",
-      data: { duplicateNames },
-      error: "Bad Request",
-      status: 400
-    });
+    return apiResponse({ success: false, message: "Duplicate position names found within the batch", data: { duplicateNames }, error: "Bad Request", status: 400 });
   }
 
   // Check for existing position names in the election
@@ -243,13 +165,7 @@ async function handleBulkCreate(electionId: number, positionsData: any[], user: 
     });
 
     if (votingScopes.length !== new Set(votingScopeIds).size) {
-      return apiResponse({
-        success: false,
-        message: "Some voting scopes are invalid or don't belong to this election",
-        data: null,
-        error: "Bad Request",
-        status: 400
-      });
+      return apiResponse({ success: false, message: "Some voting scopes are invalid or don't belong to this election", error: "Bad Request", status: 400 });
     }
   }
 
@@ -299,7 +215,6 @@ async function handleBulkCreate(electionId: number, positionsData: any[], user: 
       positions,
       audit
     },
-    error: null,
     status: 201
   });
 }
@@ -307,25 +222,13 @@ async function handleBulkCreate(electionId: number, positionsData: any[], user: 
 // Handle bulk deletion of positions
 async function handleBulkDelete(electionId: number, positionIds: number[], user: any, request: NextRequest, election: any) {
   if (!positionIds || !Array.isArray(positionIds) || positionIds.length === 0) {
-    return apiResponse({
-      success: false,
-      message: "Position IDs are required for bulk deletion",
-      data: null,
-      error: "Bad Request",
-      status: 400
-    });
+    return apiResponse({ success: false, message: "Position IDs are required for bulk deletion", error: "Bad Request", status: 400 });
   }
 
   // Validate position IDs
   const invalidIds = positionIds.filter(id => typeof id !== 'number' || isNaN(id) || id <= 0);
   if (invalidIds.length > 0) {
-    return apiResponse({
-      success: false,
-      message: "Invalid position IDs provided",
-      data: { invalidIds },
-      error: "Bad Request",
-      status: 400
-    });
+    return apiResponse({ success: false, message: "Invalid position IDs provided", data: { invalidIds }, error: "Bad Request", status: 400 });
   }
 
   // Check if positions exist and belong to the election
@@ -348,13 +251,7 @@ async function handleBulkDelete(electionId: number, positionIds: number[], user:
   if (positions.length !== positionIds.length) {
     const foundIds = positions.map(p => p.id);
     const notFoundIds = positionIds.filter(id => !foundIds.includes(id));
-    return apiResponse({
-      success: false,
-      message: "Some positions not found or don't belong to this election",
-      data: { notFoundIds },
-      error: "Not Found",
-      status: 404
-    });
+    return apiResponse({ success: false, message: "Some positions not found or don't belong to this election", data: { notFoundIds }, error: "Not Found", status: 404 });
   }
 
   // Check for positions with candidates or votes
@@ -424,7 +321,6 @@ async function handleBulkDelete(electionId: number, positionIds: number[], user:
       deletedPositions: positions.map(p => ({ id: p.id, name: p.name })),
       audit
     },
-    error: null,
     status: 200
   });
 }
@@ -432,25 +328,13 @@ async function handleBulkDelete(electionId: number, positionIds: number[], user:
 // Handle bulk reordering of positions
 async function handleBulkReorder(electionId: number, orderedPositionIds: number[], user: any, request: NextRequest) {
   if (!orderedPositionIds || !Array.isArray(orderedPositionIds) || orderedPositionIds.length === 0) {
-    return apiResponse({
-      success: false,
-      message: "Ordered position IDs are required for reordering",
-      data: null,
-      error: "Bad Request",
-      status: 400
-    });
+    return apiResponse({ success: false, message: "Ordered position IDs are required for reordering", error: "Bad Request", status: 400 });
   }
 
   // Validate position IDs
   const invalidIds = orderedPositionIds.filter(id => typeof id !== 'number' || isNaN(id) || id <= 0);
   if (invalidIds.length > 0) {
-    return apiResponse({
-      success: false,
-      message: "Invalid position IDs provided",
-      data: { invalidIds },
-      error: "Bad Request",
-      status: 400
-    });
+    return apiResponse({ success: false, message: "Invalid position IDs provided", data: { invalidIds }, error: "Bad Request", status: 400 });
   }
 
   // Check if positions exist and belong to the election
@@ -465,13 +349,7 @@ async function handleBulkReorder(electionId: number, orderedPositionIds: number[
   if (positions.length !== orderedPositionIds.length) {
     const foundIds = positions.map(p => p.id);
     const notFoundIds = orderedPositionIds.filter(id => !foundIds.includes(id));
-    return apiResponse({
-      success: false,
-      message: "Some positions not found or don't belong to this election",
-      data: { notFoundIds },
-      error: "Not Found",
-      status: 404
-    });
+    return apiResponse({ success: false, message: "Some positions not found or don't belong to this election", data: { notFoundIds }, error: "Not Found", status: 404 });
   }
 
   // Update the order of each position
@@ -501,7 +379,6 @@ async function handleBulkReorder(electionId: number, orderedPositionIds: number[
       newOrder: orderedPositionIds,
       audit
     },
-    error: null,
     status: 200
   });
 }

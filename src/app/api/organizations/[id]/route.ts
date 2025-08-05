@@ -1,30 +1,24 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import db from "@/lib/db/db";
-import { ROLES, ORGANIZATION_STATUS } from "@/lib/constants";
+import { ROLES } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
 import { validateWithZod } from "@/lib/validateWithZod";
 import { organizationSchema } from "@/lib/schema";
 import { createAuditLog } from "@/lib/audit";
+import { requireAuth } from "@/lib/helpers/requireAuth";
+import { checkOwnership } from "@/lib/helpers/checkOwnership";
+import { findOrganizationById } from "@/lib/helpers/findOrganizationById";  
 
-// Handle GET request for specific organization
+// Handle GET request for specific organization (admin and superadmin)
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to view organization details",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const { id } = await params;
     const organizationId = parseInt(id);
@@ -39,67 +33,13 @@ export async function GET(
       });
     }
 
-    const organization = await db.organization.findUnique({
-      where: { 
-        id: organizationId,
-        isDeleted: false
-      },
-      include: {
-        admin: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            role: true
-          }
-        },
-        elections: {
-          where: { isDeleted: false },
-          select: {
-            id: true,
-            name: true,
-            status: true,
-            createdAt: true,
-          },
-        },
-        _count: {
-          select: {
-            elections: true
-          }
-        }
-      },
-    });
+    const { organization, response } = await findOrganizationById(organizationId);
+    if (!organization) return response;
 
-    if (!organization) {
-      return apiResponse({
-        success: false,
-        message: "Organization not found or has been deleted",
-        data: null,
-        error: "Not Found",
-        status: 404
-      });
-    }
-
-    // Admin can only get their own organization, superadmin can get others
-    if (user.role === ROLES.ADMIN && organization.adminId !== user.id) {
-      return apiResponse({
-        success: false,
-        message: "You can only view your own organization",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
-
-    // Only admin and superadmin can access this endpoint
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "You do not have permission to view organization details",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
+    // Admin can only view their own organization, superadmin can view any
+    const isOwner = checkOwnership(user, organization.adminId);
+    if (!isOwner.allowed) {
+      return isOwner.response;
     }
 
     const audit = await createAuditLog({
@@ -116,10 +56,7 @@ export async function GET(
     return apiResponse({
       success: true,
       message: "Organization details fetched successfully",
-      data: {
-        organization,
-        audit
-      },
+      data: organization,
       error: null,
       status: 200
     });
@@ -141,18 +78,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to update an organization",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const { id } = await params;
     const organizationId = parseInt(id);
@@ -174,53 +102,13 @@ export async function PUT(
     
     const { name, email, membersCount, photoUrl, letterUrl } = validation.data;
 
-    const organization = await db.organization.findUnique({
-      where: { 
-        id: organizationId,
-        isDeleted: false
-      },
-      include: { 
-        admin: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            role: true
-          }
-        }
-      },
-    });
-
-    if (!organization) {
-      return apiResponse({
-        success: false,
-        message: "Organization not found or has been deleted",
-        data: null,
-        error: "Not Found",
-        status: 404
-      });
-    }
+    const { organization, response } = await findOrganizationById(organizationId);
+    if (!organization) return response;
 
     // Admin can only update their own organization, superadmin can edit others
-    if (user.role === ROLES.ADMIN && organization.adminId !== user.id) {
-      return apiResponse({
-        success: false,
-        message: "You can only update your own organization",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
-
-    // Only admin and superadmin can access this endpoint
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "You do not have permission to update organizations",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
+    const isOwner = checkOwnership(user, organization.adminId);
+    if (!isOwner.allowed) {
+      return isOwner.response;
     }
 
     // Check if organization name already exists (excluding current org)
@@ -261,17 +149,7 @@ export async function PUT(
         membersCount: Number(membersCount),
         photoUrl,
         letterUrl,
-      },
-      include: { 
-        admin: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            role: true
-          }
-        }
-      },
+      }
     });
 
     // Compare and log changed fields
@@ -297,10 +175,7 @@ export async function PUT(
     return apiResponse({
       success: true,
       message: "Organization updated successfully",
-      data: {
-        organization: updatedOrg,
-        audit
-      },
+      data: updatedOrg,
       error: null,
       status: 200
     });
@@ -322,18 +197,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to delete an organization",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const { id } = await params;
     const organizationId = parseInt(id);
@@ -348,58 +214,13 @@ export async function DELETE(
       });
     }
 
-    const organization = await db.organization.findUnique({
-      where: { 
-        id: organizationId,
-        isDeleted: false
-      },
-      include: {
-        admin: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            role: true
-          }
-        },
-        _count: {
-          select: {
-            elections: true
-          }
-        }
-      },
-    });
-
-    if (!organization) {
-      return apiResponse({
-        success: false,
-        message: "Organization not found or has been deleted",
-        data: null,
-        error: "Not Found",
-        status: 404
-      });
-    }
+    const { organization, response } = await findOrganizationById(organizationId);
+    if (!organization) return response;
 
     // Admin can only delete their own organization, superadmin can delete others
-    if (user.role === ROLES.ADMIN && organization.adminId !== user.id) {
-      return apiResponse({
-        success: false,
-        message: "You can only delete your own organization",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
-
-    // Only admin and superadmin can access this endpoint
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "You do not have permission to delete organizations",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
+    const isOwner = checkOwnership(user, organization.adminId);
+    if (!isOwner.allowed) {
+      return isOwner.response;
     }
 
     // Check if organization has elections
@@ -421,16 +242,6 @@ export async function DELETE(
       data: { 
         isDeleted: true, 
         deletedAt: new Date() 
-      },
-      include: {
-        admin: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            role: true
-          }
-        }
       }
     });
 
@@ -446,24 +257,8 @@ export async function DELETE(
         : "Deleted own organization (admin)",
     });
 
-    return apiResponse({
-      success: true,
-      message: "Organization deleted successfully",
-      data: {
-        organization: deletedOrg,
-        audit
-      },
-      error: null,
-      status: 200
-    });
+    return apiResponse({ success: true, message: "Organization deleted successfully", data: deletedOrg, error: null, status: 200 });
   } catch (error) {
-    console.error("Organization deletion error:", error);
-    return apiResponse({
-      success: false,
-      message: "Failed to delete organization",
-      data: null,
-      error: typeof error === "string" ? error : "Internal server error",
-      status: 500
-    });
+    return apiResponse({ success: false, message: "Failed to delete organization", data: null, error: error instanceof Error ? error.message : "Internal server error", status: 500 });
   }
 }

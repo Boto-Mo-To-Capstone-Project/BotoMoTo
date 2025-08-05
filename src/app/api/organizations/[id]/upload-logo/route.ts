@@ -1,11 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth'; // ✅ new v5 way
+import { NextRequest } from 'next/server';
 import { writeFile, mkdir, unlink, stat } from 'fs/promises';
 import { join, extname } from 'path';
 import { ALLOWED_FILE_TYPES, FILE_LIMITS, AUDIT_ACTIONS } from '@/lib/constants';
 import { createAuditLog } from '@/lib/audit';
 import { apiResponse } from '@/lib/apiResponse';
 import { ROLES } from '@/lib/constants';
+import { requireAuth } from '@/lib/helpers/requireAuth';
+import { findOrganizationById } from '@/lib/helpers/findOrganizationById';
+import { checkOwnership } from '@/lib/helpers/checkOwnership';
 
 const UPLOAD_DIR = 'src/app/assets/onboard/logo/';
 
@@ -14,44 +16,26 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth(); 
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to upload a logo",
-        
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Only admin users can upload logos (superadmin should not have affiliated org)
-    if (user.role !== ROLES.ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin users can upload logos",
-        
-        error: "Forbidden",
-        status: 403
-      });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const { id } = await params;
     const organizationId = parseInt(id);
 
     if (isNaN(organizationId)) {
-      return apiResponse({
-        success: false,
-        message: "Invalid organization ID",
-        
-        error: "Bad Request",
-        status: 400
-      });
+      return apiResponse({ success: false, message: "Invalid organization ID", error: "Bad Request", status: 400 });
     }
 
-    const adminId = user.id || 'unknownadmin';
+    // Find the organization
+    const { organization, response } = await findOrganizationById(organizationId);
+    if (!organization) return response;
+
+    // Check if user is authorized to upload letter
+    const isOwner = checkOwnership(user.id, organization.admin.id);
+    if (!isOwner && user.role !== ROLES.SUPER_ADMIN) {
+      return apiResponse({ success: false, message: "You are not authorized to upload letters for this organization", error: "Forbidden", status: 403 });
+    }
 
     const formData = await request.formData();
     const file = formData.get('file');
@@ -69,7 +53,7 @@ export async function PATCH(
     }
 
     const ext = extname(file.name).toLowerCase();
-    const filename = `org-${organizationId}_admin-${adminId}_logo${ext}`;
+    const filename = `org-${organizationId}_admin-${user.id}_logo${ext}`;
     const saveDir = join(process.cwd(), UPLOAD_DIR);
     const savePath = join(saveDir, filename);
 
@@ -95,24 +79,9 @@ export async function PATCH(
       message: `Uploaded organization logo for org ${organizationId}`,
     });
 
-    return apiResponse({
-      success: true,
-      message: "Logo uploaded successfully",
-      data: { 
-        path: `/assets/onboard/logo/${filename}`,
-        audit 
-      },
-      
-      status: 201
-    });
+    return apiResponse({ success: true, message: "Logo uploaded successfully", data: { path: `/assets/onboard/logo/${filename}`, audit }, status: 201 });
   } catch (error) {
     console.error("Error uploading logo:", error);
-    return apiResponse({
-      success: false,
-      message: "Error uploading logo",
-      
-      error: typeof error === 'string' ? error : 'Internal Server Error',
-      status: 500
-    });
+    return apiResponse({ success: false, message: "Error uploading logo", error: error instanceof Error ? error.message : 'Internal Server Error', status: 500 });
   }
 }

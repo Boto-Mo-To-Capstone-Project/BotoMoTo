@@ -4,6 +4,8 @@ import db from "@/lib/db/db";
 import { ROLES, ORGANIZATION_STATUS } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
 import { createAuditLog } from "@/lib/audit";
+import { requireAuth } from "@/lib/helpers/requireAuth";
+import { findOrganizationById } from "@/lib/helpers/findOrganizationById";
 
 // Handle PATCH request to approve/reject organization (superadmin only)
 export async function PATCH(
@@ -11,38 +13,17 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to approve/reject organizations",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Only SuperAdmin can approve organizations
-    if (user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only superadmin can approve/reject organizations",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+    const authResult = await requireAuth([ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const { id } = await params;
     const organizationId = parseInt(id);
-    
+
     if (isNaN(organizationId)) {
       return apiResponse({
         success: false,
         message: "Invalid organization ID",
-        data: null,
         error: "Bad Request",
         status: 400
       });
@@ -50,47 +31,22 @@ export async function PATCH(
 
     // Parse request body
     const body = await request.json();
-    const { action, reason } = body;
-    
-    if (!action || !["approve", "reject"].includes(action)) {
+    const { approve } = body;
+
+    if (typeof approve !== "boolean") {
       return apiResponse({
         success: false,
-        message: "Invalid action. Must be 'approve' or 'reject'",
-        data: null,
+        message: "Invalid 'approve' value. Must be boolean.",
         error: "Bad Request",
         status: 400
       });
     }
 
     // Find the organization
-    const organization = await db.organization.findUnique({
-      where: { 
-        id: organizationId,
-        isDeleted: false
-      },
-      include: { 
-        admin: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            role: true
-          }
-        }
-      },
-    });
+    const { organization, response } = await findOrganizationById(organizationId);
+    if (!organization) return response;
 
-    if (!organization) {
-      return apiResponse({
-        success: false,
-        message: "Organization not found or has been deleted",
-        data: null,
-        error: "Not Found",
-        status: 404
-      });
-    }
-
-    // Check if organization is in PENDING status
+    // Only allow action on PENDING organizations
     if (organization.status !== ORGANIZATION_STATUS.PENDING) {
       return apiResponse({
         success: false,
@@ -101,55 +57,31 @@ export async function PATCH(
       });
     }
 
-    // Update organization status
-    const newStatus = action === "approve"
+    const newStatus = approve
       ? ORGANIZATION_STATUS.APPROVED
       : ORGANIZATION_STATUS.REJECTED;
 
     const updatedOrg = await db.organization.update({
       where: { id: organizationId },
-      data: { status: newStatus },
-      include: { 
-        admin: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            role: true
-          }
-        }
-      },
+      data: { status: newStatus }
     });
 
-    // Create audit log
     const audit = await createAuditLog({
       user,
-      action: action === "approve" ? "APPROVE" : "REJECT",
+      action: approve ? "APPROVE" : "REJECT",
       request,
       resource: "ORGANIZATION",
       resourceId: organizationId,
       changedFields: {
         status: { old: organization.status, new: newStatus }
       },
-      message: `${action === "approve" ? "Approved" : "Rejected"} organization: ${organization.name}${reason ? ` - Reason: ${reason}` : ""}`,
+      message: `${approve ? "Approved" : "Rejected"} organization: ${organization.name}`
     });
 
     return apiResponse({
       success: true,
-      message: `Organization ${action}d successfully`,
-      data: {
-        organization: {
-          id: updatedOrg.id,
-          name: updatedOrg.name,
-          status: updatedOrg.status,
-          adminEmail: updatedOrg.admin.email,
-          adminName: updatedOrg.admin.name
-        },
-        action,
-        reason: reason || null,
-        audit
-      },
-      error: null,
+      message: `Organization ${approve ? "approved" : "rejected"} successfully`,
+      data: updatedOrg,
       status: 200
     });
   } catch (error) {
@@ -157,7 +89,6 @@ export async function PATCH(
     return apiResponse({
       success: false,
       message: "Failed to approve/reject organization",
-      data: null,
       error: typeof error === "string" ? error : "Internal server error",
       status: 500
     });

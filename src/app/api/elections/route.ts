@@ -7,34 +7,15 @@ import { apiResponse } from "@/lib/apiResponse";
 import { validateWithZod } from "@/lib/validateWithZod";
 import { electionSchema } from "@/lib/schema";
 import { createAuditLog } from "@/lib/audit";
+import { requireAuth } from "@/lib/helpers/requireAuth";
 
 // Handle GET request to fetch all elections (superadmin only)
 export async function GET(request: NextRequest) {
   try {
-    // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to view elections",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Only superadmin can view all elections
-    if (user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only superadmin can view all elections",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+    // Authenticate the user with required role
+    const authResult = await requireAuth([ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const elections = await db.election.findMany({
       where: { isDeleted: false },
@@ -88,23 +69,21 @@ export async function GET(request: NextRequest) {
 
     return apiResponse({
       success: true,
-      message: "Elections fetched successfully",
+      message: 'Elections fetched successfully',
       data: {
         elections,
         totalCount: elections.length,
-        audit
+        audit,
       },
-      error: null,
-      status: 200
+      status: 200,
     });
   } catch (error) {
-    console.error("Get elections error:", error);
+    console.error('Get elections error:', error);
     return apiResponse({
       success: false,
-      message: "Failed to fetch elections",
-      data: null,
-      error: typeof error === "string" ? error : "Internal server error",
-      status: 500
+      message: 'Failed to fetch elections',
+      error: typeof error === 'string' ? error : 'Internal server error',
+      status: 500,
     });
   }
 }
@@ -119,10 +98,9 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return apiResponse({
         success: false,
-        message: "You must be logged in to create an election",
-        data: null,
-        error: "Unauthorized",
-        status: 401
+        message: 'You must be logged in to create an election',
+        error: 'Unauthorized',
+        status: 401,
       });
     }
 
@@ -130,10 +108,9 @@ export async function POST(request: NextRequest) {
     if (user.role !== ROLES.ADMIN) {
       return apiResponse({
         success: false,
-        message: "Only admin users can create elections",
-        data: null,
-        error: "Forbidden",
-        status: 403
+        message: 'Only admin users can create elections',
+        error: 'Forbidden',
+        status: 403,
       });
     }
 
@@ -148,20 +125,18 @@ export async function POST(request: NextRequest) {
     if (!organization) {
       return apiResponse({
         success: false,
-        message: "Organization not found. Please create an organization first.",
-        data: null,
-        error: "Not Found",
-        status: 404
+        message: 'Organization not found. Please create an organization first.',
+        error: 'Not Found',
+        status: 404,
       });
     }
 
     if (organization.status !== ORGANIZATION_STATUS.APPROVED) {
       return apiResponse({
         success: false,
-        message: "Only approved organizations can create elections",
-        data: null,
-        error: "Forbidden",
-        status: 403
+        message: 'Only approved organizations can create elections',
+        error: 'Forbidden',
+        status: 403,
       });
     }
 
@@ -184,10 +159,9 @@ export async function POST(request: NextRequest) {
     if (nameExists) {
       return apiResponse({
         success: false,
-        message: "Election name already exists in your organization",
-        data: null,
-        error: "Conflict",
-        status: 409
+        message: 'Election name already exists in your organization',
+        error: 'Conflict',
+        status: 409,
       });
     }
 
@@ -235,22 +209,20 @@ export async function POST(request: NextRequest) {
 
     return apiResponse({
       success: true,
-      message: "Election created successfully",
+      message: 'Election created successfully',
       data: {
         election,
-        audit
+        audit,
       },
-      error: null,
-      status: 201
+      status: 201,
     });
   } catch (error) {
-    console.error("Election creation error:", error);
+    console.error('Election creation error:', error);
     return apiResponse({
       success: false,
-      message: "Failed to create election",
-      data: null,
-      error: typeof error === "string" ? error : "Internal server error",
-      status: 500
+      message: 'Failed to create election',
+      error: typeof error === 'string' ? error : 'Internal server error',
+      status: 500,
     });
   }
 }

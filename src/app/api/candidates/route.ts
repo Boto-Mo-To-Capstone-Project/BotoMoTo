@@ -16,13 +16,7 @@ export async function GET(request: NextRequest) {
 
     // Check if user is authenticated
     if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to view candidates",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
+      return apiResponse({ success: false, message: "You must be logged in to view candidates", error: "Unauthorized", status: 401 });
     }
 
     // Get query parameters
@@ -36,24 +30,12 @@ export async function GET(request: NextRequest) {
     const search = url.searchParams.get('search');
 
     if (!electionId) {
-      return apiResponse({
-        success: false,
-        message: "Election ID is required",
-        data: null,
-        error: "Bad Request",
-        status: 400
-      });
+      return apiResponse({ success: false, message: "Election ID is required", error: "Bad Request", status: 400 });
     }
 
     const electionIdInt = parseInt(electionId);
     if (isNaN(electionIdInt)) {
-      return apiResponse({
-        success: false,
-        message: "Invalid election ID",
-        data: null,
-        error: "Bad Request",
-        status: 400
-      });
+      return apiResponse({ success: false, message: "Invalid election ID", error: "Bad Request", status: 400 });
     }
 
     // Verify election exists and user has access
@@ -78,24 +60,12 @@ export async function GET(request: NextRequest) {
     });
 
     if (!election) {
-      return apiResponse({
-        success: false,
-        message: "Election not found or has been deleted",
-        data: null,
-        error: "Not Found",
-        status: 404
-      });
+      return apiResponse({ success: false, message: "Election not found or has been deleted", error: "Not Found", status: 404 });
     }
 
     // Check if admin owns this election or if it's a voter with access
     if (user.role === ROLES.ADMIN && election.organization.adminId !== user.id) {
-      return apiResponse({
-        success: false,
-        message: "You can only view candidates from your organization's elections",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
+      return apiResponse({ success: false, message: "You can only view candidates from your organization's elections", error: "Forbidden", status: 403 });
     }
 
     // Build where clause for filtering
@@ -264,19 +234,12 @@ export async function GET(request: NextRequest) {
         },
         audit
       },
-      error: null,
       status: 200
     });
 
   } catch (error) {
     console.error("Candidates fetch error:", error);
-    return apiResponse({
-      success: false,
-      message: "Failed to fetch candidates",
-      data: null,
-      error: typeof error === "string" ? error : "Internal server error",
-      status: 500
-    });
+    return apiResponse({ success: false, message: "Failed to fetch candidates", error: typeof error === "string" ? error : "Internal server error", status: 500 });
   }
 }
 
@@ -288,24 +251,12 @@ export async function POST(request: NextRequest) {
     const user = session?.user;
 
     if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to create candidates",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
+      return apiResponse({ success: false, message: "You must be logged in to create candidates", error: "Unauthorized", status: 401 });
     }
 
     // Check if user has admin role
     if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin users can create candidates",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
+      return apiResponse({ success: false, message: "Only admin users can create candidates", error: "Forbidden", status: 403 });
     }
 
     const body = await request.json();
@@ -337,35 +288,17 @@ export async function POST(request: NextRequest) {
     });
 
     if (!election) {
-      return apiResponse({
-        success: false,
-        message: "Election not found or has been deleted",
-        data: null,
-        error: "Not Found",
-        status: 404
-      });
+      return apiResponse({ success: false, message: "Election not found or has been deleted", error: "Not Found", status: 404 });
     }
 
     // Check if admin owns this election
     if (user.role === ROLES.ADMIN && election.organization.adminId !== user.id) {
-      return apiResponse({
-        success: false,
-        message: "You can only create candidates for your organization's elections",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
+      return apiResponse({ success: false, message: "You can only create candidates for your organization's elections", error: "Forbidden", status: 403 });
     }
 
     // Check organization status
     if (election.organization.status !== ORGANIZATION_STATUS.APPROVED) {
-      return apiResponse({
-        success: false,
-        message: "Organization must be approved to manage candidates",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
+      return apiResponse({ success: false, message: "Organization must be approved to manage candidates", error: "Forbidden", status: 403 });
     }
 
     // Verify voter exists and belongs to the election
@@ -378,13 +311,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!voter) {
-      return apiResponse({
-        success: false,
-        message: "Voter not found in this election or has been deleted",
-        data: null,
-        error: "Not Found",
-        status: 404
-      });
+      return apiResponse({ success: false, message: "Voter not found in this election or has been deleted", error: "Not Found", status: 404 });
     }
 
     // Check if voter is already a candidate
@@ -396,13 +323,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingCandidate) {
-      return apiResponse({
-        success: false,
-        message: "This voter is already a candidate",
-        data: null,
-        error: "Conflict",
-        status: 409
-      });
+      return apiResponse({ success: false, message: "This voter is already a candidate", error: "Conflict", status: 409 });
     }
 
     // Verify position exists and belongs to the election
@@ -415,13 +336,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!position) {
-      return apiResponse({
-        success: false,
-        message: "Position not found in this election or has been deleted",
-        data: null,
-        error: "Not Found",
-        status: 404
-      });
+      return apiResponse({ success: false, message: "Position not found in this election or has been deleted", error: "Not Found", status: 404 });
     }
 
     // Verify party exists if provided
@@ -435,13 +350,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (!party) {
-        return apiResponse({
-          success: false,
-          message: "Party not found in this election or has been deleted",
-          data: null,
-          error: "Not Found",
-          status: 404
-        });
+        return apiResponse({ success: false, message: "Party not found in this election or has been deleted", error: "Not Found", status: 404 });
       }
     }
 
@@ -557,18 +466,11 @@ export async function POST(request: NextRequest) {
         candidate: completeCandidate,
         audit
       },
-      error: null,
       status: 201
     });
 
   } catch (error) {
     console.error("Candidate creation error:", error);
-    return apiResponse({
-      success: false,
-      message: "Failed to create candidate",
-      data: null,
-      error: typeof error === "string" ? error : "Internal server error",
-      status: 500
-    });
+    return apiResponse({ success: false, message: "Failed to create candidate", error: typeof error === "string" ? error : "Internal server error", status: 500 });
   }
 }
