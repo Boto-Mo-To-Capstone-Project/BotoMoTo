@@ -24,7 +24,7 @@ const CandidateRow = ({
       <tr className="bg-white hover:bg-gray-50">
         <td
           className={`px-4 py-2 candidate-category-name flex gap-3 items-center ${
-            !showCredentials ? "w-3/4" : "w-3/5"
+            !showCredentials ? "w-1/2" : "w-2/5"
           }`}
         >
           <img
@@ -39,18 +39,18 @@ const CandidateRow = ({
         </td>
         <td
           className={`px-4 py-2 candidate-category-name  ${
-            !showCredentials ? "w-1/4" : "w-1/5"
+            !showCredentials ? "w-1/2" : "w-2/5"
           }`}
         >
           {candidate.party}
         </td>
-        <td className="px-4 py-2 text-center">
-          {showCredentials && (
+        {showCredentials && (
+          <td className="px-4 py-2 text-center w-1/5">
             <button onClick={toggleAccordion}>
               {isOpen ? <EyeOff /> : <Eye />}
             </button>
-          )}
-        </td>
+          </td>
+        )}
       </tr>
       {showCredentials && isOpen && (
         <tr className="bg-gray-50">

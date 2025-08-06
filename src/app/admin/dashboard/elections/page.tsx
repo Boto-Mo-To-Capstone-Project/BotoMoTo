@@ -5,8 +5,6 @@ import { SubmitButton } from '@/components/SubmitButton';
 import { ElectionModal } from '@/components/ElectionModal';
 import SearchBar from '@/components/SearchBar';
 import ElectionTable from '@/components/ElectionTable';
-import AppHeader from '@/components/AppHeader';
-import AdminSidebar from '@/components/sidebars/AdminSidebar';
 import toast, { Toaster } from 'react-hot-toast';
 import CustomToast from '@/components/CustomToast';
 

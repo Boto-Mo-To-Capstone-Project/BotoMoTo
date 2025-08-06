@@ -116,7 +116,7 @@ const BallotForm = () => {
           You're voting in the 2025 Election of Provident
         </p>
       </div>
-      <div className="lg:w-3/5 flex flex-col flex-wrap">
+      <div className="w-full lg:w-3/5 flex flex-col">
         <div className="mb-10">
           <p className="voter-election-desc">
             <strong>Instructions for Voting</strong>
