@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
 import { AuthHeading } from "@/components/AuthHeading";
 import { InputField } from "@/components/InputField";
@@ -12,12 +13,25 @@ import { ErrorMessage } from "@/components/ErrorMessage";
 import AuthContainer from '@/components/AuthContainer';
 
 export default function SignupPage() {
+  const router = useRouter();
+  const { data: session, status: sessionStatus } = useSession();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect if user already has session
+  useEffect(() => {
+    if (sessionStatus === "authenticated" && session?.user) {
+      if (session.user.organization?.status === "APPROVED") {
+        router.replace("/admin/dashboard");
+      } else {
+        router.replace("/admin/onboard");
+      }
+    }
+  }, [sessionStatus, session, router]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +72,11 @@ export default function SignupPage() {
         email,
         password,
         callbackUrl: "/admin/onboard",
+        redirect: false,
       });
+      
+      // Let the redirect happen via useEffect
+      window.location.href = "/admin/onboard";
     } catch (err) {
       setError(`An unexpected error occurred. Please try again. ${err}`);
       console.error("Signup error", err);
@@ -66,6 +84,11 @@ export default function SignupPage() {
       setIsLoading(false);
     }
   };
+
+  // Show loading while checking session
+  if (sessionStatus === "loading") {
+    return <p>Loading...</p>;
+  }
 
   return (
     <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40">

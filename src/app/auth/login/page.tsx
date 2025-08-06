@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { signIn} from "next-auth/react";
+import { useState, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 import Logo from "@/components/Logo";
 import { AuthHeading } from "@/components/AuthHeading";
@@ -14,10 +15,23 @@ import { RememberMeAndForgotPassword } from "@/components/RememberMeAndForgotPas
 import AuthContainer from '@/components/AuthContainer';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { data: session, status: sessionStatus } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect if user already has session
+  useEffect(() => {
+    if (sessionStatus === "authenticated" && session?.user) {
+      if (session.user.organization?.status === "APPROVED") {
+        router.replace("/admin/dashboard");
+      } else {
+        router.replace("/admin/onboard");
+      }
+    }
+  }, [sessionStatus, session, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,10 +43,16 @@ export default function LoginPage() {
       const res = await signIn("credentials", {
         email,
         password,
-        callbackUrl: "/admin/onboard"
+        callbackUrl: "/admin/onboard",
+        redirect: false
       });
 
-      console.log("Login successful", res);
+      if (res?.error) {
+        setError("Invalid email or password");
+      } else if (res?.ok) {
+        // Let the useEffect handle the redirect based on session
+        window.location.href = "/admin/onboard";
+      }
       
     } catch (err) {
       setError(`An unexpected error occurred. Please try again. ${err}`);
@@ -41,6 +61,11 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  // Show loading while checking session
+  if (sessionStatus === "loading") {
+    return <p>Loading...</p>;
+  }
 
   return (
     <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40">
