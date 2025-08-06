@@ -10,9 +10,17 @@ interface CompleteTaskModalProps {
   open: boolean;
   onClose: () => void;
   onSave: (data: { organizationName: string; organizationEmail: string; membersCount: number; organizationLetter: File | null; logo: File | null }) => void;
+  initialData?: {
+    organizationName: string;
+    organizationEmail: string;
+    membersCount: number;
+    organizationLetter: File | null;
+    logo: File | null;
+  } | null;
+  isLoading?: boolean;
 }
 
-export function CompleteTaskModal({ open, onClose, onSave }: CompleteTaskModalProps) {
+export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoading = false }: CompleteTaskModalProps) {
   const [organizationName, setOrganizationName] = useState("");
   const [organizationEmail, setOrganizationEmail] = useState("");
   const [membersCount, setMembersCount] = useState("");
@@ -20,6 +28,24 @@ export function CompleteTaskModal({ open, onClose, onSave }: CompleteTaskModalPr
   // Add sample letter state
   const [sampleLetter, setSampleLetter] = useState<File | null>(null);
   const [logo, setLogo] = useState<File | null>(null);
+
+  // Populate form with initial data when modal opens
+  useEffect(() => {
+    if (open && initialData) {
+      setOrganizationName(initialData.organizationName);
+      setOrganizationEmail(initialData.organizationEmail);
+      setMembersCount(initialData.membersCount.toString());
+      setOrganizationLetter(initialData.organizationLetter);
+      setLogo(initialData.logo);
+    } else if (open && !initialData) {
+      // Reset form when opening without initial data
+      setOrganizationName("");
+      setOrganizationEmail("");
+      setMembersCount("");
+      setOrganizationLetter(null);
+      setLogo(null);
+    }
+  }, [open, initialData]);
 
   useEffect(() => {
     // Create a dummy File object for the sample letter (as in create-org)
@@ -133,7 +159,7 @@ export function CompleteTaskModal({ open, onClose, onSave }: CompleteTaskModalPr
           )}
           <div className="flex justify-end gap-2 mt-2">
             <SubmitButton label="Cancel" variant="small-action" type="button" onClick={onClose} />
-            <SubmitButton label="Save" variant="small" type="submit" />
+            <SubmitButton label="Save" variant="small" type="submit" isLoading={isLoading} />
           </div>
         </form>
       </div>

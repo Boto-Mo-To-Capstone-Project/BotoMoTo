@@ -144,6 +144,46 @@ export default function OnboardProcessingPage() {
 
   const [showModal, setShowModal] = useState(false);
   const [status, setStatus] = useState<ApplicationStatus>('getting_started');
+  const [isLoading, setIsLoading] = useState(false);
+  const [organizationData, setOrganizationData] = useState<{
+    organizationName: string;
+    organizationEmail: string;
+    membersCount: number;
+    organizationLetter: File | null;
+    logo: File | null;
+  } | null>(null);
+
+  // Redirect to login if no session
+  useEffect(() => {
+    if (sessionStatus === "unauthenticated") {
+      router.replace("/auth/login");
+      return;
+    }
+  }, [sessionStatus, router]);
+
+  // Set status based on organization status from session
+  useEffect(() => {
+    if (session?.user?.organization) {
+      const orgStatus = session.user.organization.status;
+      switch (orgStatus) {
+        case 'APPROVED':
+          setStatus('approved');
+          break;
+        case 'PENDING':
+        case 'REVIEWING':
+          setStatus('reviewing');
+          break;
+        case 'SUBMITTED':
+          setStatus('submitted');
+          break;
+        case 'REJECTED':
+          setStatus('rejected');
+          break;
+        default:
+          setStatus('getting_started');
+      }
+    }
+  }, [session]);
 
   const getProgress = (status: ApplicationStatus) => {
     switch (status) {
@@ -169,20 +209,121 @@ export default function OnboardProcessingPage() {
         console.error("Error checking onboarding status:", e);
       }
     }
-    checkOnboardingStatus();
-  }, [router]);
+    
+    if (sessionStatus === "authenticated") {
+      checkOnboardingStatus();
+    }
+  }, [router, sessionStatus]);
 
-  const handleComplete = () => setShowModal(true);
-  const handleModalSave = (data: { organizationName: string; organizationEmail: string; membersCount: number; organizationLetter: File | null; logo: File | null }) => { 
-    setShowModal(false); 
-    setStatus('submitted');
-    console.log("Modal data:", data);
+  const handleComplete = () => {
+    // If user has existing organization, fetch and populate data
+    if (session?.user?.organization) {
+      fetchOrganizationData();
+    }
+    setShowModal(true);
+  };
+
+  const fetchOrganizationData = async () => {
+    try {
+      if (!session?.user?.organization?.id) return;
+      
+      const res = await fetch(`/api/organizations/${session.user.organization.id}`);
+      const data = await res.json();
+      
+      if (res.ok && data.data) {
+        const org = data.data;
+        setOrganizationData({
+          organizationName: org.name || '',
+          organizationEmail: org.email || '',
+          membersCount: org.membersCount || 0,
+          organizationLetter: null, // Will be handled by file URLs
+          logo: null // Will be handled by file URLs
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching organization data:", error);
+    }
+  };
+
+  const handleModalSave = async (data: { 
+    organizationName: string; 
+    organizationEmail: string; 
+    membersCount: number; 
+    organizationLetter: File | null; 
+    logo: File | null 
+  }) => { 
+    setIsLoading(true);
+    setShowModal(false);
+    
+    try {
+      let logoPath = '';
+      let letterPath = '';
+      
+      // Upload logo if provided
+      if (data.logo) {
+        const logoFormData = new FormData();
+        logoFormData.append('file', data.logo);
+        
+        const logoRes = await fetch('/api/organizations/upload-logo', {
+          method: 'POST',
+          body: logoFormData,
+        });
+        
+        if (logoRes.ok) {
+          const logoData = await logoRes.json();
+          logoPath = logoData.path || logoData.url || '';
+        }
+      }
+      
+      // Upload letter if provided
+      if (data.organizationLetter) {
+        const letterFormData = new FormData();
+        letterFormData.append('file', data.organizationLetter);
+        
+        const letterRes = await fetch('/api/organizations/upload-letter', {
+          method: 'POST',
+          body: letterFormData,
+        });
+        
+        if (letterRes.ok) {
+          const letterData = await letterRes.json();
+          letterPath = letterData.path || letterData.url || '';
+        }
+      }
+      
+      // Create or update organization
+      const orgPayload = {
+        name: data.organizationName,
+        email: data.organizationEmail,
+        membersCount: data.membersCount,
+        photoUrl: logoPath,
+        letterUrl: letterPath,
+      };
+      
+      const orgRes = await fetch('/api/organizations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orgPayload),
+      });
+      
+      if (orgRes.ok) {
+        setStatus('submitted');
+        // Refresh session to get updated organization data
+        window.location.reload();
+      } else {
+        console.error('Failed to save organization');
+      }
+    } catch (error) {
+      console.error('Error saving organization:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
   const handleSubmit = () => {
     setStatus('reviewing');
-    setTimeout(() => {
-      setStatus('approved');
-    }, 3000);
+    // The status will be updated from session data when it changes on the backend
   };
   const handleAccessDashboard = () => {
     router.push("/admin/dashboard");
@@ -211,7 +352,13 @@ export default function OnboardProcessingPage() {
         
         <AuthFooter question="Need help?" link="/contact" linkText="Contact Support" />
       </AuthContainer>
-      <CompleteTaskModal open={showModal} onClose={() => setShowModal(false)} onSave={handleModalSave} />
+      <CompleteTaskModal 
+        open={showModal} 
+        onClose={() => setShowModal(false)} 
+        onSave={handleModalSave} 
+        initialData={organizationData}
+        isLoading={isLoading}
+      />
     </main>
   );
 }
