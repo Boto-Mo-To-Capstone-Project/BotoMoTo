@@ -150,7 +150,7 @@ export default function OnboardProcessingPage() {
   // Real-time status hook (only using status for auto-redirect)
   const { 
     status: realtimeStatus
-  } = useOrganizationStatus(organizationId);
+  } = useOrganizationStatus(organizationId); // This will be null initially, preventing unnecessary connections
 
   // Use real-time status when available, fallback to polling
   const currentStatus = realtimeStatus ? 
@@ -167,16 +167,20 @@ export default function OnboardProcessingPage() {
 
   // Handle real-time status changes and auto-redirect when approved
   useEffect(() => {
+    console.log('🔍 Real-time status changed:', realtimeStatus, 'Organization ID:', organizationId);
+    
     if (realtimeStatus === 'APPROVED') {
+      console.log('🎉 Organization approved! Redirecting to dashboard...');
       toast.success('Your organization has been approved!', {
         duration: 3000,
       });
       // Small delay to show the success message
       setTimeout(() => {
+        console.log('🔄 Executing redirect to dashboard...');
         router.replace("/admin/dashboard");
       }, 2000);
     }
-  }, [realtimeStatus, router]);
+  }, [realtimeStatus, router, organizationId]);
 
   // Set status and organization data based on backend data
   useEffect(() => {
