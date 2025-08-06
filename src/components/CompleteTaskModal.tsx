@@ -43,13 +43,18 @@ export function CompleteTaskModal({ open, onClose, onSave }: CompleteTaskModalPr
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 backdrop-blur-sm pt-8"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-sm"
       onClick={e => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-[380px] relative px-4 pt-8 pb-8 mx-auto text-center space-y-6 border border-gray-200 overflow-y-auto max-h-screen">
-        <button className="absolute top-2 right-2 text-gray-400 hover:text-gray-700" onClick={onClose}>&times;</button>
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-[95vw] sm:max-w-md md:max-w-lg lg:max-w-xl relative px-4 sm:px-6 pt-8 pb-8 mx-2 sm:mx-4 text-center space-y-6 border border-gray-200 overflow-y-auto max-h-[90vh] overflow-x-hidden break-words">
+        <button
+          className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
+          onClick={onClose}
+        >
+          &times;
+        </button>
         <AuthHeading title="Complete your task" subtitle="Fill in the details below to proceed." />
         <form
           onSubmit={e => {
@@ -126,11 +131,10 @@ export function CompleteTaskModal({ open, onClose, onSave }: CompleteTaskModalPr
               <UploadedFileDisplay file={organizationLetter || sampleLetter!} />
             </div>
           )}
-          <SubmitButton
-            label="Save"
-            isLoading={false}
-            className="w-full"
-          />
+          <div className="flex justify-end gap-2 mt-2">
+            <SubmitButton label="Cancel" variant="small-action" type="button" onClick={onClose} />
+            <SubmitButton label="Save" variant="small" type="submit" />
+          </div>
         </form>
       </div>
     </div>
