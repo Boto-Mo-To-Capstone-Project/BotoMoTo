@@ -36,6 +36,19 @@ export async function GET(
     // Create SSE stream
     const encoder = new TextEncoder();
     let currentStatus = org.status;
+    let interval: NodeJS.Timeout;
+    let timeoutId: NodeJS.Timeout;
+    let isClosed = false;
+    
+    // Define cleanup function outside to make it accessible
+    const cleanup = () => {
+      if (isClosed) return; // Prevent double cleanup
+      isClosed = true;
+      
+      console.log(`🔌 SSE connection closed for organization ${organizationId}`);
+      if (interval) clearInterval(interval);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
     
     const stream = new ReadableStream({
       start(controller) {
@@ -50,7 +63,9 @@ export async function GET(
         controller.enqueue(encoder.encode(initialData));
 
         // Poll for status changes every 3 seconds
-        const interval = setInterval(async () => {
+        interval = setInterval(async () => {
+          if (isClosed) return; // Don't continue if closed
+          
           try {
             const updatedOrg = await db.organization.findUnique({
               where: { id: organizationId },
@@ -66,7 +81,10 @@ export async function GET(
                 organizationId: organizationId,
                 previousStatus: currentStatus
               })}\n\n`;
-              controller.enqueue(encoder.encode(data));
+              
+              if (!isClosed) {
+                controller.enqueue(encoder.encode(data));
+              }
               
               // Update cached status
               currentStatus = updatedOrg.status;
@@ -78,29 +96,38 @@ export async function GET(
               error: 'Polling failed', 
               timestamp: new Date().toISOString() 
             })}\n\n`;
-            controller.enqueue(encoder.encode(errorData));
+            
+            if (!isClosed) {
+              controller.enqueue(encoder.encode(errorData));
+            }
           }
         }, 3000); // Check every 3 seconds
 
-        // Cleanup on connection close
-        const cleanup = () => {
-          console.log(`🔌 SSE connection closed for organization ${organizationId}`);
-          clearInterval(interval);
-          controller.close();
-        };
-
         // Handle client disconnect
-        request.signal.addEventListener('abort', cleanup);
+        request.signal.addEventListener('abort', () => {
+          cleanup();
+          try {
+            controller.close();
+          } catch (error) {
+            // Controller might already be closed, ignore error
+          }
+        });
         
         // Set a timeout to prevent long-running connections (optional)
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
           console.log(`⏰ SSE connection timeout for organization ${organizationId}`);
           cleanup();
+          try {
+            controller.close();
+          } catch (error) {
+            // Controller might already be closed, ignore error
+          }
         }, 30 * 60 * 1000); // 30 minutes max
       },
       
       cancel() {
         console.log(`❌ SSE stream cancelled for organization ${organizationId}`);
+        cleanup();
       }
     });
 
