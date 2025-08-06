@@ -145,8 +145,8 @@ const organizationSchema = z.object({
   name: field.string("Organization name", { min: 5 }),
   email: field.email("Organization email"),
   membersCount: field.number("Members count", { min: 1 }),
-  photoUrl: field.url("Photo URL"),
-  letterUrl: field.url("Letter URL"),
+  photoUrl: field.string("Photo"),
+  letterUrl: field.string("Letter"),
   adminId: field.string("Admin ID", { required: false }) // Optional for superadmin use
 });
 

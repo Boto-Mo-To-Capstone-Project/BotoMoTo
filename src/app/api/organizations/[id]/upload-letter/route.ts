@@ -85,11 +85,3 @@ export async function PATCH(
     return apiResponse({ success: false, message: "Error uploading letter", error: typeof error === 'string' ? error : 'Internal Server Error', status: 500 });
   }
 }
-
-// POST method alias for letter upload
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  return PATCH(request, { params });
-}

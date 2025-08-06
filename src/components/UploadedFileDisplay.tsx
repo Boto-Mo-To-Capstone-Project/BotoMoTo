@@ -4,18 +4,40 @@ interface UploadedFileDisplayProps {
   file: File;
   onDownload?: () => void;
   className?: string;
+  isExistingFile?: boolean;
+  fileUrl?: string;
+  organizationId?: number;
+  fileType?: 'logo' | 'letter';
 }
 
-export function UploadedFileDisplay({ file, onDownload, className = "" }: UploadedFileDisplayProps) {
+export function UploadedFileDisplay({ file, onDownload, className = "", isExistingFile = false, fileUrl, organizationId, fileType }: UploadedFileDisplayProps) {
   const isSample = file.name === "Sample_Letter.pdf";
-  const displayName = isSample ? "Sample Organization Letter (Template)" : file.name;
-  const fileUrl = isSample ? "/api/organizations/sample-letter" : undefined;
-
+  const isExisting = isExistingFile || file.name.startsWith("Current_");
+  
+  let displayName = file.name;
+  let downloadUrl = fileUrl;
+  
   if (isSample) {
-    // For the sample letter, clicking anywhere previews and downloads
+    displayName = "Sample Organization Letter (Template)";
+    downloadUrl = "/api/organizations/sample-letter";
+  } else if (isExisting && fileUrl && organizationId && fileType) {
+    // For existing files, extract filename from the path and use secure API
+    const filename = fileUrl.split('/').pop();
+    downloadUrl = `/api/organizations/${organizationId}/files/${fileType}/${filename}`;
+    displayName = file.name.replace("Current_", "");
+  }
+
+  const getFileSize = () => {
+    if (isSample) return "Sample File";
+    if (isExisting) return "Existing File";
+    return file.size > 0 ? `${(file.size / 1024).toFixed(1)} KB` : "0 KB";
+  };
+
+  if (isSample || (isExisting && downloadUrl)) {
+    // For the sample letter or existing files, clicking anywhere previews and downloads
     return (
       <a
-        href={fileUrl}
+        href={downloadUrl}
         target="_blank"
         rel="noopener noreferrer"
         download
@@ -30,7 +52,7 @@ export function UploadedFileDisplay({ file, onDownload, className = "" }: Upload
           </span>
           <div className="flex flex-col min-w-0">
             <span className="font-medium text-gray-900">{displayName}</span>
-            <span className="text-xs text-gray-500">{(file.size / 1024).toFixed(0)} KB</span>
+            <span className="text-xs text-gray-500">{getFileSize()}</span>
           </div>
         </div>
         <span className="[&>svg]:stroke-[var(--color-primary)] text-[var(--color-primary)] hover:text-[var(--color-primary)] p-2 rounded-full transition-colors ml-2">
@@ -52,7 +74,7 @@ export function UploadedFileDisplay({ file, onDownload, className = "" }: Upload
         </span>
         <div className="flex flex-col min-w-0">
           <span className="font-medium text-gray-900">{displayName}</span>
-          <span className="text-xs text-gray-500">{(file.size / 1024).toFixed(0)} KB</span>
+          <span className="text-xs text-gray-500">{getFileSize()}</span>
         </div>
       </div>
       {/* Download button for sample letter uses API route; for others, uses onDownload */}

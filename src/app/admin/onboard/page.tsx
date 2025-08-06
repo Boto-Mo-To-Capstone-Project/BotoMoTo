@@ -2,12 +2,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-
+import toast, { Toaster } from 'react-hot-toast';
 
 import { CompleteTaskModal } from "@/components/CompleteTaskModal";
 import { AuthFooter } from "@/components/AuthFooter";
 import AuthContainer from '@/components/AuthContainer';
 import { SubmitButton } from "@/components/SubmitButton";
+import CustomToast from "@/components/CustomToast";
 
 type ApplicationStatus = 'getting_started' | 'pending' | 'approved' | 'rejected';
 
@@ -40,13 +41,13 @@ function ProgressBar({ progress }: { progress: number }) {
 function ApplicationStepper({ 
   status, 
   onComplete, 
-  onSubmit, 
-  onAccessDashboard 
+  onAccessDashboard,
+  hasOrganizationData 
 }: { 
   status: ApplicationStatus; 
   onComplete: () => void; 
-  onSubmit: () => void;
   onAccessDashboard: () => void;
+  hasOrganizationData: boolean;
 }) {
   const [openStep, setOpenStep] = useState(-1);
   
@@ -55,22 +56,13 @@ function ApplicationStepper({
       id: 0,
       title: "Complete Profile",
       description: "Fill out your organization details and upload required documents",
-      action: "Complete Profile",
-      isActive: status === 'getting_started',
-      isCompleted: ['pending', 'approved'].includes(status),
+      action: hasOrganizationData ? "Edit Profile" : "Complete Profile",
+      isActive: status === 'getting_started' || hasOrganizationData, // Allow editing when organization exists
+      isCompleted: hasOrganizationData, // Completed if organization data exists
       onClick: onComplete
     },
     {
       id: 1,
-      title: "Submit for Review",
-      description: "Submit your completed profile for admin review",
-      action: "Submit for Review",
-      isActive: status === 'getting_started', // Allow submission when getting started and profile is complete
-      isCompleted: ['pending', 'approved'].includes(status),
-      onClick: onSubmit
-    },
-    {
-      id: 2,
       title: "Awaiting Approval",
       description: "Your application is being reviewed by our team",
       action: "Under Review",
@@ -79,7 +71,7 @@ function ApplicationStepper({
       onClick: null
     },
     {
-      id: 3,
+      id: 2,
       title: "Access Dashboard",
       description: "Your application has been approved. Access your admin dashboard",
       action: "Access Dashboard",
@@ -150,7 +142,11 @@ export default function OnboardProcessingPage() {
     membersCount: number;
     organizationLetter: File | null;
     logo: File | null;
+    existingLogoUrl?: string;
+    existingLetterUrl?: string;
   } | null>(null);
+  
+  const [organizationId, setOrganizationId] = useState<number | null>(null);
 
   // Redirect to login if no session
   useEffect(() => {
@@ -162,72 +158,17 @@ export default function OnboardProcessingPage() {
 
   // Set status and organization data based on backend data
   useEffect(() => {
-    async function fetchOrganizationData() {
-      try {
-        const res = await fetch("/api/users");
-        const data = await res.json();
-        
-        if (data?.data?.user?.organization) {
-          const orgBasic = data.data.user.organization;
-          const orgId = orgBasic.id;
-          
-          // Fetch full organization details
-          const orgRes = await fetch(`/api/organizations/${orgId}`);
-          const orgData = await orgRes.json();
-          
-          if (orgRes.ok && orgData.data) {
-            const org = orgData.data;
-            const orgStatus = org.status;
-            
-            // Set status based on organization status
-            switch (orgStatus) {
-              case 'APPROVED':
-                setStatus('approved');
-                break;
-              case 'PENDING':
-                setStatus('pending');
-                break;
-              case 'REJECTED':
-                setStatus('rejected');
-                break;
-              default:
-                setStatus('getting_started');
-            }
-
-            // Set organization data for the modal
-            setOrganizationData({
-              organizationName: org.name || '',
-              organizationEmail: org.email || '',
-              membersCount: org.membersCount || 0,
-              organizationLetter: null, // Files must be re-uploaded
-              logo: null // Files must be re-uploaded
-            });
-          } else {
-            setStatus('getting_started');
-            setOrganizationData(null);
-          }
-        } else {
-          setStatus('getting_started');
-          setOrganizationData(null);
-        }
-      } catch (error) {
-        console.error("Error fetching organization data:", error);
-        setStatus('getting_started');
-        setOrganizationData(null);
-      }
-    }
-
     if (sessionStatus === "authenticated") {
-      fetchOrganizationData();
+      refreshOrganizationData();
     }
   }, [sessionStatus]);
 
   const getProgress = (status: ApplicationStatus) => {
     switch (status) {
-      case 'getting_started': return 25;
-      case 'pending': return 75;
+      case 'getting_started': return 33;
+      case 'pending': return 66;
       case 'approved': return 100;
-      case 'rejected': return 25;
+      case 'rejected': return 33;
       default: return 0;
     }
   };
@@ -267,103 +208,178 @@ export default function OnboardProcessingPage() {
     setShowModal(false);
     
     try {
-      // Check if user already has an organization
+      // Check if user already has an organization (quick check)
       const userRes = await fetch('/api/users');
       const userData = await userRes.json();
       const existingOrg = userData.data?.user?.organization;
       
-      // Prepare organization data
-      const orgPayload = {
-        name: data.organizationName,
-        email: data.organizationEmail,
-        membersCount: data.membersCount,
-        photoUrl: '', // Handle file uploads separately
-        letterUrl: '', // Handle file uploads separately
-      };
+      // Create FormData with all organization data and files
+      const orgFormData = new FormData();
+      orgFormData.append('name', data.organizationName);
+      orgFormData.append('email', data.organizationEmail);
+      orgFormData.append('membersCount', data.membersCount.toString());
       
-      let organizationId = existingOrg?.id;
-      let orgRes;
+      // Add files if provided
+      if (data.logo) {
+        orgFormData.append('logo', data.logo);
+      }
+      if (data.organizationLetter) {
+        orgFormData.append('letter', data.organizationLetter);
+      }
       
-      if (existingOrg) {
+      if (existingOrg?.id) {
         // Update existing organization
-        orgRes = await fetch(`/api/organizations/${organizationId}`, {
+        console.log('Updating existing organization:', existingOrg.id);
+        
+        const orgRes = await fetch(`/api/organizations/${existingOrg.id}`, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(orgPayload),
+          body: orgFormData, // Send as FormData for consistency
         });
+        
+        if (!orgRes.ok) {
+          const errorData = await orgRes.json();
+          console.error('Failed to update organization:', errorData);
+          handleValidationErrors(errorData);
+          return;
+        }
+        
+        console.log('Organization updated successfully');
       } else {
         // Create new organization
-        orgRes = await fetch('/api/organizations', {
+        console.log('Creating new organization');
+        
+        // Validate that required files are provided for new organization
+        if (!data.logo || !data.organizationLetter) {
+          showErrorToast('Both logo and letter files are required for new organization');
+          return;
+        }
+        
+        const orgRes = await fetch('/api/organizations', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(orgPayload),
+          body: orgFormData,
         });
         
-        if (orgRes.ok) {
-          const orgData = await orgRes.json();
-          organizationId = orgData.data?.id;
-        }
-      }
-      
-      if (!orgRes.ok) {
-        console.error('Failed to save organization');
-        return;
-      }
-      
-      // Upload files if provided and we have an organization ID
-      if (organizationId) {
-        // Upload logo if provided
-        if (data.logo) {
-          const logoFormData = new FormData();
-          logoFormData.append('file', data.logo);
-          
-          await fetch(`/api/organizations/${organizationId}/upload-logo`, {
-            method: 'POST',
-            body: logoFormData,
-          });
+        if (!orgRes.ok) {
+          const errorData = await orgRes.json();
+          console.error('Failed to create organization:', errorData);
+          handleValidationErrors(errorData);
+          return;
         }
         
-        // Upload letter if provided
-        if (data.organizationLetter) {
-          const letterFormData = new FormData();
-          letterFormData.append('file', data.organizationLetter);
-          
-          await fetch(`/api/organizations/${organizationId}/upload-letter`, {
-            method: 'POST',
-            body: letterFormData,
-          });
-        }
+        console.log('Organization created successfully');
       }
       
       // Update status and refresh data
       setStatus('pending');
+      showSuccessToast('Organization saved successfully!');
       
-      // Refresh the page to get updated data
-      window.location.reload();
+      // Refresh organization data to show updated files
+      setTimeout(async () => {
+        await refreshOrganizationData();
+      }, 500);
       
     } catch (error) {
       console.error('Error saving organization:', error);
+      showErrorToast('An unexpected error occurred while saving the organization');
     } finally {
       setIsLoading(false);
     }
   };
-  const handleSubmit = () => {
-    // For now, just refresh the page to get updated status from backend
-    // In a real app, you might want to call an API to trigger the submission
-    window.location.reload();
-  };
+  
   const handleAccessDashboard = () => {
     router.push("/admin/dashboard");
+  };
+
+  // Helper functions for toast notifications
+  const showSuccessToast = (message: string) => {
+    toast.custom((t) => <CustomToast t={t} message={message} />);
+  };
+
+  const showErrorToast = (message: string) => {
+    toast.error(message, {
+      duration: 5000,
+      style: {
+        background: '#FEE2E2',
+        border: '1px solid #FECACA',
+        color: '#DC2626',
+      },
+    });
+  };
+
+  const handleValidationErrors = (errorData: any) => {
+    if (errorData.details && Array.isArray(errorData.details)) {
+      // Show each validation error
+      errorData.details.forEach((error: any) => {
+        showErrorToast(error.message || error);
+      });
+    } else if (errorData.message) {
+      showErrorToast(errorData.message);
+    } else {
+      showErrorToast('Validation failed');
+    }
+  };
+
+  // Refresh organization data function
+  const refreshOrganizationData = async () => {
+    try {
+      // Get user's organizations directly (admin gets only their org)
+      const orgRes = await fetch("/api/organizations");
+      const orgData = await orgRes.json();
+      
+      if (orgRes.ok && orgData.data?.organizations?.length > 0) {
+        const org = orgData.data.organizations[0]; // Admin will only have one organization
+        const orgStatus = org.status;
+        
+        // Store organization ID
+        setOrganizationId(org.id);
+        
+        // Set status based on organization status
+        switch (orgStatus) {
+          case 'APPROVED':
+            setStatus('approved');
+            break;
+          case 'PENDING':
+            setStatus('pending');
+            break;
+          case 'REJECTED':
+            setStatus('rejected');
+            break;
+          default:
+            setStatus('getting_started');
+        }
+
+        // Set organization data for the modal
+        setOrganizationData({
+          organizationName: org.name || '',
+          organizationEmail: org.email || '',
+          membersCount: org.membersCount || 0,
+          organizationLetter: null, // Files must be re-uploaded
+          logo: null, // Files must be re-uploaded
+          existingLogoUrl: org.photoUrl || '',
+          existingLetterUrl: org.letterUrl || ''
+        });
+
+        console.log('Organization data received:', org);
+        console.log('photoUrl:', org.photoUrl);
+        console.log('letterUrl:', org.letterUrl);
+      } else {
+        setStatus('getting_started');
+        setOrganizationData(null);
+        setOrganizationId(null);
+      }
+    } catch (error) {
+      console.error("Error fetching organization data:", error);
+      setStatus('getting_started');
+      setOrganizationData(null);
+      setOrganizationId(null);
+    }
   };
 
   if (sessionStatus === "loading") return <p>Loading session...</p>;
 
   return (
     <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40">
+      <Toaster position="top-center" />
       <AuthContainer>
         <h1 className="text-2xl font-bold text-gray-800 mb-1">Hi, {session?.user?.name || "there"}!</h1>
         <p className="text-gray-600 mb-4">Application Status: Track your progress</p>
@@ -377,8 +393,8 @@ export default function OnboardProcessingPage() {
         <ApplicationStepper 
           status={status}
           onComplete={handleComplete} 
-          onSubmit={handleSubmit}
           onAccessDashboard={handleAccessDashboard}
+          hasOrganizationData={organizationData !== null}
         />
         
         <AuthFooter question="Need help?" link="/contact" linkText="Contact Support" />
@@ -389,6 +405,7 @@ export default function OnboardProcessingPage() {
         onSave={handleModalSave} 
         initialData={organizationData}
         isLoading={isLoading}
+        organizationId={organizationId}
       />
     </main>
   );

@@ -87,8 +87,6 @@ export async function GET(request: NextRequest) {
           organization: {
             select: {
               id: true,
-              name: true,
-              email: true,
               status: true
             }
           }

@@ -16,11 +16,14 @@ interface CompleteTaskModalProps {
     membersCount: number;
     organizationLetter: File | null;
     logo: File | null;
+    existingLogoUrl?: string;
+    existingLetterUrl?: string;
   } | null;
   isLoading?: boolean;
+  organizationId?: number | null;
 }
 
-export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoading = false }: CompleteTaskModalProps) {
+export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoading = false, organizationId }: CompleteTaskModalProps) {
   const [organizationName, setOrganizationName] = useState("");
   const [organizationEmail, setOrganizationEmail] = useState("");
   const [membersCount, setMembersCount] = useState("");
@@ -28,22 +31,33 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
   // Add sample letter state
   const [sampleLetter, setSampleLetter] = useState<File | null>(null);
   const [logo, setLogo] = useState<File | null>(null);
+  // Add states for existing file URLs
+  const [existingLogoUrl, setExistingLogoUrl] = useState<string>("");
+  const [existingLetterUrl, setExistingLetterUrl] = useState<string>("");
 
   // Populate form with initial data when modal opens
   useEffect(() => {
     if (open && initialData) {
+      console.log('Modal opened with initial data:', initialData);
       setOrganizationName(initialData.organizationName);
       setOrganizationEmail(initialData.organizationEmail);
       setMembersCount(initialData.membersCount.toString());
       setOrganizationLetter(initialData.organizationLetter);
       setLogo(initialData.logo);
+      setExistingLogoUrl(initialData.existingLogoUrl || '');
+      setExistingLetterUrl(initialData.existingLetterUrl || '');
+      console.log('Existing logo URL:', initialData.existingLogoUrl);
+      console.log('Existing letter URL:', initialData.existingLetterUrl);
     } else if (open && !initialData) {
+      console.log('Modal opened without initial data');
       // Reset form when opening without initial data
       setOrganizationName("");
       setOrganizationEmail("");
       setMembersCount("");
       setOrganizationLetter(null);
       setLogo(null);
+      setExistingLogoUrl('');
+      setExistingLetterUrl('');
     }
   }, [open, initialData]);
 
@@ -51,6 +65,11 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
     // Create a dummy File object for the sample letter (as in create-org)
     setSampleLetter(new File([""], "Sample_Letter.pdf", { type: "application/pdf", lastModified: new Date().getTime() }));
   }, []);
+
+  // Helper function to create a File object from URL for display purposes
+  const createFileFromUrl = (url: string, filename: string, type: string): File => {
+    return new File([""], filename, { type, lastModified: new Date().getTime() });
+  };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -137,9 +156,22 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
             fileTypeText="Image (max. 5MB)"
             id="logo-upload"
           />
+          {/* Logo display - show new upload or existing logo */}
           {logo && (
             <div className="w-full max-w-[380px]">
               <UploadedFileDisplay file={logo} />
+            </div>
+          )}
+          {!logo && existingLogoUrl && (
+            <div className="w-full max-w-[380px]">
+              <UploadedFileDisplay 
+                file={createFileFromUrl(existingLogoUrl, "Current_Logo.png", "image/png")} 
+                isExistingFile={true}
+                fileUrl={existingLogoUrl}
+                organizationId={organizationId || undefined}
+                fileType="logo"
+              />
+              <p className="text-sm text-gray-500 mt-1">Current logo (upload a new one to replace)</p>
             </div>
           )}
           {/* Letter upload second */}
@@ -151,10 +183,27 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
             fileTypeText="PDF (max. 5MB)"
             id="file-upload"
           />
-          {/* Uploaded File Display: show uploaded letter or sample letter if none uploaded */}
-          {(organizationLetter || sampleLetter) && (
+          {/* Letter display - show new upload, existing letter, or sample letter */}
+          {organizationLetter && (
             <div className="w-full max-w-[380px]">
-              <UploadedFileDisplay file={organizationLetter || sampleLetter!} />
+              <UploadedFileDisplay file={organizationLetter} />
+            </div>
+          )}
+          {!organizationLetter && existingLetterUrl && (
+            <div className="w-full max-w-[380px]">
+              <UploadedFileDisplay 
+                file={createFileFromUrl(existingLetterUrl, "Current_Letter.pdf", "application/pdf")} 
+                isExistingFile={true}
+                fileUrl={existingLetterUrl}
+                organizationId={organizationId || undefined}
+                fileType="letter"
+              />
+              <p className="text-sm text-gray-500 mt-1">Current letter (upload a new one to replace)</p>
+            </div>
+          )}
+          {!organizationLetter && !existingLetterUrl && sampleLetter && (
+            <div className="w-full max-w-[380px]">
+              <UploadedFileDisplay file={sampleLetter} />
             </div>
           )}
           <div className="flex justify-end gap-2 mt-2">
@@ -165,4 +214,4 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
       </div>
     </div>
   );
-} 
+}
