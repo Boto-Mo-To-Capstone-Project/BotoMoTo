@@ -9,13 +9,12 @@ import { AuthFooter } from "@/components/AuthFooter";
 import AuthContainer from '@/components/AuthContainer';
 import { SubmitButton } from "@/components/SubmitButton";
 
-type ApplicationStatus = 'getting_started' | 'submitted' | 'reviewing' | 'approved' | 'rejected';
+type ApplicationStatus = 'getting_started' | 'pending' | 'approved' | 'rejected';
 
 function StatusBadge({ status }: { status: ApplicationStatus }) {
   const config = {
     getting_started: { text: 'Getting Started', bg: 'bg-gray-100', textColor: 'text-gray-800' },
-    submitted: { text: 'Submitted', bg: 'bg-blue-100', textColor: 'text-blue-800' },
-    reviewing: { text: 'Under Review', bg: 'bg-yellow-100', textColor: 'text-yellow-800' },
+    pending: { text: 'Under Review', bg: 'bg-yellow-100', textColor: 'text-yellow-800' },
     approved: { text: 'Approved', bg: 'bg-green-100', textColor: 'text-green-800' },
     rejected: { text: 'Rejected', bg: 'bg-red-100', textColor: 'text-red-800' },
   }[status] || { text: 'Unknown', bg: 'bg-gray-100', textColor: 'text-gray-800' };
@@ -58,7 +57,7 @@ function ApplicationStepper({
       description: "Fill out your organization details and upload required documents",
       action: "Complete Profile",
       isActive: status === 'getting_started',
-      isCompleted: ['submitted', 'reviewing', 'approved'].includes(status),
+      isCompleted: ['pending', 'approved'].includes(status),
       onClick: onComplete
     },
     {
@@ -66,8 +65,8 @@ function ApplicationStepper({
       title: "Submit for Review",
       description: "Submit your completed profile for admin review",
       action: "Submit for Review",
-      isActive: status === 'submitted',
-      isCompleted: ['reviewing', 'approved'].includes(status),
+      isActive: status === 'getting_started', // Allow submission when getting started and profile is complete
+      isCompleted: ['pending', 'approved'].includes(status),
       onClick: onSubmit
     },
     {
@@ -75,7 +74,7 @@ function ApplicationStepper({
       title: "Awaiting Approval",
       description: "Your application is being reviewed by our team",
       action: "Under Review",
-      isActive: status === 'reviewing',
+      isActive: status === 'pending',
       isCompleted: ['approved'].includes(status),
       onClick: null
     },
@@ -161,35 +160,72 @@ export default function OnboardProcessingPage() {
     }
   }, [sessionStatus, router]);
 
-  // Set status based on organization status from session
+  // Set status and organization data based on backend data
   useEffect(() => {
-    if (session?.user?.organization) {
-      const orgStatus = session.user.organization.status;
-      switch (orgStatus) {
-        case 'APPROVED':
-          setStatus('approved');
-          break;
-        case 'PENDING':
-        case 'REVIEWING':
-          setStatus('reviewing');
-          break;
-        case 'SUBMITTED':
-          setStatus('submitted');
-          break;
-        case 'REJECTED':
-          setStatus('rejected');
-          break;
-        default:
+    async function fetchOrganizationData() {
+      try {
+        const res = await fetch("/api/users");
+        const data = await res.json();
+        
+        if (data?.data?.user?.organization) {
+          const orgBasic = data.data.user.organization;
+          const orgId = orgBasic.id;
+          
+          // Fetch full organization details
+          const orgRes = await fetch(`/api/organizations/${orgId}`);
+          const orgData = await orgRes.json();
+          
+          if (orgRes.ok && orgData.data) {
+            const org = orgData.data;
+            const orgStatus = org.status;
+            
+            // Set status based on organization status
+            switch (orgStatus) {
+              case 'APPROVED':
+                setStatus('approved');
+                break;
+              case 'PENDING':
+                setStatus('pending');
+                break;
+              case 'REJECTED':
+                setStatus('rejected');
+                break;
+              default:
+                setStatus('getting_started');
+            }
+
+            // Set organization data for the modal
+            setOrganizationData({
+              organizationName: org.name || '',
+              organizationEmail: org.email || '',
+              membersCount: org.membersCount || 0,
+              organizationLetter: null, // Files must be re-uploaded
+              logo: null // Files must be re-uploaded
+            });
+          } else {
+            setStatus('getting_started');
+            setOrganizationData(null);
+          }
+        } else {
           setStatus('getting_started');
+          setOrganizationData(null);
+        }
+      } catch (error) {
+        console.error("Error fetching organization data:", error);
+        setStatus('getting_started');
+        setOrganizationData(null);
       }
     }
-  }, [session]);
+
+    if (sessionStatus === "authenticated") {
+      fetchOrganizationData();
+    }
+  }, [sessionStatus]);
 
   const getProgress = (status: ApplicationStatus) => {
     switch (status) {
       case 'getting_started': return 25;
-      case 'submitted': return 50;
-      case 'reviewing': return 75;
+      case 'pending': return 75;
       case 'approved': return 100;
       case 'rejected': return 25;
       default: return 0;
@@ -199,9 +235,10 @@ export default function OnboardProcessingPage() {
   useEffect(() => {
     async function checkOnboardingStatus() {
       try {
-        const res = await fetch("/api/organizations");
+        // Check current user's organization status via user endpoint
+        const res = await fetch("/api/users");
         const data = await res.json();
-        if (data?.data?.status === "APPROVED") {
+        if (data?.data?.user?.organization?.status === "APPROVED") {
           router.replace("/admin/dashboard");
         }
       } catch (e) {
@@ -216,33 +253,7 @@ export default function OnboardProcessingPage() {
   }, [router, sessionStatus]);
 
   const handleComplete = () => {
-    // If user has existing organization, fetch and populate data
-    if (session?.user?.organization) {
-      fetchOrganizationData();
-    }
     setShowModal(true);
-  };
-
-  const fetchOrganizationData = async () => {
-    try {
-      if (!session?.user?.organization?.id) return;
-      
-      const res = await fetch(`/api/organizations/${session.user.organization.id}`);
-      const data = await res.json();
-      
-      if (res.ok && data.data) {
-        const org = data.data;
-        setOrganizationData({
-          organizationName: org.name || '',
-          organizationEmail: org.email || '',
-          membersCount: org.membersCount || 0,
-          organizationLetter: null, // Files must be re-uploaded for new submissions
-          logo: null // Files must be re-uploaded for new submissions
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching organization data:", error);
-    }
   };
 
   const handleModalSave = async (data: { 
@@ -256,65 +267,84 @@ export default function OnboardProcessingPage() {
     setShowModal(false);
     
     try {
-      let logoPath = '';
-      let letterPath = '';
+      // Check if user already has an organization
+      const userRes = await fetch('/api/users');
+      const userData = await userRes.json();
+      const existingOrg = userData.data?.user?.organization;
       
-      // Upload logo if provided
-      if (data.logo) {
-        const logoFormData = new FormData();
-        logoFormData.append('file', data.logo);
-        
-        const logoRes = await fetch('/api/organizations/upload-logo', {
-          method: 'POST',
-          body: logoFormData,
-        });
-        
-        if (logoRes.ok) {
-          const logoData = await logoRes.json();
-          logoPath = logoData.path || '';
-        }
-      }
-      
-      // Upload letter if provided
-      if (data.organizationLetter) {
-        const letterFormData = new FormData();
-        letterFormData.append('file', data.organizationLetter);
-        
-        const letterRes = await fetch('/api/organizations/upload-letter', {
-          method: 'POST',
-          body: letterFormData,
-        });
-        
-        if (letterRes.ok) {
-          const letterData = await letterRes.json();
-          letterPath = letterData.path || '';
-        }
-      }
-      
-      // Create or update organization
+      // Prepare organization data
       const orgPayload = {
         name: data.organizationName,
         email: data.organizationEmail,
         membersCount: data.membersCount,
-        photoUrl: logoPath,
-        letterUrl: letterPath,
+        photoUrl: '', // Handle file uploads separately
+        letterUrl: '', // Handle file uploads separately
       };
       
-      const orgRes = await fetch('/api/organizations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orgPayload),
-      });
+      let organizationId = existingOrg?.id;
+      let orgRes;
       
-      if (orgRes.ok) {
-        setStatus('submitted');
-        // Refresh session to get updated organization data
-        window.location.reload();
+      if (existingOrg) {
+        // Update existing organization
+        orgRes = await fetch(`/api/organizations/${organizationId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(orgPayload),
+        });
       } else {
-        console.error('Failed to save organization');
+        // Create new organization
+        orgRes = await fetch('/api/organizations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(orgPayload),
+        });
+        
+        if (orgRes.ok) {
+          const orgData = await orgRes.json();
+          organizationId = orgData.data?.id;
+        }
       }
+      
+      if (!orgRes.ok) {
+        console.error('Failed to save organization');
+        return;
+      }
+      
+      // Upload files if provided and we have an organization ID
+      if (organizationId) {
+        // Upload logo if provided
+        if (data.logo) {
+          const logoFormData = new FormData();
+          logoFormData.append('file', data.logo);
+          
+          await fetch(`/api/organizations/${organizationId}/upload-logo`, {
+            method: 'POST',
+            body: logoFormData,
+          });
+        }
+        
+        // Upload letter if provided
+        if (data.organizationLetter) {
+          const letterFormData = new FormData();
+          letterFormData.append('file', data.organizationLetter);
+          
+          await fetch(`/api/organizations/${organizationId}/upload-letter`, {
+            method: 'POST',
+            body: letterFormData,
+          });
+        }
+      }
+      
+      // Update status and refresh data
+      setStatus('pending');
+      
+      // Refresh the page to get updated data
+      window.location.reload();
+      
     } catch (error) {
       console.error('Error saving organization:', error);
     } finally {
@@ -322,8 +352,9 @@ export default function OnboardProcessingPage() {
     }
   };
   const handleSubmit = () => {
-    setStatus('reviewing');
-    // The status will be updated from session data when it changes on the backend
+    // For now, just refresh the page to get updated status from backend
+    // In a real app, you might want to call an API to trigger the submission
+    window.location.reload();
   };
   const handleAccessDashboard = () => {
     router.push("/admin/dashboard");

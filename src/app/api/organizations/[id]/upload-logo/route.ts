@@ -85,3 +85,11 @@ export async function PATCH(
     return apiResponse({ success: false, message: "Error uploading logo", error: error instanceof Error ? error.message : 'Internal Server Error', status: 500 });
   }
 }
+
+// POST method alias for logo upload
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  return PATCH(request, { params });
+}
