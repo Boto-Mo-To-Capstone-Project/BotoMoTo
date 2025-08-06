@@ -31,22 +31,22 @@ const organizations = [
     name: "University of Technology",
     email: "admin@university.edu",
     membersCount: 5000,
-    photoUrl: "https://example.com/university-logo.png",
-    letterUrl: "https://example.com/university-letter.pdf"
+    photoUrl: "/assets/sample/logo.png",
+    letterUrl: "/assets/sample/letter.pdf"
   },
   {
     name: "City College",
     email: "admin@citycollege.edu", 
     membersCount: 3000,
-    photoUrl: "https://example.com/college-logo.png",
-    letterUrl: "https://example.com/college-letter.pdf"
+    photoUrl: "/assets/sample/logo.png",
+    letterUrl: "/assets/sample/letter.pdf"
   },
   {
     name: "Metro High School",
     email: "admin@metrohigh.edu",
     membersCount: 1200,
-    photoUrl: "https://example.com/school-logo.png",
-    letterUrl: "https://example.com/school-letter.pdf"
+    photoUrl: "/assets/sample/logo.png",
+    letterUrl: "/assets/sample/letter.pdf"
   }
 ];
 
@@ -378,7 +378,7 @@ async function seedDatabase() {
               partyId: randomParty?.id,
               isNew: Math.random() > 0.7, // 30% are new
               bio: `Experienced candidate committed to representing students with integrity and dedication. Passionate about making positive changes in our academic community.`,
-              imageUrl: `https://example.com/candidate-${voter.id}.jpg`
+              imageUrl: `/assets/sample/logo.png`, // Using sample logo as placeholder for candidate image
             }
           });
 

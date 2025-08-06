@@ -9,7 +9,7 @@ interface UploadedFileDisplayProps {
 export function UploadedFileDisplay({ file, onDownload, className = "" }: UploadedFileDisplayProps) {
   const isSample = file.name === "Sample_Letter.pdf";
   const displayName = isSample ? "Sample Organization Letter (Template)" : file.name;
-  const fileUrl = isSample ? "/api/admin/onboard/sample-letter" : undefined;
+  const fileUrl = isSample ? "/api/organizations/sample-letter" : undefined;
 
   if (isSample) {
     // For the sample letter, clicking anywhere previews and downloads

@@ -236,8 +236,8 @@ export default function OnboardProcessingPage() {
           organizationName: org.name || '',
           organizationEmail: org.email || '',
           membersCount: org.membersCount || 0,
-          organizationLetter: null, // Will be handled by file URLs
-          logo: null // Will be handled by file URLs
+          organizationLetter: null, // Files must be re-uploaded for new submissions
+          logo: null // Files must be re-uploaded for new submissions
         });
       }
     } catch (error) {
@@ -271,7 +271,7 @@ export default function OnboardProcessingPage() {
         
         if (logoRes.ok) {
           const logoData = await logoRes.json();
-          logoPath = logoData.path || logoData.url || '';
+          logoPath = logoData.path || '';
         }
       }
       
@@ -287,7 +287,7 @@ export default function OnboardProcessingPage() {
         
         if (letterRes.ok) {
           const letterData = await letterRes.json();
-          letterPath = letterData.path || letterData.url || '';
+          letterPath = letterData.path || '';
         }
       }
       

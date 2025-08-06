@@ -54,8 +54,8 @@ async function quickSeed() {
         email: "admin@testuniversity.edu",
         membersCount: 1000,
         status: "APPROVED",
-        photoUrl: "https://example.com/logo.png",
-        letterUrl: "https://example.com/letter.pdf"
+        photoUrl: "/assets/sample/logo.png",
+        letterUrl: "/assets/sample/letter.pdf"
       }
     });
 
@@ -170,7 +170,7 @@ async function quickSeed() {
               positionId: position.id,
               partyId: i < 2 ? createdParties[i % 2].id : null,
               bio: `Experienced candidate for ${position.name}. Committed to student success.`,
-              imageUrl: `https://example.com/candidate${voterIndex + 1}.jpg`,
+              imageUrl: `/assets/sample/logo.png`, // Using sample logo as placeholder for candidate image
               isNew: i === 2
             }
           });
