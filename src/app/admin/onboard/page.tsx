@@ -9,6 +9,7 @@ import { AuthFooter } from "@/components/AuthFooter";
 import AuthContainer from '@/components/AuthContainer';
 import { SubmitButton } from "@/components/SubmitButton";
 import CustomToast from "@/components/CustomToast";
+import { useOrganizationStatus } from "@/hooks/useOrganizationStatus";
 
 type ApplicationStatus = 'getting_started' | 'pending' | 'approved' | 'rejected';
 
@@ -38,18 +39,27 @@ function ProgressBar({ progress }: { progress: number }) {
   );
 }
 
+
+
 function ApplicationStepper({ 
   status, 
-  onComplete, 
-  onAccessDashboard,
-  hasOrganizationData 
+  onComplete,
+  hasOrganizationData,
+  autoExpandAwaitingApproval = false 
 }: { 
   status: ApplicationStatus; 
   onComplete: () => void; 
-  onAccessDashboard: () => void;
   hasOrganizationData: boolean;
+  autoExpandAwaitingApproval?: boolean;
 }) {
-  const [openStep, setOpenStep] = useState(-1);
+  const [openStep, setOpenStep] = useState(autoExpandAwaitingApproval ? 1 : -1);
+  
+  // Auto-expand awaiting approval step when status becomes pending
+  useEffect(() => {
+    if (status === 'pending' && autoExpandAwaitingApproval) {
+      setOpenStep(1);
+    }
+  }, [status, autoExpandAwaitingApproval]);
   
   const steps = [
     {
@@ -57,27 +67,18 @@ function ApplicationStepper({
       title: "Complete Profile",
       description: "Fill out your organization details and upload required documents",
       action: hasOrganizationData ? "Edit Profile" : "Complete Profile",
-      isActive: status === 'getting_started' || hasOrganizationData, // Allow editing when organization exists
-      isCompleted: hasOrganizationData, // Completed if organization data exists
+      isActive: false, // Force not active when completed
+      isCompleted: hasOrganizationData, // Simply mark as completed if org data exists
       onClick: onComplete
     },
     {
       id: 1,
       title: "Awaiting Approval",
-      description: "Your application is being reviewed by our team",
+      description: "We'll review your application and notify you once approved.",
       action: "Under Review",
       isActive: status === 'pending',
-      isCompleted: ['approved'].includes(status),
+      isCompleted: status === 'approved', // Mark as completed when approved
       onClick: null
-    },
-    {
-      id: 2,
-      title: "Access Dashboard",
-      description: "Your application has been approved. Access your admin dashboard",
-      action: "Access Dashboard",
-      isActive: status === 'approved',
-      isCompleted: false,
-      onClick: onAccessDashboard
     }
   ];
 
@@ -88,15 +89,15 @@ function ApplicationStepper({
           <button
             type="button"
             className={`flex items-center w-full py-2 text-left font-semibold ${
-              step.isActive ? 'text-[var(--color-primary)]' : 
-              step.isCompleted ? 'text-green-600' : 'text-gray-400'
+              step.isCompleted ? 'text-green-600' :
+              step.isActive ? 'text-[var(--color-primary)]' : 'text-gray-400'
             }`}
             onClick={() => step.onClick ? step.onClick() : setOpenStep(openStep === step.id ? -1 : step.id)}
             disabled={!step.isActive && !step.isCompleted}
           >
             <span className={`w-6 h-6 flex items-center justify-center rounded-full mr-3 text-sm font-bold ${
-              step.isActive ? 'bg-[var(--color-primary)] text-white' :
-              step.isCompleted ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-400'
+              step.isCompleted ? 'bg-green-500 text-white' :
+              step.isActive ? 'bg-[var(--color-primary)] text-white' : 'bg-gray-200 text-gray-400'
             }`}>
               {step.isCompleted ? '✓' : step.id + 1}
             </span>
@@ -117,9 +118,6 @@ function ApplicationStepper({
               )}
               {step.isCompleted && !step.onClick && (
                 <span className="text-green-600 text-sm">✓ Completed</span>
-              )}
-              {!step.isActive && !step.isCompleted && (
-                <span className="text-gray-400 text-sm">⏳ Waiting...</span>
               )}
             </div>
           )}
@@ -147,6 +145,17 @@ export default function OnboardProcessingPage() {
   } | null>(null);
   
   const [organizationId, setOrganizationId] = useState<number | null>(null);
+  const [shouldExpandAwaitingApproval, setShouldExpandAwaitingApproval] = useState(false);
+
+  // Real-time status hook (only using status for auto-redirect)
+  const { 
+    status: realtimeStatus
+  } = useOrganizationStatus(organizationId);
+
+  // Use real-time status when available, fallback to polling
+  const currentStatus = realtimeStatus ? 
+    (realtimeStatus.toLowerCase() as ApplicationStatus) : 
+    status;
 
   // Redirect to login if no session
   useEffect(() => {
@@ -155,6 +164,19 @@ export default function OnboardProcessingPage() {
       return;
     }
   }, [sessionStatus, router]);
+
+  // Handle real-time status changes and auto-redirect when approved
+  useEffect(() => {
+    if (realtimeStatus === 'APPROVED') {
+      toast.success('Your organization has been approved!', {
+        duration: 3000,
+      });
+      // Small delay to show the success message
+      setTimeout(() => {
+        router.replace("/admin/dashboard");
+      }, 2000);
+    }
+  }, [realtimeStatus, router]);
 
   // Set status and organization data based on backend data
   useEffect(() => {
@@ -165,10 +187,10 @@ export default function OnboardProcessingPage() {
 
   const getProgress = (status: ApplicationStatus) => {
     switch (status) {
-      case 'getting_started': return 33;
-      case 'pending': return 66;
+      case 'getting_started': return 50;
+      case 'pending': return 75;
       case 'approved': return 100;
-      case 'rejected': return 33;
+      case 'rejected': return 0;
       default: return 0;
     }
   };
@@ -271,7 +293,8 @@ export default function OnboardProcessingPage() {
       
       // Update status and refresh data
       setStatus('pending');
-      showSuccessToast('Organization saved successfully!');
+      setShouldExpandAwaitingApproval(true); // Auto-expand awaiting approval step
+      showSuccessToast('Organization submitted for review!');
       
       // Refresh organization data to show updated files
       setTimeout(async () => {
@@ -284,10 +307,6 @@ export default function OnboardProcessingPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-  
-  const handleAccessDashboard = () => {
-    router.push("/admin/dashboard");
   };
 
   // Helper functions for toast notifications
@@ -382,19 +401,18 @@ export default function OnboardProcessingPage() {
       <Toaster position="top-center" />
       <AuthContainer>
         <h1 className="text-2xl font-bold text-gray-800 mb-1">Hi, {session?.user?.name || "there"}!</h1>
-        <p className="text-gray-600 mb-4">Application Status: Track your progress</p>
         
         <div className="flex justify-center mb-4">
-          <StatusBadge status={status} />
+          <StatusBadge status={currentStatus} />
         </div>
         
-        <ProgressBar progress={getProgress(status)} />
+        <ProgressBar progress={getProgress(currentStatus)} />
         
         <ApplicationStepper 
-          status={status}
+          status={currentStatus}
           onComplete={handleComplete} 
-          onAccessDashboard={handleAccessDashboard}
           hasOrganizationData={organizationData !== null}
+          autoExpandAwaitingApproval={shouldExpandAwaitingApproval}
         />
         
         <AuthFooter question="Need help?" link="/contact" linkText="Contact Support" />
