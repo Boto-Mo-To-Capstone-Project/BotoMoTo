@@ -8,6 +8,7 @@ interface FileDropzoneProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   fileTypeText: string;
   id?: string;
+  maxSizeMB?: number; // Optional max file size in MB
 }
 
 export const FileDropzone: React.FC<FileDropzoneProps> = ({
@@ -17,6 +18,7 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
   onChange,
   fileTypeText,
   id = "file-upload",
+  maxSizeMB = 5, // Default 5MB limit
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -40,31 +42,49 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
       const file = files[0];
+
+      // File size validation
+      const maxSizeBytes = maxSizeMB * 1024 * 1024;
+      const isValidSize = file.size <= maxSizeBytes;
       
+      if (!isValidSize) {
+        console.warn(`File too large: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)}MB). Max: ${maxSizeMB}MB`);
+        return;
+      }
+
       // Check if file type matches the accept prop
       const acceptedTypes = accept.split(',').map(type => type.trim());
       const isValidType = acceptedTypes.some(type => {
         if (type.startsWith('.')) {
+          // Check by file extension
           return file.name.toLowerCase().endsWith(type.toLowerCase());
         } else if (type.includes('/*')) {
-          return file.type.startsWith(type.replace('/*', ''));
+          // Handle MIME type patterns like "image/*" (FIXED: was missing '/')
+          const mimeCategory = type.replace('/*', '');
+          return file.type.startsWith(mimeCategory + '/');
         } else {
+          // Check exact MIME type match
           return file.type === type;
         }
       });
 
-      if (isValidType) {
+      // Additional validation for images (fallback for browsers that don't set MIME types properly)
+      const isImageUpload = accept.includes('image');
+      const hasImageExtension = isImageUpload && /\.(jpg|jpeg|png|gif|bmp|webp|svg|tiff|ico|avif)$/i.test(file.name);
+      const hasImageMimeType = file.type.startsWith('image/');
+
+      if (isValidType || (isImageUpload && (hasImageExtension || hasImageMimeType))) {
         // Create a synthetic event to match the onChange handler
         const syntheticEvent = {
-          target: {
-            files: files
-          }
+          target: { files: files }
         } as React.ChangeEvent<HTMLInputElement>;
         
         onChange(syntheticEvent);
+      } else {
+        console.warn(`Invalid file type: ${file.name} (${file.type}). Accepted: ${accept}`);
       }
     }
-  }, [accept, onChange]);
+  }, [accept, onChange, maxSizeMB]);
 
   const handleClick = () => {
     const input = document.getElementById(id) as HTMLInputElement | null;

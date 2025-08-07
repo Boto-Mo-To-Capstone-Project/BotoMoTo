@@ -150,10 +150,10 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
           {/* Logo upload first */}
           <FileDropzone
             label="Organization Logo"
-            description="Upload your organization logo (image file)."
-            accept="image/*"
+            description="Upload your organization logo (PNG, JPG, JPEG, GIF, WebP)."
+            accept="image/png,image/jpg,image/jpeg,image/gif,image/webp,image/*"
             onChange={handleLogoUpload}
-            fileTypeText="Image (max. 5MB)"
+            fileTypeText="PNG, JPG, JPEG, GIF, WebP (max. 5MB)"
             id="logo-upload"
           />
           {/* Logo display - show new upload or existing logo */}
