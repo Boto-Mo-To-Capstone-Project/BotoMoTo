@@ -9,8 +9,11 @@ import { userSchema } from "@/lib/schema";
 import { createAuditLog } from "@/lib/audit";
 import bcrypt from "bcryptjs";
 
+// Import performance logging middleware
+import { withPerformanceLogging } from "@/lib/performance/middleware";
+
 // Handle GET request to fetch users
-export async function GET(request: NextRequest) {
+async function getUsers(request: NextRequest) {
   try {
     // Authenticate the user
     const session = await auth();
@@ -145,7 +148,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Handle POST request to create a new user
-export async function POST(request: NextRequest) {
+async function createUser(request: NextRequest) {
   try {
     // Authenticate the user
     const session = await auth();
@@ -256,7 +259,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Handle DELETE request to delete all users (super admin only)
-export async function DELETE(request: NextRequest) {
+async function deleteUsers(request: NextRequest) {
   try {
     // Authenticate the user
     const session = await auth();
@@ -345,7 +348,7 @@ export async function DELETE(request: NextRequest) {
 }
 
 // Handle PUT request to update logged-in user's own information
-export async function PUT(request: NextRequest) {
+async function updateUser(request: NextRequest) {
   try {
     // Authenticate the user
     const session = await auth();
@@ -479,3 +482,25 @@ export async function PUT(request: NextRequest) {
     });
   }
 }
+
+// Apply performance logging middleware to all endpoints
+export const GET = withPerformanceLogging(getUsers as any);
+export const POST = withPerformanceLogging(createUser as any);
+export const DELETE = withPerformanceLogging(deleteUsers as any);
+export const PUT = withPerformanceLogging(updateUser as any);
+
+/*
+PERFORMANCE LOGGING ADDED TO USERS API! 🎉
+
+What this captures:
+✅ GET /api/users - User listing performance (admin operations)
+✅ POST /api/users - User creation speed
+✅ DELETE /api/users - Bulk delete performance
+✅ PUT /api/users - User update speed
+
+Critical metrics for user management:
+- Authentication performance
+- User operations speed
+- Admin activity patterns
+- System load during user management
+*/

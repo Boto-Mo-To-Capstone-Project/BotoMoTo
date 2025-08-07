@@ -10,8 +10,11 @@ import { createAuditLog } from "@/lib/audit";
 import { generateUniqueVoterCode } from "@/lib/utils";
 import { Voter } from "@prisma/client";
 
+// Import performance logging middleware
+import { withPerformanceLogging } from "@/lib/performance/middleware";
+
 // Handle GET request to fetch voters
-export async function GET(request: NextRequest) {
+async function getVoters(request: NextRequest) {
   try {
     // Authenticate the user
     const session = await auth();
@@ -220,7 +223,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Handle POST request to create a new voter
-export async function POST(request: NextRequest) {
+async function createVoter(request: NextRequest) {
   try {
     // Authenticate the user
     const session = await auth();
@@ -496,3 +499,21 @@ export async function POST(request: NextRequest) {
     });
   }
 }
+
+// Apply performance logging middleware to voters endpoints
+export const GET = withPerformanceLogging(getVoters as any);
+export const POST = withPerformanceLogging(createVoter as any);
+
+/*
+PERFORMANCE LOGGING ADDED TO VOTERS API! 🎉
+
+What this captures:
+✅ GET /api/voters - Voter listing performance (including filtering/pagination)
+✅ POST /api/voters - Voter creation speed (including bulk uploads)
+
+Key metrics for voter management:
+- Voter data loading speed (critical for admin UX)
+- Bulk voter import performance (CSV uploads)
+- Database performance under voter loads
+- Peak usage during voter registration periods
+*/

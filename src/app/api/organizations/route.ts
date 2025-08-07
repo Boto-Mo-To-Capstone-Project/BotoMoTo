@@ -12,8 +12,11 @@ import { checkOwnership } from "@/lib/helpers/checkOwnership";
 import { writeFile, mkdir } from 'fs/promises';
 import { join, extname } from 'path';
 
+// Import performance logging middleware
+import { withPerformanceLogging } from "@/lib/performance/middleware";
+
 // Handle GET request to fetch organizations (filtered by role)
-export async function GET(request: NextRequest) {
+async function getOrganizations(request: NextRequest) {
   try {
     // Authenticate the user - allow both admin and superadmin
     const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
@@ -122,7 +125,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Handle POST request to create a new organization with file uploads (admin only)
-export async function POST(request: NextRequest) {
+async function createOrganization(request: NextRequest) {
   try {
     // Authenticate the user - allow both admin and superadmin
     const authResult = await requireAuth([ROLES.ADMIN]);
@@ -361,3 +364,24 @@ export async function POST(request: NextRequest) {
     return apiResponse({ success: false, message: "Failed to create organization", data: null, error: typeof error === "string" ? error : "Internal server error", status: 500 });
   }
 }
+
+// Apply performance logging middleware to both endpoints
+export const GET = withPerformanceLogging(getOrganizations as any);
+export const POST = withPerformanceLogging(createOrganization as any);
+
+/*
+PERFORMANCE LOGGING ADDED! 🎉
+
+What this captures for Organizations API:
+✅ GET /api/organizations - How long it takes to fetch organization data
+✅ POST /api/organizations - How long it takes to create organizations (including file uploads)
+
+Metrics captured:
+- Response times (will show file upload performance)
+- Success/error rates 
+- User activity (which admins are most active)
+- Peak usage times
+- Error patterns
+
+Data will appear in your superadmin analytics dashboard!
+*/

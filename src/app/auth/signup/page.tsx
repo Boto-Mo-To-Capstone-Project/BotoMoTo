@@ -3,13 +3,14 @@
 import { useState, useEffect } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import toast, { Toaster } from 'react-hot-toast';
+import CustomToast from "@/components/CustomToast";
 import Logo from "@/components/Logo";
 import { AuthHeading } from "@/components/AuthHeading";
 import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
 import { OAuthButtons } from "@/components/OAuthButtons";
 import { AuthFooter } from "@/components/AuthFooter";
-import { ErrorMessage } from "@/components/ErrorMessage";
 import AuthContainer from '@/components/AuthContainer';
 
 export default function SignupPage() {
@@ -19,7 +20,12 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{
+    name?: string[];
+    email?: string[];
+    password?: string[];
+    confirmPassword?: string[];
+  }>({});
   const [isLoading, setIsLoading] = useState(false);
 
   // Redirect if user already has session
@@ -36,10 +42,11 @@ export default function SignupPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError("");
+    setFieldErrors({});
 
+    // Client-side validation for password confirmation
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setFieldErrors({ confirmPassword: ["Passwords do not match"] });
       setIsLoading(false);
       return;
     }
@@ -63,22 +70,71 @@ export default function SignupPage() {
       console.log("Signup API response", res.status, result);
 
       if (!res.ok) {
-        setError(result.error || "Failed to create account");
+        // Handle field-specific validation errors
+        if (result.error && typeof result.error === 'object' && result.error !== null) {
+          const errors: typeof fieldErrors = {};
+          
+          // Extract field-specific errors
+          if (result.error.name?._errors) {
+            errors.name = result.error.name._errors;
+          }
+          if (result.error.email?._errors) {
+            errors.email = result.error.email._errors;
+          }
+          if (result.error.password?._errors) {
+            errors.password = result.error.password._errors;
+          }
+          
+          setFieldErrors(errors);
+          
+          // No need for general error toast since errors are displayed inline
+        } else {
+          // Handle other types of errors (like duplicate email)
+          toast.custom((t) => (
+            <CustomToast
+              t={t}
+              message={result.message || "Failed to create account"}
+            />
+          ));
+        }
         return;
       }
 
+      // Success - show toast and sign in
+      toast.custom((t) => (
+        <CustomToast
+          t={t}
+          message="Account created successfully! Signing you in..."
+        />
+      ));
+
       // After successful signup
-      await signIn("credentials", {
+      const signInResult = await signIn("credentials", {
         email,
         password,
         callbackUrl: "/admin/onboard",
         redirect: false,
       });
-      
-      // Let the redirect happen via useEffect
-      window.location.href = "/admin/onboard";
+
+      if (signInResult?.error) {
+        toast.custom((t) => (
+          <CustomToast
+            t={t}
+            message="Account created but failed to sign in. Please try logging in manually."
+          />
+        ));
+        router.push("/auth/login");
+      } else {
+        // Let the redirect happen via useEffect
+        router.push("/admin/onboard");
+      }
     } catch (err) {
-      setError(`An unexpected error occurred. Please try again. ${err}`);
+      toast.custom((t) => (
+        <CustomToast
+          t={t}
+          message="An unexpected error occurred. Please try again."
+        />
+      ));
       console.error("Signup error", err);
     } finally {
       setIsLoading(false);
@@ -92,13 +148,13 @@ export default function SignupPage() {
 
   return (
     <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40">
+      <Toaster position="top-center" />
       <AuthContainer>
         <Logo />
         <AuthHeading
           title="Create your account"
           subtitle="Register to manage your organization's elections."
         />
-        {error && <ErrorMessage message={error} />}
         <form
           onSubmit={handleSignup}
           className="space-y-4 text-left flex flex-col items-center w-full"
@@ -110,7 +166,9 @@ export default function SignupPage() {
             onChange={(e) => setFullName(e.target.value)}
             placeholder="Enter your full name"
             autoComplete="name"
+            error={fieldErrors.name?.[0]}
           />
+          
           <InputField
             label="Email Address"
             type="email"
@@ -118,7 +176,9 @@ export default function SignupPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
             autoComplete="email"
+            error={fieldErrors.email?.[0]}
           />
+          
           <InputField
             label="Password"
             type="password"
@@ -126,7 +186,9 @@ export default function SignupPage() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
             autoComplete="new-password"
+            error={fieldErrors.password?.[0]}
           />
+          
           <InputField
             label="Confirm Password"
             type="password"
@@ -134,7 +196,9 @@ export default function SignupPage() {
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="••••••••"
             autoComplete="new-password"
+            error={fieldErrors.confirmPassword?.[0]}
           />
+          
           <SubmitButton label="Sign Up" isLoading={isLoading} className="w-full" />
         </form>
         <OAuthButtons />

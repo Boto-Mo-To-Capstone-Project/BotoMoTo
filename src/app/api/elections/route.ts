@@ -9,8 +9,11 @@ import { electionSchema } from "@/lib/schema";
 import { createAuditLog } from "@/lib/audit";
 import { requireAuth } from "@/lib/helpers/requireAuth";
 
+// Import performance logging middleware
+import { withPerformanceLogging } from "@/lib/performance/middleware";
+
 // Handle GET request to fetch all elections (superadmin only)
-export async function GET(request: NextRequest) {
+async function getElections(request: NextRequest) {
   try {
     // Authenticate the user with required role
     const authResult = await requireAuth([ROLES.SUPER_ADMIN]);
@@ -89,7 +92,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Handle POST request to create a new election (admin only)
-export async function POST(request: NextRequest) {
+async function createElection(request: NextRequest) {
   try {
     // Authenticate the user
     const session = await auth();
@@ -226,5 +229,23 @@ export async function POST(request: NextRequest) {
     });
   }
 }
+
+// Apply performance logging middleware to elections endpoints
+export const GET = withPerformanceLogging(getElections as any);
+export const POST = withPerformanceLogging(createElection as any);
+
+/*
+PERFORMANCE LOGGING ADDED TO ELECTIONS API! 🎉
+
+What this captures:
+✅ GET /api/elections - Election listing performance (superadmin dashboard)
+✅ POST /api/elections - Election creation speed
+
+Key metrics for election management:
+- Election listing speed for admin dashboards
+- Election creation performance 
+- Peak usage during election setup periods
+- System performance during heavy election activity
+*/
 
 
