@@ -52,7 +52,7 @@ function ApplicationStepper({
   hasOrganizationData: boolean;
   autoExpandAwaitingApproval?: boolean;
 }) {
-  const [openStep, setOpenStep] = useState(autoExpandAwaitingApproval ? 1 : -1);
+  const [openStep, setOpenStep] = useState(autoExpandAwaitingApproval ? 1 : 0); // Start with Complete Profile expanded for new users
   
   // Auto-expand awaiting approval step when status becomes pending
   useEffect(() => {
@@ -67,8 +67,8 @@ function ApplicationStepper({
       title: "Complete Profile",
       description: "Fill out your organization details and upload required documents",
       action: hasOrganizationData ? "Edit Profile" : "Complete Profile",
-      isActive: false, // Force not active when completed
-      isCompleted: hasOrganizationData, // Simply mark as completed if org data exists
+      isActive: status === 'getting_started' || status === 'rejected', // Active when user needs to create/edit org
+      isCompleted: hasOrganizationData && (status === 'pending' || status === 'approved'), // Only completed when org exists and submitted
       onClick: onComplete
     },
     {
@@ -77,7 +77,7 @@ function ApplicationStepper({
       description: "We'll review your application and notify you once approved.",
       action: "Under Review",
       isActive: status === 'pending',
-      isCompleted: status === 'approved', // Mark as completed when approved
+      isCompleted: status === 'approved',
       onClick: null
     }
   ];
@@ -107,7 +107,7 @@ function ApplicationStepper({
           {openStep === step.id && (
             <div className="pl-9 pb-4">
               <div className="text-gray-500 text-sm mb-3 max-w-xs">{step.description}</div>
-              {step.onClick && step.isActive && (
+              {step.onClick && (step.isActive || step.isCompleted) && (
                 <SubmitButton 
                   label={step.action} 
                   isLoading={false} 
