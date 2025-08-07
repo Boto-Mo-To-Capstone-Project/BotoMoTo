@@ -13,6 +13,7 @@ import { AuthFooter } from "@/components/AuthFooter";
 import { ErrorMessage } from "@/components/ErrorMessage";
 import { RememberMeAndForgotPassword } from "@/components/RememberMeAndForgotPassword";
 import AuthContainer from '@/components/AuthContainer';
+import { ROLES } from "@/lib/constants";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,13 +23,25 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Redirect if user already has session
+  // Redirect if user already has session with role-based logic
   useEffect(() => {
     if (sessionStatus === "authenticated" && session?.user) {
-      if (session.user.organization?.status === "APPROVED") {
-        router.replace("/admin/dashboard");
+      const userRole = session.user.role;
+      
+      // Role-based redirect logic
+      if (userRole === ROLES.SUPER_ADMIN) {
+        // Superadmin goes directly to dashboard
+        router.replace("/superadmin/dashboard");
+      } else if (userRole === ROLES.ADMIN) {
+        // Admin checks organization status for onboarding
+        if (session.user.organization?.status === "APPROVED") {
+          router.replace("/admin/dashboard");
+        } else {
+          router.replace("/admin/onboard");
+        }
       } else {
-        router.replace("/admin/onboard");
+        // Fallback for unknown roles
+        router.replace("/auth/login");
       }
     }
   }, [sessionStatus, session, router]);
@@ -43,15 +56,16 @@ export default function LoginPage() {
       const res = await signIn("credentials", {
         email,
         password,
-        callbackUrl: "/admin/onboard",
+        callbackUrl: "/admin/onboard", // Default fallback
         redirect: false
       });
 
       if (res?.error) {
         setError("Invalid email or password");
       } else if (res?.ok) {
-        // Let the useEffect handle the redirect based on session
-        window.location.href = "/admin/onboard";
+        // Force a page reload to trigger session update and useEffect redirect
+        // This ensures the session is properly updated before redirect logic runs
+        window.location.reload();
       }
       
     } catch (err) {
