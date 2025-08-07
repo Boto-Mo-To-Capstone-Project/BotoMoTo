@@ -29,6 +29,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   Authenticator Authenticator[]
+  userSessions  UserSession[] // For performance tracking
  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -46,6 +47,10 @@ enum AuditResource {
   USER
   ELECTION
   CANDIDATE
+  PARTY
+  VOTING_SCOPE
+  VOTER
+  POSITION
   // Add other resources as needed
 }
 
@@ -75,9 +80,9 @@ enum MfaMethod {
 
 // Voting scope type enum
 enum VotingScopeType {
-  LEVEL_1
-  LEVEL_2
-  LEVEL_3
+  AREA
+  LEVEL
+  DEPARTMENT
   CUSTOM
 }
 
@@ -243,9 +248,14 @@ model MfaSettings {
 model VotingScope {
   id          Int             @id @default(autoincrement())
   electionId  Int
-  name        String
   type        VotingScopeType
+  name        String
   description String
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
 
   election   Election  @relation(fields: [electionId], references: [id])
   voters     Voter[]
@@ -475,4 +485,54 @@ model AuditTableAffected {
   changes       Json
 
   audit Audits @relation(fields: [auditId], references: [id])
+}
+
+// Performance Logging Tables for Analytics Dashboard
+model ApiLog {
+  id           String   @id @default(cuid())
+  endpoint     String   // The API endpoint called (e.g., "/api/organizations")
+  method       String   // HTTP method (GET, POST, PUT, DELETE)
+  statusCode   Int      // HTTP status code (200, 404, 500, etc.)
+  responseTime Int      // Response time in milliseconds
+  userId       String?  // ID of user who made the request (if authenticated)
+  ipAddress    String   // Client IP address
+  userAgent    String?  // Browser/client user agent
+  error        String?  // Error message if request failed
+  
+  createdAt    DateTime @default(now())
+  
+  // Index for fast queries on recent data and performance analysis
+  @@index([createdAt])
+  @@index([endpoint, createdAt])
+  @@index([statusCode, createdAt])
+  @@map("api_logs")
+}
+
+model UserSession {
+  id        String    @id @default(cuid())
+  userId    String    // User who started the session
+  startedAt DateTime  @default(now())
+  endedAt   DateTime? // When session ended (null = still active)
+  ipAddress String    // Session IP address
+  userAgent String?   // Browser/device info
+  
+  // Relation to user for data consistency
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Indexes for concurrent user calculations
+  @@index([startedAt, endedAt])
+  @@index([userId, startedAt])
+  @@map("user_sessions")
+}
+
+model SystemMetric {
+  id         String   @id @default(cuid())
+  metricType String   // Type: 'uptime', 'memory_usage', 'cpu_usage', 'disk_space'
+  value      Float    // Metric value (e.g., 99.5 for 99.5% uptime)
+  metadata   Json?    // Additional metric data (optional)
+  recordedAt DateTime @default(now())
+  
+  // Index for time-series queries
+  @@index([metricType, recordedAt])
+  @@map("system_metrics")
 }

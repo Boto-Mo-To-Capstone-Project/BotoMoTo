@@ -1,128 +1,96 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import db from "@/lib/db/db";
 import { ROLES, ORGANIZATION_STATUS } from "@/lib/constants";
+import { apiResponse } from "@/lib/apiResponse";
+import { createAuditLog } from "@/lib/audit";
+import { requireAuth } from "@/lib/helpers/requireAuth";
+import { findOrganizationById } from "@/lib/helpers/findOrganizationById";
 
-export async function PUT(
+// Handle PATCH request to approve/reject organization (superadmin only)
+export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const authResult = await requireAuth([ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
-    // Only SuperAdmin can approve organizations
-    if (session.user.role !== ROLES.SUPER_ADMIN) {
-      return NextResponse.json(
-        { success: false, error: "Only SuperAdmin can approve organizations" },
-        { status: 403 }
-      );
-    }
-
-    // Get params asynchronously
     const { id } = await params;
-    if (!id) {
-      return NextResponse.json(
-        { success: false, error: "Organization ID is required" },
-        { status: 400 }
-      );
+    const organizationId = parseInt(id);
+
+    if (isNaN(organizationId)) {
+      return apiResponse({
+        success: false,
+        message: "Invalid organization ID",
+        error: "Bad Request",
+        status: 400
+      });
     }
 
     // Parse request body
-    let body;
-    try {
-      body = await request.json();
-    } catch (error) {
-      return NextResponse.json(
-        { success: false, error: "Invalid JSON body" },
-        { status: 400 }
-      );
-    }
+    const body = await request.json();
+    const { approve } = body;
 
-    const { action, reason } = body;
-    if (!["approve", "reject"].includes(action)) {
-      return NextResponse.json(
-        { success: false, error: "Invalid action" },
-        { status: 400 }
-      );
+    if (typeof approve !== "boolean") {
+      return apiResponse({
+        success: false,
+        message: "Invalid 'approve' value. Must be boolean.",
+        error: "Bad Request",
+        status: 400
+      });
     }
 
     // Find the organization
-    const organizationId = parseInt(id);
-    if (isNaN(organizationId)) {
-      return NextResponse.json(
-        { success: false, error: "Invalid organization ID" },
-        { status: 400 }
-      );
+    const { organization, response } = await findOrganizationById(organizationId);
+    if (!organization) return response;
+
+    // Only allow action on PENDING organizations
+    if (organization.status !== ORGANIZATION_STATUS.PENDING) {
+      return apiResponse({
+        success: false,
+        message: `Organization is already ${organization.status.toLowerCase()}`,
+        data: { currentStatus: organization.status },
+        error: "Bad Request",
+        status: 400
+      });
     }
 
-    const organization = await db.organization.findUnique({
-      where: { id: organizationId },
-      include: { admin: true },
-    });
-
-    if (!organization) {
-      return NextResponse.json(
-        { success: false, error: "Organization not found" },
-        { status: 404 }
-      );
-    }
-
-    // Update organization status
-    const newStatus = action === "approve"
+    const newStatus = approve
       ? ORGANIZATION_STATUS.APPROVED
       : ORGANIZATION_STATUS.REJECTED;
 
     const updatedOrg = await db.organization.update({
       where: { id: organizationId },
-      data: { status: newStatus },
-      include: { admin: true },
+      data: { status: newStatus }
     });
 
-    // Create audit log
-    const ipAddress = request.headers.get("x-forwarded-for") || 
-                     request.headers.get("x-real-ip") || 
-                     "unknown";
-    const userAgent = request.headers.get("user-agent") || "unknown";
-
-    await db.audits.create({
-      data: {
-        actorId: session.user.id,
-        actorRole: session.user.role,
-        action: action === "approve" ? "APPROVE" : "REJECT",
-        ipAddress,
-        userAgent,
-        resource: "organization",
-        resourceId: id,
-        details: {
-          organizationName: organization.name,
-          adminEmail: organization.admin.email,
-          action,
-          reason: reason || null,
-        },
+    const audit = await createAuditLog({
+      user,
+      action: approve ? "APPROVE" : "REJECT",
+      request,
+      resource: "ORGANIZATION",
+      resourceId: organizationId,
+      changedFields: {
+        status: { old: organization.status, new: newStatus }
       },
+      message: `${approve ? "Approved" : "Rejected"} organization: ${organization.name}`
     });
 
-    return NextResponse.json({
+    return apiResponse({
       success: true,
-      message: `Organization ${action}d successfully`,
-      data: {
-        id: updatedOrg.id,
-        name: updatedOrg.name,
-        status: updatedOrg.status,
-        adminEmail: updatedOrg.admin.email,
-      },
+      message: `Organization ${approve ? "approved" : "rejected"} successfully`,
+      data: updatedOrg,
+      status: 200
     });
   } catch (error) {
     console.error("Organization approval error:", error);
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 }
-    );
+    return apiResponse({
+      success: false,
+      message: "Failed to approve/reject organization",
+      error: typeof error === "string" ? error : "Internal server error",
+      status: 500
+    });
   }
 }

@@ -145,21 +145,219 @@ const organizationSchema = z.object({
   name: field.string("Organization name", { min: 5 }),
   email: field.email("Organization email"),
   membersCount: field.number("Members count", { min: 1 }),
-  photoUrl: field.url("Photo URL"),
-  letterUrl: field.url("Letter URL")
+  photoUrl: field.string("Photo"),
+  letterUrl: field.string("Letter"),
+  adminId: field.string("Admin ID", { required: false }) // Optional for superadmin use
+});
+
+const electionSchema = z.object({
+  name: field.string("Election name", { min: 3, max: 100 }),
+  description: field.string("Election description", { min: 10, max: 500 }),
+  status: z.enum(["DRAFT", "ACTIVE", "PAUSED", "CLOSED", "ARCHIVED"], {
+    required_error: "Election status is required",
+    invalid_type_error: "Invalid election status"
+  }).default("DRAFT"),
+  isLive: z.boolean().default(false),
+  allowSurvey: z.boolean().default(false)
+});
+
+const userSchema = z.object({
+  name: field.string("Name", { min: 2, max: 100 }),
+  email: field.email("Email"),
+  role: z.enum(["VOTER", "ADMIN", "SUPER_ADMIN"], {
+    required_error: "User role is required",
+    invalid_type_error: "Invalid user role"
+  }),
+  password: field.string("Password", { required: false, min: 8 })
+});
+
+const partySchema = z.object({
+  name: field.string("Party name", { min: 2, max: 100 }),
+  color: field.string("Party color", { min: 3, max: 7 }), // For hex colors like #FF0000
+  logoUrl: field.url("Logo URL", { required: false }),
+  description: field.string("Party description", { required: false, min: 5, max: 500 })
+});
+
+const votingScopeSchema = z.object({
+  electionId: z.number().int().positive("Election ID must be a positive integer"),
+  type: z.enum(["AREA", "LEVEL", "DEPARTMENT", "CUSTOM"], {
+    required_error: "Voting scope type is required",
+    invalid_type_error: "Invalid voting scope type"
+  }),
+  name: field.string("Voting scope name", { min: 2, max: 100 }),
+  description: field.string("Voting scope description", { min: 5, max: 500 })
+});
+
+const votingScopeUpdateSchema = z.object({
+  type: z.enum(["AREA", "LEVEL", "DEPARTMENT", "CUSTOM"], {
+    required_error: "Voting scope type is required",
+    invalid_type_error: "Invalid voting scope type"
+  }),
+  name: field.string("Voting scope name", { min: 2, max: 100 }),
+  description: field.string("Voting scope description", { min: 5, max: 500 })
+});
+
+const positionSchema = z.object({
+  electionId: z.number().int().positive("Election ID must be a positive integer"),
+  name: field.string("Position name", { min: 2, max: 100 }),
+  description: field.string("Position description", { min: 5, max: 500 }),
+  voteLimit: z.number().int().min(1, "Vote limit must be at least 1").default(1),
+  numOfWinners: z.number().int().min(1, "Number of winners must be at least 1").default(1),
+  votingScopeId: z.number().int().positive("Voting scope ID must be a positive integer").optional(),
+  order: z.number().int().min(0, "Order must be non-negative").default(0)
+});
+
+const positionUpdateSchema = z.object({
+  name: field.string("Position name", { min: 2, max: 100 }),
+  description: field.string("Position description", { min: 5, max: 500 }),
+  voteLimit: z.number().int().min(1, "Vote limit must be at least 1").default(1),
+  numOfWinners: z.number().int().min(1, "Number of winners must be at least 1").default(1),
+  votingScopeId: z.number().int().positive("Voting scope ID must be a positive integer").optional(),
+  order: z.number().int().min(0, "Order must be non-negative").default(0)
+});
+
+const voterSchema = z.object({
+  electionId: z.number().int().positive("Election ID must be a positive integer"),
+  email: field.email("Email", { required: false }),
+  contactNum: field.string("Contact number", { required: false, min: 10, max: 15 }),
+  firstName: field.string("First name", { min: 2, max: 50 }),
+  middleName: field.string("Middle name", { required: false, min: 1, max: 50 }),
+  lastName: field.string("Last name", { min: 2, max: 50 }),
+  votingScopeId: z.number().int().positive("Voting scope ID must be a positive integer").optional(),
+  address: field.string("Address", { required: false, min: 5, max: 255 }),
+  isActive: z.boolean().default(true)
+});
+
+const voterUpdateSchema = z.object({
+  email: field.email("Email", { required: false }),
+  contactNum: field.string("Contact number", { required: false, min: 10, max: 15 }),
+  firstName: field.string("First name", { min: 2, max: 50 }),
+  middleName: field.string("Middle name", { required: false, min: 1, max: 50 }),
+  lastName: field.string("Last name", { min: 2, max: 50 }),
+  votingScopeId: z.number().int().positive("Voting scope ID must be a positive integer").optional(),
+  address: field.string("Address", { required: false, min: 5, max: 255 }),
+  isActive: z.boolean().default(true)
+});
+
+const voterBulkUploadSchema = z.object({
+  electionId: z.number().int().positive("Election ID must be a positive integer"),
+  voters: z.array(z.object({
+    email: field.email("Email", { required: false }),
+    contactNum: field.string("Contact number", { required: false, min: 10, max: 15 }),
+    firstName: field.string("First name", { min: 2, max: 50 }),
+    middleName: field.string("Middle name", { required: false, min: 1, max: 50 }),
+    lastName: field.string("Last name", { min: 2, max: 50 }),
+    votingScopeId: z.number().int().positive("Voting scope ID must be a positive integer").optional(),
+    address: field.string("Address", { required: false, min: 5, max: 255 })
+  })).min(1, "At least one voter is required")
+});
+
+// Candidate Leadership Experience Schema
+const candidateLeadershipSchema = z.object({
+  organization: field.string("Organization", { min: 2, max: 100 }),
+  position: field.string("Position", { min: 2, max: 100 }),
+  dateRange: field.string("Date range", { min: 3, max: 50 }),
+  description: field.string("Description", { required: false, max: 500 })
+});
+
+// Candidate Work Experience Schema
+const candidateWorkExperienceSchema = z.object({
+  company: field.string("Company", { min: 2, max: 100 }),
+  role: field.string("Role", { min: 2, max: 100 }),
+  dateRange: field.string("Date range", { min: 3, max: 50 }),
+  description: field.string("Description", { required: false, max: 500 })
+});
+
+// Candidate Education Schema
+const candidateEducationSchema = z.object({
+  school: field.string("School", { min: 2, max: 100 }),
+  educationLevel: field.string("Education level", { min: 2, max: 100 }),
+  dateRange: field.string("Date range", { min: 3, max: 50 }),
+  description: field.string("Description", { required: false, max: 500 })
+});
+
+// Candidate Creation Schema
+const candidateSchema = z.object({
+  electionId: z.number().int().positive("Election ID must be a positive integer"),
+  voterId: z.number().int().positive("Voter ID must be a positive integer"),
+  positionId: z.number().int().positive("Position ID must be a positive integer"),
+  partyId: z.number().int().positive("Party ID must be a positive integer").optional(),
+  imageUrl: field.url("Image URL", { required: false }),
+  bio: field.string("Biography", { required: false, max: 1000 }),
+  isNew: z.boolean().default(false),
+  leaderships: z.array(candidateLeadershipSchema).optional(),
+  workExperiences: z.array(candidateWorkExperienceSchema).optional(),
+  educations: z.array(candidateEducationSchema).optional()
+});
+
+// Candidate Update Schema
+const candidateUpdateSchema = z.object({
+  positionId: z.number().int().positive("Position ID must be a positive integer").optional(),
+  partyId: z.number().int().positive("Party ID must be a positive integer").optional(),
+  imageUrl: field.url("Image URL", { required: false }),
+  bio: field.string("Biography", { required: false, max: 1000 }),
+  isNew: z.boolean().optional(),
+  leaderships: z.array(candidateLeadershipSchema).optional(),
+  workExperiences: z.array(candidateWorkExperienceSchema).optional(),
+  educations: z.array(candidateEducationSchema).optional()
 });
 
 // Types
 type LoginSchema = z.infer<typeof loginSchema>;
 type SignupSchema = z.infer<typeof signupSchema>;
 type OrganizationSchema = z.infer<typeof organizationSchema>;
+type ElectionSchema = z.infer<typeof electionSchema>;
+type UserSchema = z.infer<typeof userSchema>;
+type PartySchema = z.infer<typeof partySchema>;
+type VotingScopeSchema = z.infer<typeof votingScopeSchema>;
+type VotingScopeUpdateSchema = z.infer<typeof votingScopeUpdateSchema>;
+type PositionSchema = z.infer<typeof positionSchema>;
+type PositionUpdateSchema = z.infer<typeof positionUpdateSchema>;
+type VoterSchema = z.infer<typeof voterSchema>;
+type VoterUpdateSchema = z.infer<typeof voterUpdateSchema>;
+type VoterBulkUploadSchema = z.infer<typeof voterBulkUploadSchema>;
+type CandidateSchema = z.infer<typeof candidateSchema>;
+type CandidateUpdateSchema = z.infer<typeof candidateUpdateSchema>;
+type CandidateLeadershipSchema = z.infer<typeof candidateLeadershipSchema>;
+type CandidateWorkExperienceSchema = z.infer<typeof candidateWorkExperienceSchema>;
+type CandidateEducationSchema = z.infer<typeof candidateEducationSchema>;
 
 export {
   field,
   loginSchema,
   signupSchema,
   organizationSchema,
+  electionSchema,
+  userSchema,
+  partySchema,
+  votingScopeSchema,
+  votingScopeUpdateSchema,
+  positionSchema,
+  positionUpdateSchema,
+  voterSchema,
+  voterUpdateSchema,
+  voterBulkUploadSchema,
+  candidateSchema,
+  candidateUpdateSchema,
+  candidateLeadershipSchema,
+  candidateWorkExperienceSchema,
+  candidateEducationSchema,
   type LoginSchema,
   type SignupSchema,
-  type OrganizationSchema
+  type OrganizationSchema,
+  type ElectionSchema,
+  type UserSchema,
+  type PartySchema,
+  type VotingScopeSchema,
+  type VotingScopeUpdateSchema,
+  type PositionSchema,
+  type PositionUpdateSchema,
+  type VoterSchema,
+  type VoterUpdateSchema,
+  type VoterBulkUploadSchema,
+  type CandidateSchema,
+  type CandidateUpdateSchema,
+  type CandidateLeadershipSchema,
+  type CandidateWorkExperienceSchema,
+  type CandidateEducationSchema
 };
