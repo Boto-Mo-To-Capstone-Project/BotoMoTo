@@ -64,13 +64,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return token;
     },
     async session({ session, token }) {
+      console.log("Session callback:", session, token);
       if (session.user) {
-        session.user.id = token.id as string;
-        session.user.name = token.name as string;
-        session.user.email = token.email as string;
-        session.user.role = token.role as UserRole;
-        session.user.organization = token.organization;
+
+        // find the fresh user data from database
+        const user = await db.user.findUnique({
+          where: { id: token.id as string },
+          include: { organization: true }
+        });
+
+        if (user) {
+          session.user.id = user.id as string;
+          session.user.name = user.name as string;
+          session.user.email = user.email as string;
+          session.user.role = user.role as UserRole;
+          session.user.organization = user.organization;
+        }
       }
+
+      console.log("Updated session:", session);
       return session;
     },
   },
