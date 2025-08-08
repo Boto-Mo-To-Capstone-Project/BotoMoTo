@@ -14,6 +14,7 @@ export const CustomPrismaAdapter = (db: PrismaClient) => {
             select: {
               id: true,
               email: true,
+              name: true,
               role: true,
               // Add more if needed, but exclude password
                 organization: {

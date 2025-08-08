@@ -1,22 +1,27 @@
+import { v4 as uuid } from "uuid";
+import { encode as defaultEncode } from "next-auth/jwt";
+
 import bcrypt from "bcryptjs";
 import db from "@/lib/db/db";
-import { PrismaAdapter } from "@auth/prisma-adapter";
+// import { PrismaAdapter } from "@auth/prisma-adapter";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 import Facebook from "next-auth/providers/facebook";
 import { loginSchema } from "@/lib/schema";
 import { requestContext } from "@/lib/requestContext";
 import { UserRole } from "@prisma/client";
+import { CustomPrismaAdapter } from "./customAdapter";
+// import { createAuditLog } from "./audit";
+
+const adapter = CustomPrismaAdapter(db);
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: PrismaAdapter(db),
+  adapter,
   pages: {
     signIn: "/auth/login",
   },
   providers: [
-    GitHub,
     Google,
     Facebook,
     Credentials({
@@ -42,48 +47,60 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const isValid = await bcrypt.compare(validated.password, user.password);
         if (!isValid) throw new Error("Invalid credentials");
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          organization: user.organization
-        };
+        return user;
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
-        token.role = user.role;
-        token.organization = user.organization;
+    async jwt({ token, account }) {
+      if (account?.provider === "credentials") {
+        token.credentials = true;
       }
       return token;
     },
-    async session({ session, token }) {
-      console.log("Session callback:", session, token);
+    async session({ session }) {
+      console.log("Session callback triggered:", session);
+
+      // `session` here is actually the DB session model including `user`
       if (session.user) {
-
-        // find the fresh user data from database
-        const user = await db.user.findUnique({
-          where: { id: token.id as string },
-          include: { organization: true }
-        });
-
-        if (user) {
-          session.user.id = user.id as string;
-          session.user.name = user.name as string;
-          session.user.email = user.email as string;
-          session.user.role = user.role as UserRole;
-          session.user.organization = user.organization;
-        }
+        return {
+          user: {
+            id: session.user.id,
+            name: session.user.name,
+            email: session.user.email,
+            role: session.user.role as UserRole,
+            organization: session.user.organization,
+          },
+          expires: session.expires, // required by NextAuth
+        };
       }
 
-      console.log("Updated session:", session);
-      return session;
+      console.warn("Session callback did not find user data:", session);
+      return session; // fallback
+    }
+  },
+  jwt: {
+    encode: async function (params) {
+      if (params.token?.credentials) {
+        const sessionToken = uuid();
+
+        if (!params.token.sub) {
+          throw new Error("No user ID found in token");
+        }
+
+        const createdSession = await adapter?.createSession?.({
+          sessionToken: sessionToken,
+          userId: params.token.sub,
+          expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        });
+
+        if (!createdSession) {
+          throw new Error("Failed to create session");
+        }
+
+        return sessionToken;
+      }
+      return defaultEncode(params);
     },
   },
   events: {
@@ -109,34 +126,40 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         console.error("Audit log error (signIn):", e);
       }
     },
-    async signOut(message) {
-      // Handle both v4 and v5 signOut event shapes
-      const token = 'token' in message ? message.token : null;
-      if (!token) return;
-      
+    //signout event handler for db session
+    async signOut(params) {
       try {
-        const ctx = requestContext.getStore();
+      const ctx = requestContext.getStore();
+      
+      // Handle both session types safely
+      if ('session' in params && params.session) {
+        console.log("Database session signOut", params.session);
+        console.log("id:", params.session.userId);
+        
+        const userId = params.session.userId;
+        const user = await db.user.findUnique({
+          where: { id: userId },
+          select: { email: true, role: true }
+        });
+
         await db.audits.create({
           data: {
-            actorId: token.id as string,
-            actorRole: (token.role as UserRole) || "ADMIN",
+            actorId: userId,
+            actorRole: user?.role || "ADMIN",
             action: "LOGOUT",
             ipAddress: ctx?.ip || "unknown",
             userAgent: ctx?.userAgent || "unknown",
             resource: "user",
-            resourceId: token.id as string,
+            resourceId: userId,
             details: {
-              email: token.email as string || "unknown",
-              loginMethod: (token as any).provider || "unknown",
+              email: user?.email || "unknown",
             },
           },
         });
-      } catch (e) {
-        console.error("Audit log error (signOut):", e);
       }
+    } catch (e) {
+      console.error("Audit log error (signOut):", e);
+    }
     },
-  },
-  session: {
-    strategy: "jwt",
   },
 });

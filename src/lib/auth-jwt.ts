@@ -58,25 +58,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return token;
     },
-    async session({ session, user }) {
-      console.log("Session callback triggered", session);
-      if (session.user && user) {
-        // Get fresh user data from database para ma-ensure session is up-to-date
-        const dbUser = await db.user.findUnique({
-          where: { id: user.id },
-          include: { organization: true }
-        });
+    async session({ session }) {
+      console.log("Session callback triggered:", session);
 
-        if (dbUser) {
-          session.user.id = dbUser.id;
-          session.user.name = dbUser.name;
-          session.user.email = dbUser.email;
-          session.user.role = dbUser.role as UserRole;
-          session.user.organization = dbUser.organization;
-        }
+      // `session` here is actually the DB session model including `user`
+      if (session.user) {
+        return {
+          user: {
+            id: session.user.id,
+            name: session.user.name,
+            email: session.user.email,
+            role: session.user.role as UserRole,
+            organization: session.user.organization,
+          },
+          expires: session.expires, // required by NextAuth
+        };
       }
-      // fresh lagi ang session data tuwing kukunin ng frontend
-      return session;
+
+      console.warn("Session callback did not find user data:", session);
+      return session; // fallback
     }
   },
   jwt: {
@@ -162,4 +162,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }
     },
   },
+  secret: process.env.NEXTAUTH_SECRET,
 });
