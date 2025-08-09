@@ -1,20 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 
 import Table from "@/components/TableComponent";
+import AuditDetailsModal from "@/components/AuditDetailsModal";
 
 export default function SuperAdminAuditsPage() {
   const [rows, setRows] = useState<Record<string, any>[]>([]);
-  const [rawDetails, setRawDetails] = useState<any[]>([]);
+  const [audits, setAudits] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [detailsOpen, setDetailsOpen] = useState<boolean>(false);
-  const [detailsData, setDetailsData] = useState<any>(null);
+  const [selectedAudit, setSelectedAudit] = useState<any>(null);
 
   const openDetails = (index: number) => {
-    const data = rawDetails[index];
-    setDetailsData(data);
+    const data = audits[index];
+    setSelectedAudit(data);
     setDetailsOpen(true);
   };
 
@@ -28,9 +29,9 @@ export default function SuperAdminAuditsPage() {
         if (!res.ok || !json?.success) {
           throw new Error(json?.error || json?.message || "Failed to fetch audits");
         }
-        const audits = json?.data?.audits || [];
+        const list = json?.data?.audits || [];
 
-        const mapped = audits.map((a: any) => ({
+        const mapped = list.map((a: any) => ({
           Audit_ID: a.id,
           Actor_ID: a.actorId || "—",
           Actor_Role: a.actorRole || "—",
@@ -44,7 +45,7 @@ export default function SuperAdminAuditsPage() {
 
         if (isMounted) {
           setRows(mapped);
-          setRawDetails(audits.map((a: any) => ({ ...a.details, actorName: a.actorName, actorEmail: a.actorEmail })));
+          setAudits(list);
         }
       } catch (err) {
         console.error(err);
@@ -59,6 +60,21 @@ export default function SuperAdminAuditsPage() {
       isMounted = false;
     };
   }, []);
+
+  const columns = useMemo(
+    () => [
+      "Audit_ID",
+      "Actor_ID",
+      "Actor_Role",
+      "Action",
+      "IP_Address",
+      "User_Agent",
+      "Resource",
+      "Resource_ID",
+      "Time_Stamp",
+    ],
+    []
+  );
 
   return (
     <>
@@ -75,17 +91,7 @@ export default function SuperAdminAuditsPage() {
             ) : (
               <Table
                 title="All Audits"
-                columns={[
-                  "Audit_ID",
-                  "Actor_ID",
-                  "Actor_Role",
-                  "Action",
-                  "IP_Address",
-                  "User_Agent",
-                  "Resource",
-                  "Resource_ID",
-                  "Time_Stamp",
-                ]}
+                columns={columns}
                 data={rows}
                 pageSize={5}
                 onRowClick={(row) => {
@@ -98,35 +104,7 @@ export default function SuperAdminAuditsPage() {
         </div>
       </div>
 
-      {detailsOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white w-full max-w-3xl rounded-lg shadow-lg">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="font-semibold">Audit Details</h3>
-              <button
-                onClick={() => setDetailsOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
-                aria-label="Close details"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-4 max-h-[70vh] overflow-auto">
-              <pre className="text-sm whitespace-pre-wrap">
-                {JSON.stringify(detailsData, null, 2)}
-              </pre>
-            </div>
-            <div className="p-4 border-t text-right">
-              <button
-                onClick={() => setDetailsOpen(false)}
-                className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AuditDetailsModal open={detailsOpen} onClose={() => setDetailsOpen(false)} audit={selectedAudit} />
     </>
   );
 }
