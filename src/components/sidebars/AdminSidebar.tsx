@@ -1,5 +1,7 @@
 "use client";
 
+import { useSession, signOut } from "next-auth/react";
+
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -17,7 +19,10 @@ import {
   ChevronUp,
   Settings,
   Wrench,
+  LogOut,
 } from "lucide-react";
+import { useLogout } from "@/hooks/useLogout";
+import Button from "../Button";
 
 type AdminSidebarProps = {
   variant: "default" | "selectedElection";
@@ -32,9 +37,13 @@ const AdminSidebar = ({
   open = false,
   onClose,
 }: AdminSidebarProps) => {
+  const { data: session } = useSession();
+
   const pathname = usePathname();
   const [showSetup, setShowSetup] = useState(false);
   const [showManage, setShowManage] = useState(false);
+
+  const handleLogout = useLogout();
 
   // Split links into two groups
   const beforeElectionLinks = [
@@ -80,6 +89,9 @@ const AdminSidebar = ({
       .replace(" ", "-")}`,
   }));
 
+  const displayName = session?.user?.name || "Hardcoded name";
+  const displayEmail = session?.user?.email || "Hardcoded@gmail.com";
+
   return (
     <>
       {/* Overlay */}
@@ -97,7 +109,7 @@ const AdminSidebar = ({
       <aside
         className={`overflow-y-auto scrollbar-hidden fixed top-0 left-0 h-full w-full bg-primary px-4 py-6 space-y-5 transform transition-transform duration-300 z-[101] ${
           open ? "translate-x-0" : "-translate-x-full"
-        } lg:w-68 lg:max-w-none lg:translate-x-0 `}
+        } lg:w-68 lg:max-w-none lg:translate-x-0 flex flex-col`}
         aria-label="Sidebar navigation"
       >
         {/* Mobile close button */}
@@ -245,6 +257,18 @@ const AdminSidebar = ({
             );
           })}
         </nav>
+
+        {/* Logout Section */}
+        <div className="flex items-start justify-between mt-auto">
+          <div>
+            <p className="text-white text-sm">{displayName}</p>
+            <p className="text-white text-sm">{displayEmail}</p>
+          </div>
+
+          <button onClick={handleLogout} className="cursor-pointer text-white">
+            <LogOut className="w-5 h-5" />
+          </button>
+        </div>
       </aside>
     </>
   );
