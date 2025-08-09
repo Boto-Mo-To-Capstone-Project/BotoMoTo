@@ -7,11 +7,13 @@ import Table from "@/components/TableComponent";
 
 export default function SuperAdminAuditsPage() {
   const [rows, setRows] = useState<Record<string, any>[]>([]);
+  const [rawDetails, setRawDetails] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [detailsOpen, setDetailsOpen] = useState<boolean>(false);
   const [detailsData, setDetailsData] = useState<any>(null);
 
-  const openDetails = (data: any) => {
+  const openDetails = (index: number) => {
+    const data = rawDetails[index];
     setDetailsData(data);
     setDetailsOpen(true);
   };
@@ -30,6 +32,7 @@ export default function SuperAdminAuditsPage() {
 
         const mapped = audits.map((a: any) => ({
           Audit_ID: a.id,
+          Actor_ID: a.actorId || "—",
           Actor_Role: a.actorRole || "—",
           Action: a.action || "—",
           IP_Address: a.ipAddress || "—",
@@ -37,19 +40,12 @@ export default function SuperAdminAuditsPage() {
           Resource: a.resource || "—",
           Resource_ID: a.resourceId || "—",
           Time_Stamp: a.timestamp ? new Date(a.timestamp).toLocaleString() : "—",
-          Details: a.details ? (
-            <button
-              onClick={() => openDetails(a.details)}
-              className="text-blue-600 underline hover:text-blue-800"
-            >
-              View
-            </button>
-          ) : (
-            "—"
-          ),
         }));
 
-        if (isMounted) setRows(mapped);
+        if (isMounted) {
+          setRows(mapped);
+          setRawDetails(audits.map((a: any) => ({ ...a.details, actorName: a.actorName, actorEmail: a.actorEmail })));
+        }
       } catch (err) {
         console.error(err);
         toast.error("Failed to load audits");
@@ -81,6 +77,7 @@ export default function SuperAdminAuditsPage() {
                 title="All Audits"
                 columns={[
                   "Audit_ID",
+                  "Actor_ID",
                   "Actor_Role",
                   "Action",
                   "IP_Address",
@@ -88,10 +85,13 @@ export default function SuperAdminAuditsPage() {
                   "Resource",
                   "Resource_ID",
                   "Time_Stamp",
-                  "Details",
                 ]}
                 data={rows}
                 pageSize={5}
+                onRowClick={(row) => {
+                  const idx = rows.findIndex((r) => r.Audit_ID === row.Audit_ID);
+                  if (idx >= 0) openDetails(idx);
+                }}
               />
             )}
           </div>

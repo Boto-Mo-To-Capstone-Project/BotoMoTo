@@ -12,6 +12,7 @@ type TableProps = {
   showActions?: boolean; // if table has actions
   onApprove?: (row: Record<string, any>) => void;
   onReject?: (row: Record<string, any>) => void;
+  onRowClick?: (row: Record<string, any>) => void; // NEW: row click handler
 };
 
 type SortDirection = "asc" | "desc";
@@ -24,6 +25,7 @@ export default function Table({
   showActions,
   onApprove,
   onReject,
+  onRowClick,
 }: TableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -134,6 +136,7 @@ export default function Table({
                   type="checkbox"
                   checked={isAllSelected}
                   onChange={toggleSelectAll}
+                  onClick={(e) => e.stopPropagation()}
                 />
               </th>
               {columns.map((col) => (
@@ -159,12 +162,22 @@ export default function Table({
             {paginatedData.map((row, idx) => {
               const globalIndex = (currentPage - 1) * pageSize + idx;
               return (
-                <tr key={globalIndex} className="hover:bg-gray-50">
-                  <td className="p-3 border-b text-center">
+                <tr
+                  key={globalIndex}
+                  className={`hover:bg-gray-50${
+                    onRowClick ? " cursor-pointer" : ""
+                  }`}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                >
+                  <td
+                    className="p-3 border-b text-center"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <input
                       type="checkbox"
                       checked={selectedRows.has(globalIndex)}
                       onChange={() => toggleSelectRow(globalIndex)}
+                      onClick={(e) => e.stopPropagation()}
                     />
                   </td>
                   {columns.map((col) => (
@@ -173,16 +186,25 @@ export default function Table({
                     </td>
                   ))}
                   {showActions && (
-                    <td className="p-3 border-b space-x-2 flex justify-center">
+                    <td
+                      className="p-3 border-b space-x-2 flex justify-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <button
-                        onClick={() => onApprove?.(row)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onApprove?.(row);
+                        }}
                         className="p-2 bg-green-900 text-white rounded hover:bg-green-700"
                         title="Approve"
                       >
                         <MdCheckCircleOutline size={20} />
                       </button>
                       <button
-                        onClick={() => onReject?.(row)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onReject?.(row);
+                        }}
                         className="p-2 bg-red-900 text-white rounded hover:bg-red-700"
                         title="Reject"
                       >
