@@ -1,6 +1,6 @@
 "use client";
 
-  import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 
 import Table from "@/components/TableComponent";
@@ -8,6 +8,13 @@ import Table from "@/components/TableComponent";
 export default function SuperAdminAuditsPage() {
   const [rows, setRows] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [detailsOpen, setDetailsOpen] = useState<boolean>(false);
+  const [detailsData, setDetailsData] = useState<any>(null);
+
+  const openDetails = (data: any) => {
+    setDetailsData(data);
+    setDetailsOpen(true);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -23,11 +30,23 @@ export default function SuperAdminAuditsPage() {
 
         const mapped = audits.map((a: any) => ({
           Audit_ID: a.id,
-          Actor_Role: a.actorRole,
-          Action: a.action,
-          IP_Address: a.ipAddress,
-          User_Agent: a.userAgent,
+          Actor_Role: a.actorRole || "—",
+          Action: a.action || "—",
+          IP_Address: a.ipAddress || "—",
+          User_Agent: a.userAgent || "—",
+          Resource: a.resource || "—",
+          Resource_ID: a.resourceId || "—",
           Time_Stamp: a.timestamp ? new Date(a.timestamp).toLocaleString() : "—",
+          Details: a.details ? (
+            <button
+              onClick={() => openDetails(a.details)}
+              className="text-blue-600 underline hover:text-blue-800"
+            >
+              View
+            </button>
+          ) : (
+            "—"
+          ),
         }));
 
         if (isMounted) setRows(mapped);
@@ -60,7 +79,17 @@ export default function SuperAdminAuditsPage() {
             ) : (
               <Table
                 title="All Audits"
-                columns={["Audit_ID", "Actor_Role", "Action", "IP_Address", "User_Agent", "Time_Stamp"]}
+                columns={[
+                  "Audit_ID",
+                  "Actor_Role",
+                  "Action",
+                  "IP_Address",
+                  "User_Agent",
+                  "Resource",
+                  "Resource_ID",
+                  "Time_Stamp",
+                  "Details",
+                ]}
                 data={rows}
                 pageSize={5}
               />
@@ -68,6 +97,36 @@ export default function SuperAdminAuditsPage() {
           </div>
         </div>
       </div>
+
+      {detailsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white w-full max-w-3xl rounded-lg shadow-lg">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="font-semibold">Audit Details</h3>
+              <button
+                onClick={() => setDetailsOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+                aria-label="Close details"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4 max-h-[70vh] overflow-auto">
+              <pre className="text-sm whitespace-pre-wrap">
+                {JSON.stringify(detailsData, null, 2)}
+              </pre>
+            </div>
+            <div className="p-4 border-t text-right">
+              <button
+                onClick={() => setDetailsOpen(false)}
+                className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
