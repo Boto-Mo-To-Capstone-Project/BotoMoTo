@@ -4,7 +4,6 @@ import { apiResponse } from "@/lib/apiResponse";
 import { requireAuth } from "@/lib/helpers/requireAuth";
 import { ROLES } from "@/lib/constants";
 import { withPerformanceLogging } from "@/lib/performance/middleware";
-import { createAuditLog } from "@/lib/audit";
 
 // GET /api/audits - Superadmin only
 async function getAudits(request: NextRequest) {
@@ -18,19 +17,10 @@ async function getAudits(request: NextRequest) {
       orderBy: { timestamp: "desc" },
     });
 
-    // Log this read operation (use USER as resource enum since AUDIT isn't defined)
-    const audit = await createAuditLog({
-      user,
-      action: "READ",
-      request,
-      resource: "USER",
-      message: "Viewed audits (superadmin)",
-    });
-
     return apiResponse({
       success: true,
       message: "Audits fetched successfully",
-      data: { audits, totalCount: audits.length, audit },
+      data: { audits, totalCount: audits.length },
       status: 200,
     });
   } catch (error) {
