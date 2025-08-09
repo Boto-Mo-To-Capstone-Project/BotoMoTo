@@ -15,6 +15,8 @@ import {
   BadgeAlert,
   ChevronDown,
   ChevronUp,
+  Settings,
+  Wrench,
 } from "lucide-react";
 
 type AdminSidebarProps = {
@@ -34,7 +36,8 @@ const AdminSidebar = ({
   const [showSetup, setShowSetup] = useState(false);
   const [showManage, setShowManage] = useState(false);
 
-  const defaultLinks = [
+  // Split links into two groups
+  const beforeElectionLinks = [
     { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
     {
       name: "All Elections",
@@ -46,29 +49,23 @@ const AdminSidebar = ({
       href: "/admin/dashboard/elections/create",
       icon: PlusCircle,
     },
+  ];
+
+  const afterElectionLinks = [
     {
       name: "Tickets",
       href: "/admin/dashboard/elections/tickets",
       icon: BadgeAlert,
     },
-    {
-      name: "Profile",
-      href: "/admin/dashboard/elections/profile",
-      icon: User,
-    },
+    { name: "Profile", href: "/admin/dashboard/elections/profile", icon: User },
   ];
 
-  const setupLinks = [
-    "Overview",
-    "Scope",
-    "Parties",
-    "Voters",
-    "Positions",
-    "Candidates",
-  ].map((sub) => ({
-    name: sub,
-    href: `/admin/dashboard/elections/${electionId}/setup/${sub.toLowerCase()}`,
-  }));
+  const setupLinks = ["Overview", "Voters", "Positions", "Candidates"].map(
+    (sub) => ({
+      name: sub,
+      href: `/admin/dashboard/elections/${electionId}/setup/${sub.toLowerCase()}`,
+    })
+  );
 
   const manageLinks = [
     "Overview",
@@ -118,7 +115,7 @@ const AdminSidebar = ({
 
         {/* Links */}
         <nav className="space-y-2">
-          {defaultLinks.map((link) => {
+          {beforeElectionLinks.map((link) => {
             const Icon = link.icon;
             const isActive = pathname === link.href;
             return (
@@ -141,12 +138,19 @@ const AdminSidebar = ({
           {variant === "selectedElection" && electionId && (
             <>
               {/* Setup Dropdown */}
-              <div className="mt-6">
+              <div className="">
                 <button
                   onClick={() => setShowSetup(!showSetup)}
-                  className="flex justify-between items-center w-full sidebar-items text-white uppercase"
+                  className={`flex items-center justify-between w-full p-2 rounded sidebar-items ${
+                    showSetup
+                      ? "bg-white text-primary"
+                      : "text-white hover:font-semibold"
+                  }`}
                 >
-                  Setup Election
+                  <div className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    <span>Setup Election</span>
+                  </div>
                   {showSetup ? (
                     <ChevronUp className="w-4 h-4" />
                   ) : (
@@ -177,12 +181,19 @@ const AdminSidebar = ({
               </div>
 
               {/* Manage Dropdown */}
-              <div className="mt-4">
+              <div className="">
                 <button
                   onClick={() => setShowManage(!showManage)}
-                  className="flex justify-between items-center w-full sidebar-items text-white uppercase"
+                  className={`flex items-center justify-between w-full p-2 rounded sidebar-items ${
+                    showManage
+                      ? "bg-white text-primary"
+                      : "text-white hover:font-semibold"
+                  }`}
                 >
-                  Manage Election
+                  <div className="flex items-center gap-2">
+                    <Wrench className="h-5 w-5" />
+                    <span>Manage Election</span>
+                  </div>
                   {showManage ? (
                     <ChevronUp className="w-4 h-4" />
                   ) : (
@@ -213,6 +224,26 @@ const AdminSidebar = ({
               </div>
             </>
           )}
+
+          {afterElectionLinks.map((link) => {
+            const Icon = link.icon;
+            const isActive = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`flex items-center gap-2 sidebar-items p-2 rounded ${
+                  isActive
+                    ? "bg-white text-primary"
+                    : "hover:font-semibold text-white"
+                }`}
+                onClick={onClose}
+              >
+                <Icon className="h-5 w-5" />
+                <span>{link.name}</span>
+              </Link>
+            );
+          })}
         </nav>
       </aside>
     </>
