@@ -28,49 +28,53 @@ export function PartyModal({
 
   if (!open) return null;
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-sm"
-      onClick={e => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-[95vw] sm:max-w-md md:max-w-lg lg:max-w-xl relative px-4 sm:px-6 pt-8 pb-8 mx-2 sm:mx-4 text-center space-y-6 border border-gray-200 max-h-[90vh] overflow-visible break-words">
-        <button
-          className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
-          onClick={onClose}
-        >
-          &times;
-        </button>
-        <AuthHeading title="Party Form" subtitle="Register and manage political parties or groups to which candidates may belong." />
-        <form
-          onSubmit={e => {
-            e.preventDefault();
-            onSave({ partyName, selectedColor });
-            onClose();
-          }}
-          className="flex flex-col gap-4 text-left w-full"
-        >
-          <div className="mb-4">
-            <InputField
-              label="Party"
-              type="text"
-              value={partyName}
-              onChange={e => setPartyName(e.target.value)}
-              placeholder="Enter Party (e.g., Mabait)"
-              style={{ color: selectedColor }}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Pick the color that represents your party
-            </label>
-            <p
-              className="text-sm text-gray-500 mb-4"
-              style={{ color: selectedColor }}
+    <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/30 backdrop-blur-sm">
+      <div className="relative max-w-4xl max-h-screen p-10 flex flex-col justify-center w-full">
+        <div className="bg-white rounded-lg shadow-sm overflow-y-auto max-h-[80vh] w-full">
+          {/* Modal header */}
+          <div className="flex items-center justify-between p-4 border-b rounded-t border-gray-200">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Party Form</h3>
+            </div>
+            <button
+              type="button"
+              className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center"
+              onClick={onClose}
             >
-              (Example: Mabait)
+              <svg className="w-3 h-3" aria-hidden="true" fill="none" viewBox="0 0 14 14">
+                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+              </svg>
+              <span className="sr-only">Close modal</span>
+            </button>
+          </div>
+          {/* Modal body */}
+          <div className="p-4">
+            <p className="text-sm text-gray-500 mb-4">
+              Create a party/group and assign a color to which candidates may belong.
             </p>
-            <div className="flex items-start gap-6">
+          <form
+            onSubmit={e => {
+              e.preventDefault();
+              onSave({ partyName, selectedColor });
+              onClose();
+            }}
+            className="grid gap-4 mb-4 grid-cols-2"
+          >
+            <div className="col-span-2">
+              <InputField
+                label="Party Name*"
+                type="text"
+                value={partyName}
+                onChange={e => setPartyName(e.target.value)}
+                placeholder="Enter Party (e.g., Mabait)"
+                style={{ color: selectedColor }}
+                required
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Pick the color that represents your party
+              </label>
               {/* Left: Color controls */}
               <div>
                 <div className="flex items-center gap-4 mb-2">
@@ -113,16 +117,23 @@ export function PartyModal({
                 </div>
               )}
             </div>
+            <div className="col-span-2 flex justify-end gap-2 mt-2">
+              <SubmitButton
+                type="button"
+                variant="action"
+                onClick={onClose}
+                label="Cancel"
+              />
+              <SubmitButton
+                type="submit"
+                variant="small"
+                label="Add"
+                className="px-5 py-2.5 text-sm font-medium rounded-lg"
+              />
+            </div>
+          </form>
           </div>
-          <div className="flex justify-end gap-2 mt-2">
-            <SubmitButton label="Cancel" variant="small-action" type="button" onClick={onClose} />
-            <SubmitButton
-              label="Add"
-              variant="small"
-              type="submit"
-            />
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );

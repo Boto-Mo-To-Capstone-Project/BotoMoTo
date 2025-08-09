@@ -1,21 +1,25 @@
-import { MdFirstPage, MdLastPage, MdChevronLeft, MdChevronRight } from 'react-icons/md';
+import React from "react";
 import { FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+import {
+  MdFirstPage,
+  MdLastPage,
+  MdChevronLeft,
+  MdChevronRight
+} from "react-icons/md";
 
-interface Voter {
+interface Position {
   id: number;
-  name: string;
-  status: string;
-  scope: string;
-  email: string;
-  contactNumber: string;
-  birthdate: string;
+  position: string;
+  voterLimit: number;
+  numberOfWinners: number;
+  scopeName: string;
 }
 
-interface VoterTableProps {
-  voters: Voter[];
-  sortCol: 'name' | 'status' | 'scope' | 'email' | 'contactNumber' | 'birthdate' | null;
+interface PositionsTableProps {
+  positions: Position[];
+  sortCol: 'position' | 'voterLimit' | 'numberOfWinners' | 'scopeName' | null;
   sortDir: 'asc' | 'desc';
-  onSort: (col: 'name' | 'status' | 'scope' | 'email' | 'contactNumber' | 'birthdate') => void;
+  onSort: (col: 'position' | 'voterLimit' | 'numberOfWinners' | 'scopeName') => void;
   page: number;
   totalPages: number;
   onFirst: () => void;
@@ -24,30 +28,27 @@ interface VoterTableProps {
   onLast: () => void;
   pageSize: number;
   onPageSizeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  onRowClick?: (voter: Voter) => void;
+  onRowClick?: (position: Position) => void;
   title?: string;
   selectedIds?: number[];
   onCheckboxChange?: (id: number) => void;
 }
 
-export default function VoterTable({
-  title = 'All Voters',
+export default function PositionsTable({
+  title = 'All Positions',
   selectedIds = [],
   onCheckboxChange,
   ...props
-}: VoterTableProps) {
-  // Helper for header checkbox
-  const allChecked = props.voters.length > 0 && props.voters.every(v => selectedIds.includes(v.id));
-  const someChecked = props.voters.some(v => selectedIds.includes(v.id));
+}: PositionsTableProps) {
+  const allChecked = props.positions.length > 0 && props.positions.every(p => selectedIds.includes(p.id));
+  const someChecked = props.positions.some(p => selectedIds.includes(p.id));
 
   const handleHeaderCheckbox = () => {
     if (allChecked) {
-      // Uncheck all
-      props.voters.forEach(v => onCheckboxChange && onCheckboxChange(v.id));
+      props.positions.forEach(p => onCheckboxChange && onCheckboxChange(p.id));
     } else {
-      // Check all
-      props.voters.forEach(v => {
-        if (!selectedIds.includes(v.id)) onCheckboxChange && onCheckboxChange(v.id);
+      props.positions.forEach(p => {
+        if (!selectedIds.includes(p.id)) onCheckboxChange && onCheckboxChange(p.id);
       });
     }
   };
@@ -69,10 +70,10 @@ export default function VoterTable({
               </th>
               <th
                 className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
-                onClick={() => props.onSort("name")}
+                onClick={() => props.onSort("position")}
               >
-                Name{" "}
-                {props.sortCol === "name" ? (
+                Position{" "}
+                {props.sortCol === "position" ? (
                   props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
                 ) : (
                   <FaSort className="inline opacity-50" />
@@ -80,10 +81,10 @@ export default function VoterTable({
               </th>
               <th
                 className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
-                onClick={() => props.onSort("status")}
+                onClick={() => props.onSort("voterLimit")}
               >
-                Status{" "}
-                {props.sortCol === "status" ? (
+                Voter Limit{" "}
+                {props.sortCol === "voterLimit" ? (
                   props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
                 ) : (
                   <FaSort className="inline opacity-50" />
@@ -91,10 +92,10 @@ export default function VoterTable({
               </th>
               <th
                 className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
-                onClick={() => props.onSort("scope")}
+                onClick={() => props.onSort("numberOfWinners")}
               >
-                Scope{" "}
-                {props.sortCol === "scope" ? (
+                Number of Winners{" "}
+                {props.sortCol === "numberOfWinners" ? (
                   props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
                 ) : (
                   <FaSort className="inline opacity-50" />
@@ -102,21 +103,10 @@ export default function VoterTable({
               </th>
               <th
                 className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
-                onClick={() => props.onSort("email")}
+                onClick={() => props.onSort("scopeName")}
               >
-                Email address{" "}
-                {props.sortCol === "email" ? (
-                  props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
-                ) : (
-                  <FaSort className="inline opacity-50" />
-                )}
-              </th>
-              <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
-                onClick={() => props.onSort("contactNumber")}
-              >
-                Contact Number{" "}
-                {props.sortCol === "contactNumber" ? (
+                Scope Name{" "}
+                {props.sortCol === "scopeName" ? (
                   props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
                 ) : (
                   <FaSort className="inline opacity-50" />
@@ -125,56 +115,56 @@ export default function VoterTable({
             </tr>
           </thead>
           <tbody>
-            {props.voters.length === 0 ? (
+            {props.positions.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-4 text-center text-gray-400">
-                  No voters found.
+                <td colSpan={5} className="px-4 py-4 text-center text-gray-400">
+                  No positions found.
                 </td>
               </tr>
             ) : (
-              props.voters.map((voter, idx) => (
+              props.positions.map((position, idx) => (
                 <tr
-                  key={voter.id + '-' + idx}
+                  key={position.id + '-' + idx}
                   className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
                   onClick={e => {
                     if ((e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
-                    onCheckboxChange && onCheckboxChange(voter.id);
-                    props.onRowClick && props.onRowClick(voter);
+                    onCheckboxChange && onCheckboxChange(position.id);
+                    props.onRowClick && props.onRowClick(position);
                   }}
                 >
                   <td className="py-2 px-3 align-middle">
                     <input
                       type="checkbox"
-                      checked={selectedIds.includes(voter.id)}
-                      onChange={() => onCheckboxChange && onCheckboxChange(voter.id)}
+                      checked={selectedIds.includes(position.id)}
+                      onChange={() => onCheckboxChange && onCheckboxChange(position.id)}
                     />
                   </td>
-                  <td className="py-2 px-3 align-middle truncate max-w-[150px]">{voter.name}</td>
-                  <td className="py-2 px-3 align-middle">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                        {voter.status}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="py-2 px-3 align-middle truncate max-w-[120px]">{voter.scope}</td>
-                  <td className="py-2 px-3 align-middle truncate max-w-[180px]">{voter.email}</td>
-                  <td className="py-2 px-3 align-middle truncate max-w-[140px]">{voter.contactNumber}</td>
+                  <td className="py-2 px-3 align-middle truncate max-w-[150px]">{position.position}</td>
+                  <td className="py-2 px-3 align-middle">{position.voterLimit}</td>
+                  <td className="py-2 px-3 align-middle">{position.numberOfWinners}</td>
+                  <td className="py-2 px-3 align-middle truncate max-w-[180px]">{position.scopeName}</td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
       </div>
-      {/* Pagination - moved outside the scrollable table wrapper */}
+      {/* Pagination */}
       <div className="flex items-center gap-2 mt-4 w-full relative xxs:flex-wrap">
-        <button onClick={props.onFirst} disabled={props.page === 1} title="First"><MdFirstPage size={22} /></button>
-        <button onClick={props.onPrev} disabled={props.page === 1} title="Prev"><MdChevronLeft size={22} /></button>
+        <button onClick={props.onFirst} disabled={props.page === 1} title="First">
+          <MdFirstPage size={22} />
+        </button>
+        <button onClick={props.onPrev} disabled={props.page === 1} title="Prev">
+          <MdChevronLeft size={22} />
+        </button>
         <span>{props.page}</span>
         <span>of {props.totalPages}</span>
-        <button onClick={props.onNext} disabled={props.page === props.totalPages} title="Next"><MdChevronRight size={22} /></button>
-        <button onClick={props.onLast} disabled={props.page === props.totalPages} title="Last"><MdLastPage size={22} /></button>
+        <button onClick={props.onNext} disabled={props.page === props.totalPages} title="Next">
+          <MdChevronRight size={22} />
+        </button>
+        <button onClick={props.onLast} disabled={props.page === props.totalPages} title="Last">
+          <MdLastPage size={22} />
+        </button>
         <span className="text-sm text-gray-500 flex items-center gap-1 sm:ml-auto xxs:w-full xxs:mt-1">
           Page Size:
           <select
