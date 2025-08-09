@@ -13,7 +13,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string; type: string; filename: string }> }
 ) {
   try {
-    const authResult = await requireAuth([ROLES.ADMIN]);
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
     if (!authResult.authorized) return authResult.response;
     const user = authResult.user;
 
