@@ -134,25 +134,28 @@ export default function SuperAdminOrgRequestPage() {
         <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
           {/* Table */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-3">
-            {/* Organization Requests (Pending) */}
-            <Table
-              title="Organization Requests"
-              columns={columns}
-              data={orgRequests}
-              showActions={true}
-              onApprove={handleApprove}
-              onReject={handleReject}
-              pageSize={5}
-            />
-            {/* All Organizations */}
-            <Table
-              title="All Organizations"
-              columns={columns}
-              data={allOrgs}
-              pageSize={5}
-            />
-            {loading && (
-              <div className="mt-2 text-sm text-gray-500">Loading organizations...</div>
+            {loading && orgRequests.length === 0 && allOrgs.length === 0 ? (
+              <div className="w-full p-4 text-center text-gray-500">Loading organizations…</div>
+            ) : (
+              <>
+                {/* Organization Requests (Pending) */}
+                <Table
+                  title="Organization Requests"
+                  columns={columns}
+                  data={orgRequests}
+                  showActions={true}
+                  onApprove={handleApprove}
+                  onReject={handleReject}
+                  pageSize={5}
+                />
+                {/* All Organizations */}
+                <Table
+                  title="All Organizations"
+                  columns={columns}
+                  data={allOrgs}
+                  pageSize={5}
+                />
+              </>
             )}
           </div>
         </div>
