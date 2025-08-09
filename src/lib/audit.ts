@@ -33,6 +33,8 @@ export async function createAuditLog({
     operation: action,
     actor: {
       id: user.id,
+      name: user.name,
+      email: user.email,
       role: user.role,
     },
     resource: {
