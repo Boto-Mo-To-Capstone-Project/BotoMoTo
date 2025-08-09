@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { SubmitButton } from "@/components/SubmitButton";
 import SearchBar from '@/components/SearchBar';
 import { MdAdd, MdDownload, MdFilterList, MdDelete, MdEdit, MdSave } from "react-icons/md";
-import { ElectionForm } from "@/components/ElectionForm";
+import { ElectionForm, ElectionFormHandle } from "@/components/ElectionForm";
 import { ScopeTab } from "@/components/ScopeTab";
 import { PartyTab } from "@/components/PartyTab"; // Use PartyTab instead of PartyTable/PartyModal
 
@@ -56,25 +56,42 @@ export default function CreateElectionPage() {
   const [scopeSelectedIds, setScopeSelectedIds] = useState<number[]>([]);
   const [partySelectedIds, setPartySelectedIds] = useState<number[]>([]);
 
+  const electionFormRef = useRef<ElectionFormHandle>(null);
+
   const tabOptions = [
     { label: "Election", value: "election", disabled: false },
     { label: "Scope", value: "scope", disabled: false },
     { label: "Party", value: "party", disabled: false },
   ];
 
+  // Save handler for top Save button
+  const handleSaveElection = () => {
+    electionFormRef.current?.submitForm();
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case "election":
         return (
-          <ElectionForm
-            electionData={electionData}
-            setElectionData={setElectionData}
-            addParty={addParty}
-            setAddParty={setAddParty} scopeType={""} setScopeType={function (v: string): void {
-              throw new Error("Function not implemented.");
-            } } updateScopeTypeInTable={function (v: string): void {
-              throw new Error("Function not implemented.");
-            } }          />
+          <div className="flex justify-center">
+            <div className="w-full max-w-7xl bg-white rounded-2xl shadow-lg border border-gray-200 p-4">
+              <ElectionForm
+                ref={electionFormRef}
+                electionData={electionData}
+                setElectionData={setElectionData}
+                addParty={addParty}
+                setAddParty={setAddParty}
+                scopeType={""}
+                setScopeType={function (v: string): void {
+                  throw new Error("Function not implemented.");
+                }}
+                updateScopeTypeInTable={function (v: string): void {
+                  throw new Error("Function not implemented.");
+                }}
+                hideSaveButton
+              />
+            </div>
+          </div>
         );
       case "scope":
         return (
@@ -146,32 +163,10 @@ export default function CreateElectionPage() {
               <SubmitButton
                 label="Save"
                 variant="action-primary"
-                icon={
-                  <MdSave
-                    size={20}
-                    className={
-                      // Replace this with your form validation logic
-                      false // <-- set to true if form is valid
-                        ? "text-[var(--color-primary)]"
-                        : "text-gray-400"
-                    }
-                  />
-                }
+                icon={<MdSave size={20} className="text-[var(--color-primary)]" />}
                 title="Save"
-                onClick={
-                  // Replace this with your form validation logic
-                  false // <-- set to true if form is valid
-                    ? () => {
-                        // TODO: handle election save
-                      }
-                    : undefined
-                }
-                className={
-                  // Replace this with your form validation logic
-                  false // <-- set to true if form is valid
-                    ? "min-w-[100px]"
-                    : "border-2 border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none min-w-[100px]"
-                }
+                onClick={handleSaveElection} // <-- This triggers the form's submit
+                className="min-w-[100px]"
               />
             </div>
           )}
@@ -419,7 +414,7 @@ export default function CreateElectionPage() {
           <>
             <h2 className="text-lg font-semibold mb-4 px-2 sm:px-5">Election form</h2>
             <p className="text-gray-600 mb-4 px-2 sm:px-5">
-              Keep track of, manage, and register elections — use this form to register a new one.
+              Fill out the necessary fields to create a new election for your organization.
             </p>
           </>
         )}
