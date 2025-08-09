@@ -58,6 +58,40 @@ export default function SidebarWrapper({
     if (pathname === "/admin/dashboard/elections/profile")
       return "Admin Profile";
 
+    // === ADMIN: SETUP ELECTION ===
+    // matches: /admin/dashboard/elections/[id]/setup/[section]
+    if (
+      parts[0] === "" &&
+      parts[1] === "admin" &&
+      parts[2] === "dashboard" &&
+      parts[3] === "elections" &&
+      parts[5] === "setup" &&
+      parts.length >= 7
+    ) {
+      const electionId = parts[4];
+      const section = parts[6]
+        ?.replace(/-/g, " ") // replace hyphens with spaces
+        .replace(/\b\w/g, (l) => l.toUpperCase()); // capitalize each word
+      return `Election ${electionId} - Setup ${section}`;
+    }
+
+    // === ADMIN: MANAGE ELECTION ===
+    // matches: /admin/dashboard/elections/[id]/manage/[section]
+    if (
+      parts[0] === "" &&
+      parts[1] === "admin" &&
+      parts[2] === "dashboard" &&
+      parts[3] === "elections" &&
+      parts[5] === "manage" &&
+      parts.length >= 7
+    ) {
+      const electionId = parts[4];
+      const section = parts[6]
+        ?.replace(/-/g, " ")
+        .replace(/\b\w/g, (l) => l.toUpperCase());
+      return `Election ${electionId} - Manage ${section}`;
+    }
+
     if (pathname === "/superadmin/dashboard") return "Super Admin Dashboard";
     if (pathname === "/superadmin/dashboard/organization-requests")
       return "Super Admin Organization Requests";
