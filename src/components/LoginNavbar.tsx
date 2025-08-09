@@ -12,6 +12,7 @@ import NavLink, { NavButton } from "@/components/NavLink";
 import Button from "@/components/Button";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { useLogout } from "@/hooks/useLogout";
 
 type LoginNavbarProps = {
   buttons?: "auth" | "logout" | null;
@@ -26,30 +27,16 @@ const LoginNavbar: React.FC<LoginNavbarProps> = ({ buttons }) => {
 
   const router = useRouter(); // to go to another route
 
-  const handleLogout = async () => {
-    try {
-      // console.log("Logging out...");
-      // const res = await fetch('/api/auth/logout', { method: 'POST' });
-      // const data = await res.json();
-      // console.log('Logout API response:', data);
-      // router.push('/auth/login');
-
-      console.log("Logging out...");
-      await signOut({ callbackUrl: "/" });
-      console.log('Redirected to homepage');
-    } catch (err) {
-      console.error('Logout error:', err);
-    }
-  };
+  const handleLogout = useLogout();
 
   return (
     <nav className="fixed top-0 left-0 w-full h-20 bg-white flex justify-between items-center shadow-sm px-4 md:px-15 z-3">
       <div className="flex gap-10 items-center">
         {/* Logo */}
         <Link href="/">
-        <div className="">
-          <Image src={BotoMoToLogo} height={50} alt="BotoMoToLogo" />
-        </div>
+          <div className="">
+            <Image src={BotoMoToLogo} height={50} alt="BotoMoToLogo" />
+          </div>
         </Link>
         {/* Desktop Menu */}
         <div>
@@ -126,7 +113,9 @@ const LoginNavbar: React.FC<LoginNavbarProps> = ({ buttons }) => {
             {buttons === "logout" && (
               <>
                 <li>
-                  <NavButton onClick={handleLogout} href="/">Logout</NavButton>
+                  <NavButton onClick={handleLogout} href="/">
+                    Logout
+                  </NavButton>
                 </li>
               </>
             )}
