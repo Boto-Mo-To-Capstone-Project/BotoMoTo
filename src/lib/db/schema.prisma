@@ -59,7 +59,6 @@ enum OrganizationStatus {
   PENDING
   APPROVED
   REJECTED
-  SUSPENDED
 }
 
 // Election status enum
