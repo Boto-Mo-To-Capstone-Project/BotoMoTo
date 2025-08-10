@@ -9,46 +9,76 @@ import type { FormSchema } from "@/types/survey";
 export default function SuperAdminCreateSurveyPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [lastSchema, setLastSchema] = useState<FormSchema | null>(null);
+  // Track created survey id to prevent creating duplicates on subsequent saves
+  const [surveyId, setSurveyId] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const saveDraft = async (schema: FormSchema) => {
+    if (saving) return; // prevent double clicks
+    setSaving(true);
     try {
-      const res = await fetch("/api/superadmin/surveys", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: schema.title,
-          description: schema.description ?? "",
-          formSchema: schema,
-          isActive: false,
-        }),
-      });
+      const payload = {
+        title: schema.title,
+        description: schema.description ?? "",
+        formSchema: schema,
+        isActive: false,
+      };
+
+      const res = await fetch(
+        surveyId ? `/api/superadmin/surveys/${surveyId}` : "/api/superadmin/surveys",
+        {
+          method: surveyId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed to save draft");
+
+      // Capture id on first create; keep using it for updates
+      const idFromResponse = data?.data?.survey?.id;
+      if (idFromResponse && !surveyId) setSurveyId(idFromResponse);
+
       setLastSchema(schema);
-      toast.success("Draft saved");
+      toast.success(surveyId ? "Draft updated" : "Draft saved");
     } catch (err: any) {
       toast.error(err?.message || "Failed to save draft");
+    } finally {
+      setSaving(false);
     }
   };
 
   const publish = async (schema: FormSchema) => {
+    if (saving) return; // prevent double clicks
+    setSaving(true);
     try {
-      const res = await fetch("/api/superadmin/surveys", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: schema.title,
-          description: schema.description ?? "",
-          formSchema: schema,
-          isActive: true,
-        }),
-      });
+      const payload = {
+        title: schema.title,
+        description: schema.description ?? "",
+        formSchema: schema,
+        isActive: true,
+      };
+
+      const res = await fetch(
+        surveyId ? `/api/superadmin/surveys/${surveyId}` : "/api/superadmin/surveys",
+        {
+          method: surveyId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message || "Failed to publish");
+
+      const idFromResponse = data?.data?.survey?.id;
+      if (idFromResponse && !surveyId) setSurveyId(idFromResponse);
+
       setLastSchema(schema);
       toast.success("Survey published");
     } catch (err: any) {
       toast.error(err?.message || "Failed to publish");
+    } finally {
+      setSaving(false);
     }
   };
 
