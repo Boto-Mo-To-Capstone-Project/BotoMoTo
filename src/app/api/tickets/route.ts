@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from "@/lib/auth";
 import db from "@/lib/db/db";
-import { validateWithZod } from "@/lib/validateWithZod";
 import { requireAuth } from "@/lib/helpers/requireAuth";
 import { createAuditLog } from '@/lib/audit';
 import { apiResponse } from '@/lib/apiResponse';
-import { ROLES, TICKET_STATUS } from "@/lib/constants";
-import prisma from '@/lib/db/db';
+import { ROLES } from "@/lib/constants";
 
 // GET /api/tickets - superadmin only: list all tickets
 export async function GET(req: NextRequest) {
