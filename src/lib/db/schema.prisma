@@ -221,7 +221,6 @@ model Election {
   parties      Party[]
   candidates   Candidate[]
   voteResponses VoteResponse[]
-  surveyForm   SurveyForm?
   broadcasts   Broadcast[]
 }
 
@@ -403,7 +402,6 @@ model VoteResponse {
 
 model SurveyForm {
   id          Int       @id @default(autoincrement())
-  electionId  Int       @unique
   title       String
   description String
   formSchema  Json
@@ -414,7 +412,6 @@ model SurveyForm {
   deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
 
-  election        Election         @relation(fields: [electionId], references: [id])
   surveyResponses SurveyResponse[]
 }
 
