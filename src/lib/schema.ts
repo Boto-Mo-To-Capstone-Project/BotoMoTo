@@ -302,6 +302,21 @@ const candidateUpdateSchema = z.object({
   educations: z.array(candidateEducationSchema).optional()
 });
 
+// Survey Form Creation Schema
+const surveyFormCreateSchema = z.object({
+  title: field.string("Survey title", { min: 1, max: 200 }),
+  description: field.string("Survey description", { required: false, max: 1000 }).default(""),
+  formSchema: z.any(), // Store full builder schema as JSON
+  isActive: z.boolean().default(false), // false = draft, true = published
+});
+
+const surveyFormUpdateSchema = z.object({
+  title: field.string("Survey title", { required: false, min: 1, max: 200 }),
+  description: field.string("Survey description", { required: false, max: 1000 }),
+  formSchema: z.any().optional(),
+  isActive: z.boolean().optional(),
+});
+
 // Types
 type LoginSchema = z.infer<typeof loginSchema>;
 type SignupSchema = z.infer<typeof signupSchema>;
@@ -321,6 +336,8 @@ type CandidateUpdateSchema = z.infer<typeof candidateUpdateSchema>;
 type CandidateLeadershipSchema = z.infer<typeof candidateLeadershipSchema>;
 type CandidateWorkExperienceSchema = z.infer<typeof candidateWorkExperienceSchema>;
 type CandidateEducationSchema = z.infer<typeof candidateEducationSchema>;
+type SurveyFormCreateSchema = z.infer<typeof surveyFormCreateSchema>;
+type SurveyFormUpdateSchema = z.infer<typeof surveyFormUpdateSchema>;
 
 export {
   field,
@@ -342,6 +359,8 @@ export {
   candidateLeadershipSchema,
   candidateWorkExperienceSchema,
   candidateEducationSchema,
+  surveyFormCreateSchema,
+  surveyFormUpdateSchema,
   type LoginSchema,
   type SignupSchema,
   type OrganizationSchema,
@@ -359,5 +378,7 @@ export {
   type CandidateUpdateSchema,
   type CandidateLeadershipSchema,
   type CandidateWorkExperienceSchema,
-  type CandidateEducationSchema
+  type CandidateEducationSchema,
+  type SurveyFormCreateSchema,
+  type SurveyFormUpdateSchema,
 };

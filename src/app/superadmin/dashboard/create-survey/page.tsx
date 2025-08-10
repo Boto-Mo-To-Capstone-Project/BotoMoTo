@@ -11,15 +11,45 @@ export default function SuperAdminCreateSurveyPage() {
   const [lastSchema, setLastSchema] = useState<FormSchema | null>(null);
 
   const saveDraft = async (schema: FormSchema) => {
-    // TODO: wire to POST /api/surveys
-    setLastSchema(schema);
-    toast.success("Draft saved (local). Wire to API next.");
+    try {
+      const res = await fetch("/api/superadmin/surveys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: schema.title,
+          description: schema.description ?? "",
+          formSchema: schema,
+          isActive: false,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Failed to save draft");
+      setLastSchema(schema);
+      toast.success("Draft saved");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save draft");
+    }
   };
 
   const publish = async (schema: FormSchema) => {
-    // TODO: wire to POST /api/surveys with status: PUBLISHED
-    setLastSchema(schema);
-    toast.success("Published (mock). Wire to API next.");
+    try {
+      const res = await fetch("/api/superadmin/surveys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: schema.title,
+          description: schema.description ?? "",
+          formSchema: schema,
+          isActive: true,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Failed to publish");
+      setLastSchema(schema);
+      toast.success("Survey published");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to publish");
+    }
   };
 
   const preview = (schema: FormSchema) => {
