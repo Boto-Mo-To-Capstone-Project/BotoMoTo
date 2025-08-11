@@ -191,6 +191,136 @@ async function validateSeedData() {
       console.log(`   Election ${electionId}: ${stats.voted}/${total} voted (${percentage}%)`);
     });
 
+    // ==== NEW: Business-rule checks for scopes, positions, voters, candidates, and votes ====
+    console.log("\n🧪 Consistency checks (scopes, positions, voters, candidates, votes)...\n");
+
+    const issues = [];
+    const addIssue = (msg) => issues.push(`• ${msg}`);
+
+    // Load elections with scopes/positions/voters
+    const allElections = await db.election.findMany({
+      where: { isDeleted: false },
+      include: {
+        votingScopes: {
+          where: { isDeleted: false },
+          select: { id: true, type: true },
+        },
+        positions: {
+          where: { isDeleted: false },
+          select: { id: true, votingScopeId: true, electionId: true, name: true },
+        },
+        voters: {
+          where: { isDeleted: false },
+          select: { id: true, votingScopeId: true, electionId: true },
+        },
+      },
+    });
+
+    const verboseReport = [];
+
+    for (const election of allElections) {
+      const scopeIds = new Set(election.votingScopes.map((s) => s.id));
+      const scopeTypes = new Set(election.votingScopes.map((s) => s.type));
+      const noScope = election.votingScopes.length === 0;
+
+      const header = `Election ${election.id} - ${election.name}`;
+      const details = [];
+
+      if (noScope) {
+        details.push("  Scope: NO SCOPE (0)");
+        // Positions/voters must have null votingScopeId
+        const badPositions = election.positions.filter((p) => p.votingScopeId !== null);
+        const badVoters = election.voters.filter((v) => v.votingScopeId !== null);
+        if (badPositions.length) addIssue(`${header}: ${badPositions.length} position(s) have a scope in a NO SCOPE election`);
+        if (badVoters.length) addIssue(`${header}: ${badVoters.length} voter(s) have a scope in a NO SCOPE election`);
+      } else {
+        // Must share single scope type
+        details.push(`  Scope type(s): ${[...scopeTypes].join(", ")} (count: ${election.votingScopes.length})`);
+        if (scopeTypes.size > 1) addIssue(`${header}: Multiple scope types found in one election: ${[...scopeTypes].join(", ")}`);
+        // Positions/voters must have scope present in this election
+        const badPositions = election.positions.filter((p) => !p.votingScopeId || !scopeIds.has(p.votingScopeId));
+        const badVoters = election.voters.filter((v) => !v.votingScopeId || !scopeIds.has(v.votingScopeId));
+        if (badPositions.length) addIssue(`${header}: ${badPositions.length} position(s) have invalid/missing votingScopeId`);
+        if (badVoters.length) addIssue(`${header}: ${badVoters.length} voter(s) have invalid/missing votingScopeId`);
+      }
+
+      // Candidate checks for this election
+      const candidates = await db.candidate.findMany({
+        where: { electionId: election.id, isDeleted: false },
+        include: {
+          position: { select: { electionId: true, votingScopeId: true } },
+          voter: { select: { votingScopeId: true } },
+        },
+      });
+
+      let okCandidates = 0;
+      for (const c of candidates) {
+        if (c.position.electionId !== election.id) {
+          addIssue(`${header}: Candidate ${c.id} position.electionId mismatch`);
+          continue;
+        }
+        // scope alignment: both null for NO SCOPE or equal for scoped
+        const vScope = c.voter.votingScopeId ?? null;
+        const pScope = c.position.votingScopeId ?? null;
+        const aligned = (vScope === null && pScope === null) || (vScope !== null && vScope === pScope);
+        if (!aligned) addIssue(`${header}: Candidate ${c.id} voter scope (${vScope}) != position scope (${pScope})`);
+        else okCandidates++;
+      }
+
+      details.push(`  Candidates checked: ${candidates.length}, OK: ${okCandidates}`);
+
+      // Vote checks for this election
+      const votes = await db.voteResponse.findMany({
+        where: { electionId: election.id },
+        include: {
+          voter: { select: { votingScopeId: true } },
+          position: { select: { electionId: true, votingScopeId: true } },
+          candidate: { select: { electionId: true, position: { select: { electionId: true, votingScopeId: true } } } },
+        },
+      });
+
+      let okVotes = 0;
+      for (const v of votes) {
+        // Same election checks
+        if (v.position.electionId !== election.id) addIssue(`${header}: Vote ${v.id} position.electionId mismatch`);
+        if (v.candidate.electionId !== election.id) addIssue(`${header}: Vote ${v.id} candidate.electionId mismatch`);
+        if (v.candidate.position.electionId !== election.id) addIssue(`${header}: Vote ${v.id} candidate.position.electionId mismatch`);
+
+        // Candidate's position must match vote.positionId
+        // This is implied in seeding, but double-check here
+        // Note: since we didn't select candidate.position.id, we compare scope consistency instead
+
+        const voterScope = v.voter.votingScopeId ?? null;
+        const posScope = v.position.votingScopeId ?? null;
+        const candPosScope = v.candidate.position.votingScopeId ?? null;
+
+        const scopesAligned = (voterScope === null && posScope === null && candPosScope === null) ||
+                              (voterScope !== null && voterScope === posScope && voterScope === candPosScope);
+
+        if (!scopesAligned) addIssue(`${header}: Vote ${v.id} scope mismatch (voter=${voterScope}, position=${posScope}, candidate.position=${candPosScope})`);
+        else okVotes++;
+      }
+
+      details.push(`  Votes checked: ${votes.length}, OK: ${okVotes}`);
+
+      verboseReport.push([header, ...details].join("\n"));
+    }
+
+    // Print verbose per-election report
+    console.log("\n📘 Verbose per-election report:\n");
+    verboseReport.forEach((block) => {
+      console.log(block);
+      console.log("");
+    });
+
+    // Print issues summary
+    if (issues.length === 0) {
+      console.log("✅ Consistency checks passed with no issues.");
+    } else {
+      console.log("❗ Issues found:");
+      issues.forEach((i) => console.log(`   ${i}`));
+    }
+
     console.log(`\n✅ Data validation completed successfully!`);
     console.log(`\n🚀 Ready for API testing! Use the following commands:`);
     console.log(`   npm run dev          - Start development server`);

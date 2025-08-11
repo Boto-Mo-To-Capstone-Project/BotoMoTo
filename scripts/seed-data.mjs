@@ -411,6 +411,9 @@ async function seedDatabase() {
 
     console.log("🏃‍♂️ Creating candidates...");
     
+    // Track created candidates for reporting
+    const createdCandidates = [];
+    
     // Create candidates (some voters become candidates) within their scope (or globally for NO SCOPE)
     const experiences = generateExperiences();
     for (const election of createdElections) {
@@ -442,11 +445,14 @@ async function seedDatabase() {
               voterId: voter.id,
               positionId: position.id,
               partyId: randomParty?.id || null,
-              isNew: Math.random() > 0.7,
+              isNew: Math.random() > 0.7, // 30% are new
               bio: `Experienced candidate committed to representing students with integrity and dedication. Passionate about making positive changes in our academic community.`,
               imageUrl: `/assets/sample/logo.png`,
             },
           });
+
+          // Record for reporting
+          createdCandidates.push(candidate);
 
           if (Math.random() > 0.3) {
             const randomLeadership = experiences.leadership[Math.floor(Math.random() * experiences.leadership.length)];
@@ -555,29 +561,48 @@ async function seedDatabase() {
       console.log(`   ${admin.name}: ${admin.email} / ${admin.password}`);
     });
 
-    // Extra mapping to tell which is which
-    console.log("\n🧭 Which is which:");
-    const orgNameById = new Map(createdOrgs.map((o) => [o.id, o.name]));
-    const electionsByOrg = new Map();
-    for (const e of createdElections) {
-      const key = e.orgId;
-      const arr = electionsByOrg.get(key) || [];
-      arr.push(e);
-      electionsByOrg.set(key, arr);
-    }
+    // Admin → Org → Elections breakdown
+    console.log("\n👤 Admin → Org → Elections breakdown:");
+    const admins = await db.user.findMany({
+      where: { role: "ADMIN" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        organization: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
 
-    for (const [orgId, list] of electionsByOrg.entries()) {
-      const name = orgNameById.get(orgId);
-      const names = list.map((e) => e.name).join(", ");
-      console.log(`   Org: ${name} → Elections (${list.length}): ${names}`);
-    }
+    for (const admin of admins) {
+      const org = admin.organization || null;
+      const adminOrgCount = org ? 1 : 0;
+      const adminElections = org ? createdElections.filter((e) => e.orgId === org.id) : [];
+      const electionCount = adminElections.length;
 
-    const noScopeList = createdElections.filter((e) => (scopesByElection.get(e.id) || []).length === 0);
-    console.log("   Elections with NO SCOPE:");
-    if (noScopeList.length === 0) {
-      console.log("     (none)");
-    } else {
-      noScopeList.forEach((e) => console.log(`     • ${e.name} (Org: ${orgNameById.get(e.orgId)})`));
+      const header = `${admin.name} (${admin.email}) has ${adminOrgCount} org and ${electionCount} election${electionCount === 1 ? "" : "s"}`;
+      console.log(`   ${header}`);
+
+      if (!org) continue;
+      console.log(`     Org: ${org.name}`);
+
+      for (const e of adminElections) {
+        const scopes = (scopesByElection.get(e.id) || []);
+        const noScope = scopes.length === 0;
+        const scopeInfo = noScope ? "NO SCOPE" : `${scopes[0]?.type} (${scopes.length})`;
+        const posCount = createdPositions.filter((p) => p.electionId === e.id).length;
+        const voterCount = createdVoters.filter((v) => v.electionId === e.id).length;
+        const candCount = createdCandidates.filter((c) => c.electionId === e.id).length;
+        const partyCount = createdParties.filter((p) => p.electionId === e.id).length;
+        const voteCount = await db.voteResponse.count({ where: { electionId: e.id } });
+
+        console.log(`     • ${e.name} → scope: ${scopeInfo}`);
+        console.log(`         Positions: ${posCount}, Parties: ${partyCount}, Voters: ${voterCount}, Candidates: ${candCount}, Votes: ${voteCount}`);
+      }
     }
 
   } catch (error) {
