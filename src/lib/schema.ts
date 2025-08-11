@@ -158,7 +158,14 @@ const electionSchema = z.object({
     invalid_type_error: "Invalid election status"
   }).default("ACTIVE"),
   isLive: z.boolean().default(false),
-  allowSurvey: z.boolean().default(false)
+  allowSurvey: z.boolean().default(false),
+  // Optional schedule fields to allow flexible payloads; validated in route handlers
+  startDate: z.union([z.string(), z.date()]).optional(),
+  endDate: z.union([z.string(), z.date()]).optional(),
+  schedule: z.object({
+    dateStart: z.union([z.string(), z.date()]),
+    dateFinish: z.union([z.string(), z.date()]),
+  }).partial().optional(),
 });
 
 const userSchema = z.object({

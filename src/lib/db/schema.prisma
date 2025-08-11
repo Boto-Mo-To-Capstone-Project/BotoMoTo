@@ -65,9 +65,7 @@ enum OrganizationStatus {
 enum ElectionStatus {
   DRAFT
   ACTIVE
-  PAUSED
   CLOSED
-  ARCHIVED
 }
 
 // MFA method enum

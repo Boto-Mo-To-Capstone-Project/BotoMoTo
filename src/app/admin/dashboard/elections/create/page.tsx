@@ -10,6 +10,13 @@ import { ScopeTab } from "@/components/ScopeTab";
 import { PartyTab } from "@/components/PartyTab"; // Use PartyTab instead of PartyTable/PartyModal
 import toast, { Toaster } from 'react-hot-toast';
 
+// Prefer API 'message' over 'error' object to avoid [object Object]
+function getApiErrorMessage(json: any, fallback: string) {
+  if (json && typeof json.message === 'string' && json.message) return json.message;
+  if (json && typeof json.error === 'string' && json.error) return json.error;
+  return fallback;
+}
+
 type TabType = "election" | "scope" | "party";
 
 interface ElectionFormData {
@@ -114,7 +121,7 @@ export default function CreateElectionPage() {
         // Fetch election
         const res = await fetch(`/api/elections/${editId}`, { cache: 'no-store' });
         const json = await res.json();
-        if (!res.ok || !json?.success) throw new Error(json?.error || json?.message || 'Failed to load election');
+        if (!res.ok || !json?.success) throw new Error(getApiErrorMessage(json, 'Failed to load election'));
         const e = json?.data?.election;
         if (!e) throw new Error('Election not found');
         const start = e?.schedule?.dateStart ?? null;
@@ -177,6 +184,16 @@ export default function CreateElectionPage() {
         description: electionData.description.trim(),
       } as any;
 
+      // Convert datetime-local (local time) to ISO strings for API
+      const isoStart = electionData.startDate ? new Date(electionData.startDate).toISOString() : null;
+      const isoEnd = electionData.endDate ? new Date(electionData.endDate).toISOString() : null;
+      if (!isoStart || !isoEnd) {
+        toast.error('Start and End date are required');
+        setSaving(false);
+        return;
+      }
+      basePayload.schedule = { dateStart: isoStart, dateFinish: isoEnd };
+
       let url = '/api/elections';
       let method: 'POST' | 'PUT' = 'POST';
       let successMsg = 'Election created successfully';
@@ -201,7 +218,7 @@ export default function CreateElectionPage() {
         body: JSON.stringify(basePayload),
       });
       const json = await res.json();
-      if (!res.ok || !json?.success) throw new Error(json?.error || json?.message || 'Failed to save election');
+      if (!res.ok || !json?.success) throw new Error(getApiErrorMessage(json, 'Failed to save election'));
 
       // If newly created, navigate to edit mode for adding scopes/parties
       if (!isEditing) {
@@ -262,7 +279,7 @@ export default function CreateElectionPage() {
           body: JSON.stringify(body),
         });
         const json = await res.json();
-        if (!res.ok || !json?.success) throw new Error(json?.error || json?.message || 'Failed to update scope');
+        if (!res.ok || !json?.success) throw new Error(getApiErrorMessage(json, 'Failed to update scope'));
         toast.success('Scope updated');
       } else {
         // Create one or multiple scopes
@@ -278,7 +295,7 @@ export default function CreateElectionPage() {
             }),
           });
           const json = await res.json();
-          if (!res.ok || !json?.success) throw new Error(json?.error || json?.message || 'Failed to create scope');
+          if (!res.ok || !json?.success) throw new Error(getApiErrorMessage(json, 'Failed to create scope'));
         }
         toast.success('Scope(s) saved');
       }
@@ -303,7 +320,7 @@ export default function CreateElectionPage() {
       await Promise.all(scopeSelectedIds.map(async (id) => {
         const res = await fetch(`/api/voting-scopes/${id}`, { method: 'DELETE' });
         const json = await res.json();
-        if (!res.ok || !json?.success) throw new Error(json?.error || json?.message || 'Failed to delete scope');
+        if (!res.ok || !json?.success) throw new Error(getApiErrorMessage(json, 'Failed to delete scope'));
       }));
       toast.success('Selected scope(s) deleted');
       // Refresh
@@ -345,7 +362,7 @@ export default function CreateElectionPage() {
           body: JSON.stringify(body),
         });
         const json = await res.json();
-        if (!res.ok || !json?.success) throw new Error(json?.error || json?.message || 'Failed to update party');
+        if (!res.ok || !json?.success) throw new Error(getApiErrorMessage(json, 'Failed to update party'));
         toast.success('Party updated');
       } else {
         const res = await fetch('/api/parties', {
@@ -354,7 +371,7 @@ export default function CreateElectionPage() {
           body: JSON.stringify({ electionId: editId, name: data.partyName, color: data.selectedColor }),
         });
         const json = await res.json();
-        if (!res.ok || !json?.success) throw new Error(json?.error || json?.message || 'Failed to create party');
+        if (!res.ok || !json?.success) throw new Error(getApiErrorMessage(json, 'Failed to create party'));
         toast.success('Party saved');
       }
       // Refresh
@@ -378,7 +395,7 @@ export default function CreateElectionPage() {
       await Promise.all(partySelectedIds.map(async (id) => {
         const res = await fetch(`/api/parties/${id}`, { method: 'DELETE' });
         const json = await res.json();
-        if (!res.ok || !json?.success) throw new Error(json?.error || json?.message || 'Failed to delete party');
+        if (!res.ok || !json?.success) throw new Error(getApiErrorMessage(json, 'Failed to delete party'));
       }));
       toast.success('Selected party(ies) deleted');
       // Refresh

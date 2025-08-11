@@ -175,12 +175,52 @@ async function createElection(request: NextRequest) {
       });
     }
 
-    // Parse and validate request body
-    const body = await request.json();
-    const validation = validateWithZod(electionSchema, body);
+    // Parse request body
+    const rawBody = await request.json();
+
+    // Validate core election fields using schema
+    const validation = validateWithZod(electionSchema, rawBody);
     if (!("data" in validation)) return validation;
-    
+
     const { name, description, status, isLive, allowSurvey } = validation.data;
+
+    // Extract optional schedule fields (support multiple shapes)
+    const rawStart = rawBody?.schedule?.dateStart ?? rawBody?.schedule?.startDate ?? rawBody?.startDate ?? null;
+    const rawEnd = rawBody?.schedule?.dateFinish ?? rawBody?.schedule?.endDate ?? rawBody?.endDate ?? null;
+
+    // Validate schedule if provided
+    let dateStart: Date | undefined;
+    let dateFinish: Date | undefined;
+    if ((rawStart && !rawEnd) || (!rawStart && rawEnd)) {
+      return apiResponse({
+        success: false,
+        message: 'Both startDate and endDate are required when setting a schedule',
+        error: 'Bad Request',
+        status: 400,
+      });
+    }
+    if (rawStart && rawEnd) {
+      const start = new Date(rawStart);
+      const end = new Date(rawEnd);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return apiResponse({
+          success: false,
+          message: 'Invalid date format for schedule. Use ISO strings.',
+          error: 'Bad Request',
+          status: 400,
+        });
+      }
+      if (start >= end) {
+        return apiResponse({
+          success: false,
+          message: 'Schedule startDate must be earlier than endDate',
+          error: 'Bad Request',
+          status: 400,
+        });
+      }
+      dateStart = start;
+      dateFinish = end;
+    }
 
     // Check if election name already exists in this organization
     const nameExists = await db.election.findFirst({
@@ -232,13 +272,37 @@ async function createElection(request: NextRequest) {
       },
     });
 
+    // Create schedule if provided
+    if (dateStart && dateFinish) {
+      await db.electionSched.upsert({
+        where: { electionId: election.id },
+        create: { electionId: election.id, dateStart, dateFinish },
+        update: { dateStart, dateFinish },
+      });
+    }
+
+    // Re-fetch with schedule to ensure it's included
+    const electionWithSchedule = await db.election.findUnique({
+      where: { id: election.id },
+      include: {
+        organization: {
+          select: { id: true, name: true, email: true, status: true }
+        },
+        schedule: true,
+        mfaSettings: true,
+        _count: {
+          select: { voters: true, candidates: true, positions: true, parties: true }
+        }
+      }
+    });
+
     const audit = await createAuditLog({
       user,
       action: "CREATE",
       request,
       resource: "ELECTION",
       resourceId: election.id,
-      newData: election,
+      newData: (electionWithSchedule as any) ?? (election as any),
       message: `Created new election: ${election.name}`,
     });
 
@@ -246,7 +310,7 @@ async function createElection(request: NextRequest) {
       success: true,
       message: 'Election created successfully',
       data: {
-        election,
+        election: electionWithSchedule,
         audit,
       },
       status: 201,
