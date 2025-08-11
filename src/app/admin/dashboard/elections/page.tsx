@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { MdAdd, MdDownload, MdFilterList, MdDelete, MdEdit } from "react-icons/md";
 import { SubmitButton } from '@/components/SubmitButton';
 // import { ElectionModal } from '@/components/ElectionModal'; // keep component file but not used here per requirement
@@ -20,6 +20,8 @@ interface UiElection {
 
 export default function ElectionDashboardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const eidParam = searchParams.get('eid');
   const [tab, setTab] = useState<"All" | "Ongoing" | "Ended">("All");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -34,6 +36,15 @@ export default function ElectionDashboardPage() {
   // Sidebar open state for mobile
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Keep selection in sync with ?eid=
+  useEffect(() => {
+    if (!eidParam) return; // don't clear selection when eid is removed
+    const id = Number(eidParam);
+    if (!Number.isNaN(id)) {
+      setSelectedIds([id]);
+    }
+  }, [eidParam]);
 
   // Fetch elections from backend
   useEffect(() => {
@@ -92,11 +103,20 @@ export default function ElectionDashboardPage() {
     }
   };
 
-  // For multi-select: allow multiple checkboxes
+  // For multi-select: allow multiple checkboxes and reflect single selection in URL
   const handleCheckboxChange = (id: number) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+    const next = selectedIds.includes(id)
+      ? selectedIds.filter((x) => x !== id)
+      : [...selectedIds, id];
+
+    setSelectedIds(next);
+
+    // Update URL after state change (still in event handler)
+    if (next.length === 1) {
+      router.replace(`/admin/dashboard/elections?eid=${next[0]}`, { scroll: false });
+    } else {
+      router.replace(`/admin/dashboard/elections`, { scroll: false });
+    }
   };
 
   // Filter by search and tab
