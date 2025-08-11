@@ -210,7 +210,7 @@ async function handleBulkCreate(electionsData: any[], user: any, request: NextRe
       validatedElections.push({
         ...validation.data,
         orgId: electionData.orgId,
-        status: validation.data.status || ELECTION_STATUS.DRAFT,
+        status: validation.data.status || ELECTION_STATUS.ACTIVE,
         isLive: validation.data.isLive || false,
         allowSurvey: validation.data.allowSurvey || false
       });

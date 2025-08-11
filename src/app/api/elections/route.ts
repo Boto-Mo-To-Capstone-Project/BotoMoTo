@@ -12,67 +12,99 @@ import { requireAuth } from "@/lib/helpers/requireAuth";
 // Import performance logging middleware
 import { withPerformanceLogging } from "@/lib/performance/middleware";
 
-// Handle GET request to fetch all elections (superadmin only)
+// Handle GET request to fetch elections (filtered by role)
 async function getElections(request: NextRequest) {
   try {
-    // Authenticate the user with required role
-    const authResult = await requireAuth([ROLES.SUPER_ADMIN]);
+    // Authenticate the user - allow both admin and superadmin
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
     if (!authResult.authorized) return authResult.response;
     const user = authResult.user;
 
-    const elections = await db.election.findMany({
-      where: { isDeleted: false },
-      include: {
-        organization: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            status: true,
-            admin: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                role: true
+    let elections;
+    let message;
+
+    if (user.role === ROLES.SUPER_ADMIN) {
+      // Super admin can see all elections
+      elections = await db.election.findMany({
+        where: { isDeleted: false },
+        include: {
+          organization: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              status: true,
+              admin: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  role: true
+                }
               }
+            }
+          },
+          schedule: true,
+          mfaSettings: true,
+          _count: {
+            select: {
+              voters: { where: { isDeleted: false } },
+              candidates: { where: { isDeleted: false } },
+              positions: { where: { isDeleted: false } },
+              parties: { where: { isDeleted: false } },
+              voteResponses: true
             }
           }
         },
-        schedule: true,
-        mfaSettings: true,
-        _count: {
-          select: {
-            voters: {
-              where: { isDeleted: false }
-            },
-            candidates: {
-              where: { isDeleted: false }
-            },
-            positions: {
-              where: { isDeleted: false }
-            },
-            parties: {
-              where: { isDeleted: false }
-            },
-            voteResponses: true
+        orderBy: { createdAt: "desc" },
+      });
+      message = "All elections fetched successfully (superadmin)";
+    } else {
+      // Admin can only see elections from their own organization
+      elections = await db.election.findMany({
+        where: {
+          isDeleted: false,
+          organization: { adminId: user.id },
+        },
+        include: {
+          organization: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              status: true,
+            }
+          },
+          schedule: true,
+          mfaSettings: true,
+          _count: {
+            select: {
+              voters: { where: { isDeleted: false } },
+              candidates: { where: { isDeleted: false } },
+              positions: { where: { isDeleted: false } },
+              parties: { where: { isDeleted: false } },
+              voteResponses: true
+            }
           }
-        }
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      message = "Your elections fetched successfully (admin)";
+    }
 
     const audit = await createAuditLog({
       user,
       action: "READ",
       request,
       resource: "ELECTION",
-      message: "Viewed all elections (superadmin)",
+      message: user.role === ROLES.SUPER_ADMIN
+        ? "Viewed all elections (superadmin)"
+        : "Viewed own elections (admin)",
     });
 
     return apiResponse({
       success: true,
-      message: 'Elections fetched successfully',
+      message,
       data: {
         elections,
         totalCount: elections.length,
@@ -146,7 +178,7 @@ async function createElection(request: NextRequest) {
     // Parse and validate request body
     const body = await request.json();
     const validation = validateWithZod(electionSchema, body);
-    if (!('data' in validation)) return validation;
+    if (!("data" in validation)) return validation;
     
     const { name, description, status, isLive, allowSurvey } = validation.data;
 
@@ -174,7 +206,7 @@ async function createElection(request: NextRequest) {
         orgId: organization.id,
         name,
         description,
-        status: status || ELECTION_STATUS.DRAFT,
+        status: status || ELECTION_STATUS.ACTIVE,
         isLive: isLive || false,
         allowSurvey: allowSurvey || false,
       },
@@ -238,7 +270,7 @@ export const POST = withPerformanceLogging(createElection as any);
 PERFORMANCE LOGGING ADDED TO ELECTIONS API! 🎉
 
 What this captures:
-✅ GET /api/elections - Election listing performance (superadmin dashboard)
+✅ GET /api/elections - Election listing performance (admin + superadmin dashboards)
 ✅ POST /api/elections - Election creation speed
 
 Key metrics for election management:
