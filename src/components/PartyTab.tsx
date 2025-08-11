@@ -17,6 +17,10 @@ interface PartyTabProps {
   setShowCreateModal: (v: boolean) => void;
   selectedIds: number[];
   setSelectedIds: React.Dispatch<React.SetStateAction<number[]>>;
+  // Optional backend integration hooks
+  remoteRows?: Party[];
+  onSave?: (data: { partyName: string; selectedColor: string }) => Promise<void> | void;
+  initialData?: { partyName: string; selectedColor: string } | null;
 }
 
 export function PartyTab({
@@ -28,9 +32,14 @@ export function PartyTab({
   setShowCreateModal,
   selectedIds,
   setSelectedIds,
+  remoteRows,
+  onSave,
+  initialData,
 }: PartyTabProps) {
   const [sortCol, setSortCol] = useState<keyof Party | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const rows: Party[] = remoteRows ?? parties;
 
   // Sorting logic
   const handleSort = (col: keyof Party) => {
@@ -42,7 +51,7 @@ export function PartyTab({
     }
   };
 
-  const sortedParties = [...parties].sort((a, b) => {
+  const sortedParties = [...rows].sort((a, b) => {
     if (!sortCol) return 0;
     const aVal = a[sortCol] ?? "";
     const bVal = b[sortCol] ?? "";
@@ -64,7 +73,12 @@ export function PartyTab({
   };
 
   // Modal save logic (convert modal data to Party)
-  const handlePartyModalSave = (data: { partyName: string; selectedColor: string }) => {
+  const handlePartyModalSave = async (data: { partyName: string; selectedColor: string }) => {
+    if (onSave) {
+      await onSave(data);
+      setShowCreateModal(false);
+      return;
+    }
     const newParty: Party = {
       id: Math.max(0, ...parties.map(p => p.id)) + 1,
       name: data.partyName,
@@ -80,6 +94,7 @@ export function PartyTab({
         open={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSave={handlePartyModalSave}
+        initialData={initialData ?? undefined}
       />
       <PartyTable
         parties={sortedParties}

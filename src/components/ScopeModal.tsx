@@ -11,13 +11,14 @@ interface ScopeModalProps {
     scopes: { name: string; description: string }[];
   }) => void;
   disableSave?: boolean;
+  initialData?: { type: string; name: string; description: string };
 }
 
-export function ScopeModal({ open, onClose, onSave, disableSave }: ScopeModalProps) {
-  const [scopeType, setScopeType] = useState("");
+export function ScopeModal({ open, onClose, onSave, disableSave, initialData }: ScopeModalProps) {
+  const [scopeType, setScopeType] = useState(initialData?.type ?? "");
   const [scopes, setScopes] = useState<{ name: string; description: string }[]>([]);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  const [name, setName] = useState(initialData?.name ?? "");
+  const [description, setDescription] = useState(initialData?.description ?? "");
   const [editIndex, setEditIndex] = useState<number | null>(null);
 
   if (!open) return null;
@@ -50,10 +51,7 @@ export function ScopeModal({ open, onClose, onSave, disableSave }: ScopeModalPro
               onSubmit={e => {
                 e.preventDefault();
                 if (!scopeType.trim() || !name.trim()) return;
-                const newScopes =
-                  editIndex !== null
-                    ? scopes.map((s, i) => (i === editIndex ? { name, description } : s))
-                    : [...scopes, { name, description }];
+                const newScopes = [{ name, description }];
                 onSave({ type: scopeType, scopes: newScopes });
                 setScopes(newScopes);
                 setName("");
@@ -107,51 +105,6 @@ export function ScopeModal({ open, onClose, onSave, disableSave }: ScopeModalPro
                 />
               </div>
             </form>
-            {/* List of scopes
-            {scopes.length > 0 && (
-              <div className="mt-6">
-                <h4 className="text-base font-semibold mb-2">Scopes List</h4>
-                <ul className="divide-y divide-gray-200">
-                  {scopes.map((scope, idx) => (
-                    <li key={idx} className="py-2 flex justify-between items-center">
-                      <div>
-                        <span className="font-medium">{scope.name}</span>
-                        {scope.description && (
-                          <span className="text-gray-500 ml-2">- {scope.description}</span>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          className="text-blue-600 hover:underline text-sm"
-                          onClick={() => {
-                            setEditIndex(idx);
-                            setName(scope.name);
-                            setDescription(scope.description);
-                          }}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className="text-red-600 hover:underline text-sm"
-                          onClick={() => {
-                            setScopes(scopes.filter((_, i) => i !== idx));
-                            if (editIndex === idx) {
-                              setEditIndex(null);
-                              setName("");
-                              setDescription("");
-                            }
-                          }}
-                        >
-                          Remove
-                        </button>
-                      </div> */}
-                    {/* </li>
-                  ))}
-                </ul>
-              </div>
-            )} */}
           </div>
         </div>
       </div>
