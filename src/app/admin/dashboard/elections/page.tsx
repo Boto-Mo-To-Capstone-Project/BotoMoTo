@@ -215,7 +215,7 @@ export default function ElectionDashboardPage() {
                   selectedIds.length === 1
                     ? () => {
                         const id = selectedIds[0];
-                        router.push(`/admin/dashboard/elections/create?id=${id}`);
+                        router.push(`/admin/dashboard/elections/create?eid=${id}`);
                       }
                     : undefined
                 }

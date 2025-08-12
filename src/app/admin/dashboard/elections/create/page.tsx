@@ -82,8 +82,8 @@ export default function CreateElectionPage() {
   // Editing state
   const router = useRouter();
   const searchParams = useSearchParams();
-  const idParam = searchParams.get('id');
-  const editId = idParam ? Number(idParam) : null;
+  const eidParam = searchParams.get('eid');
+  const editId = eidParam ? Number(eidParam) : null;
   const isEditing = !!editId && !Number.isNaN(editId);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -225,7 +225,7 @@ export default function CreateElectionPage() {
         const newId = json?.data?.election?.id;
         if (newId) {
           toast.success('Election created. You can now add scopes and parties.');
-          router.push(`/admin/dashboard/elections/create?id=${newId}`);
+          router.push(`/admin/dashboard/elections/create?eid=${newId}`);
           return;
         }
       }

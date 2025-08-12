@@ -40,11 +40,14 @@ export default function SidebarWrapper({
 
   const isAdminDefault = adminBaseRoutes.includes(pathname);
 
+  const isCreateWithEid = pathname === "/admin/dashboard/elections/create" && !!eidParam;
+
   const isAdminElectionSelected =
     (pathname.startsWith("/admin/dashboard/elections/") &&
       parts.length >= 5 &&
       !reserved.includes(parts[4]?.toLowerCase())) ||
-    (pathname === "/admin/dashboard/elections" && !!eidParam);
+    (pathname === "/admin/dashboard/elections" && !!eidParam) ||
+    isCreateWithEid;
 
   const isSuperAdmin =
     superAdminBaseRoutes.includes(pathname) ||
@@ -59,7 +62,7 @@ export default function SidebarWrapper({
     if (pathname === "/admin/dashboard/elections")
       return eidParam ? `Election ${eidParam}` : "Admin Elections";
     if (pathname === "/admin/dashboard/elections/create")
-      return "Election Form";
+      return eidParam ? `Election ${eidParam} - Edit` : "Election Form";
     if (pathname === "/admin/dashboard/elections/tickets")
       return "Admin Tickets";
     if (pathname === "/admin/dashboard/elections/profile")
