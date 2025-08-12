@@ -715,7 +715,7 @@ export default function CreateElectionPage() {
                   className={
                     partySelectedIds.length >= 1
                       ? ""
-                      : "text-gray-100 bg-gray-100 cursor-not-allowed pointer-events-none"
+                      : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
                   }
                 />
                 <SubmitButton
