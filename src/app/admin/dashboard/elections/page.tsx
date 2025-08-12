@@ -105,19 +105,22 @@ export default function ElectionDashboardPage() {
 
   // For multi-select: allow multiple checkboxes and reflect single selection in URL
   const handleCheckboxChange = (id: number) => {
-    const next = selectedIds.includes(id)
-      ? selectedIds.filter((x) => x !== id)
-      : [...selectedIds, id];
+    setSelectedIds((prev) => {
+      const next = prev.includes(id)
+        ? prev.filter((x) => x !== id)
+        : [...prev, id];
+      return next;
+    });
+  };
 
-    setSelectedIds(next);
-
-    // Update URL after state change (still in event handler)
-    if (next.length === 1) {
-      router.replace(`/admin/dashboard/elections?eid=${next[0]}`, { scroll: false });
+  // Reflect selection in URL (side-effect moved out of state updater)
+  useEffect(() => {
+    if (selectedIds.length === 1) {
+      router.replace(`/admin/dashboard/elections?eid=${selectedIds[0]}`, { scroll: false });
     } else {
       router.replace(`/admin/dashboard/elections`, { scroll: false });
     }
-  };
+  }, [selectedIds, router]);
 
   // Filter by search and tab
   let filteredElections = electionsList.filter((e) =>
