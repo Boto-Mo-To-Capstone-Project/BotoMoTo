@@ -53,11 +53,11 @@ const AdminSidebar = ({
       href: "/admin/dashboard/elections",
       icon: ListChecks,
     },
-    {
-      name: "Create Election",
-      href: "/admin/dashboard/elections/create",
-      icon: PlusCircle,
-    },
+    // {
+    //   name: "Create Election",
+    //   href: "/admin/dashboard/elections/create",
+    //   icon: PlusCircle,
+    // },
   ];
 
   const afterElectionLinks = [
