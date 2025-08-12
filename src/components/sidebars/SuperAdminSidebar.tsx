@@ -13,7 +13,9 @@ import {
   X,
   Users,
   BadgeAlert,
+  LogOut,
 } from "lucide-react";
+import { useLogout } from "@/hooks/useLogout";
 
 type SuperAdminSidebarProps = {
   variant?: "default";
@@ -27,7 +29,7 @@ const SuperAdminSidebar = ({
   onClose,
 }: SuperAdminSidebarProps) => {
   const pathname = usePathname();
-
+  const handleLogout = useLogout();
   const links = [
     {
       name: "Dashboard",
@@ -61,6 +63,8 @@ const SuperAdminSidebar = ({
     },
   ];
 
+  const displayName = "Super Admin!!";
+  const displayEmail = "superadminmoto@gmail.com";
   return (
     <>
       {/* Overlay */}
@@ -78,7 +82,7 @@ const SuperAdminSidebar = ({
       <aside
         className={`overflow-y-auto scrollbar-hidden fixed top-0 left-0 h-full w-full bg-primary px-4 py-6 space-y-5 transform transition-transform duration-300 z-[101] ${
           open ? "translate-x-0" : "-translate-x-full"
-        } lg:w-68 lg:max-w-none lg:translate-x-0 `}
+        } lg:w-68 lg:max-w-none lg:translate-x-0 flex flex-col`}
         aria-label="Sidebar navigation"
       >
         {/* Mobile close button */}
@@ -116,6 +120,17 @@ const SuperAdminSidebar = ({
             );
           })}
         </nav>
+        {/* Logout Section */}
+        <div className="flex items-start justify-between mt-auto">
+          <div>
+            <p className="text-white text-sm">{displayName}</p>
+            <p className="text-white text-sm">{displayEmail}</p>
+          </div>
+
+          <button onClick={handleLogout} className="cursor-pointer text-white">
+            <LogOut className="w-5 h-5" />
+          </button>
+        </div>
       </aside>
     </>
   );
