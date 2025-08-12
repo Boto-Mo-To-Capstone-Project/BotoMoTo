@@ -26,6 +26,17 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Deny access for voters
+    if (user.role === ROLES.VOTER) {
+      return apiResponse({
+        success: false,
+        message: "You do not have permission to view voting scopes",
+        data: null,
+        error: "Forbidden",
+        status: 403
+      });
+    }
+
     // Get election ID from query parameters
     const url = new URL(request.url);
     const electionId = url.searchParams.get('electionId');
@@ -82,17 +93,6 @@ export async function GET(request: NextRequest) {
       return apiResponse({
         success: false,
         message: "You can only view voting scopes from your organization's elections",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
-
-    // Deny access for voters
-    if (user.role === ROLES.VOTER) {
-      return apiResponse({
-        success: false,
-        message: "You do not have permission to view voting scopes",
         data: null,
         error: "Forbidden",
         status: 403

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AuthHeading } from "@/components/AuthHeading";
 import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
@@ -6,20 +6,26 @@ import { SubmitButton } from "@/components/SubmitButton";
 interface ScopeModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (data: {
-    type: string;
-    scopes: { name: string; description: string }[];
-  }) => void;
-  disableSave?: boolean;
-  initialData?: { type: string; name: string; description: string };
+  onSave: (scopes: { name: string; description: string }[]) => void;
+  initialData?: { name: string; description: string };
+  defaultTypeLabel?: string; // election-level display label for scope type (display only if needed)
 }
 
-export function ScopeModal({ open, onClose, onSave, disableSave, initialData }: ScopeModalProps) {
-  const [scopeType, setScopeType] = useState(initialData?.type ?? "");
+export function ScopeModal({ open, onClose, onSave, initialData, defaultTypeLabel }: ScopeModalProps) {
   const [scopes, setScopes] = useState<{ name: string; description: string }[]>([]);
   const [name, setName] = useState(initialData?.name ?? "");
   const [description, setDescription] = useState(initialData?.description ?? "");
   const [editIndex, setEditIndex] = useState<number | null>(null);
+
+  // Reset fields whenever modal opens (so create/edit always starts fresh)
+  useEffect(() => {
+    if (open) {
+      setName(initialData?.name ?? "");
+      setDescription(initialData?.description ?? "");
+      setEditIndex(null);
+      setScopes([]);
+    }
+  }, [open, initialData]);
 
   if (!open) return null;
   return (
@@ -45,14 +51,14 @@ export function ScopeModal({ open, onClose, onSave, disableSave, initialData }: 
           {/* Modal body */}
           <div className="p-4">
             <p className="text-sm text-gray-500 mb-4">
-              Set a scope type, declare its scope name, and put a description.
+              Set a scope name and description. The scope type is configured in the Election tab.
             </p>
             <form
               onSubmit={e => {
                 e.preventDefault();
-                if (!scopeType.trim() || !name.trim()) return;
+                if (!name.trim()) return;
                 const newScopes = [{ name, description }];
-                onSave({ type: scopeType, scopes: newScopes });
+                onSave(newScopes);
                 setScopes(newScopes);
                 setName("");
                 setDescription("");
@@ -61,16 +67,6 @@ export function ScopeModal({ open, onClose, onSave, disableSave, initialData }: 
               }}
               className="grid gap-4 mb-4 grid-cols-1 sm:grid-cols-2"
             >
-              <div className="col-span-1 sm:col-span-2">
-                <InputField
-                  label="Scoping Type*"
-                  type="text"
-                  value={scopeType}
-                  onChange={e => setScopeType(e.target.value)}
-                  placeholder="Enter scoping type (e.g., Department)"
-                  required
-                />
-              </div>
               <div className="col-span-1 sm:col-span-2">
                 <InputField
                   label="Scope Name*"

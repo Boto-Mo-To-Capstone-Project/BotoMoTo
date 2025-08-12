@@ -12,7 +12,6 @@ type PartyModalProps = {
   onClose: () => void;
   onSave: (data: { partyName: string; selectedColor: string }) => void;
   initialData?: { partyName: string; selectedColor: string };
-  disableSave?: boolean;
 };
 
 export function PartyModal({
@@ -20,7 +19,6 @@ export function PartyModal({
   onClose,
   onSave,
   initialData = { partyName: "", selectedColor: "#85d336" },
-  disableSave,
 }: PartyModalProps) {
   const [partyName, setPartyName] = useState(initialData.partyName);
   const [selectedColor, setSelectedColor] = useState(initialData.selectedColor);

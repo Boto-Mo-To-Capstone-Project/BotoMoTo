@@ -1,6 +1,7 @@
 import { useState, useRef, forwardRef, useImperativeHandle } from "react";
 import { InputField } from "@/components/InputField";
-import { MdCheck, MdEdit } from "react-icons/md";
+import { ScopeTypeSelect } from "@/components/ScopeTypeSelect";
+import React, { useEffect } from "react";
 
 interface ElectionFormData {
   name: string;
@@ -45,18 +46,18 @@ export const ElectionForm = forwardRef<ElectionFormHandle, ElectionFormProps>(
     ref
   ) {
     const [scopeTypeInput, setScopeTypeInput] = useState(scopeType || "");
-    const [scopeTypeConfirmed, setScopeTypeConfirmed] = useState(!!scopeType);
-    const [editingScopeType, setEditingScopeType] = useState(false);
     const formRef = useRef<HTMLFormElement>(null);
+
+    // Sync local scope type UI state when prop changes (e.g., when editing existing election)
+    useEffect(() => {
+      setScopeTypeInput(scopeType || "");
+    }, [scopeType]);
 
     useImperativeHandle(ref, () => ({
       submitForm: () => {
         formRef.current?.requestSubmit();
       },
     }));
-
-    // Validation state
-    // const [showValidation, setShowValidation] = useState(false);
 
     // Validation for enabling the Save button
     const isFormValid =
@@ -65,16 +66,37 @@ export const ElectionForm = forwardRef<ElectionFormHandle, ElectionFormProps>(
       electionData.endDate.trim() !== "" &&
       electionData.description.trim() !== "";
 
-    const handleConfirmScopeType = () => {
-      setScopeType(scopeTypeInput);
-      setScopeTypeConfirmed(true);
-      setEditingScopeType(false);
-      updateScopeTypeInTable(scopeTypeInput);
-    };
+    const SCOPE_OPTIONS = [
+      { label: "Area", value: "AREA" },
+      { label: "Level", value: "LEVEL" },
+      { label: "Department", value: "DEPARTMENT" },
+    ];
 
-    const handleEditScopeType = () => {
-      setEditingScopeType(true);
-      setScopeTypeConfirmed(false);
+    const toDisplay = (v?: string) => v ?? "";
+
+    // Helper to map a free-text/label/value into enum + display label
+    const applyScopeSelection = (inputLabel: string) => {
+      const trimmed = (inputLabel || "").trim();
+      if (!trimmed) {
+        setScopeType("");
+        updateScopeTypeInTable("");
+        setScopeTypeInput("");
+        return;
+      }
+      const match = SCOPE_OPTIONS.find(
+        (o) =>
+          o.value.toLowerCase() === trimmed.toLowerCase() ||
+          o.label.toLowerCase() === trimmed.toLowerCase()
+      );
+      if (match) {
+        setScopeType(match.value); // enum
+        updateScopeTypeInTable(match.label); // display
+        setScopeTypeInput(match.label);
+      } else {
+        setScopeType("CUSTOM");
+        updateScopeTypeInTable(trimmed);
+        setScopeTypeInput(trimmed);
+      }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -84,7 +106,6 @@ export const ElectionForm = forwardRef<ElectionFormHandle, ElectionFormProps>(
         return;
       }
       setShowValidation?.(false);
-      // ...submit logic here...
       onSave?.();
     };
 
@@ -127,41 +148,30 @@ export const ElectionForm = forwardRef<ElectionFormHandle, ElectionFormProps>(
               }
               required
             />
-            {/* Scope Type Input Field */}
+            {/* Scope Type (typeable dropdown) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Scope Type <span className="text-gray-400">(optional)</span>
               </label>
               <div className="relative">
-                <input
-                  type="text"
-                  value={scopeTypeInput}
-                  onChange={(e) => setScopeTypeInput(e.target.value)}
-                  disabled={scopeTypeConfirmed && !editingScopeType}
-                  className={`w-full border border-[var(--color-secondary)] rounded-md px-3 py-2 text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-[var(--color-secondary)] ${
-                    scopeTypeConfirmed && !editingScopeType ? "bg-gray-100" : "bg-white"
-                  }`}
-                  placeholder="Enter scope type"
+                <ScopeTypeSelect
+                  classNamePrefix="scope-type"
+                  placeholder="Select or type a scope type"
+                  options={SCOPE_OPTIONS}
+                  isClearable
+                  value={scopeTypeInput ? { label: scopeTypeInput, value: scopeTypeInput } : null}
+                  onChange={(opt: any) => {
+                    if (!opt) {
+                      applyScopeSelection("");
+                      return;
+                    }
+                    const lbl = opt.label || opt.value || "";
+                    applyScopeSelection(lbl);
+                  }}
+                  onCreateOption={(inputValue: string) => {
+                    applyScopeSelection(inputValue);
+                  }}
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer">
-                  {scopeTypeConfirmed && !editingScopeType ? (
-                    <MdEdit
-                      size={20}
-                      className="text-gray-500 hover:text-[var(--color-primary)]"
-                      onClick={handleEditScopeType}
-                      title="Edit scope type"
-                    />
-                  ) : (
-                    <MdCheck
-                      size={20}
-                      className={`text-green-600 ${
-                        scopeTypeInput ? "hover:text-green-800" : "opacity-50 cursor-not-allowed"
-                      }`}
-                      onClick={scopeTypeInput ? handleConfirmScopeType : undefined}
-                      title="Confirm scope type"
-                    />
-                  )}
-                </span>
               </div>
             </div>
             <div className="lg:col-span-2">

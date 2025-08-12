@@ -4,7 +4,6 @@ import { MdFirstPage, MdLastPage, MdChevronLeft, MdChevronRight } from "react-ic
 
 interface Scope {
   id: number;
-  type: string;
   name: string;
   description: string;
 }
@@ -25,6 +24,7 @@ interface ScopeTableProps {
   onLast: () => void;
   pageSize: number;
   onPageSizeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  typeLabel?: string; // election-level type label to display for all rows
 }
 
 const ScopeTable: React.FC<ScopeTableProps> = ({
@@ -43,6 +43,7 @@ const ScopeTable: React.FC<ScopeTableProps> = ({
   onLast,
   pageSize,
   onPageSizeChange,
+  typeLabel,
 }) => {
   const allChecked = scopeData.length > 0 && scopeData.every(s => selectedIds.includes(s.id));
   const someChecked = scopeData.some(s => selectedIds.includes(s.id));
@@ -71,16 +72,8 @@ const ScopeTable: React.FC<ScopeTableProps> = ({
                   onChange={handleHeaderCheckbox}
                 />
               </th>
-              <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
-                onClick={() => onSort("type")}
-              >
-                Scoping Type{" "}
-                {sortCol === "type" ? (
-                  sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
-                ) : (
-                  <FaSort className="inline opacity-50" />
-                )}
+              <th className="py-2 px-3 border-b border-gray-200 select-none">
+                Scoping Type
               </th>
               <th
                 className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
@@ -130,7 +123,7 @@ const ScopeTable: React.FC<ScopeTableProps> = ({
                       onChange={() => onCheckboxChange(scope.id)}
                     />
                   </td>
-                  <td className="py-2 px-3 align-middle">{scope.type}</td>
+                  <td className="py-2 px-3 align-middle">{typeLabel ?? '-'}</td>
                   <td className="py-2 px-3 align-middle">{scope.name}</td>
                   <td className="py-2 px-3 align-middle">{scope.description}</td>
                 </tr>

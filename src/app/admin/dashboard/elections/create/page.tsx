@@ -28,16 +28,8 @@ interface ElectionFormData {
 
 interface ScopeRow {
   id: number;
-  type: string;
   name: string;
   description: string;
-}
-
-interface ScopeFormData {
-  scopingType: string;
-  scopingName: string;
-  description: string;
-  uploadedFile?: File;
 }
 
 interface PartyRow {
@@ -54,16 +46,9 @@ export default function CreateElectionPage() {
     startDate: "",
     endDate: "",
   });
-  const [scopeData, setScopeData] = useState<ScopeFormData>({
-    scopingType: "Department",
-    scopingName: "Department 1",
-    description: "",
-  });
-  const [addScope, setAddScope] = useState<"yes" | "no" | "">("");
-  const [addParty, setAddParty] = useState<"yes" | "no" | "">(""); // <-- Add this line
+  const [addParty, setAddParty] = useState<"yes" | "no" | "">(""); 
   const [search, setSearch] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [scopingNames, setScopingNames] = useState<{ name: string; description: string }[]>([]);
   const [showPartyModal, setShowPartyModal] = useState(false);
 
   // PartyTab and ScopeTab remote state
@@ -78,6 +63,10 @@ export default function CreateElectionPage() {
   const [partyEditId, setPartyEditId] = useState<number | null>(null);
 
   const electionFormRef = useRef<ElectionFormHandle>(null);
+
+  // Election-level scope type state (enum) and custom label
+  const [electionScopeTypeEnum, setElectionScopeTypeEnum] = useState<"AREA" | "LEVEL" | "DEPARTMENT" | "CUSTOM" | "">("");
+  const [electionScopeTypeLabel, setElectionScopeTypeLabel] = useState<string>("");
 
   // Editing state
   const router = useRouter();
@@ -102,13 +91,21 @@ export default function CreateElectionPage() {
     return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
   };
 
-  // Map free-text scope type to enum accepted by API
-  const mapScopeType = (input: string): "AREA" | "LEVEL" | "DEPARTMENT" | "CUSTOM" => {
-    const t = (input || "").toLowerCase();
-    if (t.startsWith("area")) return "AREA";
-    if (t.startsWith("level")) return "LEVEL";
-    if (t.startsWith("dept") || t.startsWith("depa")) return "DEPARTMENT";
-    return "CUSTOM";
+  // Pretty label for enum
+  const enumToLabel = (val?: "AREA" | "LEVEL" | "DEPARTMENT" | "CUSTOM" | "") => {
+    switch (val) {
+      case "AREA": return "Area";
+      case "LEVEL": return "Level";
+      case "DEPARTMENT": return "Department";
+      case "CUSTOM": return electionScopeTypeLabel || "Custom";
+      default: return "";
+    }
+  };
+
+  const displayScopeTypeForForm = () => {
+    if (!electionScopeTypeEnum) return "";
+    if (electionScopeTypeEnum === "CUSTOM") return electionScopeTypeLabel || "";
+    return enumToLabel(electionScopeTypeEnum);
   };
 
   // Load existing election meta, scopes, and parties when editing
@@ -135,6 +132,9 @@ export default function CreateElectionPage() {
         if (!cancelled) {
           setElectionData(nextData);
           setOriginalMeta({ status: e.status, isLive: e.isLive, allowSurvey: e.allowSurvey });
+          // NEW: set election-level scope fields
+          setElectionScopeTypeEnum((e.scopeType as any) || "");
+          setElectionScopeTypeLabel((e.scopeTypeLabel as any) || "");
         }
         // Fetch scopes and parties in parallel
         const [scopesRes, partiesRes] = await Promise.all([
@@ -145,7 +145,6 @@ export default function CreateElectionPage() {
         if (scopesRes.ok && scopesJson?.success) {
           const rows: ScopeRow[] = (scopesJson?.data?.votingScopes || []).map((s: any) => ({
             id: s.id,
-            type: s.type,
             name: s.name,
             description: s.description,
           }));
@@ -161,9 +160,13 @@ export default function CreateElectionPage() {
         }
       } catch (err) {
         console.error(err);
-        !cancelled && toast.error('Failed to load election details');
+        if (!cancelled) {
+          toast.error('Failed to load election details');
+        }
       } finally {
-        !cancelled && setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
     load();
@@ -193,6 +196,14 @@ export default function CreateElectionPage() {
         return;
       }
       basePayload.schedule = { dateStart: isoStart, dateFinish: isoEnd };
+
+      // Include scope config if present
+      if (electionScopeTypeEnum) {
+        basePayload.scopeType = electionScopeTypeEnum;
+        if (electionScopeTypeEnum === 'CUSTOM' && electionScopeTypeLabel.trim()) {
+          basePayload.scopeTypeLabel = electionScopeTypeLabel.trim();
+        }
+      }
 
       let url = '/api/elections';
       let method: 'POST' | 'PUT' = 'POST';
@@ -230,8 +241,8 @@ export default function CreateElectionPage() {
         }
       }
 
+      // For updates, just show success message and stay on current page
       toast.success(successMsg);
-      router.push('/admin/dashboard/elections');
     } catch (err) {
       console.error(err);
       toast.error((err as Error)?.message || 'Failed to save election');
@@ -262,16 +273,14 @@ export default function CreateElectionPage() {
     setShowCreateModal(true);
   };
 
-  const handleSaveScopeFromModal = async (data: { type: string; scopes: { name: string; description: string }[] }) => {
+  const handleSaveScopeFromModal = async (scopes: { name: string; description: string }[]) => {
     if (!ensureHasElectionId()) return;
-    const type = mapScopeType(data.type);
     try {
       if (scopeEditId) {
         // Update single scope (use first entry)
         const body = {
-          type,
-          name: data.scopes[0]?.name ?? '',
-          description: data.scopes[0]?.description ?? '',
+          name: scopes[0]?.name ?? '',
+          description: scopes[0]?.description ?? '',
         };
         const res = await fetch(`/api/voting-scopes/${scopeEditId}`, {
           method: 'PUT',
@@ -283,13 +292,12 @@ export default function CreateElectionPage() {
         toast.success('Scope updated');
       } else {
         // Create one or multiple scopes
-        for (const s of data.scopes) {
+        for (const s of scopes) {
           const res = await fetch('/api/voting-scopes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               electionId: editId,
-              type,
               name: s.name,
               description: s.description,
             }),
@@ -303,7 +311,7 @@ export default function CreateElectionPage() {
       const res = await fetch(`/api/voting-scopes?electionId=${editId}`, { cache: 'no-store' });
       const json = await res.json();
       if (res.ok && json?.success) {
-        const rows: ScopeRow[] = (json?.data?.votingScopes || []).map((s: any) => ({ id: s.id, type: s.type, name: s.name, description: s.description }));
+        const rows: ScopeRow[] = (json?.data?.votingScopes || []).map((s: any) => ({ id: s.id, name: s.name, description: s.description }));
         setScopeRows(rows);
         setScopeSelectedIds([]);
       }
@@ -327,7 +335,7 @@ export default function CreateElectionPage() {
       const res = await fetch(`/api/voting-scopes?electionId=${editId}`, { cache: 'no-store' });
       const json = await res.json();
       if (res.ok && json?.success) {
-        const rows: ScopeRow[] = (json?.data?.votingScopes || []).map((s: any) => ({ id: s.id, type: s.type, name: s.name, description: s.description }));
+        const rows: ScopeRow[] = (json?.data?.votingScopes || []).map((s: any) => ({ id: s.id, name: s.name, description: s.description }));
         setScopeRows(rows);
       }
       setScopeSelectedIds([]);
@@ -412,17 +420,31 @@ export default function CreateElectionPage() {
     }
   };
 
+  // Check if tabs should be enabled
+  const isScopeTabEnabled = isEditing && !!electionScopeTypeEnum;
+  const isPartyTabEnabled = isEditing;
+
+  // Auto-switch to Election tab if current tab becomes disabled
+  useEffect(() => {
+    if (activeTab === "scope" && !isScopeTabEnabled) {
+      setActiveTab("election");
+    }
+    if (activeTab === "party" && !isPartyTabEnabled) {
+      setActiveTab("election");
+    }
+  }, [activeTab, isScopeTabEnabled, isPartyTabEnabled]);
+
   const tabOptions = [
     { label: "Election", value: "election", disabled: false },
-    { label: "Scope", value: "scope", disabled: false },
-    { label: "Party", value: "party", disabled: false },
+    { label: "Scope", value: "scope", disabled: !isScopeTabEnabled },
+    { label: "Party", value: "party", disabled: !isPartyTabEnabled },
   ];
 
   const scopeInitialData = useMemo(() => {
     if (!scopeEditId) return null;
     const row = scopeRows.find(r => r.id === scopeEditId);
     if (!row) return null;
-    return { type: row.type, name: row.name, description: row.description };
+    return { name: row.name, description: row.description };
   }, [scopeEditId, scopeRows]);
 
   const partyInitialData = useMemo(() => {
@@ -431,6 +453,10 @@ export default function CreateElectionPage() {
     if (!row) return null;
     return { partyName: row.name, selectedColor: row.color };
   }, [partyEditId, parties]);
+
+  // Default state for scope component compatibility
+  const [defaultScopingType] = useState("Department");
+  const [defaultScopingNames] = useState<{ name: string; description: string }[]>([]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -444,12 +470,16 @@ export default function CreateElectionPage() {
                 setElectionData={setElectionData}
                 addParty={addParty}
                 setAddParty={setAddParty}
-                scopeType={""}
-                setScopeType={function (v: string): void {
-                  /* no-op */
+                // Provide display string to form: enum label or custom label
+                scopeType={displayScopeTypeForForm()}
+                setScopeType={(val: string) => {
+                  const v = (val || '').toUpperCase();
+                  if (v === 'AREA' || v === 'LEVEL' || v === 'DEPARTMENT' || v === 'CUSTOM') {
+                    setElectionScopeTypeEnum(v as any);
+                  }
                 }}
-                updateScopeTypeInTable={function (v: string): void {
-                  /* no-op */
+                updateScopeTypeInTable={(label: string) => {
+                  setElectionScopeTypeLabel(label);
                 }}
                 hideSaveButton
                 onSave={handleFormSave}
@@ -460,10 +490,10 @@ export default function CreateElectionPage() {
       case "scope":
         return (
           <ScopeTab
-            scopingType={scopeData.scopingType}
-            setScopingType={(type) => setScopeData(prev => ({ ...prev, scopingType: type }))}
-            scopingNames={scopingNames}
-            setScopingNames={setScopingNames}
+            scopingType={defaultScopingType}
+            setScopingType={() => {}} // No-op since we don't use this anymore
+            scopingNames={defaultScopingNames}
+            setScopingNames={() => {}} // No-op since we don't use this anymore
             search={search}
             setSearch={setSearch}
             showCreateModal={showCreateModal}
@@ -476,6 +506,7 @@ export default function CreateElectionPage() {
             remoteRows={scopeRows}
             onSave={handleSaveScopeFromModal}
             initialData={scopeInitialData}
+            scopeTypeDisplayLabel={displayScopeTypeForForm()}
           />
         );
       case "party":
@@ -503,7 +534,7 @@ export default function CreateElectionPage() {
   };
 
   return (
-    <div className="app h-full flex flex-col min-h-[calc-100vh-4rem] bg-gray-50">
+    <div className="app h-full flex flex-col min-h-[calc(100vh-4rem)] bg-gray-50">
       <Toaster position="top-center" />
       <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
         {/* Tabs + Toolbar at the top */}
@@ -630,38 +661,7 @@ export default function CreateElectionPage() {
                       : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
                   }
                 />
-                {/* Save Button */}
-                <SubmitButton
-                  label="Save"
-                  variant="action-primary"
-                  icon={
-                    <MdSave
-                      size={20}
-                      className={
-                        scopeRows.length > 0
-                          ? "text-[var(--color-primary)]"
-                          : "text-gray-400"
-                      }
-                    />
-                  }
-                  title="Save"
-                  onClick={async () => {
-                    if (!ensureHasElectionId()) return;
-                    // No-op since changes persist immediately; refresh server state
-                    const res = await fetch(`/api/voting-scopes?electionId=${editId}`, { cache: 'no-store' });
-                    const json = await res.json();
-                    if (res.ok && json?.success) {
-                      const rows: ScopeRow[] = (json?.data?.votingScopes || []).map((s: any) => ({ id: s.id, type: s.type, name: s.name, description: s.description }));
-                      setScopeRows(rows);
-                      toast.success('Synchronized with server');
-                    }
-                  }}
-                  className={
-                    scopeRows.length > 0
-                      ? ""
-                      : "border-2 border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
-                  }
-                />
+                {/* Removed Save button: changes are persisted immediately via modal */}
               </div>
             </>
           )}
@@ -715,7 +715,7 @@ export default function CreateElectionPage() {
                   className={
                     partySelectedIds.length >= 1
                       ? ""
-                      : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
+                      : "text-gray-100 bg-gray-100 cursor-not-allowed pointer-events-none"
                   }
                 />
                 <SubmitButton
@@ -753,37 +753,7 @@ export default function CreateElectionPage() {
                       : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
                   }
                 />
-                {/* Save Button for Party */}
-                <SubmitButton
-                  label="Save"
-                  variant="action-primary"
-                  icon={
-                    <MdSave
-                      size={20}
-                      className={
-                        parties.length > 0
-                          ? "text-[var(--color-primary)]"
-                          : "text-gray-400"
-                      }
-                    />
-                  }
-                  title="Save"
-                  onClick={async () => {
-                    if (!ensureHasElectionId()) return;
-                    const res = await fetch(`/api/parties?electionId=${editId}`, { cache: 'no-store' });
-                    const json = await res.json();
-                    if (res.ok && json?.success) {
-                      const rows: PartyRow[] = (json?.data?.parties || []).map((p: any) => ({ id: p.id, name: p.name, color: p.color }));
-                      setParties(rows);
-                      toast.success('Synchronized with server');
-                    }
-                  }}
-                  className={
-                    parties.length > 0
-                      ? ""
-                      : "border-2 border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
-                  }
-                />
+                {/* Removed Save button: changes are persisted immediately via modal */}
               </div>
             </>
           )}

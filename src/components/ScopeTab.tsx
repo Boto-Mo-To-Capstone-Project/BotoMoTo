@@ -4,7 +4,6 @@ import { useState } from "react";
 
 interface Scope {
   id: number;
-  type: string;
   name: string;
   description: string;
 }
@@ -16,6 +15,7 @@ interface ScopeTabProps {
   setScopingNames: React.Dispatch<React.SetStateAction<{ name: string; description: string }[]>>;
   search: string;
   setSearch: (v: string) => void;
+  scopeTypeDisplayLabel?: string; // current election-level type label to display
 }
 
 export function ScopeTab({
@@ -32,14 +32,15 @@ export function ScopeTab({
   remoteRows,
   onSave,
   initialData,
+  scopeTypeDisplayLabel,
 }: ScopeTabProps & {
   showCreateModal: boolean;
   setShowCreateModal: (v: boolean) => void;
   selectedIds: number[];
   setSelectedIds: React.Dispatch<React.SetStateAction<number[]>>;
   remoteRows?: Scope[];
-  onSave?: (data: { type: string; scopes: { name: string; description: string }[] }) => Promise<void> | void;
-  initialData?: { type: string; name: string; description: string } | null;
+  onSave?: (scopes: { name: string; description: string }[]) => Promise<void> | void;
+  initialData?: { name: string; description: string } | null;
 }) {
   const [sortCol, setSortCol] = useState<keyof Scope | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -47,7 +48,6 @@ export function ScopeTab({
   // Build table data from scopingNames (fallback when remoteRows is not provided)
   const scopeTableData = scopingNames.map((item, idx) => ({
     id: idx,
-    type: scopingType,
     name: item.name,
     description: item.description,
   }));
@@ -84,14 +84,13 @@ export function ScopeTab({
     handleCheckboxChange(scope.id);
   };
 
-  const handleScopeModalSave = async (data: { type: string; scopes: { name: string; description: string }[] }) => {
+  const handleScopeModalSave = async (scopes: { name: string; description: string }[]) => {
     if (onSave) {
-      await onSave(data);
+      await onSave(scopes);
       setShowCreateModal(false);
       return;
     }
-    setScopingType(data.type);
-    setScopingNames(prev => [...prev, ...data.scopes]);
+    setScopingNames(prev => [...prev, ...scopes]);
     setShowCreateModal(false);
   };
 
@@ -102,6 +101,7 @@ export function ScopeTab({
         onClose={() => setShowCreateModal(false)}
         onSave={handleScopeModalSave}
         initialData={initialData ?? undefined}
+        defaultTypeLabel={scopeTypeDisplayLabel}
       />
       <ScopeTable
         scopeData={sortedScopeTableData}
@@ -119,6 +119,7 @@ export function ScopeTab({
         onLast={() => { throw new Error("Function not implemented."); }}
         pageSize={0}
         onPageSizeChange={() => { throw new Error("Function not implemented."); }}
+        typeLabel={scopeTypeDisplayLabel}
       />
     </>
   );

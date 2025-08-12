@@ -40,7 +40,7 @@ export async function GET(
     }
 
     // Fetch voting scope with election and organization info (exclude soft-deleted)
-    const votingScope = await db.votingScope.findUnique({
+    const votingScope = await db.votingScope.findFirst({
       where: {
         id: votingScopeId,
         isDeleted: false
@@ -188,7 +188,7 @@ export async function PUT(
     const { name, description } = validation.data;
 
     // Fetch existing voting scope (exclude soft-deleted)
-    const existingVotingScope = await db.votingScope.findUnique({
+    const existingVotingScope = await db.votingScope.findFirst({
       where: {
         id: votingScopeId,
         isDeleted: false
@@ -358,7 +358,7 @@ export async function DELETE(
     }
 
     // Fetch existing voting scope (exclude soft-deleted)
-    const existingVotingScope = await db.votingScope.findUnique({
+    const existingVotingScope = await db.votingScope.findFirst({
       where: {
         id: votingScopeId,
         isDeleted: false
