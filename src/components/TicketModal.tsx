@@ -46,6 +46,8 @@ export default function TicketModal({
 
   const orgName = ticket.organization?.name || "Unknown Org";
   const subject = ticket.subject || "No subject";
+  const isResolved =
+    (ticket.status || ticket.Status || "").toString().toUpperCase() === "RESOLVED";
 
   // Normalize role for all comparisons
   const normalizedRole = (role: string) =>
@@ -113,6 +115,7 @@ export default function TicketModal({
         <div className="flex-1 flex flex-col gap-2 px-4 pb-2 overflow-y-auto">
           {messages.length > 0 ? (
             messages.map((msg: any, idx: number) => {
+              // ...existing code for message parsing and alignment...
               let content = "";
               let sender = "";
               if (typeof msg === "string") {
@@ -128,8 +131,8 @@ export default function TicketModal({
                 content = msg.content || "";
                 sender = msg.sender || "";
               }
-              // Align right if sender matches normalized currentUserRole
-              const isCurrentUser = normalizedRole(sender) === normalizedRole(currentUserRole);
+              const isCurrentUser =
+                normalizedRole(sender) === normalizedRole(currentUserRole);
               return (
                 <div
                   key={idx}
@@ -146,31 +149,39 @@ export default function TicketModal({
           )}
         </div>
 
-        {/* Reply Field */}
-        <div className="flex items-center border-t px-2 py-3 bg-gray-50 gap-2">
-          <input
-            ref={inputRef}
-            className="flex-1 border-none outline-none bg-transparent px-3 py-2 text-sm"
-            placeholder={replyPlaceholder}
-            value={reply}
-            onChange={(e) => setReply(e.target.value)}
-            disabled={sending}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleReply();
-              }
-            }}
-          />
-          <button
-            className="px-5 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 font-semibold"
-            onClick={handleReply}
-            disabled={sending || !reply.trim()}
-            style={{ minWidth: 80 }}
-          >
-            Send
-          </button>
-        </div>
+        {/* Reply Field - only show if not resolved */}
+        {!isResolved && (
+          <div className="flex items-center border-t px-2 py-3 bg-gray-50 gap-2">
+            <input
+              ref={inputRef}
+              className="flex-1 border-none outline-none bg-transparent px-3 py-2 text-sm"
+              placeholder="Reply here..."
+              value={reply}
+              onChange={(e) => setReply(e.target.value)}
+              disabled={sending}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleReply();
+                }
+              }}
+            />
+            <button
+              className="px-5 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 font-semibold"
+              onClick={handleReply}
+              disabled={sending || !reply.trim()}
+              style={{ minWidth: 80 }}
+            >
+              Send
+            </button>
+          </div>
+        )}
+        {/* If resolved, show a notice */}
+        {isResolved && (
+          <div className="border-t px-2 py-3 bg-gray-50 text-center text-gray-400 text-sm">
+            This ticket is resolved. No further replies allowed.
+          </div>
+        )}
       </div>
     </div>
   );

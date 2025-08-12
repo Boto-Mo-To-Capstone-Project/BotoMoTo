@@ -67,3 +67,54 @@ export async function GET(
         });
     }
 }
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const authResult = await requireAuth([ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
+
+    const { id } = await params;
+    const ticketId = parseInt(id);
+
+    const body = await req.json();
+    const { status } = body;
+
+    if (!status) {
+      return apiResponse({
+        success: false,
+        message: "Status is required",
+        status: 400,
+      });
+    }
+
+    const updated = await db.ticket.update({
+      where: { id: ticketId },
+      data: { status },
+    });
+
+    await createAuditLog({
+      user,
+      action: "UPDATE",
+      request: req,
+      resource: "TICKET",
+      message: `Updated status of ticket #${ticketId} to ${status}`,
+    });
+
+    return apiResponse({
+      success: true,
+      message: "Status updated successfully",
+      data: { ticket: updated },
+    });
+  } catch (error) {
+    return apiResponse({
+      success: false,
+      message: "Failed to update status",
+      error: typeof error === "string" ? error : "Internal server error",
+      status: 500,
+    });
+  }
+}
