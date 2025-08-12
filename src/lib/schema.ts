@@ -166,6 +166,9 @@ const electionSchema = z.object({
     dateStart: z.union([z.string(), z.date()]),
     dateFinish: z.union([z.string(), z.date()]),
   }).partial().optional(),
+  // NEW: optional election-level scope config
+  scopeType: z.enum(["AREA", "LEVEL", "DEPARTMENT", "CUSTOM"]).optional(),
+  scopeTypeLabel: field.string("Scope type label", { required: false, min: 1, max: 100 }).optional(),
 });
 
 const userSchema = z.object({
@@ -187,19 +190,11 @@ const partySchema = z.object({
 
 const votingScopeSchema = z.object({
   electionId: z.number().int().positive("Election ID must be a positive integer"),
-  type: z.enum(["AREA", "LEVEL", "DEPARTMENT", "CUSTOM"], {
-    required_error: "Voting scope type is required",
-    invalid_type_error: "Invalid voting scope type"
-  }),
   name: field.string("Voting scope name", { min: 2, max: 100 }),
   description: field.string("Voting scope description", { min: 5, max: 500 })
 });
 
 const votingScopeUpdateSchema = z.object({
-  type: z.enum(["AREA", "LEVEL", "DEPARTMENT", "CUSTOM"], {
-    required_error: "Voting scope type is required",
-    invalid_type_error: "Invalid voting scope type"
-  }),
   name: field.string("Voting scope name", { min: 2, max: 100 }),
   description: field.string("Voting scope description", { min: 5, max: 500 })
 });

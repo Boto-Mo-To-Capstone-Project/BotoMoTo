@@ -204,6 +204,10 @@ model Election {
   status      ElectionStatus @default(DRAFT)
   isLive      Boolean        @default(false) // For real-time voting
   allowSurvey Boolean        @default(false) // Enable post-vote survey
+
+  // NEW: Optional election-level scope configuration
+  scopeType      VotingScopeType?
+  scopeTypeLabel String?
   
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -244,7 +248,6 @@ model MfaSettings {
 model VotingScope {
   id          Int             @id @default(autoincrement())
   electionId  Int
-  type        VotingScopeType
   name        String
   description String
 
@@ -348,6 +351,8 @@ model Party {
 
   election   Election    @relation(fields: [electionId], references: [id])
   candidates Candidate[]
+
+  @@unique([electionId, name])
 }
 
 model CandidateLeadershipExperience {
@@ -450,7 +455,7 @@ model Broadcast {
   isSent      Boolean   @default(false)
   
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  updatedAt   DateTime  @default(now())
 
   election Election @relation(fields: [electionId], references: [id])
 }
