@@ -27,15 +27,14 @@ export default function CreateTicketModal({
       if (tickets.length > 0 && tickets[0]._original?.organization?.id) {
         setOrgId(tickets[0]._original.organization.id);
       } else {
-        // fallback to session if tickets are empty
-        fetch("/api/auth/session")
-          .then((res) => res.json())
-          .then((data) => {
-            setOrgId(
-              data?.user?.orgId ||
-              data?.user?.organizationId ||
-              data?.orgId ||
-              null
+        // fallback: fetch from /api/users (returns own user info for admin)
+      fetch("/api/users")
+        .then((res) => res.json())
+        .then((data) => {
+          // For admin, user info is in data.data.user
+          setOrgId(
+            data?.data?.user?.organization?.id ||
+            null
             );
           });
       }
