@@ -188,6 +188,10 @@ async function createElection(request: NextRequest) {
     const rawStart = rawBody?.schedule?.dateStart ?? rawBody?.schedule?.startDate ?? rawBody?.startDate ?? null;
     const rawEnd = rawBody?.schedule?.dateFinish ?? rawBody?.schedule?.endDate ?? rawBody?.endDate ?? null;
 
+    // NEW: Optional scopeType/scopeTypeLabel from body
+    const incomingScopeType: "AREA" | "LEVEL" | "DEPARTMENT" | "CUSTOM" | undefined = rawBody?.scopeType;
+    const incomingScopeTypeLabel: string | undefined = rawBody?.scopeTypeLabel;
+
     // Validate schedule if provided
     let dateStart: Date | undefined;
     let dateFinish: Date | undefined;
@@ -249,6 +253,12 @@ async function createElection(request: NextRequest) {
         status: status || ELECTION_STATUS.ACTIVE,
         isLive: isLive || false,
         allowSurvey: allowSurvey || false,
+        // store scope config if present
+        scopeType: incomingScopeType ?? null,
+        scopeTypeLabel:
+          incomingScopeType === 'CUSTOM' && typeof incomingScopeTypeLabel === 'string' && incomingScopeTypeLabel.trim()
+            ? incomingScopeTypeLabel.trim()
+            : null,
       },
       include: {
         organization: {

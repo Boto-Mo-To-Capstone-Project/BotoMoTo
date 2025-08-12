@@ -189,6 +189,10 @@ export async function PUT(
     
     const { name, description, status, isLive, allowSurvey } = validation.data;
 
+    // Optional scope config from body
+    const incomingScopeType: "AREA" | "LEVEL" | "DEPARTMENT" | "CUSTOM" | undefined = rawBody?.scopeType;
+    const incomingScopeTypeLabel: string | undefined = rawBody?.scopeTypeLabel;
+
     const election = await db.election.findUnique({
       where: {
         id: electionId,
@@ -273,8 +277,10 @@ export async function PUT(
       description: election.description,
       status: election.status,
       isLive: election.isLive,
-      allowSurvey: election.allowSurvey
-    };
+      allowSurvey: election.allowSurvey,
+      scopeType: (election as any).scopeType ?? null,
+      scopeTypeLabel: (election as any).scopeTypeLabel ?? null,
+    } as const;
 
     const updatedElection = await db.election.update({
       where: { id: electionId },
@@ -284,6 +290,12 @@ export async function PUT(
         status,
         isLive,
         allowSurvey,
+        // optional scope config
+        scopeType: incomingScopeType ?? null,
+        scopeTypeLabel:
+          incomingScopeType === 'CUSTOM' && typeof incomingScopeTypeLabel === 'string' && incomingScopeTypeLabel.trim()
+            ? incomingScopeTypeLabel.trim()
+            : null,
       },
       include: {
         organization: {
@@ -379,9 +391,11 @@ export async function PUT(
 
     // Compare and log changed fields
     const changedFields: Record<string, { old: any; new: any }> = {};
-    for (const key of ["name", "description", "status", "isLive", "allowSurvey"] as const) {
-      if (oldData[key] !== (updatedElection as any)[key]) {
-        changedFields[key] = { old: oldData[key], new: (updatedElection as any)[key] };
+    for (const key of ["name", "description", "status", "isLive", "allowSurvey", "scopeType", "scopeTypeLabel"] as const) {
+      const oldVal = (oldData as any)[key];
+      const newVal = (updatedElection as any)[key] ?? null;
+      if (oldVal !== newVal) {
+        changedFields[key] = { old: oldVal, new: newVal };
       }
     }
 

@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if election exists and user has permission
-    const election = await db.election.findUnique({
+    const election = await db.election.findFirst({
       where: {
         id: electionIdInt,
         isDeleted: false
@@ -194,10 +194,10 @@ export async function POST(request: NextRequest) {
     // Validate voting scope data using helper (including electionId)
     const validation = validateWithZod(votingScopeSchema, body);
     if (!('data' in validation)) return validation;
-    const { electionId, name, type, description } = validation.data;
+    const { electionId, name, description } = validation.data;
 
     // Check if election exists and user has permission
-    const election = await db.election.findUnique({
+    const election = await db.election.findFirst({
       where: {
         id: electionId,
         isDeleted: false
@@ -269,7 +269,6 @@ export async function POST(request: NextRequest) {
       data: {
         electionId: electionId,
         name,
-        type,
         description,
       },
       include: {
@@ -375,7 +374,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if election exists and user has permission
-    const election = await db.election.findUnique({
+    const election = await db.election.findFirst({
       where: {
         id: electionIdInt,
         isDeleted: false

@@ -185,7 +185,7 @@ export async function PUT(
     const body = await request.json();
     const validation = validateWithZod(votingScopeUpdateSchema, body);
     if (!('data' in validation)) return validation;
-    const { name, type, description } = validation.data;
+    const { name, description } = validation.data;
 
     // Fetch existing voting scope (exclude soft-deleted)
     const existingVotingScope = await db.votingScope.findUnique({
@@ -258,7 +258,6 @@ export async function PUT(
       where: { id: votingScopeId },
       data: { 
         name, 
-        type, 
         description 
       },
       include: {
@@ -279,9 +278,9 @@ export async function PUT(
 
     // Compare and log changed fields
     const changedFields: Record<string, { old: any; new: any }> = {};
-    for (const key of ["name", "type", "description"] as const) {
-      if (existingVotingScope[key] !== updatedVotingScope[key]) {
-        changedFields[key] = { old: existingVotingScope[key], new: updatedVotingScope[key] };
+    for (const key of ["name", "description"] as const) {
+      if ((existingVotingScope as any)[key] !== (updatedVotingScope as any)[key]) {
+        changedFields[key] = { old: (existingVotingScope as any)[key], new: (updatedVotingScope as any)[key] };
       }
     }
 
