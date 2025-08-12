@@ -203,7 +203,7 @@ async function validateSeedData() {
       include: {
         votingScopes: {
           where: { isDeleted: false },
-          select: { id: true, type: true },
+          select: { id: true },
         },
         positions: {
           where: { isDeleted: false },
@@ -220,7 +220,6 @@ async function validateSeedData() {
 
     for (const election of allElections) {
       const scopeIds = new Set(election.votingScopes.map((s) => s.id));
-      const scopeTypes = new Set(election.votingScopes.map((s) => s.type));
       const noScope = election.votingScopes.length === 0;
 
       const header = `Election ${election.id} - ${election.name}`;
@@ -234,9 +233,6 @@ async function validateSeedData() {
         if (badPositions.length) addIssue(`${header}: ${badPositions.length} position(s) have a scope in a NO SCOPE election`);
         if (badVoters.length) addIssue(`${header}: ${badVoters.length} voter(s) have a scope in a NO SCOPE election`);
       } else {
-        // Must share single scope type
-        details.push(`  Scope type(s): ${[...scopeTypes].join(", ")} (count: ${election.votingScopes.length})`);
-        if (scopeTypes.size > 1) addIssue(`${header}: Multiple scope types found in one election: ${[...scopeTypes].join(", ")}`);
         // Positions/voters must have scope present in this election
         const badPositions = election.positions.filter((p) => !p.votingScopeId || !scopeIds.has(p.votingScopeId));
         const badVoters = election.voters.filter((v) => !v.votingScopeId || !scopeIds.has(v.votingScopeId));

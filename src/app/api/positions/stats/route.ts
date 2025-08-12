@@ -122,8 +122,7 @@ export async function GET(request: NextRequest) {
         votingScope: {
           select: {
             id: true,
-            name: true,
-            type: true
+            name: true
           }
         },
         _count: {
@@ -164,8 +163,7 @@ export async function GET(request: NextRequest) {
       },
       select: {
         id: true,
-        name: true,
-        type: true
+        name: true
       }
     });
 
@@ -174,7 +172,6 @@ export async function GET(request: NextRequest) {
       return {
         votingScopeId: stat.votingScopeId,
         votingScopeName: scope?.name || (stat.votingScopeId ? 'Unknown Scope' : 'No Scope'),
-        votingScopeType: scope?.type || null,
         positionCount: stat._count.id
       };
     });

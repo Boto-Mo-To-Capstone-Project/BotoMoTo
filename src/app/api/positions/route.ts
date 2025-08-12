@@ -120,8 +120,7 @@ export async function GET(request: NextRequest) {
         votingScope: {
           select: {
             id: true,
-            name: true,
-            type: true
+            name: true
           }
         },
         _count: {
@@ -334,8 +333,7 @@ export async function POST(request: NextRequest) {
         votingScope: {
           select: {
             id: true,
-            name: true,
-            type: true
+            name: true
           }
         },
         _count: {

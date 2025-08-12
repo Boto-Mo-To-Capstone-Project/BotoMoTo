@@ -309,14 +309,16 @@ async function seedDatabase() {
 
       // Determine scope type per election (example rule: department-focused election gets DEPARTMENT)
       const scopeType = election.name.toLowerCase().includes("department") ? "DEPARTMENT" : "LEVEL";
-      const options = votingScopes.filter((s) => s.type === scopeType);
+      const options = votingScopes; // no per-row type filtering
       const toCreate = options.slice(0, Math.min(3, options.length));
 
       const scopesForElection = [];
       for (const scopeDef of toCreate) {
         const scope = await db.votingScope.create({
           data: {
-            ...scopeDef,
+            // scopeDef may contain 'type' originally; omit it now
+            name: scopeDef.name,
+            description: scopeDef.description,
             electionId: election.id,
           },
         });
@@ -597,7 +599,7 @@ async function seedDatabase() {
         const posCount = createdPositions.filter((p) => p.electionId === e.id).length;
         const voterCount = createdVoters.filter((v) => v.electionId === e.id).length;
         const candCount = createdCandidates.filter((c) => c.electionId === e.id).length;
-        const partyCount = createdParties.filter((p) => p.electionId === e.id).length;
+        const partyCount = createdParties.filter((p) => e.electionId === p.electionId).length;
         const voteCount = await db.voteResponse.count({ where: { electionId: e.id } });
 
         console.log(`     • ${e.name} → scope: ${scopeInfo}`);
