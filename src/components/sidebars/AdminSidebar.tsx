@@ -76,19 +76,6 @@ const AdminSidebar = ({
     })
   );
 
-  const manageLinks = [
-    "Overview",
-    "Security",
-    "Ballot Preview",
-    "Live Results",
-    "Election Status",
-  ].map((sub) => ({
-    name: sub,
-    href: `/admin/dashboard/elections/${electionId}/manage/${sub
-      .toLowerCase()
-      .replace(" ", "-")}`,
-  }));
-
   const displayName = session?.user?.name || "Hardcoded name";
   const displayEmail = session?.user?.email || "Hardcoded@gmail.com";
 
@@ -172,49 +159,6 @@ const AdminSidebar = ({
                 {showSetup && (
                   <nav className="space-y-1 mt-2 bg-white rounded-lg">
                     {setupLinks.map((link) => {
-                      const isActive = pathname === link.href;
-                      return (
-                        <Link
-                          key={link.href}
-                          href={link.href}
-                          className={`block pl-4 sidebar-items rounded-lg p-2 ${
-                            isActive
-                              ? "text-primary"
-                              : "text-gray hover:text-primary"
-                          }`}
-                          onClick={onClose}
-                        >
-                          {link.name}
-                        </Link>
-                      );
-                    })}
-                  </nav>
-                )}
-              </div>
-
-              {/* Manage Dropdown */}
-              <div className="">
-                <button
-                  onClick={() => setShowManage(!showManage)}
-                  className={`flex items-center justify-between w-full p-2 rounded sidebar-items ${
-                    showManage
-                      ? "bg-white text-primary"
-                      : "text-white hover:font-semibold"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <Wrench className="h-5 w-5" />
-                    <span>Manage Election</span>
-                  </div>
-                  {showManage ? (
-                    <ChevronUp className="w-4 h-4" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4" />
-                  )}
-                </button>
-                {showManage && (
-                  <nav className="space-y-1 mt-2 bg-white rounded-lg">
-                    {manageLinks.map((link) => {
                       const isActive = pathname === link.href;
                       return (
                         <Link
