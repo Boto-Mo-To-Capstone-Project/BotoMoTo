@@ -4,7 +4,6 @@ import { useState } from "react";
 
 interface Scope {
   id: number;
-  type: string;
   name: string;
   description: string;
 }
@@ -16,6 +15,7 @@ interface ScopeTabProps {
   setScopingNames: React.Dispatch<React.SetStateAction<{ name: string; description: string }[]>>;
   search: string;
   setSearch: (v: string) => void;
+  scopeTypeDisplayLabel?: string; // current election-level type label to display
 }
 
 export function ScopeTab({
@@ -29,22 +29,30 @@ export function ScopeTab({
   setShowCreateModal,
   selectedIds,
   setSelectedIds,
+  remoteRows,
+  onSave,
+  initialData,
+  scopeTypeDisplayLabel,
 }: ScopeTabProps & {
   showCreateModal: boolean;
   setShowCreateModal: (v: boolean) => void;
   selectedIds: number[];
   setSelectedIds: React.Dispatch<React.SetStateAction<number[]>>;
+  remoteRows?: Scope[];
+  onSave?: (scopes: { name: string; description: string }[]) => Promise<void> | void;
+  initialData?: { name: string; description: string } | null;
 }) {
   const [sortCol, setSortCol] = useState<keyof Scope | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
-  // Build table data from scopingNames
+  // Build table data from scopingNames (fallback when remoteRows is not provided)
   const scopeTableData = scopingNames.map((item, idx) => ({
     id: idx,
-    type: scopingType,
     name: item.name,
     description: item.description,
   }));
+
+  const rows: Scope[] = remoteRows ?? scopeTableData;
 
   // Sorting logic
   const handleSort = (col: keyof Scope) => {
@@ -56,10 +64,10 @@ export function ScopeTab({
     }
   };
 
-  const sortedScopeTableData = [...scopeTableData].sort((a, b) => {
+  const sortedScopeTableData = [...rows].sort((a, b) => {
     if (!sortCol) return 0;
-    const aVal = a[sortCol] ?? "";
-    const bVal = b[sortCol] ?? "";
+    const aVal = (a as any)[sortCol] ?? "";
+    const bVal = (b as any)[sortCol] ?? "";
     if (aVal < bVal) return sortDir === "asc" ? -1 : 1;
     if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
     return 0;
@@ -76,9 +84,13 @@ export function ScopeTab({
     handleCheckboxChange(scope.id);
   };
 
-  const handleScopeModalSave = (data: { type: string; scopes: { name: string; description: string }[] }) => {
-    setScopingType(data.type);
-    setScopingNames(prev => [...prev, ...data.scopes]);
+  const handleScopeModalSave = async (scopes: { name: string; description: string }[]) => {
+    if (onSave) {
+      await onSave(scopes);
+      setShowCreateModal(false);
+      return;
+    }
+    setScopingNames(prev => [...prev, ...scopes]);
     setShowCreateModal(false);
   };
 
@@ -88,6 +100,8 @@ export function ScopeTab({
         open={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSave={handleScopeModalSave}
+        initialData={initialData ?? undefined}
+        defaultTypeLabel={scopeTypeDisplayLabel}
       />
       <ScopeTable
         scopeData={sortedScopeTableData}
@@ -105,6 +119,7 @@ export function ScopeTab({
         onLast={() => { throw new Error("Function not implemented."); }}
         pageSize={0}
         onPageSizeChange={() => { throw new Error("Function not implemented."); }}
+        typeLabel={scopeTypeDisplayLabel}
       />
     </>
   );

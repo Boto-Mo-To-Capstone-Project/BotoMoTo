@@ -1,4 +1,6 @@
 import db from "@/lib/db/db";
+import { SessionTracker } from "./sessionTracker";
+import { SystemMetricsLogger } from "./systemMetrics";
 
 /**
  * PerformanceAnalyzer - Calculates KPI metrics from logged performance data
@@ -152,24 +154,15 @@ export class PerformanceAnalyzer {
   /**
    * Calculate peak concurrent users
    */
+  /**
+   * Calculate peak concurrent users using NextAuth sessions
+   */
   static async calculatePeakConcurrentUsers(startDate: Date, endDate: Date): Promise<KpiMetric> {
     try {
-      // This is complex - we need to find the maximum number of overlapping sessions
-      // For now, we'll use a simplified approach
+      const timePeriodHours = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60));
+      const peakUsers = await SessionTracker.getPeakConcurrentUsers(timePeriodHours);
       
-      const activeSessions = await db.userSession.findMany({
-        where: {
-          startedAt: { lte: endDate },
-          OR: [
-            { endedAt: null }, // Still active
-            { endedAt: { gte: startDate } }
-          ]
-        }
-      });
-
-      // Simple peak calculation - could be improved with time-series analysis
-      const peakUsers = activeSessions.length;
-      
+      // Get daily concurrent user counts for sparkline
       const sparklineData = await this.getDailyConcurrentUsers(7);
       
       return {
@@ -330,20 +323,23 @@ export class PerformanceAnalyzer {
   }
 
   private static async getDailyConcurrentUsers(days: number): Promise<number[]> {
-    // Simplified implementation - would need more complex time-series analysis for accuracy
+    // Get daily concurrent user counts using NextAuth sessions
     const data: number[] = [];
     
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
       
-      const count = await db.userSession.count({
+      // Count active NextAuth sessions for this day
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      const count = await db.session.count({
         where: {
-          startedAt: { lte: date },
-          OR: [
-            { endedAt: null },
-            { endedAt: { gte: date } }
-          ]
+          createdAt: { lte: endOfDay },
+          expires: { gte: startOfDay }
         }
       });
 

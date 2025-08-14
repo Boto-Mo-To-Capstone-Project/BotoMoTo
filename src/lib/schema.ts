@@ -153,12 +153,22 @@ const organizationSchema = z.object({
 const electionSchema = z.object({
   name: field.string("Election name", { min: 3, max: 100 }),
   description: field.string("Election description", { min: 10, max: 500 }),
-  status: z.enum(["DRAFT", "ACTIVE", "PAUSED", "CLOSED", "ARCHIVED"], {
+  status: z.enum(["ACTIVE", "CLOSED"], {
     required_error: "Election status is required",
     invalid_type_error: "Invalid election status"
-  }).default("DRAFT"),
+  }).default("ACTIVE"),
   isLive: z.boolean().default(false),
-  allowSurvey: z.boolean().default(false)
+  allowSurvey: z.boolean().default(false),
+  // Optional schedule fields to allow flexible payloads; validated in route handlers
+  startDate: z.union([z.string(), z.date()]).optional(),
+  endDate: z.union([z.string(), z.date()]).optional(),
+  schedule: z.object({
+    dateStart: z.union([z.string(), z.date()]),
+    dateFinish: z.union([z.string(), z.date()]),
+  }).partial().optional(),
+  // NEW: optional election-level scope config
+  scopeType: z.enum(["AREA", "LEVEL", "DEPARTMENT", "CUSTOM"]).optional(),
+  scopeTypeLabel: field.string("Scope type label", { required: false, min: 1, max: 100 }).optional(),
 });
 
 const userSchema = z.object({
@@ -180,19 +190,11 @@ const partySchema = z.object({
 
 const votingScopeSchema = z.object({
   electionId: z.number().int().positive("Election ID must be a positive integer"),
-  type: z.enum(["AREA", "LEVEL", "DEPARTMENT", "CUSTOM"], {
-    required_error: "Voting scope type is required",
-    invalid_type_error: "Invalid voting scope type"
-  }),
   name: field.string("Voting scope name", { min: 2, max: 100 }),
   description: field.string("Voting scope description", { min: 5, max: 500 })
 });
 
 const votingScopeUpdateSchema = z.object({
-  type: z.enum(["AREA", "LEVEL", "DEPARTMENT", "CUSTOM"], {
-    required_error: "Voting scope type is required",
-    invalid_type_error: "Invalid voting scope type"
-  }),
   name: field.string("Voting scope name", { min: 2, max: 100 }),
   description: field.string("Voting scope description", { min: 5, max: 500 })
 });
@@ -302,6 +304,21 @@ const candidateUpdateSchema = z.object({
   educations: z.array(candidateEducationSchema).optional()
 });
 
+// Survey Form Creation Schema
+const surveyFormCreateSchema = z.object({
+  title: field.string("Survey title", { min: 1, max: 200 }),
+  description: field.string("Survey description", { required: false, max: 1000 }).default(""),
+  formSchema: z.any(), // Store full builder schema as JSON
+  isActive: z.boolean().default(false), // false = draft, true = published
+});
+
+const surveyFormUpdateSchema = z.object({
+  title: field.string("Survey title", { required: false, min: 1, max: 200 }),
+  description: field.string("Survey description", { required: false, max: 1000 }),
+  formSchema: z.any().optional(),
+  isActive: z.boolean().optional(),
+});
+
 // Types
 type LoginSchema = z.infer<typeof loginSchema>;
 type SignupSchema = z.infer<typeof signupSchema>;
@@ -321,6 +338,8 @@ type CandidateUpdateSchema = z.infer<typeof candidateUpdateSchema>;
 type CandidateLeadershipSchema = z.infer<typeof candidateLeadershipSchema>;
 type CandidateWorkExperienceSchema = z.infer<typeof candidateWorkExperienceSchema>;
 type CandidateEducationSchema = z.infer<typeof candidateEducationSchema>;
+type SurveyFormCreateSchema = z.infer<typeof surveyFormCreateSchema>;
+type SurveyFormUpdateSchema = z.infer<typeof surveyFormUpdateSchema>;
 
 export {
   field,
@@ -342,6 +361,8 @@ export {
   candidateLeadershipSchema,
   candidateWorkExperienceSchema,
   candidateEducationSchema,
+  surveyFormCreateSchema,
+  surveyFormUpdateSchema,
   type LoginSchema,
   type SignupSchema,
   type OrganizationSchema,
@@ -359,5 +380,7 @@ export {
   type CandidateUpdateSchema,
   type CandidateLeadershipSchema,
   type CandidateWorkExperienceSchema,
-  type CandidateEducationSchema
+  type CandidateEducationSchema,
+  type SurveyFormCreateSchema,
+  type SurveyFormUpdateSchema,
 };

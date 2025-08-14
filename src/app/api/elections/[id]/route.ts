@@ -183,11 +183,15 @@ export async function PUT(
     }
 
     // Parse and validate request body
-    const body = await request.json();
-    const validation = validateWithZod(electionSchema, body);
+    const rawBody = await request.json();
+    const validation = validateWithZod(electionSchema, rawBody);
     if (!('data' in validation)) return validation;
     
     const { name, description, status, isLive, allowSurvey } = validation.data;
+
+    // Optional scope config from body
+    const incomingScopeType: "AREA" | "LEVEL" | "DEPARTMENT" | "CUSTOM" | undefined = rawBody?.scopeType;
+    const incomingScopeTypeLabel: string | undefined = rawBody?.scopeTypeLabel;
 
     const election = await db.election.findUnique({
       where: {
@@ -273,8 +277,10 @@ export async function PUT(
       description: election.description,
       status: election.status,
       isLive: election.isLive,
-      allowSurvey: election.allowSurvey
-    };
+      allowSurvey: election.allowSurvey,
+      scopeType: (election as any).scopeType ?? null,
+      scopeTypeLabel: (election as any).scopeTypeLabel ?? null,
+    } as const;
 
     const updatedElection = await db.election.update({
       where: { id: electionId },
@@ -284,6 +290,12 @@ export async function PUT(
         status,
         isLive,
         allowSurvey,
+        // optional scope config
+        scopeType: incomingScopeType ?? null,
+        scopeTypeLabel:
+          incomingScopeType === 'CUSTOM' && typeof incomingScopeTypeLabel === 'string' && incomingScopeTypeLabel.trim()
+            ? incomingScopeTypeLabel.trim()
+            : null,
       },
       include: {
         organization: {
@@ -323,11 +335,67 @@ export async function PUT(
       },
     });
 
+    // Schedule update handling: accept start/end from multiple shapes
+    const rawStart = rawBody?.schedule?.dateStart ?? rawBody?.schedule?.startDate ?? rawBody?.startDate ?? null;
+    const rawEnd = rawBody?.schedule?.dateFinish ?? rawBody?.schedule?.endDate ?? rawBody?.endDate ?? null;
+
+    if ((rawStart && !rawEnd) || (!rawStart && rawEnd)) {
+      return apiResponse({
+        success: false,
+        message: 'Both startDate and endDate are required when updating schedule',
+        data: { election: updatedElection },
+        error: 'Bad Request',
+        status: 400,
+      });
+    }
+
+    if (rawStart && rawEnd) {
+      const start = new Date(rawStart);
+      const end = new Date(rawEnd);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return apiResponse({
+          success: false,
+          message: 'Invalid date format for schedule. Use ISO strings.',
+          data: { election: updatedElection },
+          error: 'Bad Request',
+          status: 400,
+        });
+      }
+      if (start >= end) {
+        return apiResponse({
+          success: false,
+          message: 'Schedule startDate must be earlier than endDate',
+          data: { election: updatedElection },
+          error: 'Bad Request',
+          status: 400,
+        });
+      }
+
+      await db.electionSched.upsert({
+        where: { electionId: updatedElection.id },
+        create: { electionId: updatedElection.id, dateStart: start, dateFinish: end },
+        update: { dateStart: start, dateFinish: end },
+      });
+    }
+
+    // Re-fetch with schedule after potential update
+    const finalElection = await db.election.findUnique({
+      where: { id: updatedElection.id },
+      include: {
+        organization: { select: { id: true, name: true, email: true, status: true } },
+        schedule: true,
+        mfaSettings: true,
+        _count: { select: { voters: { where: { isDeleted: false } }, candidates: { where: { isDeleted: false } }, positions: { where: { isDeleted: false } }, parties: { where: { isDeleted: false } } } }
+      }
+    });
+
     // Compare and log changed fields
     const changedFields: Record<string, { old: any; new: any }> = {};
-    for (const key of ["name", "description", "status", "isLive", "allowSurvey"] as const) {
-      if (oldData[key] !== updatedElection[key]) {
-        changedFields[key] = { old: oldData[key], new: updatedElection[key] };
+    for (const key of ["name", "description", "status", "isLive", "allowSurvey", "scopeType", "scopeTypeLabel"] as const) {
+      const oldVal = (oldData as any)[key];
+      const newVal = (updatedElection as any)[key] ?? null;
+      if (oldVal !== newVal) {
+        changedFields[key] = { old: oldVal, new: newVal };
       }
     }
 
@@ -347,7 +415,7 @@ export async function PUT(
       success: true,
       message: "Election updated successfully",
       data: {
-        election: updatedElection,
+        election: finalElection,
         audit
       },
       error: null,

@@ -59,7 +59,7 @@ async function quickSeed() {
       }
     });
 
-    // Create election
+    // Create election with election-level scope config
     const testElection = await db.election.upsert({
       where: { id: 1 },
       update: {},
@@ -69,7 +69,10 @@ async function quickSeed() {
         description: "Sample election for API testing",
         status: "ACTIVE",
         isLive: true,
-        allowSurvey: true
+        allowSurvey: true,
+        // Election-level scope config (no per-row type)
+        scopeType: "LEVEL",
+        scopeTypeLabel: null,
       }
     });
 
@@ -84,11 +87,10 @@ async function quickSeed() {
       }
     });
 
-    // Create voting scope
+    // Create voting scope (no per-row type)
     const testScope = await db.votingScope.create({
       data: {
         electionId: testElection.id,
-        type: "LEVEL",
         name: "All Students",
         description: "All university students"
       }

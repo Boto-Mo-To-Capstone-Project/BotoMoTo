@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import AdminSidebar from "./AdminSidebar";
 import SuperAdminSidebar from "./SuperAdminSidebar"; // use real component
@@ -13,6 +13,8 @@ export default function SidebarWrapper({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const eidParam = searchParams.get("eid") ?? undefined;
   const parts = pathname.split("/");
 
   // === OLD LOGIC MERGED ===
@@ -38,21 +40,29 @@ export default function SidebarWrapper({
 
   const isAdminDefault = adminBaseRoutes.includes(pathname);
 
+  const isCreateWithEid = pathname === "/admin/dashboard/elections/create" && !!eidParam;
+
   const isAdminElectionSelected =
-    pathname.startsWith("/admin/dashboard/elections/") &&
-    parts.length >= 5 &&
-    !reserved.includes(parts[4]?.toLowerCase());
+    (pathname.startsWith("/admin/dashboard/elections/") &&
+      parts.length >= 5 &&
+      !reserved.includes(parts[4]?.toLowerCase())) ||
+    (pathname === "/admin/dashboard/elections" && !!eidParam) ||
+    isCreateWithEid;
 
   const isSuperAdmin =
     superAdminBaseRoutes.includes(pathname) ||
     pathname.startsWith("/superadmin/dashboard/");
 
+  const sidebarElectionId =
+    (!reserved.includes(parts[4]?.toLowerCase()) && parts[4]) || eidParam;
+
   // === PAGE TITLE LOGIC ===
   const pageTitle = (() => {
     if (pathname === "/admin/dashboard") return "Admin Dashboard";
-    if (pathname === "/admin/dashboard/elections") return "Admin Elections";
+    if (pathname === "/admin/dashboard/elections")
+      return eidParam ? `Election ${eidParam}` : "Admin Elections";
     if (pathname === "/admin/dashboard/elections/create")
-      return "Election Form";
+      return eidParam ? `Election ${eidParam} - Edit` : "Election Form";
     if (pathname === "/admin/dashboard/elections/tickets")
       return "Admin Tickets";
     if (pathname === "/admin/dashboard/elections/profile")
@@ -116,7 +126,7 @@ export default function SidebarWrapper({
       {(isAdminDefault || isAdminElectionSelected) && (
         <AdminSidebar
           variant={isAdminElectionSelected ? "selectedElection" : "default"}
-          electionId={isAdminElectionSelected ? parts[4] : undefined}
+          electionId={isAdminElectionSelected ? sidebarElectionId : undefined}
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />

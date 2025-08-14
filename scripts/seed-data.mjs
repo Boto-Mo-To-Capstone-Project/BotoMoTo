@@ -234,59 +234,100 @@ async function seedDatabase() {
 
     console.log("🗳️ Creating elections with schedules...");
     
-    // Create elections for each organization
+    // Create elections with a plan: org[0] gets many elections, org[1] gets one, org[2] gets none
     const createdElections = [];
-    for (let i = 0; i < createdOrgs.length; i++) {
+    const noScopeElectionIds = new Set();
+
+    // Helper for creating an election + schedule + MFA
+    async function createElectionForOrg(org, electionDef) {
+      const idx = createdElections.length; // overall index for status/mfa variety
       const election = await db.election.create({
         data: {
-          ...elections[i],
-          orgId: createdOrgs[i].id,
-          status: i === 0 ? "ACTIVE" : i === 1 ? "DRAFT" : "PAUSED",
-          isLive: i === 0
-        }
+          ...electionDef,
+          orgId: org.id,
+          status: idx === 0 ? "ACTIVE" : idx === 1 ? "DRAFT" : "PAUSED",
+          isLive: idx === 0,
+        },
       });
 
-      // Create election schedule
+      // schedule
       const startDate = new Date();
-      startDate.setDate(startDate.getDate() - 1); // Started yesterday
+      startDate.setDate(startDate.getDate() - 1);
       const endDate = new Date();
-      endDate.setDate(endDate.getDate() + 7); // Ends in 7 days
-
+      endDate.setDate(endDate.getDate() + 7);
       await db.electionSched.create({
-        data: {
-          electionId: election.id,
-          dateStart: startDate,
-          dateFinish: endDate
-        }
+        data: { electionId: election.id, dateStart: startDate, dateFinish: endDate },
       });
 
-      // Create MFA settings
+      // MFA settings
       await db.mfaSettings.create({
-        data: {
-          electionId: election.id,
-          mfaEnabled: i === 0, // Enable MFA for first election
-          mfaMethod: "EMAIL"
-        }
+        data: { electionId: election.id, mfaEnabled: idx === 0, mfaMethod: "EMAIL" },
       });
 
       createdElections.push(election);
-      console.log(`   ✓ Created election: ${election.name}`);
+      console.log(`   ✓ Created election: ${election.name} (Org: ${org.name})`);
+      return election;
+    }
+
+    // Plan
+    const org0 = createdOrgs[0];
+    const org1 = createdOrgs[1];
+    const org2 = createdOrgs[2];
+
+    if (org0) {
+      // First org has MANY elections (sample: 2 elections)
+      const deptRepElection = await createElectionForOrg(org0, elections[1]); // DEPARTMENT-based
+      const councilElection = await createElectionForOrg(org0, elections[0]); // Will be NO SCOPE
+      // mark the Student Council as NO SCOPE sample
+      if (councilElection.name.toLowerCase().includes("student council")) {
+        noScopeElectionIds.add(councilElection.id);
+        console.log(`   → Marked as NO SCOPE: ${councilElection.name}`);
+      }
+    }
+
+    if (org1) {
+      // Second org has ONE election
+      await createElectionForOrg(org1, elections[2]);
+    }
+
+    if (org2) {
+      // Third org: no elections (sample)
+      console.log(`   • No elections created for: ${org2.name}`);
     }
 
     console.log("📍 Creating voting scopes...");
     
-    // Create voting scopes for each election
+    // Create voting scopes for each election ensuring a single scope type per election
     const createdScopes = [];
+    const scopesByElection = new Map();
     for (const election of createdElections) {
-      for (let i = 0; i < 3; i++) { // 3 scopes per election
+      if (noScopeElectionIds.has(election.id)) {
+        scopesByElection.set(election.id, []);
+        console.log(`   ✓ ${election.name}: created 0 scope(s) [NO SCOPE]`);
+        continue;
+      }
+
+      // Determine scope type per election (example rule: department-focused election gets DEPARTMENT)
+      const scopeType = election.name.toLowerCase().includes("department") ? "DEPARTMENT" : "LEVEL";
+      const options = votingScopes; // no per-row type filtering
+      const toCreate = options.slice(0, Math.min(3, options.length));
+
+      const scopesForElection = [];
+      for (const scopeDef of toCreate) {
         const scope = await db.votingScope.create({
           data: {
-            ...votingScopes[i],
-            electionId: election.id
-          }
+            // scopeDef may contain 'type' originally; omit it now
+            name: scopeDef.name,
+            description: scopeDef.description,
+            electionId: election.id,
+          },
         });
         createdScopes.push(scope);
+        scopesForElection.push(scope);
       }
+
+      scopesByElection.set(election.id, scopesForElection);
+      console.log(`   ✓ ${election.name}: created ${scopesForElection.length} ${scopeType} scope(s)`);
     }
 
     console.log("🎭 Creating parties...");
@@ -307,38 +348,64 @@ async function seedDatabase() {
 
     console.log("🏛️ Creating positions...");
     
-    // Create positions for each election
+    // Create positions PER SCOPE so each scope has the full set of positions
     const createdPositions = [];
+    const positionsByElection = new Map();
     for (const election of createdElections) {
-      for (const position of positions) {
-        const pos = await db.position.create({
-          data: {
-            ...position,
-            electionId: election.id,
-            votingScopeId: createdScopes.find(s => s.electionId === election.id)?.id
+      const scopesForElection = scopesByElection.get(election.id) || [];
+      const positionsForElection = [];
+
+      if (scopesForElection.length === 0) {
+        // NO SCOPE: create one set of positions without votingScopeId
+        for (const position of positions) {
+          const pos = await db.position.create({
+            data: {
+              ...position,
+              electionId: election.id,
+              votingScopeId: null,
+            },
+          });
+          createdPositions.push(pos);
+          positionsForElection.push(pos);
+        }
+      } else {
+        for (const scope of scopesForElection) {
+          for (const position of positions) {
+            const pos = await db.position.create({
+              data: {
+                ...position,
+                electionId: election.id,
+                votingScopeId: scope.id,
+              },
+            });
+            createdPositions.push(pos);
+            positionsForElection.push(pos);
           }
-        });
-        createdPositions.push(pos);
+        }
       }
+
+      positionsByElection.set(election.id, positionsForElection);
+      console.log(`   ✓ ${election.name}: created ${positionsForElection.length} positions${scopesForElection.length ? ` across ${scopesForElection.length} scope(s)` : " (NO SCOPE)"}`);
     }
 
     console.log("👥 Creating voters...");
     
-    // Create voters for each election
+    // Create voters for each election and assign them to one of the election's scopes (or none)
     const createdVoters = [];
     for (const election of createdElections) {
       const voters = await generateVoters(election.id, 50); // 50 voters per election
-      
+      const scopesForElection = scopesByElection.get(election.id) || [];
+
       for (const voter of voters) {
-        const scopesForElection = createdScopes.filter(s => s.electionId === election.id);
-        const randomScope = scopesForElection[Math.floor(Math.random() * scopesForElection.length)];
-        
+        const randomScope = scopesForElection.length
+          ? scopesForElection[Math.floor(Math.random() * scopesForElection.length)]
+          : null;
         const createdVoter = await db.voter.create({
           data: {
             ...voter,
-            votingScopeId: randomScope.id,
-            votedAt: voter.hasVoted ? new Date() : null
-          }
+            votingScopeId: randomScope ? randomScope.id : null,
+            votedAt: voter.hasVoted ? new Date() : null,
+          },
         });
         createdVoters.push(createdVoter);
       }
@@ -346,28 +413,32 @@ async function seedDatabase() {
 
     console.log("🏃‍♂️ Creating candidates...");
     
-    // Create candidates (some voters become candidates)
+    // Track created candidates for reporting
+    const createdCandidates = [];
+    
+    // Create candidates (some voters become candidates) within their scope (or globally for NO SCOPE)
     const experiences = generateExperiences();
     for (const election of createdElections) {
-      const electionVoters = createdVoters.filter(v => v.electionId === election.id);
-      const electionPositions = createdPositions.filter(p => p.electionId === election.id);
-      const electionParties = createdParties.filter(p => p.electionId === election.id);
+      const electionVoters = createdVoters.filter((v) => v.electionId === election.id);
+      const electionPositions = positionsByElection.get(election.id) || createdPositions.filter((p) => p.electionId === election.id);
+      const electionParties = createdParties.filter((p) => p.electionId === election.id);
       
-      // Create 2-4 candidates per position
       for (const position of electionPositions) {
+        const scopedVoters = electionVoters.filter((v) => v.votingScopeId === position.votingScopeId);
+        if (scopedVoters.length === 0) continue;
+
         const numCandidates = Math.floor(Math.random() * 3) + 2; // 2-4 candidates
-        
-        for (let i = 0; i < Math.min(numCandidates, electionVoters.length); i++) {
-          const voterIndex = Math.floor(Math.random() * electionVoters.length);
-          const voter = electionVoters[voterIndex];
+        for (let i = 0; i < Math.min(numCandidates, scopedVoters.length); i++) {
+          const voterIndex = Math.floor(Math.random() * scopedVoters.length);
+          const voter = scopedVoters[voterIndex];
           
           // Skip if this voter is already a candidate
           const existingCandidate = await db.candidate.findUnique({
-            where: { voterId: voter.id }
+            where: { voterId: voter.id },
           });
           if (existingCandidate) continue;
 
-          const randomParty = Math.random() > 0.3 ? 
+          const randomParty = Math.random() > 0.3 ?
             electionParties[Math.floor(Math.random() * electionParties.length)] : null;
 
           const candidate = await db.candidate.create({
@@ -375,44 +446,46 @@ async function seedDatabase() {
               electionId: election.id,
               voterId: voter.id,
               positionId: position.id,
-              partyId: randomParty?.id,
+              partyId: randomParty?.id || null,
               isNew: Math.random() > 0.7, // 30% are new
               bio: `Experienced candidate committed to representing students with integrity and dedication. Passionate about making positive changes in our academic community.`,
-              imageUrl: `/assets/sample/logo.png`, // Using sample logo as placeholder for candidate image
-            }
+              imageUrl: `/assets/sample/logo.png`,
+            },
           });
 
-          // Add random experiences
-          if (Math.random() > 0.3) { // 70% have leadership experience
+          // Record for reporting
+          createdCandidates.push(candidate);
+
+          if (Math.random() > 0.3) {
             const randomLeadership = experiences.leadership[Math.floor(Math.random() * experiences.leadership.length)];
             await db.candidateLeadershipExperience.create({
               data: {
                 candidateId: candidate.id,
                 ...randomLeadership,
-                description: "Led various initiatives and contributed to organizational success."
-              }
+                description: "Led various initiatives and contributed to organizational success.",
+              },
             });
           }
 
-          if (Math.random() > 0.4) { // 60% have work experience
+          if (Math.random() > 0.4) {
             const randomWork = experiences.work[Math.floor(Math.random() * experiences.work.length)];
             await db.candidateWorkExperience.create({
               data: {
                 candidateId: candidate.id,
                 ...randomWork,
-                description: "Gained valuable skills and experience in professional environment."
-              }
+                description: "Gained valuable skills and experience in professional environment.",
+              },
             });
           }
 
-          if (Math.random() > 0.2) { // 80% have education info
+          if (Math.random() > 0.2) {
             const randomEducation = experiences.education[Math.floor(Math.random() * experiences.education.length)];
             await db.candidateEducationLevel.create({
               data: {
                 candidateId: candidate.id,
                 ...randomEducation,
-                description: "Academic achievements and educational background."
-              }
+                description: "Academic achievements and educational background.",
+              },
             });
           }
         }
@@ -421,22 +494,23 @@ async function seedDatabase() {
 
     console.log("🗳️ Creating vote responses...");
     
-    // Create some vote responses for voters who have voted
-    const votedVoters = createdVoters.filter(v => v.hasVoted);
+    // Create some vote responses for voters who have voted, restricted to their scope (or global for NO SCOPE)
+    const votedVoters = createdVoters.filter((v) => v.hasVoted);
     for (const voter of votedVoters) {
-      const electionPositions = createdPositions.filter(p => p.electionId === voter.electionId);
+      const electionPositions = createdPositions.filter(
+        (p) => p.electionId === voter.electionId && p.votingScopeId === voter.votingScopeId
+      );
       
       for (const position of electionPositions) {
         const candidates = await db.candidate.findMany({
           where: {
             electionId: voter.electionId,
             positionId: position.id,
-            isDeleted: false
-          }
+            isDeleted: false,
+          },
         });
 
         if (candidates.length > 0) {
-          // Vote for random candidates up to vote limit
           const numVotes = Math.min(position.voteLimit, candidates.length);
           const selectedCandidates = candidates
             .sort(() => 0.5 - Math.random())
@@ -450,8 +524,8 @@ async function seedDatabase() {
                 candidateId: candidate.id,
                 positionId: position.id,
                 voteHash: `hash_${voter.id}_${candidate.id}_${Date.now()}`,
-                timestamp: voter.votedAt || new Date()
-              }
+                timestamp: voter.votedAt || new Date(),
+              },
             });
           }
         }
@@ -460,7 +534,7 @@ async function seedDatabase() {
 
     console.log("📊 Database seeding completed successfully!");
     console.log("\n📈 Summary:");
-    
+
     const stats = {
       organizations: await db.organization.count(),
       users: await db.user.count(),
@@ -488,6 +562,50 @@ async function seedDatabase() {
     adminUsers.forEach((admin, i) => {
       console.log(`   ${admin.name}: ${admin.email} / ${admin.password}`);
     });
+
+    // Admin → Org → Elections breakdown
+    console.log("\n👤 Admin → Org → Elections breakdown:");
+    const admins = await db.user.findMany({
+      where: { role: "ADMIN" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        organization: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    for (const admin of admins) {
+      const org = admin.organization || null;
+      const adminOrgCount = org ? 1 : 0;
+      const adminElections = org ? createdElections.filter((e) => e.orgId === org.id) : [];
+      const electionCount = adminElections.length;
+
+      const header = `${admin.name} (${admin.email}) has ${adminOrgCount} org and ${electionCount} election${electionCount === 1 ? "" : "s"}`;
+      console.log(`   ${header}`);
+
+      if (!org) continue;
+      console.log(`     Org: ${org.name}`);
+
+      for (const e of adminElections) {
+        const scopes = (scopesByElection.get(e.id) || []);
+        const noScope = scopes.length === 0;
+        const scopeInfo = noScope ? "NO SCOPE" : `${scopes[0]?.type} (${scopes.length})`;
+        const posCount = createdPositions.filter((p) => p.electionId === e.id).length;
+        const voterCount = createdVoters.filter((v) => v.electionId === e.id).length;
+        const candCount = createdCandidates.filter((c) => c.electionId === e.id).length;
+        const partyCount = createdParties.filter((p) => e.electionId === p.electionId).length;
+        const voteCount = await db.voteResponse.count({ where: { electionId: e.id } });
+
+        console.log(`     • ${e.name} → scope: ${scopeInfo}`);
+        console.log(`         Positions: ${posCount}, Parties: ${partyCount}, Voters: ${voterCount}, Candidates: ${candCount}, Votes: ${voteCount}`);
+      }
+    }
 
   } catch (error) {
     console.error("❌ Error seeding database:", error);

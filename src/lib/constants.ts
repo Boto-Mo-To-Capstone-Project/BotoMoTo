@@ -13,7 +13,7 @@ export const ORGANIZATION_STATUS = {
   SUSPENDED: "SUSPENDED",
 } as const;
 
-// Election statuses
+// Election statuses (DB-level). UI will use only ACTIVE and CLOSED.
 export const ELECTION_STATUS = {
   DRAFT: "DRAFT",
   ACTIVE: "ACTIVE",
@@ -203,4 +203,13 @@ export const getRedirectPath = (
   }
   if (userRole === ROLES.VOTER) return "/voter/login";
   return "/login";
+};
+
+// Map backend election status to UI tabs
+export const mapElectionStatusToTabs = (status: string) => {
+  const statusMap: { [key: string]: string } = {
+    ACTIVE: "active",
+    CLOSED: "closed",
+  };
+  return statusMap[status] || "unknown";
 };

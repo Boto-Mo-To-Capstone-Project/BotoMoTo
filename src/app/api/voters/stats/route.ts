@@ -67,6 +67,8 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         name: true,
+        scopeType: true,
+        scopeTypeLabel: true,
         organization: {
           select: {
             id: true,
@@ -178,7 +180,6 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         name: true,
-        type: true,
         _count: {
           select: {
             voters: {
@@ -198,7 +199,8 @@ export async function GET(request: NextRequest) {
       return {
         id: scope.id,
         name: scope.name,
-        type: scope.type,
+        // For backward compatibility, expose a 'type' field derived from election-level label.
+        type: election.scopeTypeLabel ?? null,
         totalVoters: scope._count.voters,
         votedCount: votedInScope,
         pendingCount: totalInScope - votedInScope,

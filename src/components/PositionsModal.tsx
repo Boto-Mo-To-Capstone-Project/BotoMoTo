@@ -25,7 +25,10 @@ export function PositionsModal({
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex justify-center items-center bg-black/30 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex justify-center items-center bg-black/30 backdrop-blur-sm lg:ml-68"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="relative max-w-4xl max-h-screen p-10 flex flex-col justify-center">
         <div className="bg-white rounded-lg shadow-sm overflow-y-auto max-h-[80vh]">

@@ -155,8 +155,7 @@ async function getVoters(request: NextRequest) {
           votingScope: {
             select: {
               id: true,
-              name: true,
-              type: true
+              name: true
             }
           },
           candidate: {
@@ -321,8 +320,7 @@ async function createVoter(request: NextRequest) {
               votingScope: {
                 select: {
                   id: true,
-                  name: true,
-                  type: true
+                  name: true
                 }
               }
             }
@@ -461,8 +459,7 @@ async function createVoter(request: NextRequest) {
           votingScope: {
             select: {
               id: true,
-              name: true,
-              type: true
+              name: true
             }
           }
         }

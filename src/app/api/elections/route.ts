@@ -12,67 +12,99 @@ import { requireAuth } from "@/lib/helpers/requireAuth";
 // Import performance logging middleware
 import { withPerformanceLogging } from "@/lib/performance/middleware";
 
-// Handle GET request to fetch all elections (superadmin only)
+// Handle GET request to fetch elections (filtered by role)
 async function getElections(request: NextRequest) {
   try {
-    // Authenticate the user with required role
-    const authResult = await requireAuth([ROLES.SUPER_ADMIN]);
+    // Authenticate the user - allow both admin and superadmin
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
     if (!authResult.authorized) return authResult.response;
     const user = authResult.user;
 
-    const elections = await db.election.findMany({
-      where: { isDeleted: false },
-      include: {
-        organization: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            status: true,
-            admin: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                role: true
+    let elections;
+    let message;
+
+    if (user.role === ROLES.SUPER_ADMIN) {
+      // Super admin can see all elections
+      elections = await db.election.findMany({
+        where: { isDeleted: false },
+        include: {
+          organization: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              status: true,
+              admin: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  role: true
+                }
               }
+            }
+          },
+          schedule: true,
+          mfaSettings: true,
+          _count: {
+            select: {
+              voters: { where: { isDeleted: false } },
+              candidates: { where: { isDeleted: false } },
+              positions: { where: { isDeleted: false } },
+              parties: { where: { isDeleted: false } },
+              voteResponses: true
             }
           }
         },
-        schedule: true,
-        mfaSettings: true,
-        _count: {
-          select: {
-            voters: {
-              where: { isDeleted: false }
-            },
-            candidates: {
-              where: { isDeleted: false }
-            },
-            positions: {
-              where: { isDeleted: false }
-            },
-            parties: {
-              where: { isDeleted: false }
-            },
-            voteResponses: true
+        orderBy: { createdAt: "desc" },
+      });
+      message = "All elections fetched successfully (superadmin)";
+    } else {
+      // Admin can only see elections from their own organization
+      elections = await db.election.findMany({
+        where: {
+          isDeleted: false,
+          organization: { adminId: user.id },
+        },
+        include: {
+          organization: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              status: true,
+            }
+          },
+          schedule: true,
+          mfaSettings: true,
+          _count: {
+            select: {
+              voters: { where: { isDeleted: false } },
+              candidates: { where: { isDeleted: false } },
+              positions: { where: { isDeleted: false } },
+              parties: { where: { isDeleted: false } },
+              voteResponses: true
+            }
           }
-        }
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      message = "Your elections fetched successfully (admin)";
+    }
 
     const audit = await createAuditLog({
       user,
       action: "READ",
       request,
       resource: "ELECTION",
-      message: "Viewed all elections (superadmin)",
+      message: user.role === ROLES.SUPER_ADMIN
+        ? "Viewed all elections (superadmin)"
+        : "Viewed own elections (admin)",
     });
 
     return apiResponse({
       success: true,
-      message: 'Elections fetched successfully',
+      message,
       data: {
         elections,
         totalCount: elections.length,
@@ -143,12 +175,56 @@ async function createElection(request: NextRequest) {
       });
     }
 
-    // Parse and validate request body
-    const body = await request.json();
-    const validation = validateWithZod(electionSchema, body);
-    if (!('data' in validation)) return validation;
-    
+    // Parse request body
+    const rawBody = await request.json();
+
+    // Validate core election fields using schema
+    const validation = validateWithZod(electionSchema, rawBody);
+    if (!("data" in validation)) return validation;
+
     const { name, description, status, isLive, allowSurvey } = validation.data;
+
+    // Extract optional schedule fields (support multiple shapes)
+    const rawStart = rawBody?.schedule?.dateStart ?? rawBody?.schedule?.startDate ?? rawBody?.startDate ?? null;
+    const rawEnd = rawBody?.schedule?.dateFinish ?? rawBody?.schedule?.endDate ?? rawBody?.endDate ?? null;
+
+    // NEW: Optional scopeType/scopeTypeLabel from body
+    const incomingScopeType: "AREA" | "LEVEL" | "DEPARTMENT" | "CUSTOM" | undefined = rawBody?.scopeType;
+    const incomingScopeTypeLabel: string | undefined = rawBody?.scopeTypeLabel;
+
+    // Validate schedule if provided
+    let dateStart: Date | undefined;
+    let dateFinish: Date | undefined;
+    if ((rawStart && !rawEnd) || (!rawStart && rawEnd)) {
+      return apiResponse({
+        success: false,
+        message: 'Both startDate and endDate are required when setting a schedule',
+        error: 'Bad Request',
+        status: 400,
+      });
+    }
+    if (rawStart && rawEnd) {
+      const start = new Date(rawStart);
+      const end = new Date(rawEnd);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return apiResponse({
+          success: false,
+          message: 'Invalid date format for schedule. Use ISO strings.',
+          error: 'Bad Request',
+          status: 400,
+        });
+      }
+      if (start >= end) {
+        return apiResponse({
+          success: false,
+          message: 'Schedule startDate must be earlier than endDate',
+          error: 'Bad Request',
+          status: 400,
+        });
+      }
+      dateStart = start;
+      dateFinish = end;
+    }
 
     // Check if election name already exists in this organization
     const nameExists = await db.election.findFirst({
@@ -174,9 +250,15 @@ async function createElection(request: NextRequest) {
         orgId: organization.id,
         name,
         description,
-        status: status || ELECTION_STATUS.DRAFT,
+        status: status || ELECTION_STATUS.ACTIVE,
         isLive: isLive || false,
         allowSurvey: allowSurvey || false,
+        // store scope config if present
+        scopeType: incomingScopeType ?? null,
+        scopeTypeLabel:
+          incomingScopeType === 'CUSTOM' && typeof incomingScopeTypeLabel === 'string' && incomingScopeTypeLabel.trim()
+            ? incomingScopeTypeLabel.trim()
+            : null,
       },
       include: {
         organization: {
@@ -200,13 +282,37 @@ async function createElection(request: NextRequest) {
       },
     });
 
+    // Create schedule if provided
+    if (dateStart && dateFinish) {
+      await db.electionSched.upsert({
+        where: { electionId: election.id },
+        create: { electionId: election.id, dateStart, dateFinish },
+        update: { dateStart, dateFinish },
+      });
+    }
+
+    // Re-fetch with schedule to ensure it's included
+    const electionWithSchedule = await db.election.findUnique({
+      where: { id: election.id },
+      include: {
+        organization: {
+          select: { id: true, name: true, email: true, status: true }
+        },
+        schedule: true,
+        mfaSettings: true,
+        _count: {
+          select: { voters: true, candidates: true, positions: true, parties: true }
+        }
+      }
+    });
+
     const audit = await createAuditLog({
       user,
       action: "CREATE",
       request,
       resource: "ELECTION",
       resourceId: election.id,
-      newData: election,
+      newData: (electionWithSchedule as any) ?? (election as any),
       message: `Created new election: ${election.name}`,
     });
 
@@ -214,7 +320,7 @@ async function createElection(request: NextRequest) {
       success: true,
       message: 'Election created successfully',
       data: {
-        election,
+        election: electionWithSchedule,
         audit,
       },
       status: 201,
@@ -238,7 +344,7 @@ export const POST = withPerformanceLogging(createElection as any);
 PERFORMANCE LOGGING ADDED TO ELECTIONS API! 🎉
 
 What this captures:
-✅ GET /api/elections - Election listing performance (superadmin dashboard)
+✅ GET /api/elections - Election listing performance (admin + superadmin dashboards)
 ✅ POST /api/elections - Election creation speed
 
 Key metrics for election management:

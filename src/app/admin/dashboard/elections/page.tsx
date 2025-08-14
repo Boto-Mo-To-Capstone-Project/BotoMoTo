@@ -1,68 +1,28 @@
 "use client";
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { MdAdd, MdDownload, MdFilterList, MdDelete, MdEdit } from "react-icons/md";
 import { SubmitButton } from '@/components/SubmitButton';
-import { ElectionModal } from '@/components/ElectionModal';
+// import { ElectionModal } from '@/components/ElectionModal'; // keep component file but not used here per requirement
 import SearchBar from '@/components/SearchBar';
 import ElectionTable from '@/components/ElectionTable';
 import toast, { Toaster } from 'react-hot-toast';
-import CustomToast from '@/components/CustomToast';
+// import CustomToast from '@/components/CustomToast';
 
-//naglagay lang pala ako ng emeng data para sa table
-const elections = [
-  {
-    id: 1,
-    name: "PUP Provident Election 2024",
-    status: "Finished",
-    votingDate: "Jan 13, 2024 - Jan 14, 2024",
-    time: "10:00 AM - 2:00 PM",
-  },
-  {
-    id: 2,
-    name: "PUP Provident Election 2023",
-    status: "Finished",
-    votingDate: "Jan 13, 2023 - Jan 13, 2023",
-    time: "10:00 AM - 2:00 PM",
-  },
-  {
-    id: 3,
-    name: "PUP Provident Election 2022",
-    status: "Finished",
-    votingDate: "Jan 13, 2022 - Jan 14, 2022",
-    time: "10:00 AM - 2:00 PM",
-  },
-  {
-    id: 4,
-    name: "PUP Provident Election 2021",
-    status: "Finished",
-    votingDate: "Jan 13, 2021 - Jan 14, 2021",
-    time: "10:00 AM - 2:00 PM",
-  },
-  {
-    id: 5,
-    name: "PUP Provident Election 2020",
-    status: "Finished",
-    votingDate: "Jan 13, 2020 - Jan 14, 2020",
-    time: "10:00 AM - 2:00 PM",
-  },
-  {
-    id: 6,
-    name: "PUP Provident Election 2019",
-    status: "Finished",
-    votingDate: "Jan 13, 2019 - Jan 14, 2019",
-    time: "10:00 AM - 2:00 PM",
-  },
-  {
-    id: 7,
-    name: "PUP Provident Election 2018",
-    status: "Finished",
-    votingDate: "Jan 13, 2018 - Jan 14, 2018",
-    time: "10:00 AM - 2:00 PM",
-  },
-];
+// Define the shape expected by ElectionTable
+interface UiElection {
+  id: number;
+  name: string;
+  status: "Ongoing" | "Finished";
+  votingDate: string;
+  time: string;
+}
 
 export default function ElectionDashboardPage() {
-  const [tab, setTab] = useState("All");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const eidParam = searchParams.get('eid');
+  const [tab, setTab] = useState<"All" | "Ongoing" | "Ended">("All");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState("");
@@ -70,17 +30,60 @@ export default function ElectionDashboardPage() {
     "name" | "status" | "votingDate" | "time" | null
   >(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const [electionsList, setElectionsList] = useState(elections);
-  const totalPages = Math.ceil(electionsList.length / pageSize);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showSuccessNotification, setShowSuccessNotification] = useState(false);
-  const [lastAddedElection, setLastAddedElection] = useState<any>(null);
-  const [selectedElectionId, setSelectedElectionId] = useState<number | null>(
-    null
-  );
+  const [electionsList, setElectionsList] = useState<UiElection[]>([]);
+  const totalPages = Math.ceil(Math.max(1, electionsList.length) / pageSize);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   // Sidebar open state for mobile
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Keep selection in sync with ?eid=
+  useEffect(() => {
+    if (!eidParam) return; // don't clear selection when eid is removed
+    const id = Number(eidParam);
+    if (!Number.isNaN(id)) {
+      setSelectedIds([id]);
+    }
+  }, [eidParam]);
+
+  // Fetch elections from backend
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch('/api/elections', { cache: 'no-store' });
+        const json = await res.json();
+        if (!res.ok || !json?.success) {
+          throw new Error(json?.error || json?.message || 'Failed to fetch elections');
+        }
+        const elections = (json?.data?.elections ?? []) as any[];
+        // Map API elections to UI shape
+        const mapped: UiElection[] = elections.map((e) => {
+          const start = e?.schedule?.dateStart ? new Date(e.schedule.dateStart) : null;
+          const finish = e?.schedule?.dateFinish ? new Date(e.schedule.dateFinish) : null;
+          const fmtDate = (d: Date | null) => d?.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) ?? '—';
+          const fmtTime = (d: Date | null) => d?.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) ?? '—';
+          const status: UiElection['status'] = e?.status === 'ACTIVE' ? 'Ongoing' : 'Finished';
+          return {
+            id: e.id,
+            name: e.name,
+            status,
+            votingDate: start && finish ? `${fmtDate(start)} - ${fmtDate(finish)}` : '—',
+            time: start && finish ? `${fmtTime(start)} - ${fmtTime(finish)}` : '—',
+          } as UiElection;
+        });
+        if (!cancelled) setElectionsList(mapped);
+      } catch (err) {
+        console.error(err);
+        !cancelled && toast.error('Failed to load elections');
+      } finally {
+        !cancelled && setLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleFirst = () => setPage(1);
   const handlePrev = () => setPage((p) => Math.max(1, p - 1));
@@ -100,72 +103,35 @@ export default function ElectionDashboardPage() {
     }
   };
 
-  const handleAddElection = (electionData: any) => {
-    // Format dates for display
-    const formatDate = (dateString: string) => {
-      const date = new Date(dateString);
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-    };
-
-    // Format time for display
-    const formatTime = (dateString: string) => {
-      const date = new Date(dateString);
-      return date.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      });
-    };
-
-    const newElection = {
-      id: Math.max(...electionsList.map((e) => e.id)) + 1,
-      name: electionData.name,
-      status: "Ongoing",
-      votingDate: `${formatDate(electionData.dateBegin)} - ${formatDate(
-        electionData.dateEnd
-      )}`,
-      time: `${formatTime(electionData.dateBegin)} - ${formatTime(
-        electionData.dateEnd
-      )}`,
-    };
-
-    setElectionsList((prev) => [newElection, ...prev]);
-    setLastAddedElection(newElection);
-    setShowSuccessNotification(true);
-    setShowCreateModal(false);
-
-    // Auto-hide notification after 5 seconds
-    setTimeout(() => {
-      setShowSuccessNotification(false);
-      setLastAddedElection(null);
-    }, 5000);
-
-    toast.custom((t) => (
-      <CustomToast
-        t={t}
-        message={`Well done! You successfully created "${electionData.name}" election.`}
-      />
-    ));
-  };
-
-  const handleRowClick = (election: any) => {
-    setSelectedElectionId(election.id);
-  };
-
-  // For multi-select: allow multiple checkboxes
+  // For multi-select: allow multiple checkboxes and reflect single selection in URL
   const handleCheckboxChange = (id: number) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+    setSelectedIds((prev) => {
+      const next = prev.includes(id)
+        ? prev.filter((x) => x !== id)
+        : [...prev, id];
+      return next;
+    });
   };
 
+  // Reflect selection in URL (side-effect moved out of state updater)
+  useEffect(() => {
+    if (selectedIds.length === 1) {
+      router.replace(`/admin/dashboard/elections?eid=${selectedIds[0]}`, { scroll: false });
+    } else {
+      router.replace(`/admin/dashboard/elections`, { scroll: false });
+    }
+  }, [selectedIds, router]);
+
+  // Filter by search and tab
   let filteredElections = electionsList.filter((e) =>
     e.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  if (tab === 'Ongoing') {
+    filteredElections = filteredElections.filter(e => e.status === 'Ongoing');
+  } else if (tab === 'Ended') {
+    filteredElections = filteredElections.filter(e => e.status === 'Finished');
+  }
 
   if (sortCol) {
     filteredElections = [...filteredElections].sort((a, b) => {
@@ -177,8 +143,8 @@ export default function ElectionDashboardPage() {
         if (aDate > bDate) return sortDir === "asc" ? 1 : -1;
         return 0;
       }
-      let aVal = a[sortCol];
-      let bVal = b[sortCol];
+      let aVal: any = a[sortCol];
+      let bVal: any = b[sortCol];
       // For time, sort by start time (assume format '10:00 AM - 2:00 PM')
       if (sortCol === "time") {
         aVal = aVal.split(" - ")[0];
@@ -215,8 +181,8 @@ export default function ElectionDashboardPage() {
                     key={t}
                     label={t}
                     variant="tab"
-                    isActive={tab === t}
-                    onClick={() => setTab(t)}
+                    isActive={tab === (t as any)}
+                    onClick={() => { setTab(t as any); setPage(1); }}
                     className={`w-full h-[44px] md:w-[90px] md:h-10 ${
                       i !== 0 ? "border-l border-gray-200" : ""
                     }`}
@@ -238,7 +204,7 @@ export default function ElectionDashboardPage() {
                 variant="action"
                 icon={<MdAdd size={20} />}
                 title="Add"
-                onClick={() => setShowCreateModal(true)}
+                onClick={() => router.push('/admin/dashboard/elections/create')}
               />
               <SubmitButton
                 label=""
@@ -248,7 +214,8 @@ export default function ElectionDashboardPage() {
                 onClick={
                   selectedIds.length === 1
                     ? () => {
-                        /* TODO: handle edit */
+                        const id = selectedIds[0];
+                        router.push(`/admin/dashboard/elections/create?eid=${id}`);
                       }
                     : undefined
                 }
@@ -317,30 +284,30 @@ export default function ElectionDashboardPage() {
 
           {/* Table */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-3">
-            <ElectionTable
-              elections={paginatedElections}
-              sortCol={sortCol}
-              sortDir={sortDir}
-              onSort={handleSort}
-              page={page}
-              totalPages={totalPages}
-              onFirst={handleFirst}
-              onPrev={handlePrev}
-              onNext={handleNext}
-              onLast={handleLast}
-              pageSize={pageSize}
-              onPageSizeChange={handlePageSizeChange}
-              onRowClick={(election) => handleCheckboxChange(election.id)}
-              selectedIds={selectedIds}
-              onCheckboxChange={handleCheckboxChange}
-            />
+            {loading && electionsList.length === 0 ? (
+              <div className="w-full p-4 text-center text-gray-500">Loading elections…</div>
+            ) : (
+              <ElectionTable
+                elections={paginatedElections}
+                sortCol={sortCol}
+                sortDir={sortDir}
+                onSort={handleSort}
+                page={page}
+                totalPages={Math.max(1, Math.ceil(filteredElections.length / pageSize))}
+                onFirst={handleFirst}
+                onPrev={handlePrev}
+                onNext={handleNext}
+                onLast={handleLast}
+                pageSize={pageSize}
+                onPageSizeChange={handlePageSizeChange}
+                onRowClick={(election) => handleCheckboxChange(election.id)}
+                selectedIds={selectedIds}
+                onCheckboxChange={handleCheckboxChange}
+              />
+            )}
           </div>
         </div>
-        <ElectionModal
-          open={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          onSave={handleAddElection}
-        />
+        {/* Modal kept for future use but not rendered here */}
       </div>
     </>
   );
