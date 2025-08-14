@@ -67,8 +67,8 @@ export default function SidebarWrapper({
       return "Admin Tickets";
     if (pathname === "/admin/dashboard/elections/profile")
       return "Admin Profile";
-
-    // === ADMIN: SETUP ELECTION ===
+    if (pathname === "/admin/dashboard/elections/manage")
+      return `Election ${sidebarElectionId} - Manage`;
     // matches: /admin/dashboard/elections/[id]/setup/[section]
     if (
       parts[0] === "" &&

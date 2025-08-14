@@ -69,12 +69,13 @@ const AdminSidebar = ({
     { name: "Profile", href: "/admin/dashboard/elections/profile", icon: User },
   ];
 
-  const setupLinks = ["Overview", "Voters", "Positions", "Candidates"].map(
+  const setupLinks = ["Overview", "Voters", "Positions", "Candidates", "Manage Election"].map(
     (sub) => ({
       name: sub,
-      href: `/admin/dashboard/elections/${electionId}/setup/${sub.toLowerCase()}`,
+      href: `/admin/dashboard/elections/${electionId}/setup/${sub.toLowerCase().replace(/\s+/g, "-")}`,
     })
   );
+
 
   const displayName = session?.user?.name || "Hardcoded name";
   const displayEmail = session?.user?.email || "Hardcoded@gmail.com";
