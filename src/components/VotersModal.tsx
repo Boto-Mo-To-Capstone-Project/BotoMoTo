@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AuthHeading } from "@/components/AuthHeading";
 import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
@@ -19,6 +19,9 @@ type VotersModalProps = {
   }) => void;
   initialData?: {
     voterName?: string;
+    voterSurname?: string;
+    voterFirstName?: string;
+    voterMiddleInitial?: string;
     scope?: string;
     email?: string;
     contactNumber?: string;
@@ -26,6 +29,8 @@ type VotersModalProps = {
     numberOfWinners?: number;
   };
   disableSave?: boolean;
+  title?: string;
+  submitLabel?: string;
 };
 
 export function VotersModal({
@@ -41,10 +46,12 @@ export function VotersModal({
     numberOfWinners: 1,
   },
   disableSave,
+  title = "Voter Form",
+  submitLabel = "Add",
 }: VotersModalProps) {
-  const [voterSurname, setVoterSurname] = useState("");
-  const [voterFirstName, setVoterFirstName] = useState("");
-  const [voterMiddleInitial, setVoterMiddleInitial] = useState("");
+  const [voterSurname, setVoterSurname] = useState(initialData.voterSurname || "");
+  const [voterFirstName, setVoterFirstName] = useState(initialData.voterFirstName || "");
+  const [voterMiddleInitial, setVoterMiddleInitial] = useState(initialData.voterMiddleInitial || "");
   const [scope, setScope] = useState(initialData.scope || "Department 1");
   const [email, setEmail] = useState(initialData.email || "");
   const [contactNumber, setContactNumber] = useState(initialData.contactNumber || "");
@@ -55,6 +62,32 @@ export function VotersModal({
   const [showBatchUpload, setShowBatchUpload] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const templateUrl = "/assets/templates/voters_template.csv";
+
+  useEffect(() => {
+    if (!open) return;
+    
+    // Only update if we have actual initialData (edit mode)
+    if (initialData && (initialData.voterSurname || initialData.voterFirstName || initialData.email)) {
+      setVoterSurname(initialData.voterSurname || "");
+      setVoterFirstName(initialData.voterFirstName || "");
+      setVoterMiddleInitial(initialData.voterMiddleInitial || "");
+      setScope(initialData.scope || "Department 1");
+      setEmail(initialData.email || "");
+      setContactNumber(initialData.contactNumber || "");
+      setVoterLimit(initialData.voterLimit || 1);
+      setNumberOfWinners(initialData.numberOfWinners || 1);
+    } else if (!initialData || (!initialData.voterSurname && !initialData.voterFirstName && !initialData.email)) {
+      // Clear form for new entry mode
+      setVoterSurname("");
+      setVoterFirstName("");
+      setVoterMiddleInitial("");
+      setScope("Department 1");
+      setEmail("");
+      setContactNumber("");
+      setVoterLimit(1);
+      setNumberOfWinners(1);
+    }
+  }, [open, initialData?.voterSurname, initialData?.voterFirstName, initialData?.email]);
 
   if (!open) return null;
   return (
@@ -69,7 +102,7 @@ export function VotersModal({
           {/* Modal header */}
           <div className="flex items-center justify-between p-4 border-b rounded-t border-gray-200">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Voter Form</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
               {/* <p className="text-sm text-gray-500">
                 Register and use this to manage all voters for the election.
               </p> */}
@@ -182,7 +215,7 @@ export function VotersModal({
                   <SubmitButton
                     type="submit"
                     variant="small"
-                    label="Add"
+                    label={submitLabel}
                     className="px-5 py-2.5 text-sm font-medium rounded-lg" // Match the size of the Save button
                   />
                 </div>

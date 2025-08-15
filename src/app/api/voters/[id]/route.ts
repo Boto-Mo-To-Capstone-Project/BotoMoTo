@@ -10,7 +10,7 @@ import { createAuditLog } from "@/lib/audit";
 // Handle GET request to fetch a specific voter
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -38,7 +38,8 @@ export async function GET(
       });
     }
 
-    const voterId = parseInt(params.id);
+    const { id } = await params;
+    const voterId = parseInt(id);
     if (isNaN(voterId)) {
       return apiResponse({
         success: false,
@@ -74,7 +75,7 @@ export async function GET(
           select: {
             id: true,
             name: true,
-            type: true
+            description: true
           }
         },
         candidate: {
@@ -146,7 +147,7 @@ export async function GET(
 // Handle PUT request to update a specific voter
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -174,7 +175,8 @@ export async function PUT(
       });
     }
 
-    const voterId = parseInt(params.id);
+    const { id } = await params;
+    const voterId = parseInt(id);
     if (isNaN(voterId)) {
       return apiResponse({
         success: false,
@@ -328,7 +330,7 @@ export async function PUT(
           select: {
             id: true,
             name: true,
-            type: true
+            description: true
           }
         }
       }
@@ -378,7 +380,7 @@ export async function PUT(
 // Handle DELETE request to delete a specific voter
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -406,7 +408,8 @@ export async function DELETE(
       });
     }
 
-    const voterId = parseInt(params.id);
+    const { id } = await params;
+    const voterId = parseInt(id);
     if (isNaN(voterId)) {
       return apiResponse({
         success: false,

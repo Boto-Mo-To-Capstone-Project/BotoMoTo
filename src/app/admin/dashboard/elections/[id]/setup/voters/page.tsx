@@ -35,7 +35,21 @@ export default function VoterDashboardPage() {
   const [showVotersModal, setShowVotersModal] = useState(false);
   const [showImportDropdown, setShowImportDropdown] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  // const totalPages = 1; // Placeholder, update with your data logic
+  // Edit state
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editInitialData, setEditInitialData] = useState<{
+    voterName?: string;
+    voterSurname?: string;
+    voterFirstName?: string;
+    voterMiddleInitial?: string;
+    scope?: string;
+    email?: string;
+    contactNumber?: string;
+    voterLimit?: number;
+    numberOfWinners?: number;
+  } | undefined>(undefined);
+  const [editingVoterId, setEditingVoterId] = useState<number | null>(null);
+  const [editIsActive, setEditIsActive] = useState<boolean>(true);
 
   // Data state from API
   const [rows, setRows] = useState<Array<{
@@ -104,6 +118,42 @@ export default function VoterDashboardPage() {
     );
   };
 
+  // Bulk delete selected voters -> POST /api/voters/bulk { operation: 'soft_delete', voterIds, electionId }
+  const handleDeleteSelected = async () => {
+    if (selectedIds.length < 1) return;
+    const plural = selectedIds.length > 1 ? 'voters' : 'voter';
+    if (!window.confirm(`Delete ${selectedIds.length} ${plural}? This will soft-delete them.`)) return;
+
+    try {
+      setLoading(true);
+      const res = await fetch('/api/voters/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          operation: 'soft_delete',
+          voterIds: selectedIds,
+          electionId
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json?.success === false) {
+        alert(json?.message || 'Failed to delete voters');
+        return;
+      }
+
+      // Optimistic update + refresh
+      setRows((prev) => prev.filter((r) => !selectedIds.includes(r.id)));
+      setSelectedIds([]);
+      setReloadKey((k) => k + 1);
+    } catch (e) {
+      console.error('Bulk delete voters error:', e);
+      alert('Failed to delete voters');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Hook Add -> POST /api/voters (single create)
   const handleAddVoter = async (data: any) => {
     try {
@@ -154,6 +204,99 @@ export default function VoterDashboardPage() {
     } catch (e) {
       console.error('Create voter error:', e);
       alert('Failed to create voter');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Edit voter: prefill modal from GET /api/voters/[id] and submit via PUT
+  const openEditModal = async () => {
+    if (selectedIds.length !== 1) return;
+    const id = selectedIds[0];
+    setIsEditMode(true);
+    setEditingVoterId(id);
+
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/voters/${id}`);
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json?.success === false || !json?.data?.voter) {
+        alert(json?.message || 'Failed to load voter');
+        setIsEditMode(false);
+        setEditingVoterId(null);
+        return;
+      }
+
+      const v = json.data.voter as any;
+      const initial = {
+        voterSurname: v.lastName || "",
+        voterFirstName: v.firstName || "",
+        voterMiddleInitial: v.middleName || "",
+        scope: v.votingScope?.name || "Department 1",
+        email: v.email || "",
+        contactNumber: v.contactNum || "",
+        voterLimit: 1,
+        numberOfWinners: 1,
+      };
+      setEditInitialData(initial);
+      setEditIsActive(!!v.isActive);
+      setShowVotersModal(true);
+    } catch (e) {
+      console.error('Load voter error:', e);
+      alert('Failed to load voter');
+      setIsEditMode(false);
+      setEditingVoterId(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditVoterSave = async (data: any) => {
+    if (!isEditMode || !editingVoterId) return;
+    try {
+      setLoading(true);
+      const fullName = (data?.voterName || "").trim();
+      let firstName = "";
+      let middleName = "";
+      let lastName = "";
+      if (fullName) {
+        const parts = fullName.split(/\s+/);
+        lastName = parts[0] || "";
+        firstName = parts[1] || "";
+        middleName = parts.slice(2).join(" ") || "";
+      }
+
+      const payload = {
+        firstName: firstName || undefined,
+        middleName: middleName || undefined,
+        lastName: lastName || undefined,
+        email: data?.email?.trim() || undefined,
+        contactNum: data?.contactNumber?.trim() || undefined,
+        // votingScopeId: map data.scope -> id if available
+        address: undefined,
+        isActive: editIsActive,
+      };
+
+      const res = await fetch(`/api/voters/${editingVoterId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json?.success === false) {
+        alert(json?.message || 'Failed to update voter');
+        return;
+      }
+
+      setShowVotersModal(false);
+      setIsEditMode(false);
+      setEditingVoterId(null);
+      setEditInitialData(undefined);
+      setReloadKey((k) => k + 1);
+    } catch (e) {
+      console.error('Update voter error:', e);
+      alert('Failed to update voter');
     } finally {
       setLoading(false);
     }
@@ -243,7 +386,12 @@ export default function VoterDashboardPage() {
                 variant="action"
                 icon={<MdAdd size={20} />}
                 title="Add"
-                onClick={() => setShowVotersModal(true)}
+                onClick={() => { 
+                  setIsEditMode(false); 
+                  setEditInitialData(undefined); 
+                  setEditingVoterId(null);
+                  setShowVotersModal(true); 
+                }}
               />
               <SubmitButton
                 label=""
@@ -259,9 +407,7 @@ export default function VoterDashboardPage() {
                 title="Edit"
                 onClick={
                   selectedIds.length === 1
-                    ? () => {
-                        /* TODO: handle edit */
-                      }
+                    ? openEditModal
                     : undefined
                 }
                 className={
@@ -313,9 +459,7 @@ export default function VoterDashboardPage() {
                 title="Delete"
                 onClick={
                   selectedIds.length >= 1
-                    ? () => {
-                        /* TODO: handle delete */
-                      }
+                    ? handleDeleteSelected
                     : undefined
                 }
                 className={
@@ -381,8 +525,16 @@ export default function VoterDashboardPage() {
       {/* VotersModal */}
       <VotersModal
         open={showVotersModal}
-        onClose={() => setShowVotersModal(false)}
-        onSave={handleAddVoter}
+        onClose={() => { 
+          setShowVotersModal(false); 
+          setIsEditMode(false); 
+          setEditingVoterId(null); 
+          setEditInitialData(undefined); 
+        }}
+        onSave={isEditMode ? handleEditVoterSave : handleAddVoter}
+        initialData={editInitialData}
+        title={isEditMode ? "Edit Voter" : "Voter Form"}
+        submitLabel={isEditMode ? "Save" : "Add"}
       />
 
       {/* DragandDropdown Modal */}
