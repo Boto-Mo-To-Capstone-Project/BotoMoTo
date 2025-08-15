@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MdAdd, MdDownload, MdFilterList, MdDelete, MdEdit, MdSave, MdFileUpload } from "react-icons/md";
 import { FiDownload } from "react-icons/fi";
 import { SubmitButton } from '@/components/SubmitButton';
@@ -7,8 +7,12 @@ import SearchBar from '@/components/SearchBar';
 import VoterTable from '@/components/VoterTable';
 import { VotersModal } from '@/components/VotersModal'; 
 import { DragandDropdown } from '@/components/VotersDragandDropdown';
+import { useParams } from "next/navigation";
 
 export default function VoterDashboardPage() {
+  const params = useParams<{ id: string }>();
+  const electionId = Number(params?.id);
+
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState("");
@@ -18,9 +22,22 @@ export default function VoterDashboardPage() {
   const [showVotersModal, setShowVotersModal] = useState(false);
   const [showImportDropdown, setShowImportDropdown] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const totalPages = 1; // Placeholder, update with your data logic
+  // const totalPages = 1; // Placeholder, update with your data logic
 
-  // Placeholder handlers
+  // Data state from API
+  const [rows, setRows] = useState<Array<{
+    id: number;
+    name: string;
+    status: string;
+    scope: string;
+    email: string;
+    contactNumber: string;
+    birthdate: string;
+  }>>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
+
+  // Pagination handlers
   const handleFirst = () => setPage(1);
   const handlePrev = () => setPage((p) => Math.max(1, p - 1));
   const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
@@ -47,11 +64,64 @@ export default function VoterDashboardPage() {
     setShowVotersModal(false);
   };
 
+  // Fetch voters from API
+  useEffect(() => {
+    if (!electionId || Number.isNaN(electionId)) return;
+
+    const ctrl = new AbortController();
+    const run = async () => {
+      setLoading(true);
+      try {
+        const qs = new URLSearchParams({
+          electionId: String(electionId),
+          page: String(page),
+          limit: String(pageSize),
+          ...(search ? { search } : {}),
+        });
+        const res = await fetch(`/api/voters?${qs.toString()}`, {
+          method: "GET",
+          signal: ctrl.signal,
+        });
+        const json = await res.json();
+
+        if (!res.ok || json?.success === false) {
+          console.error("Failed to load voters:", json?.message || res.statusText);
+          return;
+        }
+
+        // Map API voter -> table row
+        const mapped = (json.data?.voters || []).map((v: any) => ({
+          id: v.id,
+          name: `${v.lastName ?? ""}, ${v.firstName ?? ""}${v.middleName ? " " + v.middleName : ""}`
+            .trim()
+            .replace(/^,\s*/, ""),
+          status: v.isActive ? "Active" : "Inactive",
+          scope: v.votingScope?.name ?? "—",
+          email: v.email ?? "",
+          contactNumber: v.contactNum ?? "",
+          birthdate: "",
+        }));
+
+        setRows(mapped);
+        setTotalPages(json.data?.pagination?.totalPages || 1);
+      } catch (e: any) {
+        if (e?.name !== "AbortError") {
+          console.error("Voters fetch error:", e);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    run();
+    return () => ctrl.abort();
+  }, [electionId, page, pageSize, search]);
+
   return (
     <>
       <div
         id="main-window-template-component"
-        className="app h-full flex flex-col min-h-[calc-100vh-4rem] bg-gray-50"
+        className="app h-full flex flex-col min-h-[calc(100vh-4rem)] bg-gray-50"
       >
         {/* Universal App Header */}
 
@@ -65,7 +135,10 @@ export default function VoterDashboardPage() {
             <div className="flex-1">
               <SearchBar
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
               />
             </div>
             {/* Action Buttons */}
@@ -190,7 +263,7 @@ export default function VoterDashboardPage() {
           {/* Table */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-5">
             <VoterTable
-              voters={[]} // Pass your voter data here
+              voters={rows} // dito nilagay voters
               sortCol={sortCol}
               sortDir={sortDir}
               onSort={handleSort}
