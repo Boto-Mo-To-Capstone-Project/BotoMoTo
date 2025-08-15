@@ -22,7 +22,7 @@ const NavbarWrapper = () => {
     return <LoginNav buttons="logout" />;
   }
 
-  if (pathname === "/" || pathname.startsWith("/voter")) {
+  if (pathname === "/" || pathname === "/public/about-us" || pathname === "/public/contact" || pathname.startsWith("/voter")) {
     return <DefaultNavbar />;
   }
 
