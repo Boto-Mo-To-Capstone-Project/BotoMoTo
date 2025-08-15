@@ -49,6 +49,7 @@ export default function VoterDashboardPage() {
   }>>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   // Initialize state from URL once
   const initializedFromURL = useRef(false);
@@ -102,9 +103,60 @@ export default function VoterDashboardPage() {
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
-  const handleAddVoter = (data: any) => {
-    // TODO: Save voter logic here
-    setShowVotersModal(false);
+
+  // Hook Add -> POST /api/voters (single create)
+  const handleAddVoter = async (data: any) => {
+    try {
+      if (!electionId || Number.isNaN(electionId)) return;
+      setLoading(true);
+
+      // VotersModal passes { voterName, scope, email, contactNumber, ... }
+      const fullName = (data?.voterName || "").trim();
+      let firstName = "";
+      let middleName = "";
+      let lastName = "";
+      if (fullName) {
+        const parts = fullName.split(/\s+/);
+        // Modal builds as: Surname First MiddleInitial
+        lastName = parts[0] || "";
+        firstName = parts[1] || "";
+        middleName = parts.slice(2).join(" ") || "";
+      }
+
+      const payload = {
+        electionId,
+        firstName: firstName || undefined,
+        middleName: middleName || undefined,
+        lastName: lastName || undefined,
+        email: data?.email?.trim() || undefined,
+        contactNum: data?.contactNumber?.trim() || undefined,
+        // votingScopeId: map data.scope -> id if you have it; optional for now
+        address: undefined,
+        isActive: true,
+      };
+
+      const res = await fetch('/api/voters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json?.success === false) {
+        alert(json?.message || 'Failed to create voter');
+        return;
+      }
+
+      // Success: refresh list
+      setSelectedIds([]);
+      setPage(1);
+      setReloadKey((k) => k + 1);
+    } catch (e) {
+      console.error('Create voter error:', e);
+      alert('Failed to create voter');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Fetch voters from API
@@ -158,7 +210,7 @@ export default function VoterDashboardPage() {
 
     run();
     return () => ctrl.abort();
-  }, [electionId, page, pageSize, debouncedSearch]);
+  }, [electionId, page, pageSize, debouncedSearch, reloadKey]);
 
   return (
     <>
