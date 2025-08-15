@@ -24,7 +24,7 @@ export default function RootLayout({
 }) {
   const hydrated = useIsHydrated();
   const sidebarVisibleValue = useSidebarVisible();
-  const sidebarVisible = hydrated ? sidebarVisibleValue : true;
+  const sidebarVisible = hydrated ? sidebarVisibleValue : false;
 
   return (
     <html lang="en">
