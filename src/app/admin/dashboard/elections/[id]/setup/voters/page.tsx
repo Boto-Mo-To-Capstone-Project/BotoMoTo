@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MdAdd, MdDownload, MdFilterList, MdDelete, MdEdit, MdSave, MdFileUpload } from "react-icons/md";
 import { FiDownload } from "react-icons/fi";
 import { SubmitButton } from '@/components/SubmitButton';
@@ -7,15 +7,28 @@ import SearchBar from '@/components/SearchBar';
 import VoterTable from '@/components/VoterTable';
 import { VotersModal } from '@/components/VotersModal'; 
 import { DragandDropdown } from '@/components/VotersDragandDropdown';
-import { useParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+
+// Debounce hook
+function useDebouncedValue<T>(value: T, delay = 400) {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setV(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return v;
+}
 
 export default function VoterDashboardPage() {
   const params = useParams<{ id: string }>();
   const electionId = Number(params?.id);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 400);
   const [sortCol, setSortCol] = useState<"name" | "status" | "scope" | "email" | "contactNumber" | "birthdate" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -36,6 +49,36 @@ export default function VoterDashboardPage() {
   }>>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
+
+  // Initialize state from URL once
+  const initializedFromURL = useRef(false);
+  useEffect(() => {
+    if (initializedFromURL.current) return;
+    initializedFromURL.current = true;
+
+    const sp = new URLSearchParams(searchParams?.toString() || "");
+    const p = Number(sp.get("page") || 1);
+    const l = Number(sp.get("limit") || 10);
+    const s = sp.get("search") || "";
+
+    if (!Number.isNaN(p) && p > 0) setPage(p);
+    if (!Number.isNaN(l) && l > 0) setPageSize(l);
+    setSearch(s);
+  }, [searchParams]);
+
+  // Keep URL in sync with state
+  useEffect(() => {
+    const current = searchParams?.toString() || "";
+    const sp = new URLSearchParams(current);
+    sp.set("page", String(page));
+    sp.set("limit", String(pageSize));
+    if (debouncedSearch) sp.set("search", debouncedSearch); else sp.delete("search");
+
+    const target = sp.toString();
+    if (target !== current) {
+      router.replace(`?${target}`, { scroll: false });
+    }
+  }, [page, pageSize, debouncedSearch, router, searchParams]);
 
   // Pagination handlers
   const handleFirst = () => setPage(1);
@@ -76,7 +119,7 @@ export default function VoterDashboardPage() {
           electionId: String(electionId),
           page: String(page),
           limit: String(pageSize),
-          ...(search ? { search } : {}),
+          ...(debouncedSearch ? { search: debouncedSearch } : {}),
         });
         const res = await fetch(`/api/voters?${qs.toString()}`, {
           method: "GET",
@@ -115,7 +158,7 @@ export default function VoterDashboardPage() {
 
     run();
     return () => ctrl.abort();
-  }, [electionId, page, pageSize, search]);
+  }, [electionId, page, pageSize, debouncedSearch]);
 
   return (
     <>
