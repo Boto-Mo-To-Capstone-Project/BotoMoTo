@@ -51,6 +51,7 @@ enum AuditResource {
   VOTING_SCOPE
   VOTER
   POSITION
+  TICKET
   // Add other resources as needed
 }
 
@@ -85,10 +86,9 @@ enum VotingScopeType {
 
 // Ticket status enum
 enum TicketStatus {
-  OPEN
+  PENDING
   IN_PROGRESS
   RESOLVED
-  CLOSED
 }
 
 // Audit action enum
@@ -430,17 +430,15 @@ model SurveyResponse {
 }
 
 model Ticket {
-  id        Int         @id @default(autoincrement())
-  orgId     Int
-  subject   String
-  message   String
-  status    TicketStatus @default(OPEN)
-  priority  String      @default("MEDIUM")
-  response  String?     // SuperAdmin response
+  id          Int           @id @default(autoincrement())
+  orgId       Int
+  subject     String        // Ticket title/subject serves as the description
+  status      TicketStatus  @default(PENDING)
+  messages    Json        // Array to store chat messages: [{senderId, content, timestamp}]
   
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  closedAt  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  closedAt    DateTime?
 
   organization Organization @relation(fields: [orgId], references: [id])
 }

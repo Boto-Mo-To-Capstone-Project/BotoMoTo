@@ -24,10 +24,9 @@ export const ELECTION_STATUS = {
 
 // Ticket statuses
 export const TICKET_STATUS = {
-  OPEN: "OPEN",
+  PENDING: "PENDING",
   IN_PROGRESS: "IN_PROGRESS",
   RESOLVED: "RESOLVED",
-  CLOSED: "CLOSED",
 } as const;
 
 // Route permissions (reflects latest route structure)

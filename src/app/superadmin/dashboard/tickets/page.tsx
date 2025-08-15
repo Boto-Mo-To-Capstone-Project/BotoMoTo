@@ -1,40 +1,138 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
-
 import Table from "@/components/TableComponent";
+import TicketModal from "@/components/TicketModal";
 
 export default function SuperAdminTicketsPage() {
-  const sampleData = [
-    {
-      Organization_Name: "PUP Provident Fund Polytechnic...",
-      Ticket: "Reply",
-    },
-    {
-      Organization_Name: "Institute of Bachelor of Science In...",
-      Ticket: "Reply",
-    },
-    {
-      Organization_Name: "College of Computer Information Sci...",
-      Ticket: "Reply",
-    },
-    {
-      Organization_Name: 4,
-      Ticket: "Reply",
-    },
-    {
-      Organization_Name: 5,
-      Ticket: "Reply",
-    },
-    {
-      Organization_Name: 6,
-      Ticket: "Reply",
-    },
-    {
-      Organization_Name: 7,
-      Ticket: "Reply",
-    },
-  ];
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [statusDropdown, setStatusDropdown] = useState<{ [key: number]: boolean }>({});
+  const [updatingStatusId, setUpdatingStatusId] = useState<number | null>(null);
+
+  const TICKET_STATUSES = ["PENDING", "IN_PROGRESS", "RESOLVED"];
+
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        const res = await fetch("/api/tickets");
+        if (!res.ok) throw new Error("Failed to fetch tickets");
+        const data = await res.json();
+        console.log("Fetched tickets data:", data); // Debug: log API response
+
+        let ticketsArr: any[] = [];
+        // Extract tickets from the specific API response structure
+        if (data && data.data && data.data.tickets) {
+          ticketsArr = data.data.tickets;
+        } else if (Array.isArray(data)) {
+          ticketsArr = data;
+        } else if (Array.isArray(data.tickets)) {
+          ticketsArr = data.tickets;
+        }
+
+        console.log("Extracted tickets array:", ticketsArr);
+
+        // Map to expected fields for the Table, include original ticket object for modal
+        const mappedTickets = ticketsArr.map((t) => ({
+          Organization_Name: t.organization?.name || "Unknown Org",
+          Ticket: t.subject || t.message || "No subject",
+          Status: t.status || "Unknown",
+          _original: t, // keep original ticket for modal
+        }));
+
+        setTickets(mappedTickets);
+        if (mappedTickets.length === 0) {
+          toast.error("No tickets found");
+        }
+      } catch (error) {
+        console.error("Fetch error:", error);
+        toast.error("Error fetching tickets");
+        setTickets([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTickets();
+  }, []);
+
+  const handleStatusClick = (ticketId: number) => {
+    setStatusDropdown((prev) => ({
+      ...prev,
+      [ticketId]: !prev[ticketId],
+    }));
+  };
+
+  const handleStatusChange = async (ticket: any, newStatus: string) => {
+    setUpdatingStatusId(ticket.id);
+    try {
+      const res = await fetch(`/api/tickets/${ticket.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error("Failed to update status");
+      // Update local state
+      setTickets((prev) =>
+        prev.map((row) =>
+          row._original.id === ticket.id
+            ? { ...row, Status: newStatus, _original: { ...row._original, status: newStatus } }
+            : row
+        )
+      );
+      toast.success("Status updated!");
+    } catch (err) {
+      toast.error("Failed to update status");
+    } finally {
+      setUpdatingStatusId(null);
+      setStatusDropdown((prev) => ({ ...prev, [ticket.id]: false }));
+    }
+  };
+
+  // Add Reply button to each row
+  const tableData = tickets.map((row) => ({
+    ...row,
+    Status: (
+      <div className="relative inline-block">
+        <button
+          className="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 min-w-[100px] text-left"
+          onClick={() => handleStatusClick(row._original.id)}
+          disabled={updatingStatusId === row._original.id}
+        >
+          {row.Status}
+        </button>
+        {statusDropdown[row._original.id] && (
+          <div className="absolute z-10 mt-1 bg-white border border-gray-200 rounded shadow w-full">
+            {TICKET_STATUSES.map((status) => (
+              <button
+                key={status}
+                className={`block w-full text-left px-4 py-2 hover:bg-blue-50 ${
+                  status === row.Status ? "font-bold text-blue-700" : ""
+                }`}
+                onClick={() => handleStatusChange(row._original, status)}
+                disabled={updatingStatusId === row._original.id || status === row.Status}
+              >
+                {status}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    ),
+    Actions: (
+      <button
+        className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+        onClick={() => {
+          setSelectedTicket(row._original);
+          setModalOpen(true);
+        }}
+      >
+        View
+      </button>
+    ),
+  }));
 
   return (
     <>
@@ -46,15 +144,25 @@ export default function SuperAdminTicketsPage() {
         <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
           {/* Table */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-3">
-            <Table
-              title="All Elections"
-              columns={["Organization_Name", "Ticket"]}
-              data={sampleData}
-              pageSize={3}
-            />
+            {loading ? (
+              <div>Loading...</div>
+            ) : (
+              <Table
+                title="All Tickets"
+                columns={["Organization_Name", "Ticket", "Status", "Actions"]}
+                data={Array.isArray(tableData) ? tableData : []}
+                pageSize={3}
+              />
+            )}
           </div>
         </div>
       </div>
+      <TicketModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        ticket={selectedTicket}
+        currentUserRole="SUPER_ADMIN"
+      />
     </>
   );
 }
