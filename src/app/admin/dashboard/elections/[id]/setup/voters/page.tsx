@@ -1,13 +1,13 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
 import { MdAdd, MdDownload, MdFilterList, MdDelete, MdEdit, MdSave, MdFileUpload } from "react-icons/md";
-import { FiDownload } from "react-icons/fi";
 import { SubmitButton } from '@/components/SubmitButton';
 import SearchBar from '@/components/SearchBar';
 import VoterTable from '@/components/VoterTable';
 import { VotersModal } from '@/components/VotersModal'; 
 import { DragandDropdown } from '@/components/VotersDragandDropdown';
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { Toaster, toast } from 'react-hot-toast';
 
 // Debounce hook
 function useDebouncedValue<T>(value: T, delay = 400) {
@@ -29,11 +29,10 @@ export default function VoterDashboardPage() {
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 400);
-  const [sortCol, setSortCol] = useState<"name" | "status" | "scope" | "email" | "contactNumber" | "birthdate" | null>(null);
+  const [sortCol, setSortCol] = useState<"name" | "status" | "scope" | "email" | "contactNumber" | "birthdate" | "hasVoted" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showVotersModal, setShowVotersModal] = useState(false);
-  const [showImportDropdown, setShowImportDropdown] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   // Edit state
   const [isEditMode, setIsEditMode] = useState(false);
@@ -60,6 +59,7 @@ export default function VoterDashboardPage() {
     email: string;
     contactNumber: string;
     birthdate: string;
+    hasVoted: boolean;
   }>>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -104,7 +104,7 @@ export default function VoterDashboardPage() {
     setPageSize(Number(e.target.value));
     setPage(1);
   };
-  const handleSort = (col: "name" | "status" | "scope" | "email" | "contactNumber" | "birthdate") => {
+  const handleSort = (col: "name" | "status" | "scope" | "email" | "contactNumber" | "birthdate" | "hasVoted") => {
     if (sortCol === col) {
       setSortDir(sortDir === "asc" ? "desc" : "asc");
     } else {
@@ -121,34 +121,65 @@ export default function VoterDashboardPage() {
   // Bulk delete selected voters -> POST /api/voters/bulk { operation: 'soft_delete', voterIds, electionId }
   const handleDeleteSelected = async () => {
     if (selectedIds.length < 1) return;
-    const plural = selectedIds.length > 1 ? 'voters' : 'voter';
-    if (!window.confirm(`Delete ${selectedIds.length} ${plural}? This will soft-delete them.`)) return;
+    
+    // Check which voters have voted and which haven't
+    const selectedVoters = rows.filter(r => selectedIds.includes(r.id));
+    const votedVoters = selectedVoters.filter(v => v.hasVoted);
+    const nonVotedVoters = selectedVoters.filter(v => !v.hasVoted);
+    
+    if (votedVoters.length > 0) {
+      const votedNames = votedVoters.map(v => v.name).join(', ');
+      if (nonVotedVoters.length === 0) {
+        toast.error(`Cannot delete voters who have already voted: ${votedNames}`);
+        return;
+      } else {
+        const proceed = window.confirm(
+          `${votedVoters.length} selected voter(s) have already voted and cannot be deleted: ${votedNames}\n\n` +
+          `Do you want to continue deleting the ${nonVotedVoters.length} voter(s) who haven't voted yet?`
+        );
+        if (!proceed) return;
+      }
+    } else {
+      const plural = nonVotedVoters.length > 1 ? 'voters' : 'voter';
+      if (!window.confirm(`Delete ${nonVotedVoters.length} ${plural}? This will soft-delete them.`)) return;
+    }
 
     try {
       setLoading(true);
+      const voterIdsToDelete = nonVotedVoters.map(v => v.id);
+      
       const res = await fetch('/api/voters/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           operation: 'soft_delete',
-          voterIds: selectedIds,
+          voterIds: voterIdsToDelete,
           electionId
         }),
       });
       const json = await res.json().catch(() => ({}));
 
       if (!res.ok || json?.success === false) {
-        alert(json?.message || 'Failed to delete voters');
+        toast.error(json?.message || 'Failed to delete voters');
         return;
       }
 
+      // Success message
+      const deletedCount = voterIdsToDelete.length;
+      const skippedCount = votedVoters.length;
+      let message = `Successfully deleted ${deletedCount} voter${deletedCount === 1 ? '' : 's'}`;
+      if (skippedCount > 0) {
+        message += `. ${skippedCount} voter${skippedCount === 1 ? '' : 's'} who already voted were skipped`;
+      }
+      toast.success(message);
+
       // Optimistic update + refresh
-      setRows((prev) => prev.filter((r) => !selectedIds.includes(r.id)));
+      setRows((prev) => prev.filter((r) => !voterIdsToDelete.includes(r.id)));
       setSelectedIds([]);
       setReloadKey((k) => k + 1);
     } catch (e) {
       console.error('Bulk delete voters error:', e);
-      alert('Failed to delete voters');
+      toast.error('Failed to delete voters');
     } finally {
       setLoading(false);
     }
@@ -193,17 +224,18 @@ export default function VoterDashboardPage() {
       const json = await res.json().catch(() => ({}));
 
       if (!res.ok || json?.success === false) {
-        alert(json?.message || 'Failed to create voter');
+        toast.error(json?.message || 'Failed to create voter');
         return;
       }
 
       // Success: refresh list
+      toast.success('Voter created successfully');
       setSelectedIds([]);
       setPage(1);
       setReloadKey((k) => k + 1);
     } catch (e) {
       console.error('Create voter error:', e);
-      alert('Failed to create voter');
+      toast.error('Failed to create voter');
     } finally {
       setLoading(false);
     }
@@ -221,7 +253,7 @@ export default function VoterDashboardPage() {
       const res = await fetch(`/api/voters/${id}`);
       const json = await res.json().catch(() => ({}));
       if (!res.ok || json?.success === false || !json?.data?.voter) {
-        alert(json?.message || 'Failed to load voter');
+        toast.error(json?.message || 'Failed to load voter');
         setIsEditMode(false);
         setEditingVoterId(null);
         return;
@@ -243,7 +275,7 @@ export default function VoterDashboardPage() {
       setShowVotersModal(true);
     } catch (e) {
       console.error('Load voter error:', e);
-      alert('Failed to load voter');
+      toast.error('Failed to load voter');
       setIsEditMode(false);
       setEditingVoterId(null);
     } finally {
@@ -285,10 +317,11 @@ export default function VoterDashboardPage() {
       const json = await res.json().catch(() => ({}));
 
       if (!res.ok || json?.success === false) {
-        alert(json?.message || 'Failed to update voter');
+        toast.error(json?.message || 'Failed to update voter');
         return;
       }
 
+      toast.success('Voter updated successfully');
       setShowVotersModal(false);
       setIsEditMode(false);
       setEditingVoterId(null);
@@ -296,7 +329,7 @@ export default function VoterDashboardPage() {
       setReloadKey((k) => k + 1);
     } catch (e) {
       console.error('Update voter error:', e);
-      alert('Failed to update voter');
+      toast.error('Failed to update voter');
     } finally {
       setLoading(false);
     }
@@ -315,6 +348,7 @@ export default function VoterDashboardPage() {
           page: String(page),
           limit: String(pageSize),
           ...(debouncedSearch ? { search: debouncedSearch } : {}),
+          ...(sortCol ? { sortCol: sortCol, sortDir: sortDir } : {}),
         });
         const res = await fetch(`/api/voters?${qs.toString()}`, {
           method: "GET",
@@ -338,6 +372,7 @@ export default function VoterDashboardPage() {
           email: v.email ?? "",
           contactNumber: v.contactNum ?? "",
           birthdate: "",
+          hasVoted: !!v.hasVoted,
         }));
 
         setRows(mapped);
@@ -353,10 +388,11 @@ export default function VoterDashboardPage() {
 
     run();
     return () => ctrl.abort();
-  }, [electionId, page, pageSize, debouncedSearch, reloadKey]);
+  }, [electionId, page, pageSize, debouncedSearch, sortCol, sortDir, reloadKey]);
 
   return (
     <>
+      <Toaster position="top-center" />
       <div
         id="main-window-template-component"
         className="app h-full flex flex-col min-h-[calc(100vh-4rem)] bg-gray-50"
@@ -468,41 +504,13 @@ export default function VoterDashboardPage() {
                     : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
                 }
               />
-              {/* Save Button */}
-              <SubmitButton
-                label="Save"
-                variant="action" // <-- change this!
-                icon={
-                  <MdSave
-                    size={20}
-                    className={
-                      selectedIds.length > 0
-                        ? "text-[var(--color-primary)]"
-                        : "text-gray-400"
-                    }
-                  />
-                }
-                title="Save"
-                onClick={
-                  selectedIds.length > 0
-                    ? () => {
-                        /* TODO: handle save */
-                      }
-                    : undefined
-                }
-                className={
-                  selectedIds.length > 0
-                    ? ""
-                    : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
-                }
-              />
             </div>
           </div>
 
           {/* Table */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-5">
             <VoterTable
-              voters={rows} // dito nilagay voters
+              voters={rows}
               sortCol={sortCol}
               sortDir={sortDir}
               onSort={handleSort}
@@ -514,7 +522,6 @@ export default function VoterDashboardPage() {
               onLast={handleLast}
               pageSize={pageSize}
               onPageSizeChange={handlePageSizeChange}
-              onRowClick={(voter) => handleCheckboxChange(voter.id)}
               selectedIds={selectedIds}
               onCheckboxChange={handleCheckboxChange}
             />

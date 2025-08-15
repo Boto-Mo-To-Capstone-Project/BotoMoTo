@@ -40,6 +40,8 @@ async function getVoters(request: NextRequest) {
     const limit = parseInt(url.searchParams.get('limit') || '50');
     const hasVoted = url.searchParams.get('hasVoted');
     const isActive = url.searchParams.get('isActive');
+    const sortCol = url.searchParams.get('sortCol');
+    const sortDir = url.searchParams.get('sortDir') || 'asc';
 
     if (!electionId) {
       return apiResponse({
@@ -124,16 +126,6 @@ async function getVoters(request: NextRequest) {
       }
     }
 
-    // Add search filter
-    if (search) {
-      where.OR = [
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { code: { contains: search, mode: 'insensitive' } }
-      ];
-    }
-
     // Add hasVoted filter
     if (hasVoted !== null && hasVoted !== undefined) {
       where.hasVoted = hasVoted === 'true';
@@ -144,10 +136,82 @@ async function getVoters(request: NextRequest) {
       where.isActive = isActive === 'true';
     }
 
+    // Add search filter if provided (remove mode: 'insensitive' to fix Prisma error)
+    if (search) {
+      const searchLower = search.toLowerCase();
+      where.OR = [
+        {
+          firstName: {
+            contains: searchLower
+          }
+        },
+        {
+          lastName: {
+            contains: searchLower
+          }
+        },
+        {
+          middleName: {
+            contains: searchLower
+          }
+        },
+        {
+          email: {
+            contains: searchLower
+          }
+        },
+        {
+          code: {
+            contains: searchLower
+          }
+        }
+      ];
+    }
+
     // Calculate pagination
     const skip = (page - 1) * limit;
 
-    // Fetch voters with pagination
+    // Build dynamic orderBy clause
+    let orderBy: any[] = [];
+    
+    if (sortCol && ['name', 'status', 'scope', 'email', 'contactNumber', 'hasVoted'].includes(sortCol)) {
+      switch (sortCol) {
+        case 'name':
+          orderBy = [
+            { lastName: sortDir },
+            { firstName: sortDir }
+          ];
+          break;
+        case 'status':
+          orderBy = [{ isActive: sortDir }];
+          break;
+        case 'scope':
+          orderBy = [{ votingScope: { name: sortDir } }];
+          break;
+        case 'email':
+          orderBy = [{ email: sortDir }];
+          break;
+        case 'contactNumber':
+          orderBy = [{ contactNum: sortDir }];
+          break;
+        case 'hasVoted':
+          orderBy = [{ hasVoted: sortDir }];
+          break;
+        default:
+          orderBy = [
+            { lastName: 'asc' },
+            { firstName: 'asc' }
+          ];
+      }
+    } else {
+      // Default sorting
+      orderBy = [
+        { lastName: 'asc' },
+        { firstName: 'asc' }
+      ];
+    }
+
+    // Fetch voters with pagination and search
     const [voters, totalCount] = await Promise.all([
       db.voter.findMany({
         where,
@@ -170,10 +234,7 @@ async function getVoters(request: NextRequest) {
             }
           }
         },
-        orderBy: [
-          { lastName: 'asc' },
-          { firstName: 'asc' }
-        ],
+        orderBy,
         skip,
         take: limit
       }),

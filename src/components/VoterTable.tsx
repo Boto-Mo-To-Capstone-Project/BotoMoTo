@@ -9,13 +9,14 @@ interface Voter {
   email: string;
   contactNumber: string;
   birthdate: string;
+  hasVoted: boolean;
 }
 
 interface VoterTableProps {
   voters: Voter[];
-  sortCol: 'name' | 'status' | 'scope' | 'email' | 'contactNumber' | 'birthdate' | null;
+  sortCol: 'name' | 'status' | 'scope' | 'email' | 'contactNumber' | 'birthdate' | 'hasVoted' | null;
   sortDir: 'asc' | 'desc';
-  onSort: (col: 'name' | 'status' | 'scope' | 'email' | 'contactNumber' | 'birthdate') => void;
+  onSort: (col: 'name' | 'status' | 'scope' | 'email' | 'contactNumber' | 'birthdate' | 'hasVoted') => void;
   page: number;
   totalPages: number;
   onFirst: () => void;
@@ -43,11 +44,11 @@ export default function VoterTable({
   const handleHeaderCheckbox = () => {
     if (allChecked) {
       // Uncheck all
-      props.voters.forEach(v => onCheckboxChange && onCheckboxChange(v.id));
+      props.voters.forEach(v => onCheckboxChange?.(v.id));
     } else {
       // Check all
       props.voters.forEach(v => {
-        if (!selectedIds.includes(v.id)) onCheckboxChange && onCheckboxChange(v.id);
+        if (!selectedIds.includes(v.id)) onCheckboxChange?.(v.id);
       });
     }
   };
@@ -104,7 +105,7 @@ export default function VoterTable({
                 className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
                 onClick={() => props.onSort("email")}
               >
-                Email address{" "}
+                Email{" "}
                 {props.sortCol === "email" ? (
                   props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
                 ) : (
@@ -115,8 +116,19 @@ export default function VoterTable({
                 className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
                 onClick={() => props.onSort("contactNumber")}
               >
-                Contact Number{" "}
+                Contact{" "}
                 {props.sortCol === "contactNumber" ? (
+                  props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
+                ) : (
+                  <FaSort className="inline opacity-50" />
+                )}
+              </th>
+              <th
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                onClick={() => props.onSort("hasVoted")}
+              >
+                Voted{" "}
+                {props.sortCol === "hasVoted" ? (
                   props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
                 ) : (
                   <FaSort className="inline opacity-50" />
@@ -127,7 +139,7 @@ export default function VoterTable({
           <tbody>
             {props.voters.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-4 text-center text-gray-400">
+                <td colSpan={7} className="px-4 py-4 text-center text-gray-400">
                   No voters found.
                 </td>
               </tr>
@@ -138,15 +150,14 @@ export default function VoterTable({
                   className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
                   onClick={e => {
                     if ((e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
-                    onCheckboxChange && onCheckboxChange(voter.id);
-                    props.onRowClick && props.onRowClick(voter);
+                    onCheckboxChange?.(voter.id);
                   }}
                 >
                   <td className="py-2 px-3 align-middle">
                     <input
                       type="checkbox"
                       checked={selectedIds.includes(voter.id)}
-                      onChange={() => onCheckboxChange && onCheckboxChange(voter.id)}
+                      onChange={() => onCheckboxChange?.(voter.id)}
                     />
                   </td>
                   <td className="py-2 px-3 align-middle truncate max-w-[150px]">{voter.name}</td>
@@ -161,6 +172,15 @@ export default function VoterTable({
                   <td className="py-2 px-3 align-middle truncate max-w-[120px]">{voter.scope}</td>
                   <td className="py-2 px-3 align-middle truncate max-w-[180px]">{voter.email}</td>
                   <td className="py-2 px-3 align-middle truncate max-w-[140px]">{voter.contactNumber}</td>
+                  <td className="py-2 px-3 align-middle text-center">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      voter.hasVoted 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {voter.hasVoted ? 'Yes' : 'No'}
+                    </span>
+                  </td>
                 </tr>
               ))
             )}
