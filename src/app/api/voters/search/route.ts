@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             name: true,
-            type: true
+            description: true
           }
         }
       },

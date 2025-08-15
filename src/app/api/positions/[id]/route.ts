@@ -64,7 +64,6 @@ export async function GET(
           select: {
             id: true,
             name: true,
-            type: true,
             description: true
           }
         },
@@ -335,7 +334,6 @@ export async function PUT(
     // Store old data for comparison
     const oldData = {
       name: existingPosition.name,
-      description: existingPosition.description,
       voteLimit: existingPosition.voteLimit,
       numOfWinners: existingPosition.numOfWinners,
       votingScopeId: existingPosition.votingScopeId,
@@ -347,7 +345,6 @@ export async function PUT(
       where: { id: positionId },
       data: {
         name,
-        description,
         voteLimit,
         numOfWinners,
         votingScopeId,
@@ -370,8 +367,7 @@ export async function PUT(
         votingScope: {
           select: {
             id: true,
-            name: true,
-            type: true
+            name: true
           }
         },
         _count: {

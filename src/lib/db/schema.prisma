@@ -294,7 +294,6 @@ model Position {
   id             Int          @id @default(autoincrement())
   electionId     Int
   name           String
-  description    String
   voteLimit      Int          @default(1)
   numOfWinners   Int          @default(1)
   votingScopeId  Int?

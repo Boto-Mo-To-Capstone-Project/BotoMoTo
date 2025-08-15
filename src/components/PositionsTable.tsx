@@ -10,16 +10,17 @@ import {
 interface Position {
   id: number;
   position: string;
-  voterLimit: number;
+  voteLimit: number;
   numberOfWinners: number;
   scopeName: string;
+  order: number;
 }
 
 interface PositionsTableProps {
   positions: Position[];
-  sortCol: 'position' | 'voterLimit' | 'numberOfWinners' | 'scopeName' | null;
+  sortCol: 'position' | 'voteLimit' | 'numberOfWinners' | 'scopeName' | 'order' | null;
   sortDir: 'asc' | 'desc';
-  onSort: (col: 'position' | 'voterLimit' | 'numberOfWinners' | 'scopeName') => void;
+  onSort: (col: 'position' | 'voteLimit' | 'numberOfWinners' | 'scopeName' | 'order') => void;
   page: number;
   totalPages: number;
   onFirst: () => void;
@@ -81,10 +82,10 @@ export default function PositionsTable({
               </th>
               <th
                 className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
-                onClick={() => props.onSort("voterLimit")}
+                onClick={() => props.onSort("voteLimit")}
               >
-                Voter Limit{" "}
-                {props.sortCol === "voterLimit" ? (
+                Vote Limit{" "}
+                {props.sortCol === "voteLimit" ? (
                   props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
                 ) : (
                   <FaSort className="inline opacity-50" />
@@ -96,6 +97,17 @@ export default function PositionsTable({
               >
                 Number of Winners{" "}
                 {props.sortCol === "numberOfWinners" ? (
+                  props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
+                ) : (
+                  <FaSort className="inline opacity-50" />
+                )}
+              </th>
+              <th
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                onClick={() => props.onSort("order")}
+              >
+                Order{" "}
+                {props.sortCol === "order" ? (
                   props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
                 ) : (
                   <FaSort className="inline opacity-50" />
@@ -117,7 +129,7 @@ export default function PositionsTable({
           <tbody>
             {props.positions.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-4 text-center text-gray-400">
+                <td colSpan={6} className="px-4 py-4 text-center text-gray-400">
                   No positions found.
                 </td>
               </tr>
@@ -128,20 +140,20 @@ export default function PositionsTable({
                   className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
                   onClick={e => {
                     if ((e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
-                    onCheckboxChange && onCheckboxChange(position.id);
-                    props.onRowClick && props.onRowClick(position);
+                    onCheckboxChange?.(position.id);
                   }}
                 >
                   <td className="py-2 px-3 align-middle">
                     <input
                       type="checkbox"
                       checked={selectedIds.includes(position.id)}
-                      onChange={() => onCheckboxChange && onCheckboxChange(position.id)}
+                      onChange={() => onCheckboxChange?.(position.id)}
                     />
                   </td>
                   <td className="py-2 px-3 align-middle truncate max-w-[150px]">{position.position}</td>
-                  <td className="py-2 px-3 align-middle">{position.voterLimit}</td>
+                  <td className="py-2 px-3 align-middle">{position.voteLimit}</td>
                   <td className="py-2 px-3 align-middle">{position.numberOfWinners}</td>
+                  <td className="py-2 px-3 align-middle">{position.order}</td>
                   <td className="py-2 px-3 align-middle truncate max-w-[180px]">{position.scopeName}</td>
                 </tr>
               ))

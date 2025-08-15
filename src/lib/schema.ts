@@ -202,7 +202,6 @@ const votingScopeUpdateSchema = z.object({
 const positionSchema = z.object({
   electionId: z.number().int().positive("Election ID must be a positive integer"),
   name: field.string("Position name", { min: 2, max: 100 }),
-  description: field.string("Position description", { min: 5, max: 500 }),
   voteLimit: z.number().int().min(1, "Vote limit must be at least 1").default(1),
   numOfWinners: z.number().int().min(1, "Number of winners must be at least 1").default(1),
   votingScopeId: z.number().int().positive("Voting scope ID must be a positive integer").optional(),
@@ -211,7 +210,6 @@ const positionSchema = z.object({
 
 const positionUpdateSchema = z.object({
   name: field.string("Position name", { min: 2, max: 100 }),
-  description: field.string("Position description", { min: 5, max: 500 }),
   voteLimit: z.number().int().min(1, "Vote limit must be at least 1").default(1),
   numOfWinners: z.number().int().min(1, "Number of winners must be at least 1").default(1),
   votingScopeId: z.number().int().positive("Voting scope ID must be a positive integer").optional(),

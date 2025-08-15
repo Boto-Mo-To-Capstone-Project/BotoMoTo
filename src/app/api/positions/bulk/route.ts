@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       case 'CREATE_MULTIPLE':
         result = await handleBulkCreate(electionIdInt, positionsData, user, request);
         break;
-      case 'DELETE_MULTIPLE':
+      case 'soft_delete':
         result = await handleBulkDelete(electionIdInt, positionIds, user, request, election);
         break;
       case 'REORDER':
@@ -186,7 +186,6 @@ async function handleBulkCreate(electionId: number, positionsData: any[], user: 
         select: {
           id: true,
           name: true,
-          type: true
         }
       },
       _count: {

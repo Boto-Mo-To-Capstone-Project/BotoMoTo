@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AuthHeading } from "@/components/AuthHeading";
 import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
@@ -6,21 +6,45 @@ import { SubmitButton } from "@/components/SubmitButton";
 type PositionsModalProps = {
   open: boolean;
   onClose: () => void;
-  onSave: (data: { position: string; voterLimit: number; numberOfWinners: number }) => void;
-  initialData?: { position?: string; voterLimit?: number; numberOfWinners?: number };
+  onSave: (data: { position: string; voteLimit: number; numberOfWinners: number; order: number }) => void;
+  initialData?: { position?: string; voteLimit?: number; numberOfWinners?: number; order?: number };
   disableSave?: boolean;
+  title?: string;
+  submitLabel?: string;
 };
 
 export function PositionsModal({
   open,
   onClose,
   onSave,
-  initialData = { position: "", voterLimit: 1, numberOfWinners: 1 },
+  initialData = { position: "", voteLimit: 1, numberOfWinners: 1, order: 0 },
   disableSave,
+  title = "Position Form",
+  submitLabel = "Add",
 }: PositionsModalProps) {
   const [position, setPosition] = useState(initialData.position || "");
-  const [voterLimit, setVoterLimit] = useState(initialData.voterLimit || 1);
+  const [voteLimit, setVoteLimit] = useState(initialData.voteLimit || 1);
   const [numberOfWinners, setNumberOfWinners] = useState(initialData.numberOfWinners || 1);
+  const [order, setOrder] = useState(initialData.order || 0);
+
+  useEffect(() => {
+    if (!open) return;
+    
+    // Only update if we have actual initialData (edit mode)
+    if (initialData && initialData.position) {
+      setPosition(initialData.position || "");
+      setVoteLimit(initialData.voteLimit || 1);
+      setNumberOfWinners(initialData.numberOfWinners || 1);
+      setOrder(initialData.order || 0);
+    } else if (!initialData || !initialData.position) {
+      // Clear form for new entry mode
+      setPosition("");
+      setVoteLimit(1);
+      setNumberOfWinners(1);
+      setOrder(0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialData?.position]);
 
   if (!open) return null;
   return (
@@ -35,7 +59,7 @@ export function PositionsModal({
           {/* Modal header */}
           <div className="flex items-center justify-between p-4 border-b rounded-t border-gray-200">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Position Form</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
             </div>
             <button
               type="button"
@@ -56,7 +80,7 @@ export function PositionsModal({
             <form
               onSubmit={e => {
                 e.preventDefault();
-                onSave({ position, voterLimit, numberOfWinners });
+                onSave({ position, voteLimit, numberOfWinners, order });
                 onClose();
               }}
               className="grid gap-4 mb-4 grid-cols-2"
@@ -75,8 +99,8 @@ export function PositionsModal({
                 <InputField
                   label="Vote Limit*"
                   type="number"
-                  value={voterLimit}
-                  onChange={e => setVoterLimit(Math.max(1, Number(e.target.value)))}
+                  value={voteLimit}
+                  onChange={e => setVoteLimit(Math.max(1, Number(e.target.value)))}
                   min={1}
                   required
                 />
@@ -91,6 +115,17 @@ export function PositionsModal({
                   required
                 />
               </div>
+              <div className="sm:col-span-1">
+                <InputField
+                  label="Order*"
+                  type="number"
+                  value={order}
+                  onChange={e => setOrder(Math.max(0, Number(e.target.value)))}
+                  min={0}
+                  placeholder="Display order (0 = first)"
+                  required
+                />
+              </div>
               <div className="col-span-2 flex justify-end gap-2 mt-2">
                 <SubmitButton
                   type="button"
@@ -101,8 +136,9 @@ export function PositionsModal({
                 <SubmitButton
                   type="submit"
                   variant="small"
-                  label="Add"
+                  label={submitLabel}
                   className="px-5 py-2.5 text-sm font-medium rounded-lg"
+                  isLoading={disableSave}
                 />
               </div>
             </form>

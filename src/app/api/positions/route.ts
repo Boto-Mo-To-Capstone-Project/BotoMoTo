@@ -28,6 +28,11 @@ export async function GET(request: NextRequest) {
     // Get election ID from query parameters
     const url = new URL(request.url);
     const electionId = url.searchParams.get('electionId');
+    const search = url.searchParams.get('search');
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = parseInt(url.searchParams.get('limit') || '50');
+    const sortCol = url.searchParams.get('sortCol');
+    const sortDir = url.searchParams.get('sortDir') || 'asc';
 
     if (!electionId) {
       return apiResponse({
@@ -98,12 +103,70 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Build query filters
+    const where: any = {
+      electionId: electionIdInt,
+      isDeleted: false
+    };
+
+    // Add search filter if provided
+    if (search) {
+      const searchLower = search.toLowerCase();
+      where.OR = [
+        {
+          name: {
+            contains: searchLower
+          }
+        },
+      ];
+    }
+
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+
+    // Build dynamic orderBy clause
+    let orderBy: any[] = [];
+    
+    if (sortCol && ['position', 'voterLimit', 'numberOfWinners', 'scopeName', 'order'].includes(sortCol)) {
+      switch (sortCol) {
+        case 'position':
+          orderBy = [{ name: sortDir }];
+          break;
+        case 'voterLimit':
+          orderBy = [{ voteLimit: sortDir }];
+          break;
+        case 'numberOfWinners':
+          orderBy = [{ numOfWinners: sortDir }];
+          break;
+        case 'scopeName':
+          orderBy = [{ votingScope: { name: sortDir } }];
+          break;
+        case 'order':
+          orderBy = [{ order: sortDir }];
+          break;
+        default:
+          orderBy = [
+            { order: "asc" },
+            { id: "asc" }
+          ];
+          break;
+      }
+    } else {
+      // Default sorting
+      orderBy = [
+        { order: "asc" },
+        { id: "asc" }
+      ];
+    }
+
+    // Get total count for pagination
+    const totalCount = await db.position.count({
+      where
+    });
+
     // Fetch positions for the election (exclude soft-deleted)
     const positions = await db.position.findMany({
-      where: { 
-        electionId: electionIdInt,
-        isDeleted: false 
-      },
+      where,
       include: {
         election: {
           select: {
@@ -129,10 +192,9 @@ export async function GET(request: NextRequest) {
           }
         }
       },
-      orderBy: [
-        { order: "asc" },
-        { id: "asc" }
-      ],
+      orderBy,
+      skip,
+      take: limit,
     });
 
     const audit = await createAuditLog({
@@ -144,11 +206,22 @@ export async function GET(request: NextRequest) {
       message: `Viewed positions for election: ${election.name}`,
     });
 
+    // Calculate pagination info
+    const totalPages = Math.ceil(totalCount / limit);
+
     return apiResponse({
       success: true,
       message: "Positions fetched successfully",
       data: {
         positions,
+        pagination: {
+          page,
+          limit,
+          totalCount,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1
+        },
         audit
       },
       error: null,
@@ -198,11 +271,166 @@ export async function POST(request: NextRequest) {
     // Parse request body
     const body = await request.json();
 
+    // Check if this is bulk creation (positions array) or single position
+    if (body.positions && Array.isArray(body.positions)) {
+      // Handle bulk creation
+      const positions = body.positions;
+      
+      if (positions.length === 0) {
+        return apiResponse({
+          success: false,
+          message: "At least one position is required for bulk creation",
+          data: null,
+          error: "Bad Request",
+          status: 400
+        });
+      }
+
+      // Validate each position in the array
+      for (const pos of positions) {
+        const validation = validateWithZod(positionSchema, pos);
+        if (!('data' in validation)) {
+          return validation; // Return the validation error response directly
+        }
+      }
+
+      // For bulk creation, we'll use the electionId from the first position
+      const firstPosition = positions[0];
+      const electionId = firstPosition.electionId;
+
+      // Check if election exists and user has permission (same validation as single creation)
+      const election = await db.election.findUnique({
+        where: {
+          id: electionId,
+          isDeleted: false
+        },
+        include: {
+          organization: {
+            select: {
+              id: true,
+              adminId: true,
+              status: true
+            }
+          }
+        }
+      });
+
+      if (!election) {
+        return apiResponse({
+          success: false,
+          message: "Election not found or has been deleted",
+          data: null,
+          error: "Not Found",
+          status: 404
+        });
+      }
+
+      // Check if admin owns this election (through organization)
+      if (user.role === ROLES.ADMIN && election.organization.adminId !== user.id) {
+        return apiResponse({
+          success: false,
+          message: "You can only create positions for your organization's elections",
+          data: null,
+          error: "Forbidden",
+          status: 403
+        });
+      }
+
+      // Only approved organizations can create positions
+      if (election.organization.status !== ORGANIZATION_STATUS.APPROVED) {
+        return apiResponse({
+          success: false,
+          message: "Only approved organizations can create positions",
+          data: null,
+          error: "Forbidden",
+          status: 403
+        });
+      }
+
+      // Create all positions in a transaction
+      const createdPositions = await db.$transaction(async (tx) => {
+        const results = [];
+        for (const posData of positions) {
+          // Check if position name already exists in this election
+          const existingPosition = await tx.position.findFirst({
+            where: {
+              electionId: posData.electionId || electionId,
+              name: posData.name,
+              isDeleted: false
+            }
+          });
+
+          if (existingPosition) {
+            throw new Error(`A position with name "${posData.name}" already exists in this election`);
+          }
+
+          const position = await tx.position.create({
+            data: {
+              electionId: posData.electionId || electionId,
+              name: posData.name,
+              voteLimit: posData.voteLimit || 1,
+              numOfWinners: posData.numOfWinners || 1,
+              votingScopeId: posData.votingScopeId,
+              order: posData.order || 0
+            },
+            include: {
+              election: {
+                select: {
+                  id: true,
+                  name: true,
+                  organization: {
+                    select: {
+                      id: true,
+                      name: true
+                    }
+                  }
+                }
+              },
+              votingScope: {
+                select: {
+                  id: true,
+                  name: true
+                }
+              },
+              _count: {
+                select: {
+                  candidates: true
+                }
+              }
+            },
+          });
+          results.push(position);
+        }
+        return results;
+      });
+
+      const audit = await createAuditLog({
+        user,
+        action: "CREATE",
+        request,
+        resource: "POSITION",
+        resourceId: electionId,
+        message: `Bulk created ${createdPositions.length} positions for election: ${election.name}`,
+      });
+
+      return apiResponse({
+        success: true,
+        message: `Successfully created ${createdPositions.length} positions`,
+        data: {
+          positions: createdPositions,
+          audit
+        },
+        error: null,
+        status: 201
+      });
+    }
+
+    // Handle single position creation
     // Validate position data using helper
     const validation = validateWithZod(positionSchema, body);
     if (!('data' in validation)) return validation;
 
-    const { electionId, name, description, voteLimit, numOfWinners, votingScopeId, order } = validation.data;
+    const { electionId, name, voteLimit, numOfWinners, votingScopeId, order } = validation.data;
 
     // Check if election exists and user has permission
     const election = await db.election.findUnique({
@@ -311,7 +539,6 @@ export async function POST(request: NextRequest) {
       data: {
         electionId,
         name,
-        description,
         voteLimit,
         numOfWinners,
         votingScopeId,
