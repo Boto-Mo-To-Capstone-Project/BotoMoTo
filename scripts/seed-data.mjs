@@ -245,7 +245,7 @@ async function seedDatabase() {
         data: {
           ...electionDef,
           orgId: org.id,
-          status: idx === 0 ? "ACTIVE" : idx === 1 ? "DRAFT" : "PAUSED",
+          status: idx === 0 ? "ACTIVE" : idx === 1 ? "DRAFT" : "CLOSED",
           isLive: idx === 0,
         },
       });
