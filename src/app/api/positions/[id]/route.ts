@@ -90,7 +90,6 @@ export async function GET(
               }
             },
             imageUrl: true,
-            bio: true,
             isNew: true
           }
         },

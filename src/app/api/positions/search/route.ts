@@ -116,13 +116,11 @@ export async function GET(request: NextRequest) {
         isDeleted: false,
         OR: [
           { name: { contains: searchTerm } },
-          { description: { contains: searchTerm } }
         ]
       },
       select: {
         id: true,
         name: true,
-        description: true,
         voteLimit: true,
         numOfWinners: true,
         order: true,
@@ -130,7 +128,6 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             name: true,
-            type: true
           }
         },
         _count: {
