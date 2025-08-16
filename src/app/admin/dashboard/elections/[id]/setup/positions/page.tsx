@@ -52,6 +52,8 @@ export default function PositionsDashboardPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [modalLoading, setModalLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  // NEW: voting scopes for the election
+  const [votingScopes, setVotingScopes] = useState<Array<{ id: number; name: string }>>([]);
 
   // Initialize state from URL once
   const initializedFromURL = useRef(false);
@@ -105,20 +107,22 @@ export default function PositionsDashboardPage() {
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
-  const handleSavePosition = async (data: { position: string; voteLimit: number; numberOfWinners: number; order: number }) => {
+  const handleSavePosition = async (data: { position: string; voteLimit: number; numberOfWinners: number; order: number; votingScopeId?: number | null }) => {
     try {
       if (!electionId || Number.isNaN(electionId)) return;
       setModalLoading(true);
 
-      const payload = {
+      const payload: any = {
         electionId,
         name: data.position.trim(),
         voteLimit: data.voteLimit,
         numOfWinners: data.numberOfWinners,
         order: data.order,
-        // votingScopeId: optional for now
         isActive: true,
       };
+      if (typeof data.votingScopeId === 'number') {
+        payload.votingScopeId = data.votingScopeId;
+      }
 
       const res = await fetch('/api/positions', {
         method: 'POST',
@@ -212,6 +216,7 @@ export default function PositionsDashboardPage() {
         voteLimit: p.voteLimit || 1,
         numberOfWinners: p.numOfWinners || 1,
         order: p.order || 0,
+        votingScopeId: p.votingScope?.id ?? null,
       };
       setEditInitialData(initial);
       setShowModal(true);
@@ -225,19 +230,21 @@ export default function PositionsDashboardPage() {
     }
   };
 
-  const handleEditPositionSave = async (data: { position: string; voteLimit: number; numberOfWinners: number; order: number }) => {
+  const handleEditPositionSave = async (data: { position: string; voteLimit: number; numberOfWinners: number; order: number; votingScopeId?: number | null }) => {
     if (!isEditMode || !editingPositionId) return;
     try {
       setModalLoading(true);
 
-      const payload = {
+      const payload: any = {
         name: data.position.trim(),
         voteLimit: data.voteLimit,
         numOfWinners: data.numberOfWinners,
         order: data.order,
-        // votingScopeId: optional for now
         isActive: true,
       };
+      if (typeof data.votingScopeId === 'number') {
+        payload.votingScopeId = data.votingScopeId;
+      }
 
       const res = await fetch(`/api/positions/${editingPositionId}`, {
         method: 'PUT',
@@ -382,6 +389,25 @@ export default function PositionsDashboardPage() {
     return () => ctrl.abort();
   }, [electionId, page, pageSize, debouncedSearch, sortCol, sortDir, reloadKey]);
 
+  // NEW: Fetch voting scopes for this election (for the modal select)
+  useEffect(() => {
+    if (!electionId || Number.isNaN(electionId)) return;
+    const ctrl = new AbortController();
+    const loadScopes = async () => {
+      try {
+        const res = await fetch(`/api/voting-scopes?electionId=${electionId}`, { signal: ctrl.signal });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || json?.success === false) return;
+        const items = (json?.data?.votingScopes || []).map((s: any) => ({ id: s.id, name: s.name }));
+        setVotingScopes(items);
+      } catch (e: any) {
+        if (e?.name !== 'AbortError') console.error('Voting scopes fetch error:', e);
+      }
+    };
+    loadScopes();
+    return () => ctrl.abort();
+  }, [electionId]);
+
   return (
     <>
       <Toaster position="top-center" />
@@ -398,6 +424,7 @@ export default function PositionsDashboardPage() {
         title={isEditMode ? "Edit Position" : "Position Form"}
         submitLabel={isEditMode ? "Save" : "Add"}
         disableSave={modalLoading}
+        votingScopes={votingScopes}
       />
       {/* Import Positions Modal */}
       <DragandDropdown

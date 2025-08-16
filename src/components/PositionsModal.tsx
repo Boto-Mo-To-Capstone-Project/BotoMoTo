@@ -6,8 +6,21 @@ import { SubmitButton } from "@/components/SubmitButton";
 type PositionsModalProps = {
   open: boolean;
   onClose: () => void;
-  onSave: (data: { position: string; voteLimit: number; numberOfWinners: number; order: number }) => void;
-  initialData?: { position?: string; voteLimit?: number; numberOfWinners?: number; order?: number };
+  onSave: (data: {
+    position: string;
+    voteLimit: number;
+    numberOfWinners: number;
+    order: number;
+    votingScopeId?: number | null; // NEW: optional voting scope id
+  }) => void;
+  initialData?: {
+    position?: string;
+    voteLimit?: number;
+    numberOfWinners?: number;
+    order?: number;
+    votingScopeId?: number | null; // NEW: optional voting scope id for edit mode
+  };
+  votingScopes?: { id: number; name: string }[]; // NEW: available scopes to choose from
   disableSave?: boolean;
   title?: string;
   submitLabel?: string;
@@ -18,6 +31,7 @@ export function PositionsModal({
   onClose,
   onSave,
   initialData = { position: "", voteLimit: 1, numberOfWinners: 1, order: 0 },
+  votingScopes,
   disableSave,
   title = "Position Form",
   submitLabel = "Add",
@@ -26,22 +40,27 @@ export function PositionsModal({
   const [voteLimit, setVoteLimit] = useState(initialData.voteLimit || 1);
   const [numberOfWinners, setNumberOfWinners] = useState(initialData.numberOfWinners || 1);
   const [order, setOrder] = useState(initialData.order || 0);
+  const [votingScopeId, setVotingScopeId] = useState<number | null | undefined>(
+    initialData?.votingScopeId ?? undefined
+  );
 
   useEffect(() => {
     if (!open) return;
-    
+
     // Only update if we have actual initialData (edit mode)
     if (initialData && initialData.position) {
       setPosition(initialData.position || "");
       setVoteLimit(initialData.voteLimit || 1);
       setNumberOfWinners(initialData.numberOfWinners || 1);
       setOrder(initialData.order || 0);
+      setVotingScopeId(initialData.votingScopeId ?? undefined);
     } else if (!initialData || !initialData.position) {
       // Clear form for new entry mode
       setPosition("");
       setVoteLimit(1);
       setNumberOfWinners(1);
       setOrder(0);
+      setVotingScopeId(undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialData?.position]);
@@ -80,7 +99,7 @@ export function PositionsModal({
             <form
               onSubmit={e => {
                 e.preventDefault();
-                onSave({ position, voteLimit, numberOfWinners, order });
+                onSave({ position, voteLimit, numberOfWinners, order, votingScopeId: votingScopeId ?? null });
                 onClose();
               }}
               className="grid gap-4 mb-4 grid-cols-2"
@@ -114,6 +133,26 @@ export function PositionsModal({
                   min={1}
                   required
                 />
+              </div>
+              {/* NEW: Voting Scope selector (optional) */}
+              <div className="sm:col-span-1">
+                <label className="block mb-2 text-sm font-medium text-gray-900">Voting Scope</label>
+                <select
+                  className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5"
+                  value={votingScopeId ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setVotingScopeId(val === "" ? null : Number(val));
+                  }}
+                >
+                  <option value="">All voters (no scope)</option>
+                  {votingScopes?.map((scope) => (
+                    <option key={scope.id} value={scope.id}>
+                      {scope.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">Optional. Limit who can vote for this position.</p>
               </div>
               <div className="sm:col-span-1">
                 <InputField

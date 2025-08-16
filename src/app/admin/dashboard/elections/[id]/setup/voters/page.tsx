@@ -41,11 +41,11 @@ export default function VoterDashboardPage() {
     voterSurname?: string;
     voterFirstName?: string;
     voterMiddleInitial?: string;
-    scope?: string;
     email?: string;
     contactNumber?: string;
     voterLimit?: number;
     numberOfWinners?: number;
+    votingScopeId?: number | null;
   } | undefined>(undefined);
   const [editingVoterId, setEditingVoterId] = useState<number | null>(null);
   const [editIsActive, setEditIsActive] = useState<boolean>(true);
@@ -64,6 +64,8 @@ export default function VoterDashboardPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  // NEW: voting scopes for the election
+  const [votingScopes, setVotingScopes] = useState<Array<{ id: number; name: string }>>([]);
 
   // Initialize state from URL once
   const initializedFromURL = useRef(false);
@@ -191,7 +193,7 @@ export default function VoterDashboardPage() {
       if (!electionId || Number.isNaN(electionId)) return;
       setLoading(true);
 
-      // VotersModal passes { voterName, scope, email, contactNumber, ... }
+      // VotersModal passes { voterName, email, contactNumber, votingScopeId, ... }
       const fullName = (data?.voterName || "").trim();
       let firstName = "";
       let middleName = "";
@@ -204,17 +206,19 @@ export default function VoterDashboardPage() {
         middleName = parts.slice(2).join(" ") || "";
       }
 
-      const payload = {
+      const payload: any = {
         electionId,
         firstName: firstName || undefined,
         middleName: middleName || undefined,
         lastName: lastName || undefined,
         email: data?.email?.trim() || undefined,
         contactNum: data?.contactNumber?.trim() || undefined,
-        // votingScopeId: map data.scope -> id if you have it; optional for now
         address: undefined,
         isActive: true,
       };
+      if (typeof data?.votingScopeId === 'number') {
+        payload.votingScopeId = data.votingScopeId;
+      }
 
       const res = await fetch('/api/voters', {
         method: 'POST',
@@ -264,11 +268,11 @@ export default function VoterDashboardPage() {
         voterSurname: v.lastName || "",
         voterFirstName: v.firstName || "",
         voterMiddleInitial: v.middleName || "",
-        scope: v.votingScope?.name || "Department 1",
         email: v.email || "",
         contactNumber: v.contactNum || "",
         voterLimit: 1,
         numberOfWinners: 1,
+        votingScopeId: v.votingScope?.id ?? null,
       };
       setEditInitialData(initial);
       setEditIsActive(!!v.isActive);
@@ -298,16 +302,18 @@ export default function VoterDashboardPage() {
         middleName = parts.slice(2).join(" ") || "";
       }
 
-      const payload = {
+      const payload: any = {
         firstName: firstName || undefined,
         middleName: middleName || undefined,
         lastName: lastName || undefined,
         email: data?.email?.trim() || undefined,
         contactNum: data?.contactNumber?.trim() || undefined,
-        // votingScopeId: map data.scope -> id if available
         address: undefined,
         isActive: editIsActive,
       };
+      if (typeof data?.votingScopeId === 'number') {
+        payload.votingScopeId = data.votingScopeId;
+      }
 
       const res = await fetch(`/api/voters/${editingVoterId}`, {
         method: 'PUT',
@@ -389,6 +395,25 @@ export default function VoterDashboardPage() {
     run();
     return () => ctrl.abort();
   }, [electionId, page, pageSize, debouncedSearch, sortCol, sortDir, reloadKey]);
+
+  // NEW: Fetch voting scopes for this election (for the modal select)
+  useEffect(() => {
+    if (!electionId || Number.isNaN(electionId)) return;
+    const ctrl = new AbortController();
+    const loadScopes = async () => {
+      try {
+        const res = await fetch(`/api/voting-scopes?electionId=${electionId}`, { signal: ctrl.signal });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || json?.success === false) return;
+        const items = (json?.data?.votingScopes || []).map((s: any) => ({ id: s.id, name: s.name }));
+        setVotingScopes(items);
+      } catch (e: any) {
+        if (e?.name !== 'AbortError') console.error('Voting scopes fetch error:', e);
+      }
+    };
+    loadScopes();
+    return () => ctrl.abort();
+  }, [electionId]);
 
   return (
     <>
@@ -542,6 +567,7 @@ export default function VoterDashboardPage() {
         initialData={editInitialData}
         title={isEditMode ? "Edit Voter" : "Voter Form"}
         submitLabel={isEditMode ? "Save" : "Add"}
+        votingScopes={votingScopes}
       />
 
       {/* DragandDropdown Modal */}
