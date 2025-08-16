@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useMemo, useState, useRef, useEffect } from "react";
+import { io } from "socket.io-client";
+
+const socket = io("http://localhost:3000"); // Use your server URL
 
 // Add currentUserRole prop
 interface TicketModalProps {
@@ -33,6 +36,25 @@ export default function TicketModal({
     }
     return [];
   }, [ticket, localMessages]);
+
+  //WebSockets
+  useEffect(() => {
+  if (!open || !ticket) return;
+
+  // Join the ticket room
+  socket.emit("joinTicket", ticket.id);
+
+  // Listen for new messages
+  socket.on("messageReceived", (message) => {
+    setLocalMessages((prev) => [...prev, message]);
+  });
+
+  // Cleanup on close/unmount
+  return () => {
+    socket.emit("leaveTicket", ticket.id);
+    socket.off("messageReceived");
+  };
+}, [open, ticket]);
 
   useEffect(() => {
     if (open && inputRef.current) {
@@ -81,6 +103,16 @@ export default function TicketModal({
         ...messages,
         { content: reply, sender, timestamp: new Date().toISOString() },
       ]);
+     
+        // ...after successful POST...
+        socket.emit("newMessage", {
+        ticketId: ticket.id,
+        message: {
+        content: reply,
+        sender,
+        timestamp: new Date().toISOString(),
+          },
+      });
       setReply("");
       if (inputRef.current) inputRef.current.value = "";
     } catch (err) {

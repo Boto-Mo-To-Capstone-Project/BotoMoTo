@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import Table from "@/components/TableComponent";
-import TicketModal from "@/components/TicketModal";
+import TicketChatModal from "@/components/TicketChatModal";
 import CreateTicketModal from "@/components/CreateTicketModal";
 
 export default function AdminTicketsPage() {
@@ -50,7 +50,7 @@ export default function AdminTicketsPage() {
 
   // Check if there is an active ticket (PENDING or IN_PROGRESS)
   const hasActiveTicket = tickets.some(
-    (t) => t.Status === "PENDING" || t.Status === "IN_PROGRESS"
+    (t) => (t.Status || "").toString().toUpperCase() === "PENDING" || (t.Status || "").toString().toUpperCase() === "IN_PROGRESS"
   );
 
   const handleCreateTicket = () => {
@@ -61,7 +61,18 @@ export default function AdminTicketsPage() {
     setCreateModalOpen(true);
   };
 
-  const tableData = tickets.map((row) => ({
+  // split tickets: ongoing = PENDING | IN_PROGRESS, history = RESOLVED
+  const ongoingTickets = tickets.filter((r) => {
+    const s = (r.Status || "").toString().toUpperCase();
+    return s === "PENDING" || s === "IN_PROGRESS";
+  });
+
+  const historyTickets = tickets.filter((r) => {
+    const s = (r.Status || "").toString().toUpperCase();
+    return s === "RESOLVED";
+  });
+
+  const buildRow = (row: any) => ({
     ...row,
     Actions: (
       <button
@@ -74,7 +85,10 @@ export default function AdminTicketsPage() {
         View
       </button>
     ),
-  }));
+  });
+
+  const activeTableData = ongoingTickets.map((r) => buildRow(r));
+  const historyTableData = historyTickets.map((r) => buildRow(r));
 
   return (
     <>
@@ -90,21 +104,38 @@ export default function AdminTicketsPage() {
               Create Ticket
             </button>
           </div>
+
+          {/* Active Ticket (above) */}
+          <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-3 mb-6">
+            {loading ? (
+              <div>Loading...</div>
+            ) : (
+              <Table
+                title="Active Ticket"
+                columns={["Organization_Name", "Ticket", "Status", "Actions"]}
+                data={Array.isArray(activeTableData) ? activeTableData : []}
+                pageSize={3}
+              />
+            )}
+          </div>
+
+          {/* Ticket History (resolved) */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-3">
             {loading ? (
               <div>Loading...</div>
             ) : (
               <Table
-                title="My Tickets"
+                title="Ticket History"
                 columns={["Organization_Name", "Ticket", "Status", "Actions"]}
-                data={Array.isArray(tableData) ? tableData : []}
+                data={Array.isArray(historyTableData) ? historyTableData : []}
                 pageSize={3}
               />
             )}
           </div>
         </div>
       </div>
-      <TicketModal
+
+      <TicketChatModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         ticket={selectedTicket}

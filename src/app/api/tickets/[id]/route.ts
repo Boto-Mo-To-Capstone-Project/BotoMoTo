@@ -91,6 +91,25 @@ export async function PATCH(
       });
     }
 
+    // Fetch current ticket
+    const existing = await db.ticket.findUnique({ where: { id: ticketId } });
+    if (!existing) {
+      return apiResponse({
+        success: false,
+        message: "Ticket not found",
+        status: 404,
+      });
+    }
+
+    // Prevent changing once RESOLVED
+    if ((existing.status || "").toString().toUpperCase() === "RESOLVED") {
+      return apiResponse({
+        success: false,
+        message: "Ticket has been resolved and cannot be modified.",
+        status: 400,
+      });
+    }
+
     const updated = await db.ticket.update({
       where: { id: ticketId },
       data: { status },
