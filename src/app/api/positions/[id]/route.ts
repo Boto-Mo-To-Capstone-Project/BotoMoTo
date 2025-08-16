@@ -10,7 +10,7 @@ import { createAuditLog } from "@/lib/audit";
 // Handle GET request to fetch a specific position
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -27,7 +27,8 @@ export async function GET(
       });
     }
 
-    const positionId = parseInt(params.id);
+    const { id } = await params;
+    const positionId = parseInt(id);
     if (isNaN(positionId)) {
       return apiResponse({
         success: false,
@@ -168,7 +169,7 @@ export async function GET(
 // Handle PUT request to update a specific position
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -196,7 +197,8 @@ export async function PUT(
       });
     }
 
-    const positionId = parseInt(params.id);
+    const { id } = await params;
+    const positionId = parseInt(id);
     if (isNaN(positionId)) {
       return apiResponse({
         success: false,
@@ -422,7 +424,7 @@ export async function PUT(
 // Handle DELETE request to delete a specific position
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }>  }
 ) {
   try {
     // Authenticate the user
@@ -450,7 +452,8 @@ export async function DELETE(
       });
     }
 
-    const positionId = parseInt(params.id);
+    const { id } = await params;
+    const positionId = parseInt(id);
     if (isNaN(positionId)) {
       return apiResponse({
         success: false,
