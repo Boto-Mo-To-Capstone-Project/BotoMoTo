@@ -15,11 +15,7 @@ async function resetDatabase() {
     console.log("Deleting voting data...");
     await db.voteResponse.deleteMany({});
     
-    console.log("Deleting candidate experiences...");
-    await db.candidateEducationLevel.deleteMany({});
-    await db.candidateWorkExperience.deleteMany({});
-    await db.candidateLeadershipExperience.deleteMany({});
-    
+
     console.log("Deleting candidates...");
     await db.candidate.deleteMany({});
     
