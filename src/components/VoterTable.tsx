@@ -9,14 +9,15 @@ interface Voter {
   email: string;
   contactNumber: string;
   birthdate: string;
-  hasVoted: boolean;
+  // computed voting status
+  voted: boolean;
 }
 
 interface VoterTableProps {
   voters: Voter[];
-  sortCol: 'name' | 'status' | 'scope' | 'email' | 'contactNumber' | 'birthdate' | 'hasVoted' | null;
+  sortCol: 'name' | 'status' | 'scope' | 'email' | 'contactNumber' | 'birthdate' | 'voted' | null;
   sortDir: 'asc' | 'desc';
-  onSort: (col: 'name' | 'status' | 'scope' | 'email' | 'contactNumber' | 'birthdate' | 'hasVoted') => void;
+  onSort: (col: 'name' | 'status' | 'scope' | 'email' | 'contactNumber' | 'birthdate' | 'voted') => void;
   page: number;
   totalPages: number;
   onFirst: () => void;
@@ -125,10 +126,10 @@ export default function VoterTable({
               </th>
               <th
                 className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
-                onClick={() => props.onSort("hasVoted")}
+                onClick={() => props.onSort("voted")}
               >
                 Voted{" "}
-                {props.sortCol === "hasVoted" ? (
+                {props.sortCol === "voted" ? (
                   props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
                 ) : (
                   <FaSort className="inline opacity-50" />
@@ -174,11 +175,11 @@ export default function VoterTable({
                   <td className="py-2 px-3 align-middle truncate max-w-[140px]">{voter.contactNumber}</td>
                   <td className="py-2 px-3 align-middle text-center">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      voter.hasVoted 
+                      voter.voted 
                         ? 'bg-green-100 text-green-700' 
                         : 'bg-gray-100 text-gray-700'
                     }`}>
-                      {voter.hasVoted ? 'Yes' : 'No'}
+                      {voter.voted ? 'Yes' : 'No'}
                     </span>
                   </td>
                 </tr>
