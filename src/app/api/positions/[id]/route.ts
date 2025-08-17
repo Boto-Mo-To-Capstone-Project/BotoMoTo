@@ -470,7 +470,9 @@ export async function DELETE(
         id: positionId,
         isDeleted: false
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
         election: {
           select: {
             id: true,
@@ -483,11 +485,12 @@ export async function DELETE(
             }
           }
         },
-        _count: {
-          select: {
-            candidates: true,
-            voteResponses: true
-          }
+        candidates: {
+          where: { isDeleted: false },
+          select: { id: true }
+        },
+        voteResponses: {
+          select: { id: true }
         }
       }
     });
@@ -514,7 +517,7 @@ export async function DELETE(
     }
 
     // Check if position has candidates or votes
-    if (position._count.candidates > 0) {
+    if (position.candidates.length > 0) {
       return apiResponse({
         success: false,
         message: "Cannot delete position that has candidates. Please remove all candidates first.",
@@ -524,7 +527,7 @@ export async function DELETE(
       });
     }
 
-    if (position._count.voteResponses > 0) {
+    if (position.voteResponses.length > 0) {
       return apiResponse({
         success: false,
         message: "Cannot delete position that has votes",
