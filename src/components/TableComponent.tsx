@@ -145,7 +145,7 @@ export default function Table({
                   onClick={() => handleSort(col)}
                   className="cursor-pointer text-left p-3 border-b font-semibold select-none"
                 >
-                  {col}
+                  {String(col).replaceAll("_", " ")}
                   {sortConfig.column === col && (
                     <span className="ml-1">
                       {sortConfig.direction === "asc" ? "▲" : "▼"}
