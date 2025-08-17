@@ -1,18 +1,28 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { MdCheckCircleOutline, MdOutlineCancel } from "react-icons/md";
-import SectionHeaderContainer from "./SectionHeaderContainer";
+import { MdAdd, MdCheckCircleOutline, MdChevronLeft, MdChevronRight, MdFirstPage, MdLastPage, MdOutlineCancel } from "react-icons/md";
+import SearchBar from "./SearchBar";
+import { FaSort, FaSortDown, FaSortUp } from "react-icons/fa";
+import { SubmitButton } from "./SubmitButton";
+import { useRouter } from "next/navigation";
 
 type TableProps = {
   title: string;
   columns: string[];
   data: Record<string, any>[];
-  pageSize?: number;
   showActions?: boolean; // if table has actions
   onApprove?: (row: Record<string, any>) => void;
   onReject?: (row: Record<string, any>) => void;
   onRowClick?: (row: Record<string, any>) => void; // NEW: row click handler
+  pageSize: number;
+  page: number;
+  totalPages: number;
+  onFirst: () => void;
+  onPrev: () => void;
+  onNext: () => void;
+  onLast: () => void;
+  onPageSizeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 };
 
 type SortDirection = "asc" | "desc";
@@ -21,12 +31,14 @@ export default function Table({
   title,
   columns,
   data,
-  pageSize = 5,
   showActions,
   onApprove,
   onReject,
   onRowClick,
+  
+  ...props
 }: TableProps) {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
@@ -75,20 +87,20 @@ export default function Table({
     return sorted;
   }, [filteredData, sortConfig]);
 
-  const totalPages = Math.ceil(sortedData.length / pageSize);
+  const totalPages = Math.ceil(sortedData.length / props.pageSize);
   const paginatedData = sortedData.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
+    (currentPage - 1) *  props.pageSize,
+    currentPage *  props.pageSize
   );
 
   const isAllSelected =
     paginatedData.length > 0 &&
     paginatedData.every((_, idx) =>
-      selectedRows.has((currentPage - 1) * pageSize + idx)
+      selectedRows.has((currentPage - 1) *  props.pageSize + idx)
     );
 
   const toggleSelectAll = () => {
-    const start = (currentPage - 1) * pageSize;
+    const start = (currentPage - 1) *  props.pageSize;
     const newSet = new Set(selectedRows);
     if (isAllSelected) {
       for (let i = 0; i < paginatedData.length; i++) {
@@ -111,27 +123,44 @@ export default function Table({
   };
 
   return (
-    <div className="w-full p-4 bg-white shadow rounded-xl">
-      <SectionHeaderContainer variant="gray">{title}</SectionHeaderContainer>
+    <div className="w-full p-4 bg-white shadow rounded-xl mt-5">
+      {/* search and tablename and actions div */}
+      <div className="flex justify-between items-center mb-2">
+        <p className="text-lg font-semibold mb-2 "> {title}</p>
+        {/* Search bar */}
+        <SearchBar
+          value={searchTerm}
+          placeholder ={`Search for ${title}`}
+          onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+          }}/>
 
-      {/* Search bar */}
-      <input
-        type="text"
-        placeholder="Search..."
-        className="w-full mb-4 px-4 py-2 border rounded-md focus:outline-none focus:ring"
-        value={searchTerm}
-        onChange={(e) => {
-          setSearchTerm(e.target.value);
-          setCurrentPage(1);
-        }}
-      />
+          {showActions && (
+          <div className="flex-shrink-0 flex gap-2">
+            <SubmitButton
+              label="Approve"
+              variant="action"
+              icon={<MdCheckCircleOutline size={20} color="green"/>}
+              title="Add"
+            />
+            <SubmitButton
+              label="Reject"
+              variant="action"
+              icon={<MdOutlineCancel size={20} color="red"/>}
+              title="Add"
+            />
+            
+        </div>
+         )}
+      </div>
 
       {/* Table */}
-      <div className="overflow-auto">
-        <table className="min-w-full border border-gray-300 rounded-md">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-3 border-b">
+      <div className="bg-white rounded-lg shadow border border-gray-200 overflow-x-auto">
+        <table className="w-full text-sm border-separate border-spacing-0">
+          <thead className="bg-gray-50">
+            <tr className="text-left text-gray-700 border-b font-semibold text-base">
+              <th className="py-2 px-3 border-b border-gray-200">
                 <input
                   type="checkbox"
                   checked={isAllSelected}
@@ -143,34 +172,36 @@ export default function Table({
                 <th
                   key={col}
                   onClick={() => handleSort(col)}
-                  className="cursor-pointer text-left p-3 border-b font-semibold select-none"
+                  className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
                 >
                   {String(col).replaceAll("_", " ")}
-                  {sortConfig.column === col && (
-                    <span className="ml-1">
-                      {sortConfig.direction === "asc" ? "▲" : "▼"}
+                  {sortConfig.column === col ? (
+                    <span className="ml-2">
+                      {sortConfig.direction === "asc" ? 
+                      <FaSortUp className="inline" /> : 
+                      <FaSortDown className="inline" />}
                     </span>
-                  )}
+                  ) : (
+                    <span className="ml-2">
+                      <FaSort className="inline opacity-50" />
+                    </span>
+                  
+                )}
                 </th>
               ))}
-              {showActions && (
-                <th className="p-3 border-b font-semibold">Actions</th>
-              )}
             </tr>
           </thead>
           <tbody>
             {paginatedData.map((row, idx) => {
-              const globalIndex = (currentPage - 1) * pageSize + idx;
+              const globalIndex = (currentPage - 1) *  props.pageSize + idx;
               return (
                 <tr
                   key={globalIndex}
-                  className={`hover:bg-gray-50${
-                    onRowClick ? " cursor-pointer" : ""
-                  }`}
+                  className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
                   <td
-                    className="p-3 border-b text-center"
+                    className="py-2 px-3 align-middle"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <input
@@ -181,7 +212,7 @@ export default function Table({
                     />
                   </td>
                   {columns.map((col) => (
-                    <td key={col} className="p-3 border-b">
+                    <td key={col} className="py-2 px-3 align-middle truncate max-w-[180px]">
                       {row[col]}
                     </td>
                   ))}
@@ -229,27 +260,27 @@ export default function Table({
         </table>
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between mt-4">
-        <span className="text-sm text-gray-600">
-          Page {currentPage} of {totalPages}
+      {/* Pagination - moved outside the scrollable table wrapper */}
+      <div className="flex items-center gap-2 mt-4 w-full relative xxs:flex-wrap">
+        <button onClick={props.onFirst} disabled={props.page === 1} title="First"><MdFirstPage size={22} /></button>
+        <button onClick={props.onPrev} disabled={props.page === 1} title="Prev"><MdChevronLeft size={22} /></button>
+        <span>{props.page}</span>
+        <span>of {props.totalPages}</span>
+        <button onClick={props.onNext} disabled={props.page === props.totalPages} title="Next"><MdChevronRight size={22} /></button>
+        <button onClick={props.onLast} disabled={props.page === props.totalPages} title="Last"><MdLastPage size={22} /></button>
+        <span className="text-sm text-gray-500 flex items-center gap-1 sm:ml-auto xxs:w-full xxs:mt-1">
+          Page Size:
+          <select
+            value={props.pageSize}
+            onChange={props.onPageSizeChange}
+            className="border rounded px-1 py-0.5 text-sm ml-1 min-w-[64px] w-auto"
+          >
+            <option>10</option>
+            <option>20</option>
+            <option>50</option>
+            <option>100</option>
+          </select>
         </span>
-        <div className="flex space-x-2">
-          <button
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((p) => p - 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Prev
-          </button>
-          <button
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage((p) => p + 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
       </div>
     </div>
   );
