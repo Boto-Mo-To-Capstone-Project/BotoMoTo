@@ -147,11 +147,9 @@ async function quickSeed() {
           firstName: `Voter${i}`,
           lastName: "Test",
           contactNum: `+1555000${String(i).padStart(4, '0')}`,
-          address: `${i} Test Street`,
           votingScopeId: testScope.id,
           isVerified: true,
-          isActive: true,
-          hasVoted: i <= 10 // First 10 have voted
+          isActive: true
         }
       });
       voters.push(voter);

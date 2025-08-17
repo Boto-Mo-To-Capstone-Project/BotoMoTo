@@ -39,6 +39,7 @@ async function getVoters(request: NextRequest) {
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '50');
     const hasVoted = url.searchParams.get('hasVoted');
+    const votedParam = url.searchParams.get('voted');
     const isActive = url.searchParams.get('isActive');
     const sortCol = url.searchParams.get('sortCol');
     const sortDir = url.searchParams.get('sortDir') || 'asc';
@@ -126,9 +127,15 @@ async function getVoters(request: NextRequest) {
       }
     }
 
-    // Add hasVoted filter
-    if (hasVoted !== null && hasVoted !== undefined) {
-      where.hasVoted = hasVoted === 'true';
+    // Add hasVoted/voted filter (computed via VoteResponse existence)
+    const votedFilter = votedParam ?? hasVoted;
+    if (votedFilter !== null && votedFilter !== undefined) {
+      const wantsVoted = votedFilter === 'true';
+      if (wantsVoted) {
+        where.voteResponses = { some: { electionId: electionIdInt } };
+      } else {
+        where.voteResponses = { none: { electionId: electionIdInt } };
+      }
     }
 
     // Add isActive filter
@@ -174,7 +181,7 @@ async function getVoters(request: NextRequest) {
     // Build dynamic orderBy clause
     let orderBy: any[] = [];
     
-    if (sortCol && ['name', 'status', 'scope', 'email', 'contactNumber', 'hasVoted'].includes(sortCol)) {
+    if (sortCol && ['name', 'status', 'scope', 'email', 'contactNumber', 'hasVoted', 'voted'].includes(sortCol)) {
       switch (sortCol) {
         case 'name':
           orderBy = [
@@ -195,7 +202,9 @@ async function getVoters(request: NextRequest) {
           orderBy = [{ contactNum: sortDir }];
           break;
         case 'hasVoted':
-          orderBy = [{ hasVoted: sortDir }];
+        case 'voted':
+          // Sort by whether voter has any voteResponses (treat count > 0 as true)
+          orderBy = [{ voteResponses: { _count: sortDir as any } }];
           break;
         default:
           orderBy = [
@@ -232,6 +241,12 @@ async function getVoters(request: NextRequest) {
                 }
               }
             }
+          },
+          // Fetch at most 1 vote for computing hasVoted
+          voteResponses: {
+            where: { electionId: electionIdInt },
+            select: { id: true },
+            take: 1
           }
         },
         orderBy,
@@ -252,11 +267,17 @@ async function getVoters(request: NextRequest) {
       message: `Viewed voters for election: ${election.name}`,
     });
 
+    // Compute hasVoted boolean based on presence of voteResponses
+    const votersWithComputed = voters.map(v => ({
+      ...v,
+      voted: (v as any).voteResponses?.length > 0
+    }));
+
     return apiResponse({
       success: true,
       message: "Voters fetched successfully",
       data: {
-        voters,
+        voters: votersWithComputed,
         pagination: {
           currentPage: page,
           totalPages,
@@ -366,14 +387,14 @@ async function createVoter(request: NextRequest) {
           code: await generateUniqueVoterCode(),
           codeSendStatus: "PENDING",
           isVerified: false,
-          hasVoted: false,
+          // hasVoted removed; computed from VoteResponse
           isActive: true
         }))
       );
 
       // Create all voters in a transaction
       const createdVoters = await db.$transaction(async (tx) => {
-        const voters = [];
+        const voters: any[] = [];
         for (const voterData of votersWithCodes) {
           const voter = await tx.voter.create({
             data: voterData,
@@ -386,7 +407,7 @@ async function createVoter(request: NextRequest) {
               }
             }
           });
-          voters.push(voter);
+          voters.push({ ...voter, voted: false });
         }
         return voters;
       });
@@ -415,7 +436,7 @@ async function createVoter(request: NextRequest) {
       const validation = validateWithZod(voterSchema, body);
       if (!('data' in validation)) return validation;
       
-      const { electionId, email, contactNum, firstName, middleName, lastName, votingScopeId, address, isActive } = validation.data;
+      const { electionId, email, contactNum, firstName, middleName, lastName, votingScopeId, isActive } = validation.data;
 
       // Check if election exists and user has permission
       const election = await db.election.findUnique({
@@ -510,11 +531,10 @@ async function createVoter(request: NextRequest) {
           middleName,
           lastName,
           votingScopeId,
-          address,
           isActive,
           codeSendStatus: "PENDING",
-          isVerified: false,
-          hasVoted: false
+          isVerified: false
+          // hasVoted removed; computed from VoteResponse
         },
         include: {
           votingScope: {
@@ -539,7 +559,7 @@ async function createVoter(request: NextRequest) {
         success: true,
         message: "Voter created successfully",
         data: {
-          voter: newVoter,
+          voter: { ...newVoter, voted: false },
           audit
         },
         error: null,

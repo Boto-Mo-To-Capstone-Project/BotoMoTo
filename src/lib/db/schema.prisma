@@ -273,10 +273,7 @@ model Voter {
   codeSendStatus  String    @default("PENDING")
   isVerified      Boolean   @default(false)
   votingScopeId   Int?
-  address         String?
   isActive        Boolean   @default(true)
-  hasVoted        Boolean   @default(false)
-  votedAt         DateTime?
   
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -318,7 +315,7 @@ model Candidate {
   isNew       Boolean   @default(false)
   partyId     Int?
   imageUrl    String?
-  bio         String?   // Candidate biography
+  credentialUrl String? // path to credentials file
   
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -329,9 +326,6 @@ model Candidate {
   voter        Voter      @relation(fields: [voterId], references: [id])
   position     Position   @relation(fields: [positionId], references: [id])
   party        Party?     @relation(fields: [partyId], references: [id])
-  leaderships  CandidateLeadershipExperience[]
-  workExps     CandidateWorkExperience[]
-  educations   CandidateEducationLevel[]
   voteResponses VoteResponse[]
 }
 
@@ -354,38 +348,6 @@ model Party {
   @@unique([electionId, name])
 }
 
-model CandidateLeadershipExperience {
-  id            Int       @id @default(autoincrement())
-  candidateId   Int
-  organization  String
-  position      String
-  dateRange     String
-  description   String?
-
-  candidate Candidate @relation(fields: [candidateId], references: [id])
-}
-
-model CandidateWorkExperience {
-  id          Int       @id @default(autoincrement())
-  candidateId Int
-  company     String
-  role        String
-  dateRange   String
-  description String?
-
-  candidate Candidate @relation(fields: [candidateId], references: [id])
-}
-
-model CandidateEducationLevel {
-  id            Int       @id @default(autoincrement())
-  candidateId   Int
-  school        String
-  educationLevel String
-  dateRange     String
-  description   String?
-
-  candidate Candidate @relation(fields: [candidateId], references: [id])
-}
 
 model VoteResponse {
   id          Int       @id @default(autoincrement())
@@ -400,6 +362,9 @@ model VoteResponse {
   voter      Voter      @relation(fields: [voterId], references: [id])
   candidate  Candidate  @relation(fields: [candidateId], references: [id])
   position   Position   @relation(fields: [positionId], references: [id])
+
+  @@index([electionId, voterId])
+  @@index([electionId, timestamp])
 }
 
 model SurveyForm {

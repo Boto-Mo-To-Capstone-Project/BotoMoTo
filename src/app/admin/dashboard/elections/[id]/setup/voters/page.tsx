@@ -29,7 +29,7 @@ export default function VoterDashboardPage() {
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 400);
-  const [sortCol, setSortCol] = useState<"name" | "status" | "scope" | "email" | "contactNumber" | "birthdate" | "hasVoted" | null>(null);
+  const [sortCol, setSortCol] = useState<"name" | "status" | "scope" | "email" | "contactNumber" | "birthdate" | "voted" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showVotersModal, setShowVotersModal] = useState(false);
@@ -59,7 +59,7 @@ export default function VoterDashboardPage() {
     email: string;
     contactNumber: string;
     birthdate: string;
-    hasVoted: boolean;
+    voted: boolean;
   }>>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -106,7 +106,7 @@ export default function VoterDashboardPage() {
     setPageSize(Number(e.target.value));
     setPage(1);
   };
-  const handleSort = (col: "name" | "status" | "scope" | "email" | "contactNumber" | "birthdate" | "hasVoted") => {
+  const handleSort = (col: "name" | "status" | "scope" | "email" | "contactNumber" | "birthdate" | "voted") => {
     if (sortCol === col) {
       setSortDir(sortDir === "asc" ? "desc" : "asc");
     } else {
@@ -126,8 +126,8 @@ export default function VoterDashboardPage() {
     
     // Check which voters have voted and which haven't
     const selectedVoters = rows.filter(r => selectedIds.includes(r.id));
-    const votedVoters = selectedVoters.filter(v => v.hasVoted);
-    const nonVotedVoters = selectedVoters.filter(v => !v.hasVoted);
+    const votedVoters = selectedVoters.filter(v => v.voted);
+    const nonVotedVoters = selectedVoters.filter(v => !v.voted);
     
     if (votedVoters.length > 0) {
       const votedNames = votedVoters.map(v => v.name).join(', ');
@@ -213,7 +213,7 @@ export default function VoterDashboardPage() {
         lastName: lastName || undefined,
         email: data?.email?.trim() || undefined,
         contactNum: data?.contactNumber?.trim() || undefined,
-        address: undefined,
+        // address removed
         isActive: true,
       };
       if (typeof data?.votingScopeId === 'number') {
@@ -308,7 +308,7 @@ export default function VoterDashboardPage() {
         lastName: lastName || undefined,
         email: data?.email?.trim() || undefined,
         contactNum: data?.contactNumber?.trim() || undefined,
-        address: undefined,
+        // address removed
         isActive: editIsActive,
       };
       if (typeof data?.votingScopeId === 'number') {
@@ -378,7 +378,7 @@ export default function VoterDashboardPage() {
           email: v.email ?? "",
           contactNumber: v.contactNum ?? "",
           birthdate: "",
-          hasVoted: !!v.hasVoted,
+          voted: !!v.voted,
         }));
 
         setRows(mapped);

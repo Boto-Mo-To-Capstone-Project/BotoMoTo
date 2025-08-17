@@ -108,7 +108,6 @@ export async function GET(request: NextRequest) {
       votersWhoHaventVoted,
       verifiedVoters,
       unverifiedVoters,
-      votingStatsByScope,
       codeStatusStats,
       recentVotes
     ] = await Promise.all([
@@ -127,14 +126,14 @@ export async function GET(request: NextRequest) {
         where: { electionId: electionIdInt, isDeleted: false, isActive: false }
       }),
       
-      // Voters who voted
+      // Voters who voted (exists VoteResponse)
       db.voter.count({
-        where: { electionId: electionIdInt, isDeleted: false, hasVoted: true }
+        where: { electionId: electionIdInt, isDeleted: false, voteResponses: { some: { electionId: electionIdInt } } }
       }),
       
       // Voters who haven't voted
       db.voter.count({
-        where: { electionId: electionIdInt, isDeleted: false, hasVoted: false }
+        where: { electionId: electionIdInt, isDeleted: false, voteResponses: { none: { electionId: electionIdInt } } }
       }),
       
       // Verified voters
@@ -147,13 +146,6 @@ export async function GET(request: NextRequest) {
         where: { electionId: electionIdInt, isDeleted: false, isVerified: false }
       }),
       
-      // Voting stats by scope
-      db.voter.groupBy({
-        by: ['votingScopeId', 'hasVoted'],
-        where: { electionId: electionIdInt, isDeleted: false },
-        _count: true
-      }),
-      
       // Code send status stats
       db.voter.groupBy({
         by: ['codeSendStatus'],
@@ -162,66 +154,68 @@ export async function GET(request: NextRequest) {
       }),
       
       // Recent votes (last 24 hours)
-      db.voter.count({
+      db.voteResponse.count({
         where: {
           electionId: electionIdInt,
-          isDeleted: false,
-          hasVoted: true,
-          votedAt: {
-            gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+          timestamp: {
+            gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
           }
         }
       })
     ]);
 
-    // Process voting scope statistics
-    const scopeStats = await db.votingScope.findMany({
+    // Process voting scope statistics via aggregation per scope
+    const scopes = await db.votingScope.findMany({
       where: { electionId: electionIdInt, isDeleted: false },
-      select: {
-        id: true,
-        name: true,
-        _count: {
-          select: {
-            voters: {
-              where: { isDeleted: false }
-            }
-          }
-        }
+      select: { id: true, name: true, _count: { select: { voters: { where: { isDeleted: false } } } } }
+    });
+
+    // Count votes per scope by joining voters -> voteResponses
+    const votesPerScope = await db.voter.groupBy({
+      by: ['votingScopeId'],
+      where: { electionId: electionIdInt, isDeleted: false },
+      _count: {
+        _all: true
       }
     });
 
-    // Calculate voting percentages and organize scope data
-    const votingScopeStats = scopeStats.map(scope => {
-      const scopeVotingStats = votingStatsByScope.filter(stat => stat.votingScopeId === scope.id);
-      const totalInScope = scopeVotingStats.reduce((sum, stat) => sum + stat._count, 0);
-      const votedInScope = scopeVotingStats.find(stat => stat.hasVoted)?._count || 0;
-      
+    const votedCountsPerScopeRaw = await db.voter.groupBy({
+      by: ['votingScopeId'],
+      where: { electionId: electionIdInt, isDeleted: false, voteResponses: { some: { electionId: electionIdInt } } },
+      _count: { _all: true }
+    });
+
+    const votedCountsMap = new Map<number | null, number>();
+    for (const row of votedCountsPerScopeRaw) {
+      votedCountsMap.set(row.votingScopeId as any, row._count._all as any);
+    }
+
+    const votingScopeStats = scopes.map(scope => {
+      const totalInScope = scope._count.voters;
+      const votedInScope = votedCountsMap.get(scope.id) || 0;
       return {
         id: scope.id,
         name: scope.name,
-        // For backward compatibility, expose a 'type' field derived from election-level label.
         type: election.scopeTypeLabel ?? null,
-        totalVoters: scope._count.voters,
+        totalVoters: totalInScope,
         votedCount: votedInScope,
         pendingCount: totalInScope - votedInScope,
         votingPercentage: totalInScope > 0 ? Math.round((votedInScope / totalInScope) * 100) : 0
       };
     });
 
-    // Handle voters not assigned to any scope
-    const unassignedStats = votingStatsByScope.filter(stat => stat.votingScopeId === null);
-    const unassignedTotal = unassignedStats.reduce((sum, stat) => sum + stat._count, 0);
-    const unassignedVoted = unassignedStats.find(stat => stat.hasVoted)?._count || 0;
-
+    // Handle unassigned voters
+    const unassignedTotal = votesPerScope.find(s => s.votingScopeId === null)?._count._all || 0;
+    const unassignedVoted = votedCountsMap.get(null) || 0;
     if (unassignedTotal > 0) {
       votingScopeStats.push({
-        id: -1, // Use -1 to represent unassigned
+        id: -1,
         name: "Unassigned",
         type: "UNASSIGNED" as any,
         totalVoters: unassignedTotal,
         votedCount: unassignedVoted,
         pendingCount: unassignedTotal - unassignedVoted,
-        votingPercentage: Math.round((unassignedVoted / unassignedTotal) * 100)
+        votingPercentage: unassignedTotal > 0 ? Math.round((unassignedVoted / unassignedTotal) * 100) : 0
       });
     }
 

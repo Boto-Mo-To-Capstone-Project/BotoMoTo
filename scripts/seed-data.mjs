@@ -145,10 +145,8 @@ async function generateVoters(electionId, count = 100) {
       firstName,
       lastName,
       contactNum: `+1${Math.floor(Math.random() * 900000000) + 100000000}`,
-      address: `${Math.floor(Math.random() * 9999) + 1} Student St, Campus City`,
       isVerified: Math.random() > 0.1, // 90% verified
-      isActive: Math.random() > 0.05, // 95% active
-      hasVoted: Math.random() > 0.7 // 30% have voted
+      isActive: Math.random() > 0.05 // 95% active
     });
   }
   
@@ -404,7 +402,6 @@ async function seedDatabase() {
           data: {
             ...voter,
             votingScopeId: randomScope ? randomScope.id : null,
-            votedAt: voter.hasVoted ? new Date() : null,
           },
         });
         createdVoters.push(createdVoter);
@@ -494,8 +491,8 @@ async function seedDatabase() {
 
     console.log("🗳️ Creating vote responses...");
     
-    // Create some vote responses for voters who have voted, restricted to their scope (or global for NO SCOPE)
-    const votedVoters = createdVoters.filter((v) => v.hasVoted);
+    // Create some vote responses for a random subset of voters, restricted to their scope (or global for NO SCOPE)
+    const votedVoters = createdVoters.filter(() => Math.random() > 0.7);
     for (const voter of votedVoters) {
       const electionPositions = createdPositions.filter(
         (p) => p.electionId === voter.electionId && p.votingScopeId === voter.votingScopeId
@@ -524,7 +521,7 @@ async function seedDatabase() {
                 candidateId: candidate.id,
                 positionId: position.id,
                 voteHash: `hash_${voter.id}_${candidate.id}_${Date.now()}`,
-                timestamp: voter.votedAt || new Date(),
+                timestamp: new Date(),
               },
             });
           }

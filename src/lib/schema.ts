@@ -224,7 +224,6 @@ const voterSchema = z.object({
   middleName: field.string("Middle name", { required: false, min: 1, max: 50 }),
   lastName: field.string("Last name", { min: 2, max: 50 }),
   votingScopeId: z.number().int().positive("Voting scope ID must be a positive integer").optional(),
-  address: field.string("Address", { required: false, min: 5, max: 255 }),
   isActive: z.boolean().default(true)
 });
 
@@ -235,7 +234,6 @@ const voterUpdateSchema = z.object({
   middleName: field.string("Middle name", { required: false, min: 1, max: 50 }),
   lastName: field.string("Last name", { min: 2, max: 50 }),
   votingScopeId: z.number().int().positive("Voting scope ID must be a positive integer").optional(),
-  address: field.string("Address", { required: false, min: 5, max: 255 }),
   isActive: z.boolean().default(true)
 });
 
@@ -248,32 +246,7 @@ const voterBulkUploadSchema = z.object({
     middleName: field.string("Middle name", { required: false, min: 1, max: 50 }),
     lastName: field.string("Last name", { min: 2, max: 50 }),
     votingScopeId: z.number().int().positive("Voting scope ID must be a positive integer").optional(),
-    address: field.string("Address", { required: false, min: 5, max: 255 })
   })).min(1, "At least one voter is required")
-});
-
-// Candidate Leadership Experience Schema
-const candidateLeadershipSchema = z.object({
-  organization: field.string("Organization", { min: 2, max: 100 }),
-  position: field.string("Position", { min: 2, max: 100 }),
-  dateRange: field.string("Date range", { min: 3, max: 50 }),
-  description: field.string("Description", { required: false, max: 500 })
-});
-
-// Candidate Work Experience Schema
-const candidateWorkExperienceSchema = z.object({
-  company: field.string("Company", { min: 2, max: 100 }),
-  role: field.string("Role", { min: 2, max: 100 }),
-  dateRange: field.string("Date range", { min: 3, max: 50 }),
-  description: field.string("Description", { required: false, max: 500 })
-});
-
-// Candidate Education Schema
-const candidateEducationSchema = z.object({
-  school: field.string("School", { min: 2, max: 100 }),
-  educationLevel: field.string("Education level", { min: 2, max: 100 }),
-  dateRange: field.string("Date range", { min: 3, max: 50 }),
-  description: field.string("Description", { required: false, max: 500 })
 });
 
 // Candidate Creation Schema
@@ -282,12 +255,9 @@ const candidateSchema = z.object({
   voterId: z.number().int().positive("Voter ID must be a positive integer"),
   positionId: z.number().int().positive("Position ID must be a positive integer"),
   partyId: z.number().int().positive("Party ID must be a positive integer").optional(),
-  imageUrl: field.url("Image URL", { required: false }),
-  bio: field.string("Biography", { required: false, max: 1000 }),
-  isNew: z.boolean().default(false),
-  leaderships: z.array(candidateLeadershipSchema).optional(),
-  workExperiences: z.array(candidateWorkExperienceSchema).optional(),
-  educations: z.array(candidateEducationSchema).optional()
+  imageUrl: field.string("Image URL", { required: false }),
+  credentialUrl: field.string("Credentials URL", { required: false }),
+  isNew: z.boolean().default(false)
 });
 
 // Candidate Update Schema
@@ -297,9 +267,6 @@ const candidateUpdateSchema = z.object({
   imageUrl: field.url("Image URL", { required: false }),
   bio: field.string("Biography", { required: false, max: 1000 }),
   isNew: z.boolean().optional(),
-  leaderships: z.array(candidateLeadershipSchema).optional(),
-  workExperiences: z.array(candidateWorkExperienceSchema).optional(),
-  educations: z.array(candidateEducationSchema).optional()
 });
 
 // Survey Form Creation Schema
@@ -333,9 +300,6 @@ type VoterUpdateSchema = z.infer<typeof voterUpdateSchema>;
 type VoterBulkUploadSchema = z.infer<typeof voterBulkUploadSchema>;
 type CandidateSchema = z.infer<typeof candidateSchema>;
 type CandidateUpdateSchema = z.infer<typeof candidateUpdateSchema>;
-type CandidateLeadershipSchema = z.infer<typeof candidateLeadershipSchema>;
-type CandidateWorkExperienceSchema = z.infer<typeof candidateWorkExperienceSchema>;
-type CandidateEducationSchema = z.infer<typeof candidateEducationSchema>;
 type SurveyFormCreateSchema = z.infer<typeof surveyFormCreateSchema>;
 type SurveyFormUpdateSchema = z.infer<typeof surveyFormUpdateSchema>;
 
@@ -356,9 +320,6 @@ export {
   voterBulkUploadSchema,
   candidateSchema,
   candidateUpdateSchema,
-  candidateLeadershipSchema,
-  candidateWorkExperienceSchema,
-  candidateEducationSchema,
   surveyFormCreateSchema,
   surveyFormUpdateSchema,
   type LoginSchema,
@@ -376,9 +337,6 @@ export {
   type VoterBulkUploadSchema,
   type CandidateSchema,
   type CandidateUpdateSchema,
-  type CandidateLeadershipSchema,
-  type CandidateWorkExperienceSchema,
-  type CandidateEducationSchema,
   type SurveyFormCreateSchema,
   type SurveyFormUpdateSchema,
 };
