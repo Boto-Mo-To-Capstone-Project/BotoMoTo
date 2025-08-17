@@ -212,10 +212,16 @@ const AdminSidebar = ({
               className="shrink-0"/>
             <div>
               <p className="text-white text-sm">{displayName}</p>
-              <p className="text-white text-sm">
+              {/* Mobile / small screens → truncated */}
+              <p className="text-white text-sm block hidden lg:block">
                 {displayEmail.length > 15 
                   ? displayEmail.slice(0, 15) + "..." 
                   : displayEmail}
+              </p>
+
+              {/* Large screens → full text */}
+              <p className="text-white text-sm lg:hidden ">
+                {displayEmail}
               </p>
             </div>   
           </div>
