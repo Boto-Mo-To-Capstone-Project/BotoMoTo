@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
-import { MdAdd, MdDownload, MdFilterList, MdDelete, MdEdit, MdFileUpload } from "react-icons/md";
+import { MdAdd, MdFilterList, MdDelete, MdEdit, MdFileUpload } from "react-icons/md";
 import { SubmitButton } from '@/components/SubmitButton';
 import SearchBar from '@/components/SearchBar';
 import PositionsTable from '@/components/PositionsTable';
@@ -496,24 +496,6 @@ export default function PositionsDashboardPage() {
                 }
                 className={
                   selectedIds.length === 1
-                    ? ""
-                    : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
-                }
-              />
-              <SubmitButton
-                label=""
-                variant="action"
-                icon={<MdDownload size={20} />}
-                title="Download"
-                onClick={
-                  selectedIds.length >= 1
-                    ? () => {
-                        /* TODO: handle download */
-                      }
-                    : undefined
-                }
-                className={
-                  selectedIds.length >= 1
                     ? ""
                     : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
                 }
