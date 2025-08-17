@@ -1,28 +1,26 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
+import { useSession, } from "next-auth/react";
 
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Logomark from "@/app/assets/Logomark.png"
+
 import BotoMoToLogo from "@/app/assets/BotoMoToLogo_light.png";
 import {
   LayoutDashboard,
   ListChecks,
-  PlusCircle,
   User,
   X,
-  Menu,
   BadgeAlert,
   ChevronDown,
   ChevronUp,
   Settings,
-  Wrench,
   LogOut,
 } from "lucide-react";
 import { useLogout } from "@/hooks/useLogout";
-import Button from "../Button";
 
 type AdminSidebarProps = {
   variant: "default" | "selectedElection";
@@ -205,13 +203,25 @@ const AdminSidebar = ({
 
         {/* Logout Section */}
         <div className="flex items-start justify-between mt-auto">
-          <div>
-            <p className="text-white text-sm">{displayName}</p>
-            <p className="text-white text-sm">{displayEmail}</p>
+          <div className="flex items-center gap-2">
+            <Image
+              src={Logomark}
+              width={40}
+              height={40}
+              alt="Picture of the author"
+              className="shrink-0"/>
+            <div>
+              <p className="text-white text-sm">{displayName}</p>
+              <p className="text-white text-sm">
+                {displayEmail.length > 15 
+                  ? displayEmail.slice(0, 15) + "..." 
+                  : displayEmail}
+              </p>
+            </div>   
           </div>
 
           <button onClick={handleLogout} className="cursor-pointer text-white">
-            <LogOut className="w-5 h-5" />
+            <LogOut className="w-6 h-6" />
           </button>
         </div>
       </aside>
