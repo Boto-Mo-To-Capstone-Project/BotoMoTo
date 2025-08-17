@@ -130,7 +130,7 @@ const PartyTable: React.FC<PartyTableProps> = ({
         </table>
       </div>
       {/* Pagination controls */}
-      <div className="flex items-center gap-2 mt-4 w-full relative xxs:flex-wrap px-3 pb-3">
+      <div className="flex items-center gap-2 mt-4 w-full relative xxs:flex-wrap">
         <button onClick={onFirst} disabled={page === 1} title="First"><MdFirstPage size={22} /></button>
         <button onClick={onPrev} disabled={page === 1} title="Prev"><MdChevronLeft size={22} /></button>
         <span>{totalPages > 0 ? page : 1}</span>
