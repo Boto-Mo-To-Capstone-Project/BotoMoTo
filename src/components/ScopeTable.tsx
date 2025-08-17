@@ -24,7 +24,6 @@ interface ScopeTableProps {
   onLast: () => void;
   pageSize: number;
   onPageSizeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  typeLabel?: string; // election-level type label to display for all rows
 }
 
 const ScopeTable: React.FC<ScopeTableProps> = ({
@@ -43,7 +42,6 @@ const ScopeTable: React.FC<ScopeTableProps> = ({
   onLast,
   pageSize,
   onPageSizeChange,
-  typeLabel,
 }) => {
   const allChecked = scopeData.length > 0 && scopeData.every(s => selectedIds.includes(s.id));
   const someChecked = scopeData.some(s => selectedIds.includes(s.id));
@@ -72,9 +70,6 @@ const ScopeTable: React.FC<ScopeTableProps> = ({
                   onChange={handleHeaderCheckbox}
                 />
               </th>
-              <th className="py-2 px-3 border-b border-gray-200 select-none">
-                Scoping Type
-              </th>
               <th
                 className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
                 onClick={() => onSort("name")}
@@ -102,7 +97,7 @@ const ScopeTable: React.FC<ScopeTableProps> = ({
           <tbody>
             {scopeData.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-4 text-center text-gray-400">
+                <td colSpan={3} className="px-4 py-4 text-center text-gray-400">
                   No scopes found.
                 </td>
               </tr>
@@ -123,7 +118,6 @@ const ScopeTable: React.FC<ScopeTableProps> = ({
                       onChange={() => onCheckboxChange(scope.id)}
                     />
                   </td>
-                  <td className="py-2 px-3 align-middle">{typeLabel ?? '-'}</td>
                   <td className="py-2 px-3 align-middle">{scope.name}</td>
                   <td className="py-2 px-3 align-middle">{scope.description}</td>
                 </tr>

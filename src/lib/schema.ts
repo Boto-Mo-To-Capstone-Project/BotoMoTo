@@ -166,9 +166,6 @@ const electionSchema = z.object({
     dateStart: z.union([z.string(), z.date()]),
     dateFinish: z.union([z.string(), z.date()]),
   }).partial().optional(),
-  // NEW: optional election-level scope config
-  scopeType: z.enum(["AREA", "LEVEL", "DEPARTMENT", "CUSTOM"]).optional(),
-  scopeTypeLabel: field.string("Scope type label", { required: false, min: 1, max: 100 }).optional(),
 });
 
 const userSchema = z.object({
@@ -184,8 +181,6 @@ const userSchema = z.object({
 const partySchema = z.object({
   name: field.string("Party name", { min: 2, max: 100 }),
   color: field.string("Party color", { min: 3, max: 7 }), // For hex colors like #FF0000
-  logoUrl: field.url("Logo URL", { required: false }),
-  description: field.string("Party description", { required: false, min: 5, max: 500 })
 });
 
 const votingScopeSchema = z.object({
@@ -254,7 +249,7 @@ const candidateSchema = z.object({
   electionId: z.number().int().positive("Election ID must be a positive integer"),
   voterId: z.number().int().positive("Voter ID must be a positive integer"),
   positionId: z.number().int().positive("Position ID must be a positive integer"),
-  partyId: z.number().int().positive("Party ID must be a positive integer").optional(),
+  partyId: z.number().int().positive("Party ID must be a positive integer").nullable().optional(),
   imageUrl: field.string("Image URL", { required: false }),
   credentialUrl: field.string("Credentials URL", { required: false }),
   isNew: z.boolean().default(false)
@@ -263,7 +258,7 @@ const candidateSchema = z.object({
 // Candidate Update Schema
 const candidateUpdateSchema = z.object({
   positionId: z.number().int().positive("Position ID must be a positive integer").optional(),
-  partyId: z.number().int().positive("Party ID must be a positive integer").optional(),
+  partyId: z.number().int().positive("Party ID must be a positive integer").nullable().optional(),
   imageUrl: field.url("Image URL", { required: false }),
   bio: field.string("Biography", { required: false, max: 1000 }),
   isNew: z.boolean().optional(),

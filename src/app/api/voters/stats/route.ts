@@ -67,8 +67,6 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         name: true,
-        scopeType: true,
-        scopeTypeLabel: true,
         organization: {
           select: {
             id: true,
@@ -196,7 +194,6 @@ export async function GET(request: NextRequest) {
       return {
         id: scope.id,
         name: scope.name,
-        type: election.scopeTypeLabel ?? null,
         totalVoters: totalInScope,
         votedCount: votedInScope,
         pendingCount: totalInScope - votedInScope,
@@ -211,7 +208,6 @@ export async function GET(request: NextRequest) {
       votingScopeStats.push({
         id: -1,
         name: "Unassigned",
-        type: "UNASSIGNED" as any,
         totalVoters: unassignedTotal,
         votedCount: unassignedVoted,
         pendingCount: unassignedTotal - unassignedVoted,

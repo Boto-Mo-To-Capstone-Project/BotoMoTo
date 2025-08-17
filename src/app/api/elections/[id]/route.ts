@@ -189,10 +189,6 @@ export async function PUT(
     
     const { name, description, status, isLive, allowSurvey } = validation.data;
 
-    // Optional scope config from body
-    const incomingScopeType: "AREA" | "LEVEL" | "DEPARTMENT" | "CUSTOM" | undefined = rawBody?.scopeType;
-    const incomingScopeTypeLabel: string | undefined = rawBody?.scopeTypeLabel;
-
     const election = await db.election.findUnique({
       where: {
         id: electionId,
@@ -278,8 +274,6 @@ export async function PUT(
       status: election.status,
       isLive: election.isLive,
       allowSurvey: election.allowSurvey,
-      scopeType: (election as any).scopeType ?? null,
-      scopeTypeLabel: (election as any).scopeTypeLabel ?? null,
     } as const;
 
     const updatedElection = await db.election.update({
@@ -290,12 +284,6 @@ export async function PUT(
         status,
         isLive,
         allowSurvey,
-        // optional scope config
-        scopeType: incomingScopeType ?? null,
-        scopeTypeLabel:
-          incomingScopeType === 'CUSTOM' && typeof incomingScopeTypeLabel === 'string' && incomingScopeTypeLabel.trim()
-            ? incomingScopeTypeLabel.trim()
-            : null,
       },
       include: {
         organization: {
@@ -391,7 +379,7 @@ export async function PUT(
 
     // Compare and log changed fields
     const changedFields: Record<string, { old: any; new: any }> = {};
-    for (const key of ["name", "description", "status", "isLive", "allowSurvey", "scopeType", "scopeTypeLabel"] as const) {
+    for (const key of ["name", "description", "status", "isLive", "allowSurvey"] as const) {
       const oldVal = (oldData as any)[key];
       const newVal = (updatedElection as any)[key] ?? null;
       if (oldVal !== newVal) {

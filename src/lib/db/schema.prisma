@@ -76,14 +76,6 @@ enum MfaMethod {
   SMS
 }
 
-// Voting scope type enum
-enum VotingScopeType {
-  AREA
-  LEVEL
-  DEPARTMENT
-  CUSTOM
-}
-
 // Ticket status enum
 enum TicketStatus {
   PENDING
@@ -185,17 +177,6 @@ model Organization {
   tickets        Ticket[]
 }
 
-// hassle step
-// model OrgContactDetails {
-//   id        Int          @id @default(autoincrement())
-//   orgId     Int
-//   name      String
-//   email     String
-//   contactNum String
-//
-//   organization Organization @relation(fields: [orgId], references: [id])
-// }
-
 model Election {
   id          Int            @id @default(autoincrement())
   orgId       Int
@@ -204,10 +185,6 @@ model Election {
   status      ElectionStatus @default(DRAFT)
   isLive      Boolean        @default(false) // For real-time voting
   allowSurvey Boolean        @default(false) // Enable post-vote survey
-
-  // NEW: Optional election-level scope configuration
-  scopeType      VotingScopeType?
-  scopeTypeLabel String?
   
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -334,8 +311,6 @@ model Party {
   electionId  Int
   name        String
   color       String
-  logoUrl     String?
-  description String?
   
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
