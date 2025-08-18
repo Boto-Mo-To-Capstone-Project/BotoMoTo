@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
     // Validate party data using helper
     const validation = validateWithZod(partySchema, partyData);
     if (!('data' in validation)) return validation;
-    const { name, color, logoUrl, description } = validation.data;
+    const { name, color } = validation.data;
 
     // Check if election exists and user has permission
     const election = await db.election.findUnique({
@@ -291,8 +291,6 @@ export async function POST(request: NextRequest) {
         electionId: electionIdInt,
         name,
         color,
-        logoUrl,
-        description,
       },
       include: {
         election: {

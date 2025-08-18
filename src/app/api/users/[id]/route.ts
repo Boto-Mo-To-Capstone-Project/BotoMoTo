@@ -12,7 +12,7 @@ import bcrypt from "bcryptjs";
 // Handle GET request to fetch a specific user
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -29,7 +29,7 @@ export async function GET(
       });
     }
 
-    const userId = params.id;
+    const userId = (await params).id;
 
     // Fetch user info
     const userData = await db.user.findUnique({
@@ -113,7 +113,7 @@ export async function GET(
 // Handle PUT request to update a specific user
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -130,7 +130,7 @@ export async function PUT(
       });
     }
 
-    const userId = params.id;
+    const userId = (await params).id;
 
     // Parse and validate input
     const body = await request.json();
@@ -286,7 +286,7 @@ export async function PUT(
 // Handle DELETE request to delete a specific user
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -314,7 +314,7 @@ export async function DELETE(
       });
     }
 
-    const userId = params.id;
+    const userId = (await params).id;
 
     // Fetch existing user
     const existingUser = await db.user.findUnique({

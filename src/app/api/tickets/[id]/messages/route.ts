@@ -4,14 +4,17 @@ import { requireAuth } from "@/lib/helpers/requireAuth";
 import { apiResponse } from "@/lib/apiResponse";
 import { ROLES } from "@/lib/constants";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const authResult = await requireAuth([ROLES.SUPER_ADMIN, ROLES.ADMIN]);
     if (!authResult.authorized) return authResult.response;
 
-    const { id } = params;
+    const { id } = await params;
     const ticketId = parseInt(id);
-    const { message } = await req.json();
+    const { message } = await request.json();
 
     // Fetch current messages
     const ticket = await db.ticket.findUnique({ where: { id: ticketId } });
