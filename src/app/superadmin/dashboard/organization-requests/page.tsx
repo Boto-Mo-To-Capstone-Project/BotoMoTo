@@ -5,11 +5,52 @@ import toast, { Toaster } from "react-hot-toast";
 
 import Table from "@/components/TableComponent";
 
+
+interface UiElection {
+  id: number;
+  name: string;
+  status: "Ongoing" | "Finished";
+  votingDate: string;
+  time: string;
+}
+
 export default function SuperAdminOrgRequestPage() {
   // Local state for requests (pending) and all organizations
   const [orgRequests, setOrgRequests] = useState<Record<string, any>[]>([]);
   const [allOrgs, setAllOrgs] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+
+  
+    const [search, setSearch] = useState("");
+    const [tab, setTab] = useState<"All" | "Ongoing" | "Ended">("All");
+    const [electionsList, setElectionsList] = useState<UiElection[]>([]);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+  
+    const [sortCol, setSortCol] = useState<
+      "name" | "status" | "votingDate" | "time" | null
+    >(null);
+  
+  const totalPages = Math.ceil(Math.max(1, electionsList.length) / pageSize);
+  const handleFirst = () => setPage(1);
+  const handlePrev = () => setPage((p) => Math.max(1, p - 1));
+  const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
+  const handleLast = () => setPage(totalPages);
+  const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setPageSize(Number(e.target.value));
+    setPage(1); // reset to first page when page size changes
+  };
+  
+  // Filter by search and tab
+  let filteredElections = electionsList.filter((e) =>
+    e.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  if (tab === 'Ongoing') {
+    filteredElections = filteredElections.filter(e => e.status === 'Ongoing');
+  } else if (tab === 'Ended') {
+    filteredElections = filteredElections.filter(e => e.status === 'Finished');
+  }
 
   // Helper to extract filename from a stored path or URL
   const extractFilename = (path: string) => {
@@ -146,14 +187,28 @@ export default function SuperAdminOrgRequestPage() {
                   showActions={true}
                   onApprove={handleApprove}
                   onReject={handleReject}
-                  pageSize={5}
+                  page={page}
+                  totalPages={Math.max(1, Math.ceil(filteredElections.length / pageSize))}
+                  onFirst={handleFirst}
+                  onPrev={handlePrev}
+                  onNext={handleNext}
+                  onLast={handleLast}
+                  pageSize={pageSize}
+                  onPageSizeChange={handlePageSizeChange} 
                 />
                 {/* All Organizations */}
                 <Table
                   title="All Organizations"
                   columns={columns}
                   data={allOrgs}
-                  pageSize={5}
+                  page={page}
+                  totalPages={Math.max(1, Math.ceil(filteredElections.length / pageSize))}
+                  onFirst={handleFirst}
+                  onPrev={handlePrev}
+                  onNext={handleNext}
+                  onLast={handleLast}
+                  pageSize={pageSize}
+                  onPageSizeChange={handlePageSizeChange} 
                 />
               </>
             )}
