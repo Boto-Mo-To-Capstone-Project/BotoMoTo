@@ -76,9 +76,13 @@ export default function ElectionDashboardPage() {
         if (!cancelled) setElectionsList(mapped);
       } catch (err) {
         console.error(err);
-        !cancelled && toast.error('Failed to load elections');
+        if (!cancelled) {
+          toast.error('Failed to load elections');
+        }
       } finally {
-        !cancelled && setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
     load();

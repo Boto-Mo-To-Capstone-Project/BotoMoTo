@@ -48,10 +48,14 @@ const ScopeTable: React.FC<ScopeTableProps> = ({
 
   const handleHeaderCheckbox = () => {
     if (allChecked) {
-      scopeData.forEach(s => onCheckboxChange(s.id));
+      scopeData.forEach((s) => {
+        onCheckboxChange(s.id);
+      });
     } else {
-      scopeData.forEach(s => {
-        if (!selectedIds.includes(s.id)) onCheckboxChange(s.id);
+      scopeData.forEach((s) => {
+        if (!selectedIds.includes(s.id)) {
+          onCheckboxChange(s.id);
+        }
       });
     }
   };
@@ -106,9 +110,9 @@ const ScopeTable: React.FC<ScopeTableProps> = ({
                 <tr
                   key={scope.id}
                   className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
-                  onClick={e => {
+                  onClick={(e) => {
                     if ((e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
-                    onRowClick && onRowClick(scope);
+                    onRowClick?.(scope);
                   }}
                 >
                   <td className="py-2 px-3 align-middle">

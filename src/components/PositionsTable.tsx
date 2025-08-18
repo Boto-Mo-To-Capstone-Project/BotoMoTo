@@ -46,17 +46,21 @@ export default function PositionsTable({
 
   const handleHeaderCheckbox = () => {
     if (allChecked) {
-      props.positions.forEach(p => onCheckboxChange && onCheckboxChange(p.id));
+      props.positions.forEach((p) => {
+        if (onCheckboxChange) onCheckboxChange(p.id);
+      });
     } else {
-      props.positions.forEach(p => {
-        if (!selectedIds.includes(p.id)) onCheckboxChange && onCheckboxChange(p.id);
+      props.positions.forEach((p) => {
+        if (!selectedIds.includes(p.id)) {
+          if (onCheckboxChange) onCheckboxChange(p.id);
+        }
       });
     }
   };
 
   return (
     <div>
-      {title && <h2 className="text-lg font-semibold mb-2">{title}</h2>}
+      {title ? <h2 className="text-lg font-semibold mb-2">{title}</h2> : null}
       <div className="bg-white rounded-lg shadow border border-gray-200 overflow-x-auto">
         <table className="w-full text-sm border-separate border-spacing-0">
           <thead className="bg-gray-50">
@@ -138,16 +142,18 @@ export default function PositionsTable({
                 <tr
                   key={position.id + '-' + idx}
                   className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
-                  onClick={e => {
+                  onClick={(e) => {
                     if ((e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
-                    onCheckboxChange?.(position.id);
+                    if (onCheckboxChange) onCheckboxChange(position.id);
                   }}
                 >
                   <td className="py-2 px-3 align-middle">
                     <input
                       type="checkbox"
                       checked={selectedIds.includes(position.id)}
-                      onChange={() => onCheckboxChange?.(position.id)}
+                      onChange={() => {
+                        if (onCheckboxChange) onCheckboxChange(position.id);
+                      }}
                     />
                   </td>
                   <td className="py-2 px-3 align-middle truncate max-w-[150px]">{position.position}</td>

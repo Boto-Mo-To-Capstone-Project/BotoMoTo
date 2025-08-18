@@ -140,7 +140,7 @@ const CandidatesTable: React.FC<CandidatesTableProps> = ({
                   className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
                   onClick={e => {
                     if ((e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
-                    onRowClick && onRowClick(candidate);
+                    onRowClick?.(candidate);
                   }}
                 >
                   <td className="py-2 px-3 align-middle">

@@ -48,10 +48,14 @@ const PartyTable: React.FC<PartyTableProps> = ({
 
   const handleHeaderCheckbox = () => {
     if (allChecked) {
-      parties.forEach(p => onCheckboxChange(p.id));
+      parties.forEach((p) => {
+        onCheckboxChange(p.id);
+      });
     } else {
-      parties.forEach(p => {
-        if (!selectedIds.includes(p.id)) onCheckboxChange(p.id);
+      parties.forEach((p) => {
+        if (!selectedIds.includes(p.id)) {
+          onCheckboxChange(p.id);
+        }
       });
     }
   };
@@ -106,9 +110,9 @@ const PartyTable: React.FC<PartyTableProps> = ({
                 <tr
                   key={party.id}
                   className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
-                  onClick={e => {
+                  onClick={(e) => {
                     if ((e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
-                    onRowClick && onRowClick(party);
+                    onRowClick?.(party);
                   }}
                 >
                   <td className="py-2 px-3 align-middle">
@@ -116,7 +120,7 @@ const PartyTable: React.FC<PartyTableProps> = ({
                       type="checkbox"
                       checked={selectedIds.includes(party.id)}
                       onChange={() => onCheckboxChange(party.id)}
-                      onClick={e => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                     />
                   </td>
                   <td className="py-2 px-3 align-middle">{party.name}</td>
