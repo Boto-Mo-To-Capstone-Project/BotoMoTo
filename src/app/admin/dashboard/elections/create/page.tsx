@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { Suspense, useState, useRef, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { SubmitButton } from "@/components/SubmitButton";
 import SearchBar from '@/components/SearchBar';
-import { MdAdd, MdDownload, MdFilterList, MdDelete, MdEdit, MdSave } from "react-icons/md";
+import { MdAdd, MdFilterList, MdDelete, MdEdit, MdSave } from "react-icons/md";
 import { ElectionForm, ElectionFormHandle } from "@/components/ElectionForm";
 import { ScopeTab } from "@/components/ScopeTab";
 import { PartyTab } from "@/components/PartyTab"; // Use PartyTab instead of PartyTable/PartyModal
@@ -15,6 +15,15 @@ function getApiErrorMessage(json: any, fallback: string) {
   if (json && typeof json.message === 'string' && json.message) return json.message;
   if (json && typeof json.error === 'string' && json.error) return json.error;
   return fallback;
+}
+
+// Wrapper component that provides the Suspense boundary required by Next.js
+export default function CreateElectionPage() {
+  return (
+    <Suspense fallback={<div className="w-full p-4 text-center text-gray-500">Loading…</div>}>
+      <CreateElectionContent />
+    </Suspense>
+  );
 }
 
 type TabType = "election" | "scope" | "party";
@@ -38,7 +47,7 @@ interface PartyRow {
   color: string;
 }
 
-export default function CreateElectionPage() {
+function CreateElectionContent() {
   const [activeTab, setActiveTab] = useState<TabType>("election");
   const [electionData, setElectionData] = useState<ElectionFormData>({
     name: "",
@@ -64,10 +73,6 @@ export default function CreateElectionPage() {
 
   const electionFormRef = useRef<ElectionFormHandle>(null);
 
-  // Election-level scope type state (enum) and custom label
-  const [electionScopeTypeEnum, setElectionScopeTypeEnum] = useState<"AREA" | "LEVEL" | "DEPARTMENT" | "CUSTOM" | "">("");
-  const [electionScopeTypeLabel, setElectionScopeTypeLabel] = useState<string>("");
-
   // Editing state
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -89,23 +94,6 @@ export default function CreateElectionPage() {
     const hh = pad(d.getHours());
     const mi = pad(d.getMinutes());
     return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
-  };
-
-  // Pretty label for enum
-  const enumToLabel = (val?: "AREA" | "LEVEL" | "DEPARTMENT" | "CUSTOM" | "") => {
-    switch (val) {
-      case "AREA": return "Area";
-      case "LEVEL": return "Level";
-      case "DEPARTMENT": return "Department";
-      case "CUSTOM": return electionScopeTypeLabel || "Custom";
-      default: return "";
-    }
-  };
-
-  const displayScopeTypeForForm = () => {
-    if (!electionScopeTypeEnum) return "";
-    if (electionScopeTypeEnum === "CUSTOM") return electionScopeTypeLabel || "";
-    return enumToLabel(electionScopeTypeEnum);
   };
 
   // Load existing election meta, scopes, and parties when editing
@@ -132,9 +120,6 @@ export default function CreateElectionPage() {
         if (!cancelled) {
           setElectionData(nextData);
           setOriginalMeta({ status: e.status, isLive: e.isLive, allowSurvey: e.allowSurvey });
-          // NEW: set election-level scope fields
-          setElectionScopeTypeEnum((e.scopeType as any) || "");
-          setElectionScopeTypeLabel((e.scopeTypeLabel as any) || "");
         }
         // Fetch scopes and parties in parallel
         const [scopesRes, partiesRes] = await Promise.all([
@@ -173,6 +158,24 @@ export default function CreateElectionPage() {
     return () => { cancelled = true; };
   }, [isEditing, editId]);
 
+  // Derived: filter scopes by search
+  const filteredScopeRows = useMemo(() => {
+    const q = (search || "").toLowerCase();
+    if (!q) return scopeRows;
+    return scopeRows.filter(r =>
+      r.name.toLowerCase().includes(q) || (r.description || "").toLowerCase().includes(q)
+    );
+  }, [scopeRows, search]);
+
+  // Derived: filter parties by search
+  const filteredPartyRows = useMemo(() => {
+    const q = (search || "").toLowerCase();
+    if (!q) return parties;
+    return parties.filter(r =>
+      r.name.toLowerCase().includes(q) || r.color.toLowerCase().includes(q)
+    );
+  }, [parties, search]);
+
   // Save handler for top Save button
   const handleSaveElection = () => {
     electionFormRef.current?.submitForm();
@@ -196,14 +199,6 @@ export default function CreateElectionPage() {
         return;
       }
       basePayload.schedule = { dateStart: isoStart, dateFinish: isoEnd };
-
-      // Include scope config if present
-      if (electionScopeTypeEnum) {
-        basePayload.scopeType = electionScopeTypeEnum;
-        if (electionScopeTypeEnum === 'CUSTOM' && electionScopeTypeLabel.trim()) {
-          basePayload.scopeTypeLabel = electionScopeTypeLabel.trim();
-        }
-      }
 
       let url = '/api/elections';
       let method: 'POST' | 'PUT' = 'POST';
@@ -421,7 +416,7 @@ export default function CreateElectionPage() {
   };
 
   // Check if tabs should be enabled
-  const isScopeTabEnabled = isEditing && !!electionScopeTypeEnum;
+  const isScopeTabEnabled = isEditing;
   const isPartyTabEnabled = isEditing;
 
   // Auto-switch to Election tab if current tab becomes disabled
@@ -454,10 +449,6 @@ export default function CreateElectionPage() {
     return { partyName: row.name, selectedColor: row.color };
   }, [partyEditId, parties]);
 
-  // Default state for scope component compatibility
-  const [defaultScopingType] = useState("Department");
-  const [defaultScopingNames] = useState<{ name: string; description: string }[]>([]);
-
   const renderContent = () => {
     switch (activeTab) {
       case "election":
@@ -470,17 +461,6 @@ export default function CreateElectionPage() {
                 setElectionData={setElectionData}
                 addParty={addParty}
                 setAddParty={setAddParty}
-                // Provide display string to form: enum label or custom label
-                scopeType={displayScopeTypeForForm()}
-                setScopeType={(val: string) => {
-                  const v = (val || '').toUpperCase();
-                  if (v === 'AREA' || v === 'LEVEL' || v === 'DEPARTMENT' || v === 'CUSTOM') {
-                    setElectionScopeTypeEnum(v as any);
-                  }
-                }}
-                updateScopeTypeInTable={(label: string) => {
-                  setElectionScopeTypeLabel(label);
-                }}
                 hideSaveButton
                 onSave={handleFormSave}
               />
@@ -490,12 +470,6 @@ export default function CreateElectionPage() {
       case "scope":
         return (
           <ScopeTab
-            scopingType={defaultScopingType}
-            setScopingType={() => {}} // No-op since we don't use this anymore
-            scopingNames={defaultScopingNames}
-            setScopingNames={() => {}} // No-op since we don't use this anymore
-            search={search}
-            setSearch={setSearch}
             showCreateModal={showCreateModal}
             setShowCreateModal={(v) => {
               if (!v) setScopeEditId(null);
@@ -503,10 +477,9 @@ export default function CreateElectionPage() {
             }}
             selectedIds={scopeSelectedIds}
             setSelectedIds={setScopeSelectedIds}
-            remoteRows={scopeRows}
+            remoteRows={filteredScopeRows}
             onSave={handleSaveScopeFromModal}
             initialData={scopeInitialData}
-            scopeTypeDisplayLabel={displayScopeTypeForForm()}
           />
         );
       case "party":
@@ -523,7 +496,7 @@ export default function CreateElectionPage() {
             }}
             selectedIds={partySelectedIds}
             setSelectedIds={setPartySelectedIds}
-            remoteRows={parties}
+            remoteRows={filteredPartyRows}
             onSave={handleSavePartyFromModal}
             initialData={partyInitialData}
           />
@@ -610,25 +583,6 @@ export default function CreateElectionPage() {
                 <SubmitButton
                   label=""
                   variant="action"
-                  icon={<MdDownload size={20} />}
-                  title="Download"
-                  onClick={
-                    scopeSelectedIds.length >= 1
-                      ? () => {
-                          /* TODO: handle download */
-                          toast('Download not implemented');
-                        }
-                      : undefined
-                  }
-                  className={
-                    scopeSelectedIds.length >= 1
-                      ? ""
-                      : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
-                  }
-                />
-                <SubmitButton
-                  label=""
-                  variant="action"
                   icon={<MdFilterList size={20} />}
                   title="Filter"
                   onClick={
@@ -695,25 +649,6 @@ export default function CreateElectionPage() {
                   }
                   className={
                     partySelectedIds.length === 1
-                      ? ""
-                      : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
-                  }
-                />
-                <SubmitButton
-                  label=""
-                  variant="action"
-                  icon={<MdDownload size={20} />}
-                  title="Download"
-                  onClick={
-                    partySelectedIds.length >= 1
-                      ? () => {
-                          /* TODO: handle download party */
-                          toast('Download not implemented');
-                        }
-                      : undefined
-                  }
-                  className={
-                    partySelectedIds.length >= 1
                       ? ""
                       : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
                   }

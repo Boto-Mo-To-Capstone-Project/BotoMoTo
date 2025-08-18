@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       case 'CREATE_MULTIPLE':
         result = await handleBulkCreate(electionIdInt, positionsData, user, request);
         break;
-      case 'DELETE_MULTIPLE':
+      case 'soft_delete':
         result = await handleBulkDelete(electionIdInt, positionIds, user, request, election);
         break;
       case 'REORDER':
@@ -186,7 +186,6 @@ async function handleBulkCreate(electionId: number, positionsData: any[], user: 
         select: {
           id: true,
           name: true,
-          type: true
         }
       },
       _count: {
@@ -239,11 +238,12 @@ async function handleBulkDelete(electionId: number, positionIds: number[], user:
       isDeleted: false
     },
     include: {
-      _count: {
-        select: {
-          candidates: true,
-          voteResponses: true
-        }
+      candidates: {
+        where: { isDeleted: false },
+        select: { id: true }
+      },
+      voteResponses: {
+        select: { id: true }
       }
     }
   });
@@ -254,9 +254,9 @@ async function handleBulkDelete(electionId: number, positionIds: number[], user:
     return apiResponse({ success: false, message: "Some positions not found or don't belong to this election", data: { notFoundIds }, error: "Not Found", status: 404 });
   }
 
-  // Check for positions with candidates or votes
-  const positionsWithCandidates = positions.filter(p => p._count.candidates > 0);
-  const positionsWithVotes = positions.filter(p => p._count.voteResponses > 0);
+  // Check for positions with candidates or votes (ignore soft-deleted candidates)
+  const positionsWithCandidates = positions.filter(p => p.candidates.length > 0);
+  const positionsWithVotes = positions.filter(p => p.voteResponses.length > 0);
 
   if (positionsWithCandidates.length > 0) {
     return apiResponse({
@@ -266,7 +266,7 @@ async function handleBulkDelete(electionId: number, positionIds: number[], user:
         positionsWithCandidates: positionsWithCandidates.map(p => ({ 
           id: p.id, 
           name: p.name, 
-          candidateCount: p._count.candidates 
+          candidateCount: p.candidates.length
         }))
       },
       error: "Conflict",
@@ -282,7 +282,7 @@ async function handleBulkDelete(electionId: number, positionIds: number[], user:
         positionsWithVotes: positionsWithVotes.map(p => ({ 
           id: p.id, 
           name: p.name, 
-          voteCount: p._count.voteResponses 
+          voteCount: p.voteResponses.length
         }))
       },
       error: "Conflict",

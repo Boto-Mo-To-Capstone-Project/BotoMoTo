@@ -1,26 +1,103 @@
 "use client";
-import { useState } from 'react';
-import { MdAdd, MdDownload, MdFilterList, MdDelete, MdEdit, MdSave, MdFileUpload } from "react-icons/md";
-import { FiDownload } from "react-icons/fi";
+import { useState, useEffect, useRef } from 'react';
+import { MdAdd, MdFilterList, MdDelete, MdEdit, MdSave, MdFileUpload } from "react-icons/md";
 import { SubmitButton } from '@/components/SubmitButton';
 import SearchBar from '@/components/SearchBar';
 import VoterTable from '@/components/VoterTable';
 import { VotersModal } from '@/components/VotersModal'; 
 import { DragandDropdown } from '@/components/VotersDragandDropdown';
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { Toaster, toast } from 'react-hot-toast';
+
+// Debounce hook
+function useDebouncedValue<T>(value: T, delay = 400) {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setV(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return v;
+}
 
 export default function VoterDashboardPage() {
+  const params = useParams<{ id: string }>();
+  const electionId = Number(params?.id);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState("");
-  const [sortCol, setSortCol] = useState<"name" | "status" | "scope" | "email" | "contactNumber" | "birthdate" | null>(null);
+  const debouncedSearch = useDebouncedValue(search, 400);
+  const [sortCol, setSortCol] = useState<"name" | "status" | "scope" | "email" | "contactNumber" | "birthdate" | "voted" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showVotersModal, setShowVotersModal] = useState(false);
-  const [showImportDropdown, setShowImportDropdown] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const totalPages = 1; // Placeholder, update with your data logic
+  // Edit state
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editInitialData, setEditInitialData] = useState<{
+    voterName?: string;
+    voterSurname?: string;
+    voterFirstName?: string;
+    voterMiddleInitial?: string;
+    email?: string;
+    contactNumber?: string;
+    voterLimit?: number;
+    numberOfWinners?: number;
+    votingScopeId?: number | null;
+  } | undefined>(undefined);
+  const [editingVoterId, setEditingVoterId] = useState<number | null>(null);
+  const [editIsActive, setEditIsActive] = useState<boolean>(true);
 
-  // Placeholder handlers
+  // Data state from API
+  const [rows, setRows] = useState<Array<{
+    id: number;
+    name: string;
+    status: string;
+    scope: string;
+    email: string;
+    contactNumber: string;
+    birthdate: string;
+    voted: boolean;
+  }>>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  // NEW: voting scopes for the election
+  const [votingScopes, setVotingScopes] = useState<Array<{ id: number; name: string }>>([]);
+
+  // Initialize state from URL once
+  const initializedFromURL = useRef(false);
+  useEffect(() => {
+    if (initializedFromURL.current) return;
+    initializedFromURL.current = true;
+
+    const sp = new URLSearchParams(searchParams?.toString() || "");
+    const p = Number(sp.get("page") || 1);
+    const l = Number(sp.get("limit") || 10);
+    const s = sp.get("search") || "";
+
+    if (!Number.isNaN(p) && p > 0) setPage(p);
+    if (!Number.isNaN(l) && l > 0) setPageSize(l);
+    setSearch(s);
+  }, [searchParams]);
+
+  // Keep URL in sync with state
+  useEffect(() => {
+    const current = searchParams?.toString() || "";
+    const sp = new URLSearchParams(current);
+    sp.set("page", String(page));
+    sp.set("limit", String(pageSize));
+    if (debouncedSearch) sp.set("search", debouncedSearch); else sp.delete("search");
+
+    const target = sp.toString();
+    if (target !== current) {
+      router.replace(`?${target}`, { scroll: false });
+    }
+  }, [page, pageSize, debouncedSearch, router, searchParams]);
+
+  // Pagination handlers
   const handleFirst = () => setPage(1);
   const handlePrev = () => setPage((p) => Math.max(1, p - 1));
   const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
@@ -29,7 +106,7 @@ export default function VoterDashboardPage() {
     setPageSize(Number(e.target.value));
     setPage(1);
   };
-  const handleSort = (col: "name" | "status" | "scope" | "email" | "contactNumber" | "birthdate") => {
+  const handleSort = (col: "name" | "status" | "scope" | "email" | "contactNumber" | "birthdate" | "voted") => {
     if (sortCol === col) {
       setSortDir(sortDir === "asc" ? "desc" : "asc");
     } else {
@@ -42,16 +119,308 @@ export default function VoterDashboardPage() {
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
-  const handleAddVoter = (data: any) => {
-    // TODO: Save voter logic here
-    setShowVotersModal(false);
+
+  // Bulk delete selected voters -> POST /api/voters/bulk { operation: 'soft_delete', voterIds, electionId }
+  const handleDeleteSelected = async () => {
+    if (selectedIds.length < 1) return;
+    
+    // Check which voters have voted and which haven't
+    const selectedVoters = rows.filter(r => selectedIds.includes(r.id));
+    const votedVoters = selectedVoters.filter(v => v.voted);
+    const nonVotedVoters = selectedVoters.filter(v => !v.voted);
+    
+    if (votedVoters.length > 0) {
+      const votedNames = votedVoters.map(v => v.name).join(', ');
+      if (nonVotedVoters.length === 0) {
+        toast.error(`Cannot delete voters who have already voted: ${votedNames}`);
+        return;
+      } else {
+        const proceed = window.confirm(
+          `${votedVoters.length} selected voter(s) have already voted and cannot be deleted: ${votedNames}\n\n` +
+          `Do you want to continue deleting the ${nonVotedVoters.length} voter(s) who haven't voted yet?`
+        );
+        if (!proceed) return;
+      }
+    } else {
+      const plural = nonVotedVoters.length > 1 ? 'voters' : 'voter';
+      if (!window.confirm(`Delete ${nonVotedVoters.length} ${plural}? This will soft-delete them.`)) return;
+    }
+
+    try {
+      setLoading(true);
+      const voterIdsToDelete = nonVotedVoters.map(v => v.id);
+      
+      const res = await fetch('/api/voters/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          operation: 'soft_delete',
+          voterIds: voterIdsToDelete,
+          electionId
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json?.success === false) {
+        toast.error(json?.message || 'Failed to delete voters');
+        return;
+      }
+
+      // Success message
+      const deletedCount = voterIdsToDelete.length;
+      const skippedCount = votedVoters.length;
+      let message = `Successfully deleted ${deletedCount} voter${deletedCount === 1 ? '' : 's'}`;
+      if (skippedCount > 0) {
+        message += `. ${skippedCount} voter${skippedCount === 1 ? '' : 's'} who already voted were skipped`;
+      }
+      toast.success(message);
+
+      // Optimistic update + refresh
+      setRows((prev) => prev.filter((r) => !voterIdsToDelete.includes(r.id)));
+      setSelectedIds([]);
+      setReloadKey((k) => k + 1);
+    } catch (e) {
+      console.error('Bulk delete voters error:', e);
+      toast.error('Failed to delete voters');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Hook Add -> POST /api/voters (single create)
+  const handleAddVoter = async (data: any) => {
+    try {
+      if (!electionId || Number.isNaN(electionId)) return;
+      setLoading(true);
+
+      // VotersModal passes { voterName, email, contactNumber, votingScopeId, ... }
+      const fullName = (data?.voterName || "").trim();
+      let firstName = "";
+      let middleName = "";
+      let lastName = "";
+      if (fullName) {
+        const parts = fullName.split(/\s+/);
+        // Modal builds as: Surname First MiddleInitial
+        lastName = parts[0] || "";
+        firstName = parts[1] || "";
+        middleName = parts.slice(2).join(" ") || "";
+      }
+
+      const payload: any = {
+        electionId,
+        firstName: firstName || undefined,
+        middleName: middleName || undefined,
+        lastName: lastName || undefined,
+        email: data?.email?.trim() || undefined,
+        contactNum: data?.contactNumber?.trim() || undefined,
+        // address removed
+        isActive: true,
+      };
+      if (typeof data?.votingScopeId === 'number') {
+        payload.votingScopeId = data.votingScopeId;
+      }
+
+      const res = await fetch('/api/voters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json?.success === false) {
+        toast.error(json?.message || 'Failed to create voter');
+        return;
+      }
+
+      // Success: refresh list
+      toast.success('Voter created successfully');
+      setSelectedIds([]);
+      setPage(1);
+      setReloadKey((k) => k + 1);
+    } catch (e) {
+      console.error('Create voter error:', e);
+      toast.error('Failed to create voter');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Edit voter: prefill modal from GET /api/voters/[id] and submit via PUT
+  const openEditModal = async () => {
+    if (selectedIds.length !== 1) return;
+    const id = selectedIds[0];
+    setIsEditMode(true);
+    setEditingVoterId(id);
+
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/voters/${id}`);
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json?.success === false || !json?.data?.voter) {
+        toast.error(json?.message || 'Failed to load voter');
+        setIsEditMode(false);
+        setEditingVoterId(null);
+        return;
+      }
+
+      const v = json.data.voter as any;
+      const initial = {
+        voterSurname: v.lastName || "",
+        voterFirstName: v.firstName || "",
+        voterMiddleInitial: v.middleName || "",
+        email: v.email || "",
+        contactNumber: v.contactNum || "",
+        voterLimit: 1,
+        numberOfWinners: 1,
+        votingScopeId: v.votingScope?.id ?? null,
+      };
+      setEditInitialData(initial);
+      setEditIsActive(!!v.isActive);
+      setShowVotersModal(true);
+    } catch (e) {
+      console.error('Load voter error:', e);
+      toast.error('Failed to load voter');
+      setIsEditMode(false);
+      setEditingVoterId(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditVoterSave = async (data: any) => {
+    if (!isEditMode || !editingVoterId) return;
+    try {
+      setLoading(true);
+      const fullName = (data?.voterName || "").trim();
+      let firstName = "";
+      let middleName = "";
+      let lastName = "";
+      if (fullName) {
+        const parts = fullName.split(/\s+/);
+        lastName = parts[0] || "";
+        firstName = parts[1] || "";
+        middleName = parts.slice(2).join(" ") || "";
+      }
+
+      const payload: any = {
+        firstName: firstName || undefined,
+        middleName: middleName || undefined,
+        lastName: lastName || undefined,
+        email: data?.email?.trim() || undefined,
+        contactNum: data?.contactNumber?.trim() || undefined,
+        // address removed
+        isActive: editIsActive,
+      };
+      if (typeof data?.votingScopeId === 'number') {
+        payload.votingScopeId = data.votingScopeId;
+      }
+
+      const res = await fetch(`/api/voters/${editingVoterId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json?.success === false) {
+        toast.error(json?.message || 'Failed to update voter');
+        return;
+      }
+
+      toast.success('Voter updated successfully');
+      setShowVotersModal(false);
+      setIsEditMode(false);
+      setEditingVoterId(null);
+      setEditInitialData(undefined);
+      setReloadKey((k) => k + 1);
+    } catch (e) {
+      console.error('Update voter error:', e);
+      toast.error('Failed to update voter');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch voters from API
+  useEffect(() => {
+    if (!electionId || Number.isNaN(electionId)) return;
+
+    const ctrl = new AbortController();
+    const run = async () => {
+      setLoading(true);
+      try {
+        const qs = new URLSearchParams({
+          electionId: String(electionId),
+          page: String(page),
+          limit: String(pageSize),
+          ...(debouncedSearch ? { search: debouncedSearch } : {}),
+          ...(sortCol ? { sortCol: sortCol, sortDir: sortDir } : {}),
+        });
+        const res = await fetch(`/api/voters?${qs.toString()}`, {
+          method: "GET",
+          signal: ctrl.signal,
+        });
+        const json = await res.json();
+
+        if (!res.ok || json?.success === false) {
+          console.error("Failed to load voters:", json?.message || res.statusText);
+          return;
+        }
+
+        // Map API voter -> table row
+        const mapped = (json.data?.voters || []).map((v: any) => ({
+          id: v.id,
+          name: `${v.lastName ?? ""}, ${v.firstName ?? ""}${v.middleName ? " " + v.middleName : ""}`
+            .trim()
+            .replace(/^,\s*/, ""),
+          status: v.isActive ? "Active" : "Inactive",
+          scope: v.votingScope?.name ?? "—",
+          email: v.email ?? "",
+          contactNumber: v.contactNum ?? "",
+          birthdate: "",
+          voted: !!v.voted,
+        }));
+
+        setRows(mapped);
+        setTotalPages(json.data?.pagination?.totalPages || 1);
+      } catch (e: any) {
+        if (e?.name !== "AbortError") {
+          console.error("Voters fetch error:", e);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    run();
+    return () => ctrl.abort();
+  }, [electionId, page, pageSize, debouncedSearch, sortCol, sortDir, reloadKey]);
+
+  // NEW: Fetch voting scopes for this election (for the modal select)
+  useEffect(() => {
+    if (!electionId || Number.isNaN(electionId)) return;
+    const ctrl = new AbortController();
+    const loadScopes = async () => {
+      try {
+        const res = await fetch(`/api/voting-scopes?electionId=${electionId}`, { signal: ctrl.signal });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || json?.success === false) return;
+        const items = (json?.data?.votingScopes || []).map((s: any) => ({ id: s.id, name: s.name }));
+        setVotingScopes(items);
+      } catch (e: any) {
+        if (e?.name !== 'AbortError') console.error('Voting scopes fetch error:', e);
+      }
+    };
+    loadScopes();
+    return () => ctrl.abort();
+  }, [electionId]);
 
   return (
     <>
+      <Toaster position="top-center" />
       <div
         id="main-window-template-component"
-        className="app h-full flex flex-col min-h-[calc-100vh-4rem] bg-gray-50"
+        className="app h-full flex flex-col min-h-[calc(100vh-4rem)] bg-gray-50"
       >
         {/* Universal App Header */}
 
@@ -65,7 +434,10 @@ export default function VoterDashboardPage() {
             <div className="flex-1">
               <SearchBar
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
               />
             </div>
             {/* Action Buttons */}
@@ -75,7 +447,12 @@ export default function VoterDashboardPage() {
                 variant="action"
                 icon={<MdAdd size={20} />}
                 title="Add"
-                onClick={() => setShowVotersModal(true)}
+                onClick={() => { 
+                  setIsEditMode(false); 
+                  setEditInitialData(undefined); 
+                  setEditingVoterId(null);
+                  setShowVotersModal(true); 
+                }}
               />
               <SubmitButton
                 label=""
@@ -91,31 +468,11 @@ export default function VoterDashboardPage() {
                 title="Edit"
                 onClick={
                   selectedIds.length === 1
-                    ? () => {
-                        /* TODO: handle edit */
-                      }
+                    ? openEditModal
                     : undefined
                 }
                 className={
                   selectedIds.length === 1
-                    ? ""
-                    : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
-                }
-              />
-              <SubmitButton
-                label=""
-                variant="action"
-                icon={<MdDownload size={20} />}
-                title="Download"
-                onClick={
-                  selectedIds.length >= 1
-                    ? () => {
-                        /* TODO: handle download */
-                      }
-                    : undefined
-                }
-                className={
-                  selectedIds.length >= 1
                     ? ""
                     : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
                 }
@@ -145,41 +502,11 @@ export default function VoterDashboardPage() {
                 title="Delete"
                 onClick={
                   selectedIds.length >= 1
-                    ? () => {
-                        /* TODO: handle delete */
-                      }
+                    ? handleDeleteSelected
                     : undefined
                 }
                 className={
                   selectedIds.length >= 1
-                    ? ""
-                    : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
-                }
-              />
-              {/* Save Button */}
-              <SubmitButton
-                label="Save"
-                variant="action" // <-- change this!
-                icon={
-                  <MdSave
-                    size={20}
-                    className={
-                      selectedIds.length > 0
-                        ? "text-[var(--color-primary)]"
-                        : "text-gray-400"
-                    }
-                  />
-                }
-                title="Save"
-                onClick={
-                  selectedIds.length > 0
-                    ? () => {
-                        /* TODO: handle save */
-                      }
-                    : undefined
-                }
-                className={
-                  selectedIds.length > 0
                     ? ""
                     : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
                 }
@@ -190,7 +517,7 @@ export default function VoterDashboardPage() {
           {/* Table */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-5">
             <VoterTable
-              voters={[]} // Pass your voter data here
+              voters={rows}
               sortCol={sortCol}
               sortDir={sortDir}
               onSort={handleSort}
@@ -202,7 +529,6 @@ export default function VoterDashboardPage() {
               onLast={handleLast}
               pageSize={pageSize}
               onPageSizeChange={handlePageSizeChange}
-              onRowClick={(voter) => handleCheckboxChange(voter.id)}
               selectedIds={selectedIds}
               onCheckboxChange={handleCheckboxChange}
             />
@@ -213,8 +539,17 @@ export default function VoterDashboardPage() {
       {/* VotersModal */}
       <VotersModal
         open={showVotersModal}
-        onClose={() => setShowVotersModal(false)}
-        onSave={handleAddVoter}
+        onClose={() => { 
+          setShowVotersModal(false); 
+          setIsEditMode(false); 
+          setEditingVoterId(null); 
+          setEditInitialData(undefined); 
+        }}
+        onSave={isEditMode ? handleEditVoterSave : handleAddVoter}
+        initialData={editInitialData}
+        title={isEditMode ? "Edit Voter" : "Voter Form"}
+        submitLabel={isEditMode ? "Save" : "Add"}
+        votingScopes={votingScopes}
       />
 
       {/* DragandDropdown Modal */}

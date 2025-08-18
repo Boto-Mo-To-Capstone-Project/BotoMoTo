@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AuthHeading } from "@/components/AuthHeading";
 import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
@@ -11,21 +11,27 @@ type VotersModalProps = {
   onClose: () => void;
   onSave: (data: {
     voterName: string;
-    scope: string;
     email: string;
     contactNumber: string;
     voterLimit: number;
     numberOfWinners: number;
+    votingScopeId?: number | null; // NEW: optional scope id
   }) => void;
   initialData?: {
     voterName?: string;
-    scope?: string;
+    voterSurname?: string;
+    voterFirstName?: string;
+    voterMiddleInitial?: string;
     email?: string;
     contactNumber?: string;
     voterLimit?: number;
     numberOfWinners?: number;
+    votingScopeId?: number | null; // NEW: selected scope id (edit mode)
   };
   disableSave?: boolean;
+  title?: string;
+  submitLabel?: string;
+  votingScopes?: { id: number; name: string }[]; // NEW: available scopes to choose from
 };
 
 export function VotersModal({
@@ -34,27 +40,58 @@ export function VotersModal({
   onSave,
   initialData = {
     voterName: "",
-    scope: "Department 1",
     email: "",
     contactNumber: "",
     voterLimit: 1,
     numberOfWinners: 1,
   },
   disableSave,
+  title = "Voter Form",
+  submitLabel = "Add",
+  votingScopes,
 }: VotersModalProps) {
-  const [voterSurname, setVoterSurname] = useState("");
-  const [voterFirstName, setVoterFirstName] = useState("");
-  const [voterMiddleInitial, setVoterMiddleInitial] = useState("");
-  const [scope, setScope] = useState(initialData.scope || "Department 1");
+  const [voterSurname, setVoterSurname] = useState(initialData.voterSurname || "");
+  const [voterFirstName, setVoterFirstName] = useState(initialData.voterFirstName || "");
+  const [voterMiddleInitial, setVoterMiddleInitial] = useState(initialData.voterMiddleInitial || "");
   const [email, setEmail] = useState(initialData.email || "");
   const [contactNumber, setContactNumber] = useState(initialData.contactNumber || "");
   const [voterLimit, setVoterLimit] = useState(initialData.voterLimit || 1);
   const [numberOfWinners, setNumberOfWinners] = useState(initialData.numberOfWinners || 1);
+  // NEW: dynamic voting scope selection (optional)
+  const [votingScopeId, setVotingScopeId] = useState<number | null | undefined>(
+    initialData?.votingScopeId ?? undefined
+  );
 
   // Batch upload state
   const [showBatchUpload, setShowBatchUpload] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const templateUrl = "/assets/templates/voters_template.csv";
+
+  useEffect(() => {
+    if (!open) return;
+    
+    // Only update if we have actual initialData (edit mode)
+    if (initialData && (initialData.voterSurname || initialData.voterFirstName || initialData.email)) {
+      setVoterSurname(initialData.voterSurname || "");
+      setVoterFirstName(initialData.voterFirstName || "");
+      setVoterMiddleInitial(initialData.voterMiddleInitial || "");
+      setEmail(initialData.email || "");
+      setContactNumber(initialData.contactNumber || "");
+      setVoterLimit(initialData.voterLimit || 1);
+      setNumberOfWinners(initialData.numberOfWinners || 1);
+      setVotingScopeId(initialData.votingScopeId ?? undefined);
+    } else if (!initialData || (!initialData.voterSurname && !initialData.voterFirstName && !initialData.email)) {
+      // Clear form for new entry mode
+      setVoterSurname("");
+      setVoterFirstName("");
+      setVoterMiddleInitial("");
+      setEmail("");
+      setContactNumber("");
+      setVoterLimit(1);
+      setNumberOfWinners(1);
+      setVotingScopeId(undefined);
+    }
+  }, [open, initialData?.voterSurname, initialData?.voterFirstName, initialData?.email, initialData?.votingScopeId]);
 
   if (!open) return null;
   return (
@@ -69,7 +106,7 @@ export function VotersModal({
           {/* Modal header */}
           <div className="flex items-center justify-between p-4 border-b rounded-t border-gray-200">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Voter Form</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
               {/* <p className="text-sm text-gray-500">
                 Register and use this to manage all voters for the election.
               </p> */}
@@ -98,11 +135,11 @@ export function VotersModal({
                   e.preventDefault();
                   onSave({
                     voterName: `${voterSurname} ${voterFirstName} ${voterMiddleInitial}`.trim(),
-                    scope,
                     email,
                     contactNumber,
                     voterLimit,
                     numberOfWinners,
+                    votingScopeId: votingScopeId ?? null,
                   });
                   onClose();
                 }}
@@ -158,19 +195,25 @@ export function VotersModal({
                     required
                   />
                 </div>
+                {/* NEW: Voting Scope selector (optional) */}
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Scope*
+                    Voting Scope
                   </label>
                   <select
-                    value={scope}
-                    onChange={e => setScope(e.target.value)}
+                    value={votingScopeId ?? ""}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setVotingScopeId(val === "" ? null : Number(val));
+                    }}
                     className="w-full border border-[var(--color-secondary)] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-[var(--color-secondary)] bg-white text-gray-900"
-                    required
                   >
-                    <option value="Department 1">Department 1</option>
-                    <option value="Department 2">Department 2</option>
+                    <option value="">All voters (no scope)</option>
+                    {votingScopes?.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
                   </select>
+                  <p className="mt-1 text-xs text-gray-500">Optional. Limit which group this voter belongs to.</p>
                 </div>
                 <div className="col-span-2 flex justify-end gap-2 mt-2">
                   <SubmitButton
@@ -182,8 +225,9 @@ export function VotersModal({
                   <SubmitButton
                     type="submit"
                     variant="small"
-                    label="Add"
+                    label={submitLabel}
                     className="px-5 py-2.5 text-sm font-medium rounded-lg" // Match the size of the Save button
+                    isLoading={disableSave}
                   />
                 </div>
               </form>

@@ -11,7 +11,7 @@ import { createAuditLog } from "@/lib/audit";
 // Handle GET request to fetch a specific party
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -28,7 +28,8 @@ export async function GET(
       });
     }
 
-    const partyId = parseInt(params.id);
+    const { id } = await params;
+    const partyId = parseInt(id);
     if (isNaN(partyId)) {
       return apiResponse({
         success: false,
@@ -140,7 +141,7 @@ export async function GET(
 // Handle PUT request to update a specific party
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -168,7 +169,8 @@ export async function PUT(
       });
     }
 
-    const partyId = parseInt(params.id);
+    const { id } = await params;  
+    const partyId = parseInt(id);
     if (isNaN(partyId)) {
       return apiResponse({
         success: false,
@@ -183,7 +185,7 @@ export async function PUT(
     const body = await request.json();
     const validation = validateWithZod(partySchema, body);
     if (!('data' in validation)) return validation;
-    const { name, color, logoUrl, description } = validation.data;
+    const { name, color } = validation.data;
 
     // Fetch existing party
     const existingParty = await db.party.findUnique({
@@ -256,8 +258,6 @@ export async function PUT(
       data: { 
         name, 
         color, 
-        logoUrl, 
-        description 
       },
       include: {
         election: {
@@ -277,7 +277,7 @@ export async function PUT(
 
     // Compare and log changed fields
     const changedFields: Record<string, { old: any; new: any }> = {};
-    for (const key of ["name", "color", "logoUrl", "description"] as const) {
+    for (const key of ["name", "color"] as const) {
       if (existingParty[key] !== updatedParty[key]) {
         changedFields[key] = { old: existingParty[key], new: updatedParty[key] };
       }
@@ -317,7 +317,7 @@ export async function PUT(
 // Handle DELETE request to soft-delete a specific party
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -345,7 +345,8 @@ export async function DELETE(
       });
     }
 
-    const partyId = parseInt(params.id);
+    const { id } = await params;
+    const partyId = parseInt(id);
     if (isNaN(partyId)) {
       return apiResponse({
         success: false,

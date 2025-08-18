@@ -216,7 +216,6 @@ export async function GET(request: NextRequest) {
         id: true,
         isNew: true,
         imageUrl: true,
-        bio: true,
         createdAt: true,
         updatedAt: true,
         voter: {
@@ -227,12 +226,11 @@ export async function GET(request: NextRequest) {
             lastName: true,
             email: true,
             contactNum: true,
-            address: true,
             votingScope: {
               select: {
                 id: true,
                 name: true,
-                type: true
+                description: true
               }
             }
           }
@@ -241,7 +239,6 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             name: true,
-            description: true,
             voteLimit: true,
             numOfWinners: true,
             order: true
@@ -252,51 +249,11 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             color: true,
-            logoUrl: true
-          }
-        },
-        leaderships: {
-          select: {
-            id: true,
-            organization: true,
-            position: true,
-            dateRange: true
-          },
-          take: 3, // Limit for search results
-          orderBy: {
-            dateRange: 'desc'
-          }
-        },
-        workExps: {
-          select: {
-            id: true,
-            company: true,
-            role: true,
-            dateRange: true
-          },
-          take: 3, // Limit for search results
-          orderBy: {
-            dateRange: 'desc'
-          }
-        },
-        educations: {
-          select: {
-            id: true,
-            school: true,
-            educationLevel: true,
-            dateRange: true
-          },
-          take: 3, // Limit for search results
-          orderBy: {
-            dateRange: 'desc'
           }
         },
         _count: {
           select: {
-            voteResponses: true,
-            leaderships: true,
-            workExps: true,
-            educations: true
+            voteResponses: true
           }
         }
       },

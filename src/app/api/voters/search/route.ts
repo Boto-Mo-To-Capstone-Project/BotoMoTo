@@ -138,15 +138,19 @@ export async function GET(request: NextRequest) {
         email: true,
         contactNum: true,
         isActive: true,
-        hasVoted: true,
         isVerified: true,
-        votedAt: true,
         votingScope: {
           select: {
             id: true,
             name: true,
-            type: true
+            description: true
           }
+        },
+        // fetch one vote to compute hasVoted
+        voteResponses: {
+          where: { electionId: electionIdInt },
+          select: { id: true, timestamp: true },
+          take: 1
         }
       },
       take: Math.min(limit, 50), // Cap at 50 results
@@ -156,13 +160,18 @@ export async function GET(request: NextRequest) {
       ]
     });
 
+    const votersWithComputed = voters.map(v => ({
+      ...v,
+      voted: v.voteResponses.length > 0
+    }));
+
     return apiResponse({
       success: true,
       message: "Voter search completed successfully",
       data: {
-        voters,
+        voters: votersWithComputed,
         query: searchTerm,
-        resultCount: voters.length,
+        resultCount: votersWithComputed.length,
         election: {
           id: election.id,
           name: election.name

@@ -3,9 +3,11 @@ import { auth } from "@/lib/auth";
 import { apiResponse } from "@/lib/apiResponse";
 import { validateWithZod } from "@/lib/validateWithZod";
 import { createAuditLog } from "@/lib/audit";
-import { candidateSchema, candidateUpdateSchema } from "@/lib/schema";
+import { candidateSchema } from "@/lib/schema";
 import db from "@/lib/db/db";
-import { ROLES, ORGANIZATION_STATUS } from "@/lib/constants";
+import { ROLES, ORGANIZATION_STATUS, FILE_LIMITS } from "@/lib/constants";
+import { writeFile, mkdir } from 'fs/promises';
+import { join, extname } from 'path';
 
 // Handle GET request to fetch candidates
 export async function GET(request: NextRequest) {
@@ -28,6 +30,8 @@ export async function GET(request: NextRequest) {
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = Math.min(parseInt(url.searchParams.get('limit') || '10'), 50);
     const search = url.searchParams.get('search');
+    const sortCol = url.searchParams.get('sortCol');
+    const sortDir = url.searchParams.get('sortDir') || 'asc';
 
     if (!electionId) {
       return apiResponse({ success: false, message: "Election ID is required", error: "Bad Request", status: 400 });
@@ -68,63 +72,104 @@ export async function GET(request: NextRequest) {
       return apiResponse({ success: false, message: "You can only view candidates from your organization's elections", error: "Forbidden", status: 403 });
     }
 
-    // Build where clause for filtering
-    const whereClause: any = {
+    // Normalize search like positions API
+    const searchLower = search ? search.toLowerCase() : undefined;
+
+    // Build base where clause for filtering (no search for count)
+    const baseWhere: any = {
       electionId: electionIdInt,
-      isDeleted: false
+      isDeleted: false,
+      ...(positionId && !isNaN(parseInt(positionId)) && { positionId: parseInt(positionId) }),
+      ...(partyId && !isNaN(parseInt(partyId)) && { partyId: parseInt(partyId) }),
+      ...(votingScopeId && !isNaN(parseInt(votingScopeId)) && {
+        position: { is: { votingScopeId: parseInt(votingScopeId) } }
+      })
     };
 
-    if (positionId) {
-      const positionIdInt = parseInt(positionId);
-      if (!isNaN(positionIdInt)) {
-        whereClause.positionId = positionIdInt;
-      }
-    }
-
-    if (partyId) {
-      const partyIdInt = parseInt(partyId);
-      if (!isNaN(partyIdInt)) {
-        whereClause.partyId = partyIdInt;
-      }
-    }
-
-    if (votingScopeId) {
-      const votingScopeIdInt = parseInt(votingScopeId);
-      if (!isNaN(votingScopeIdInt)) {
-        whereClause.position = {
-          votingScopeId: votingScopeIdInt
-        };
-      }
-    }
-
-    // Add search functionality
-    if (search) {
-      whereClause.voter = {
-        OR: [
-          { firstName: { contains: search, mode: 'insensitive' } },
-          { lastName: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } }
-        ]
-      };
-    }
+    // Build where clause with search (for findMany)
+    const whereWithSearch: any = {
+      ...baseWhere,
+      ...(searchLower && {
+        voter: {
+          is: {
+            OR: [
+              { firstName: { contains: searchLower } },
+              { lastName: { contains: searchLower } },
+              { email: { contains: searchLower } }
+            ]
+          }
+        }
+      })
+    };
 
     // Get total count for pagination
     const totalCount = await db.candidate.count({
-      where: whereClause
+      where: searchLower
+        ? {
+            ...baseWhere,
+            voter: {
+              is: {
+                OR: [
+                  { firstName: { contains: searchLower } },
+                  { lastName: { contains: searchLower } },
+                  { email: { contains: searchLower } }
+                ]
+              }
+            }
+          }
+        : baseWhere
     });
 
     // Calculate pagination
     const totalPages = Math.ceil(totalCount / limit);
     const offset = (page - 1) * limit;
 
+    // Build dynamic orderBy clause
+    let orderBy: any[] = [];
+    if (sortCol && ['firstName', 'lastName', 'email', 'position', 'party', 'scope'].includes(sortCol)) {
+      switch (sortCol) {
+        case 'firstName':
+          orderBy = [{ voter: { firstName: sortDir } }];
+          break;
+        case 'lastName':
+          orderBy = [{ voter: { lastName: sortDir } }];
+          break;
+        case 'email':
+          orderBy = [{ voter: { email: sortDir } }];
+          break;
+        case 'position':
+          orderBy = [{ position: { name: sortDir } }];
+          break;
+        case 'party':
+          orderBy = [{ party: { name: sortDir } }];
+          break;
+        case 'scope':
+          orderBy = [{ voter: { votingScope: { name: sortDir } } }];
+          break;
+        default:
+          orderBy = [
+            { position: { order: 'asc' } },
+            { voter: { lastName: 'asc' } },
+            { voter: { firstName: 'asc' } }
+          ];
+          break;
+      }
+    } else {
+      orderBy = [
+        { position: { order: 'asc' } },
+        { voter: { lastName: 'asc' } },
+        { voter: { firstName: 'asc' } }
+      ];
+    }
+
     // Fetch candidates with related data
     const candidates = await db.candidate.findMany({
-      where: whereClause,
+      where: whereWithSearch,
       select: {
         id: true,
         isNew: true,
         imageUrl: true,
-        bio: true,
+        credentialUrl: true,
         createdAt: true,
         updatedAt: true,
         voter: {
@@ -135,12 +180,10 @@ export async function GET(request: NextRequest) {
             lastName: true,
             email: true,
             contactNum: true,
-            address: true,
             votingScope: {
               select: {
                 id: true,
-                name: true,
-                type: true
+                name: true
               }
             }
           }
@@ -159,34 +202,6 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             color: true,
-            logoUrl: true
-          }
-        },
-        leaderships: {
-          select: {
-            id: true,
-            organization: true,
-            position: true,
-            dateRange: true,
-            description: true
-          }
-        },
-        workExps: {
-          select: {
-            id: true,
-            company: true,
-            role: true,
-            dateRange: true,
-            description: true
-          }
-        },
-        educations: {
-          select: {
-            id: true,
-            school: true,
-            educationLevel: true,
-            dateRange: true,
-            description: true
           }
         },
         _count: {
@@ -195,11 +210,7 @@ export async function GET(request: NextRequest) {
           }
         }
       },
-      orderBy: [
-        { position: { order: 'asc' } },
-        { voter: { lastName: 'asc' } },
-        { voter: { firstName: 'asc' } }
-      ],
+      orderBy,
       skip: offset,
       take: limit
     });
@@ -259,10 +270,142 @@ export async function POST(request: NextRequest) {
       return apiResponse({ success: false, message: "Only admin users can create candidates", error: "Forbidden", status: 403 });
     }
 
-    const body = await request.json();
+    // Parse multipart form data
+    const formData = await request.formData();
+    
+    // Extract form fields
+    const electionId = formData.get('electionId') as string;
+    const voterId = formData.get('voterId') as string;
+    const positionId = formData.get('positionId') as string;
+    const partyId = formData.get('partyId') as string;
+    const isNew = formData.get('isNew') as string;
+  
+    // Handle file uploads
+    const imageFile = formData.get('image') as File | null;
+    const credentialsFile = formData.get('credentials') as File | null;
+
+    // Validate required fields
+    if (!electionId || !voterId || !positionId) {
+      return apiResponse({ 
+        success: false, 
+        message: "Election ID, Voter ID, and Position ID are required", 
+        error: "Bad Request", 
+        status: 400 
+      });
+    }
+
+    // Convert string values to appropriate types
+    const candidateData = {
+      electionId: parseInt(electionId),
+      voterId: parseInt(voterId),
+      positionId: parseInt(positionId),
+      partyId: partyId && partyId !== 'null' ? parseInt(partyId) : null,
+      isNew: isNew === 'true'
+      // Note: imageUrl and credentialUrl are handled separately via file uploads
+      // leaderships, workExperiences, and educations are not part of the current schema
+    };
+
+    // Validate numeric conversions
+    if (isNaN(candidateData.electionId) || isNaN(candidateData.voterId) || isNaN(candidateData.positionId)) {
+      return apiResponse({ 
+        success: false, 
+        message: "Invalid ID format provided", 
+        error: "Bad Request", 
+        status: 400 
+      });
+    }
+
+    if (candidateData.partyId && isNaN(candidateData.partyId)) {
+      return apiResponse({ 
+        success: false, 
+        message: "Invalid party ID format", 
+        error: "Bad Request", 
+        status: 400 
+      });
+    }
+
+    // File upload handling
+    let imageUrl: string | null = null;
+    let credentialUrl: string | null = null;
+
+    if (imageFile && imageFile.size > 0) {
+      // Validate image file
+      const imageExt = extname(imageFile.name).toLowerCase();
+      const allowedImageExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+      if (!allowedImageExtensions.includes(imageExt)) {
+        return apiResponse({
+          success: false,
+          message: `Invalid image file type. Allowed extensions: ${allowedImageExtensions.join(', ')}`,
+          error: "Bad Request",
+          status: 400
+        });
+      }
+
+      if (imageFile.size > FILE_LIMITS.IMAGE_MAX_SIZE) {
+        return apiResponse({
+          success: false,
+          message: `Image file too large. Maximum size: ${FILE_LIMITS.IMAGE_MAX_SIZE / (1024 * 1024)}MB`,
+          error: "Bad Request",
+          status: 400
+        });
+      }
+
+      // Create uploads directory if it doesn't exist
+      const uploadsDir = join(process.cwd(), 'public', 'uploads', 'candidates', 'images');
+      await mkdir(uploadsDir, { recursive: true });
+
+      // Generate unique filename
+      const timestamp = Date.now();
+      const imageFileName = `${timestamp}-${Math.random().toString(36).substring(2)}${imageExt}`;
+      const imagePath = join(uploadsDir, imageFileName);
+
+      // Save image file
+      const imageBytes = await imageFile.arrayBuffer();
+      await writeFile(imagePath, Buffer.from(imageBytes));
+
+      imageUrl = `/uploads/candidates/images/${imageFileName}`;
+    }
+
+    if (credentialsFile && credentialsFile.size > 0) {
+      // Validate credentials file
+      const credentialsExt = extname(credentialsFile.name).toLowerCase();
+      const allowedDocumentExtensions = ['.pdf'];
+      if (!allowedDocumentExtensions.includes(credentialsExt)) {
+        return apiResponse({
+          success: false,
+          message: `Invalid credentials file type. Allowed extensions: ${allowedDocumentExtensions.join(', ')}`,
+          error: "Bad Request",
+          status: 400
+        });
+      }
+
+      if (credentialsFile.size > FILE_LIMITS.PDF_MAX_SIZE) {
+        return apiResponse({
+          success: false,
+          message: `Credentials file too large. Maximum size: ${FILE_LIMITS.PDF_MAX_SIZE / (1024 * 1024)}MB`,
+          error: "Bad Request",
+          status: 400
+        });
+      }
+
+      // Create uploads directory if it doesn't exist
+      const uploadsDir = join(process.cwd(), 'public', 'uploads', 'candidates', 'credentials');
+      await mkdir(uploadsDir, { recursive: true });
+
+      // Generate unique filename
+      const timestamp = Date.now();
+      const credentialsFileName = `${timestamp}-${Math.random().toString(36).substring(2)}${credentialsExt}`;
+      const credentialsPath = join(uploadsDir, credentialsFileName);
+
+      // Save credentials file
+      const credentialsBytes = await credentialsFile.arrayBuffer();
+      await writeFile(credentialsPath, Buffer.from(credentialsBytes));
+
+      credentialUrl = `/uploads/candidates/credentials/${credentialsFileName}`;
+    }
     
     // Validate request body
-    const validation = validateWithZod(candidateSchema, body);
+    const validation = validateWithZod(candidateSchema, candidateData);
     if (!('data' in validation)) return validation;
 
     const data = validation.data;
@@ -362,50 +505,11 @@ export async function POST(request: NextRequest) {
           voterId: data.voterId,
           positionId: data.positionId,
           partyId: data.partyId || null,
-          imageUrl: data.imageUrl || null,
-          bio: data.bio || null,
+          imageUrl: imageUrl,
+          credentialUrl: credentialUrl,
           isNew: data.isNew || false
         }
       });
-
-      // Create leadership experiences if provided
-      if (data.leaderships && data.leaderships.length > 0) {
-        await tx.candidateLeadershipExperience.createMany({
-          data: data.leaderships.map((leadership: any) => ({
-            candidateId: newCandidate.id,
-            organization: leadership.organization,
-            position: leadership.position,
-            dateRange: leadership.dateRange,
-            description: leadership.description || null
-          }))
-        });
-      }
-
-      // Create work experiences if provided
-      if (data.workExperiences && data.workExperiences.length > 0) {
-        await tx.candidateWorkExperience.createMany({
-          data: data.workExperiences.map((workExp: any) => ({
-            candidateId: newCandidate.id,
-            company: workExp.company,
-            role: workExp.role,
-            dateRange: workExp.dateRange,
-            description: workExp.description || null
-          }))
-        });
-      }
-
-      // Create education records if provided
-      if (data.educations && data.educations.length > 0) {
-        await tx.candidateEducationLevel.createMany({
-          data: data.educations.map((education: any) => ({
-            candidateId: newCandidate.id,
-            school: education.school,
-            educationLevel: education.educationLevel,
-            dateRange: education.dateRange,
-            description: education.description || null
-          }))
-        });
-      }
 
       return newCandidate;
     });
@@ -417,7 +521,7 @@ export async function POST(request: NextRequest) {
         id: true,
         isNew: true,
         imageUrl: true,
-        bio: true,
+        credentialUrl: true,
         createdAt: true,
         updatedAt: true,
         voter: {
@@ -442,10 +546,7 @@ export async function POST(request: NextRequest) {
             name: true,
             color: true
           }
-        },
-        leaderships: true,
-        workExps: true,
-        educations: true
+        }
       }
     });
 

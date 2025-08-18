@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate voter IDs
-    const validVoterIds = voterIds.filter(id => Number.isInteger(id) && id > 0);
+    const validVoterIds = voterIds.filter((id: any) => Number.isInteger(id) && id > 0);
     if (validVoterIds.length === 0) {
       return apiResponse({
         success: false,
@@ -185,12 +185,19 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'soft_delete':
-        // Check if any voters have already voted
-        const votedVoters = voters.filter(voter => voter.hasVoted);
-        if (votedVoters.length > 0) {
+        // Determine which voters have votes via VoteResponse
+        const votedVoterIdsRows = await db.voteResponse.findMany({
+          where: { voterId: { in: validVoterIds }, electionId: voters[0].electionId },
+          select: { voterId: true },
+          distinct: ['voterId']
+        });
+        const votedVoterIds = new Set(votedVoterIdsRows.map(r => r.voterId));
+        const deletableIds = validVoterIds.filter((id: number) => !votedVoterIds.has(id));
+
+        if (deletableIds.length === 0) {
           return apiResponse({
             success: false,
-            message: `Cannot delete ${votedVoters.length} voter(s) who have already voted`,
+            message: `Cannot delete selected voter(s) who have already voted`,
             data: null,
             error: "Forbidden",
             status: 403
@@ -198,7 +205,7 @@ export async function POST(request: NextRequest) {
         }
 
         result = await db.voter.updateMany({
-          where: { id: { in: validVoterIds } },
+          where: { id: { in: deletableIds } },
           data: { 
             isDeleted: true,
             deletedAt: new Date()

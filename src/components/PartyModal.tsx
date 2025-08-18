@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AuthHeading } from "@/components/AuthHeading";
 import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
@@ -24,6 +24,16 @@ export function PartyModal({
   const [selectedColor, setSelectedColor] = useState(initialData.selectedColor);
   const [showColorPicker, setShowColorPicker] = useState(false);
 
+  // When editing, ensure fields are pre-filled when modal opens or initialData changes
+  useEffect(() => {
+    setPartyName(initialData.partyName || "");
+    setSelectedColor(initialData.selectedColor || "#85d336");
+    setShowColorPicker(false);
+  }, [initialData, open]);
+
+  // Determine edit mode: if initialData has a non-empty partyName, treat as edit
+  const isEdit = Boolean(initialData?.partyName?.trim());
+
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[100] flex justify-center items-center bg-black/30 backdrop-blur-sm lg:ml-68" 
@@ -35,7 +45,7 @@ export function PartyModal({
           {/* Modal header */}
           <div className="flex items-center justify-between p-4 border-b rounded-t border-gray-200">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Party Form</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{isEdit ? "Edit Party" : "Party Form"}</h3>
             </div>
             <button
               type="button"
@@ -128,7 +138,7 @@ export function PartyModal({
               <SubmitButton
                 type="submit"
                 variant="small"
-                label="Add"
+                label={isEdit ? "Save" : "Add"}
                 className="px-5 py-2.5 text-sm font-medium rounded-lg"
               />
             </div>

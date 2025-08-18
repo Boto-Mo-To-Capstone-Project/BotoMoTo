@@ -116,9 +116,11 @@ export default function Table({
 
   const toggleSelectRow = (globalIndex: number) => {
     const newSet = new Set(selectedRows);
-    newSet.has(globalIndex)
-      ? newSet.delete(globalIndex)
-      : newSet.add(globalIndex);
+    if (newSet.has(globalIndex)) {
+      newSet.delete(globalIndex);
+    } else {
+      newSet.add(globalIndex);
+    }
     setSelectedRows(newSet);
   };
 

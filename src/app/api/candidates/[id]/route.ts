@@ -10,7 +10,7 @@ import { ROLES, ORGANIZATION_STATUS } from "@/lib/constants";
 // Handle GET request to fetch a specific candidate
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -27,7 +27,8 @@ export async function GET(
       });
     }
 
-    const candidateId = parseInt(params.id);
+    const { id } = await params;
+    const candidateId = parseInt(id);
     if (isNaN(candidateId)) {
       return apiResponse({
         success: false,
@@ -49,7 +50,7 @@ export async function GET(
         electionId: true,
         isNew: true,
         imageUrl: true,
-        bio: true,
+        credentialUrl: true,
         createdAt: true,
         updatedAt: true,
         voter: {
@@ -60,12 +61,10 @@ export async function GET(
             lastName: true,
             email: true,
             contactNum: true,
-            address: true,
             votingScope: {
               select: {
                 id: true,
                 name: true,
-                type: true
               }
             }
           }
@@ -74,7 +73,6 @@ export async function GET(
           select: {
             id: true,
             name: true,
-            description: true,
             voteLimit: true,
             numOfWinners: true,
             order: true,
@@ -82,7 +80,6 @@ export async function GET(
               select: {
                 id: true,
                 name: true,
-                type: true
               }
             }
           }
@@ -92,8 +89,6 @@ export async function GET(
             id: true,
             name: true,
             color: true,
-            logoUrl: true,
-            description: true
           }
         },
         election: {
@@ -109,42 +104,6 @@ export async function GET(
                 status: true
               }
             }
-          }
-        },
-        leaderships: {
-          select: {
-            id: true,
-            organization: true,
-            position: true,
-            dateRange: true,
-            description: true
-          },
-          orderBy: {
-            dateRange: 'desc'
-          }
-        },
-        workExps: {
-          select: {
-            id: true,
-            company: true,
-            role: true,
-            dateRange: true,
-            description: true
-          },
-          orderBy: {
-            dateRange: 'desc'
-          }
-        },
-        educations: {
-          select: {
-            id: true,
-            school: true,
-            educationLevel: true,
-            dateRange: true,
-            description: true
-          },
-          orderBy: {
-            dateRange: 'desc'
           }
         },
         _count: {
@@ -165,7 +124,7 @@ export async function GET(
       });
     }
 
-    // Check if user has access to this candidate
+    // Check if admin owns this election or if it's a voter with access
     if (user.role === ROLES.ADMIN && candidate.election.organization.adminId !== user.id) {
       return apiResponse({
         success: false,
@@ -176,32 +135,27 @@ export async function GET(
       });
     }
 
-    // Create audit log
     const audit = await createAuditLog({
       user,
       action: "READ",
       request,
       resource: "CANDIDATE",
-      resourceId: candidateId,
-      message: `Viewed candidate details: ${candidate.voter.firstName} ${candidate.voter.lastName}`,
+      resourceId: candidate.id,
+      message: `Viewed candidate: ${candidate.voter.lastName}, ${candidate.voter.firstName}`,
     });
 
     return apiResponse({
       success: true,
-      message: "Candidate details fetched successfully",
-      data: {
-        candidate,
-        audit
-      },
+      message: "Candidate fetched successfully",
+      data: { candidate, audit },
       error: null,
       status: 200
     });
-
   } catch (error) {
     console.error("Candidate fetch error:", error);
     return apiResponse({
       success: false,
-      message: "Failed to fetch candidate details",
+      message: "Failed to fetch candidate",
       data: null,
       error: typeof error === "string" ? error : "Internal server error",
       status: 500
@@ -212,7 +166,7 @@ export async function GET(
 // Handle PUT request to update a candidate
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -240,7 +194,8 @@ export async function PUT(
       });
     }
 
-    const candidateId = parseInt(params.id);
+    const { id } = await params;
+    const candidateId = parseInt(id);
     if (isNaN(candidateId)) {
       return apiResponse({
         success: false,
@@ -376,74 +331,11 @@ export async function PUT(
           positionId: data.positionId || existingCandidate.positionId,
           partyId: data.partyId !== undefined ? data.partyId : undefined,
           imageUrl: data.imageUrl !== undefined ? data.imageUrl : undefined,
-          bio: data.bio !== undefined ? data.bio : undefined,
+          credentialUrl: data.credentialUrl !== undefined ? data.credentialUrl : undefined,
           isNew: data.isNew !== undefined ? data.isNew : undefined,
           updatedAt: new Date()
         }
       });
-
-      // Update leadership experiences if provided
-      if (data.leaderships !== undefined) {
-        // Delete existing leadership records
-        await tx.candidateLeadershipExperience.deleteMany({
-          where: { candidateId }
-        });
-
-        // Create new leadership records
-        if (data.leaderships.length > 0) {
-          await tx.candidateLeadershipExperience.createMany({
-            data: data.leaderships.map((leadership: any) => ({
-              candidateId,
-              organization: leadership.organization,
-              position: leadership.position,
-              dateRange: leadership.dateRange,
-              description: leadership.description || null
-            }))
-          });
-        }
-      }
-
-      // Update work experiences if provided
-      if (data.workExperiences !== undefined) {
-        // Delete existing work experience records
-        await tx.candidateWorkExperience.deleteMany({
-          where: { candidateId }
-        });
-
-        // Create new work experience records
-        if (data.workExperiences.length > 0) {
-          await tx.candidateWorkExperience.createMany({
-            data: data.workExperiences.map((workExp: any) => ({
-              candidateId,
-              company: workExp.company,
-              role: workExp.role,
-              dateRange: workExp.dateRange,
-              description: workExp.description || null
-            }))
-          });
-        }
-      }
-
-      // Update education records if provided
-      if (data.educations !== undefined) {
-        // Delete existing education records
-        await tx.candidateEducationLevel.deleteMany({
-          where: { candidateId }
-        });
-
-        // Create new education records
-        if (data.educations.length > 0) {
-          await tx.candidateEducationLevel.createMany({
-            data: data.educations.map((education: any) => ({
-              candidateId,
-              school: education.school,
-              educationLevel: education.educationLevel,
-              dateRange: education.dateRange,
-              description: education.description || null
-            }))
-          });
-        }
-      }
 
       return candidate;
     });
@@ -455,7 +347,6 @@ export async function PUT(
         id: true,
         isNew: true,
         imageUrl: true,
-        bio: true,
         createdAt: true,
         updatedAt: true,
         voter: {
@@ -480,10 +371,7 @@ export async function PUT(
             name: true,
             color: true
           }
-        },
-        leaderships: true,
-        workExps: true,
-        educations: true
+        }
       }
     });
 
@@ -523,7 +411,7 @@ export async function PUT(
 // Handle DELETE request to remove a candidate
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -551,7 +439,8 @@ export async function DELETE(
       });
     }
 
-    const candidateId = parseInt(params.id);
+    const { id } = await params;
+    const candidateId = parseInt(id);
     if (isNaN(candidateId)) {
       return apiResponse({
         success: false,

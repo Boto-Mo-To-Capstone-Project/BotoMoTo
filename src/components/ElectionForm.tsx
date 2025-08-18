@@ -1,7 +1,5 @@
-import { useState, useRef, forwardRef, useImperativeHandle } from "react";
+import { useRef, forwardRef, useImperativeHandle } from "react";
 import { InputField } from "@/components/InputField";
-import { ScopeTypeSelect } from "@/components/ScopeTypeSelect";
-import React, { useEffect } from "react";
 
 interface ElectionFormData {
   name: string;
@@ -15,11 +13,8 @@ interface ElectionFormProps {
   setElectionData: React.Dispatch<React.SetStateAction<ElectionFormData>>;
   addParty: string;
   setAddParty: (v: "yes" | "no" | "") => void;
-  scopeType: string;
-  setScopeType: (v: string) => void;
-  updateScopeTypeInTable: (v: string) => void; // <-- Add this prop to update all scope types in the table
-  hideSaveButton?: boolean; // <-- New prop to control save button visibility
-  onSave?: () => void; // <-- New prop for save button click handler
+  hideSaveButton?: boolean; // <-- Control save button visibility
+  onSave?: () => void; // <-- Save button click handler
   showValidation?: boolean;
   setShowValidation?: (v: boolean) => void;
 }
@@ -33,11 +28,6 @@ export const ElectionForm = forwardRef<ElectionFormHandle, ElectionFormProps>(
     {
       electionData,
       setElectionData,
-      addParty,
-      setAddParty,
-      scopeType,
-      setScopeType,
-      updateScopeTypeInTable,
       hideSaveButton,
       onSave,
       showValidation,
@@ -45,13 +35,7 @@ export const ElectionForm = forwardRef<ElectionFormHandle, ElectionFormProps>(
     },
     ref
   ) {
-    const [scopeTypeInput, setScopeTypeInput] = useState(scopeType || "");
     const formRef = useRef<HTMLFormElement>(null);
-
-    // Sync local scope type UI state when prop changes (e.g., when editing existing election)
-    useEffect(() => {
-      setScopeTypeInput(scopeType || "");
-    }, [scopeType]);
 
     useImperativeHandle(ref, () => ({
       submitForm: () => {
@@ -65,39 +49,6 @@ export const ElectionForm = forwardRef<ElectionFormHandle, ElectionFormProps>(
       electionData.startDate.trim() !== "" &&
       electionData.endDate.trim() !== "" &&
       electionData.description.trim() !== "";
-
-    const SCOPE_OPTIONS = [
-      { label: "Area", value: "AREA" },
-      { label: "Level", value: "LEVEL" },
-      { label: "Department", value: "DEPARTMENT" },
-    ];
-
-    const toDisplay = (v?: string) => v ?? "";
-
-    // Helper to map a free-text/label/value into enum + display label
-    const applyScopeSelection = (inputLabel: string) => {
-      const trimmed = (inputLabel || "").trim();
-      if (!trimmed) {
-        setScopeType("");
-        updateScopeTypeInTable("");
-        setScopeTypeInput("");
-        return;
-      }
-      const match = SCOPE_OPTIONS.find(
-        (o) =>
-          o.value.toLowerCase() === trimmed.toLowerCase() ||
-          o.label.toLowerCase() === trimmed.toLowerCase()
-      );
-      if (match) {
-        setScopeType(match.value); // enum
-        updateScopeTypeInTable(match.label); // display
-        setScopeTypeInput(match.label);
-      } else {
-        setScopeType("CUSTOM");
-        updateScopeTypeInTable(trimmed);
-        setScopeTypeInput(trimmed);
-      }
-    };
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
@@ -148,32 +99,6 @@ export const ElectionForm = forwardRef<ElectionFormHandle, ElectionFormProps>(
               }
               required
             />
-            {/* Scope Type (typeable dropdown) */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Scope Type <span className="text-gray-400">(optional)</span>
-              </label>
-              <div className="relative">
-                <ScopeTypeSelect
-                  classNamePrefix="scope-type"
-                  placeholder="Select or type a scope type"
-                  options={SCOPE_OPTIONS}
-                  isClearable
-                  value={scopeTypeInput ? { label: scopeTypeInput, value: scopeTypeInput } : null}
-                  onChange={(opt: any) => {
-                    if (!opt) {
-                      applyScopeSelection("");
-                      return;
-                    }
-                    const lbl = opt.label || opt.value || "";
-                    applyScopeSelection(lbl);
-                  }}
-                  onCreateOption={(inputValue: string) => {
-                    applyScopeSelection(inputValue);
-                  }}
-                />
-              </div>
-            </div>
             <div className="lg:col-span-2">
               <InputField
                 label="Election Description*"

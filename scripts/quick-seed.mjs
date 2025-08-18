@@ -59,7 +59,7 @@ async function quickSeed() {
       }
     });
 
-    // Create election with election-level scope config
+    // Create election
     const testElection = await db.election.upsert({
       where: { id: 1 },
       update: {},
@@ -69,10 +69,7 @@ async function quickSeed() {
         description: "Sample election for API testing",
         status: "ACTIVE",
         isLive: true,
-        allowSurvey: true,
-        // Election-level scope config (no per-row type)
-        scopeType: "LEVEL",
-        scopeTypeLabel: null,
+        allowSurvey: true
       }
     });
 
@@ -87,7 +84,7 @@ async function quickSeed() {
       }
     });
 
-    // Create voting scope (no per-row type)
+    // Create voting scope
     const testScope = await db.votingScope.create({
       data: {
         electionId: testElection.id,
@@ -98,9 +95,9 @@ async function quickSeed() {
 
     // Create positions
     const positions = [
-      { name: "President", description: "Student body president", order: 1 },
-      { name: "Vice President", description: "Student body vice president", order: 2 },
-      { name: "Secretary", description: "Student council secretary", order: 3 }
+      { name: "President", order: 1 },
+      { name: "Vice President", order: 2 },
+      { name: "Secretary", order: 3 }
     ];
 
     const createdPositions = [];
@@ -119,8 +116,8 @@ async function quickSeed() {
 
     // Create parties
     const parties = [
-      { name: "Progressive Party", color: "#3B82F6", description: "Progressive policies" },
-      { name: "Unity Party", color: "#10B981", description: "Unity and collaboration" }
+      { name: "Progressive Party", color: "#3B82F6" },
+      { name: "Unity Party", color: "#10B981" }
     ];
 
     const createdParties = [];
@@ -147,11 +144,9 @@ async function quickSeed() {
           firstName: `Voter${i}`,
           lastName: "Test",
           contactNum: `+1555000${String(i).padStart(4, '0')}`,
-          address: `${i} Test Street`,
           votingScopeId: testScope.id,
           isVerified: true,
-          isActive: true,
-          hasVoted: i <= 10 // First 10 have voted
+          isActive: true
         }
       });
       voters.push(voter);
@@ -165,26 +160,15 @@ async function quickSeed() {
       for (let i = 0; i < 3; i++) {
         const voterIndex = posIndex * 3 + i;
         if (voterIndex < voters.length) {
-          const candidate = await db.candidate.create({
+          await db.candidate.create({
             data: {
               electionId: testElection.id,
               voterId: voters[voterIndex].id,
               positionId: position.id,
               partyId: i < 2 ? createdParties[i % 2].id : null,
-              bio: `Experienced candidate for ${position.name}. Committed to student success.`,
-              imageUrl: `/assets/sample/logo.png`, // Using sample logo as placeholder for candidate image
+              imageUrl: `/assets/sample/logo.png`, // Placeholder image
+              credentialUrl: `/assets/sample/credential.pdf`,
               isNew: i === 2
-            }
-          });
-
-          // Add some experiences
-          await db.candidateLeadershipExperience.create({
-            data: {
-              candidateId: candidate.id,
-              organization: "Student Council",
-              position: "Member",
-              dateRange: "2023-2024",
-              description: "Active member of student council"
             }
           });
         }

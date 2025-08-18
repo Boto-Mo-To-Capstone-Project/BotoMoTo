@@ -36,11 +36,11 @@ export default function ElectionTable({ title = 'All Elections', selectedIds = [
   const handleHeaderCheckbox = () => {
     if (allChecked) {
       // Uncheck all
-      props.elections.forEach(e => onCheckboxChange && onCheckboxChange(e.id));
+      props.elections.forEach(e => onCheckboxChange?.(e.id));
     } else {
       // Check all
       props.elections.forEach(e => {
-        if (!selectedIds.includes(e.id)) onCheckboxChange && onCheckboxChange(e.id);
+        if (!selectedIds.includes(e.id)) onCheckboxChange?.(e.id);
       });
     }
   };
@@ -114,14 +114,14 @@ export default function ElectionTable({ title = 'All Elections', selectedIds = [
                 onClick={e => {
                   // Prevent double toggle if checkbox is clicked
                   if ((e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
-                  onCheckboxChange && onCheckboxChange(election.id);
+                  onCheckboxChange?.(election.id);
                 }}
               >
                 <td className="py-2 px-3 align-middle">
                   <input
                     type="checkbox"
                     checked={selectedIds.includes(election.id)}
-                    onChange={() => onCheckboxChange && onCheckboxChange(election.id)}
+                    onChange={() => onCheckboxChange?.(election.id)}
                   />
                 </td>
                 <td className="py-2 px-3 align-middle truncate max-w-[180px]">{election.name}</td>

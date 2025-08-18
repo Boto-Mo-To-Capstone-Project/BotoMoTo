@@ -115,19 +115,19 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    const candidatesWithBio = await db.candidate.count({
-      where: {
-        electionId: electionIdInt,
-        isDeleted: false,
-        bio: { not: null }
-      }
-    });
-
     const candidatesWithImage = await db.candidate.count({
       where: {
         electionId: electionIdInt,
         isDeleted: false,
         imageUrl: { not: null }
+      }
+    });
+
+    const candidatesWithCredentials = await db.candidate.count({
+      where: {
+        electionId: electionIdInt,
+        isDeleted: false,
+        credentialUrl: { not: null }
       }
     });
 
@@ -148,8 +148,8 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         isNew: true,
-        bio: true,
         imageUrl: true,
+        credentialUrl: true,
         voter: {
           select: {
             id: true,
@@ -175,9 +175,6 @@ export async function GET(request: NextRequest) {
         _count: {
           select: {
             voteResponses: true,
-            leaderships: true,
-            workExps: true,
-            educations: true
           }
         }
       },
@@ -273,25 +270,14 @@ export async function GET(request: NextRequest) {
       candidateName: `${candidate.voter.firstName} ${candidate.voter.lastName}`,
       position: candidate.position.name,
       party: candidate.party?.name || 'Independent',
-      hasExperience: candidate._count.leaderships > 0 || candidate._count.workExps > 0,
-      leadershipCount: candidate._count.leaderships,
-      workExperienceCount: candidate._count.workExps,
-      educationCount: candidate._count.educations,
       voteCount: candidate._count.voteResponses,
-      hasCompleteProfile: !!(candidate.bio && candidate.imageUrl),
       isNew: candidate.isNew
     }));
 
     // Find candidates that need attention
     const candidatesNeedingAttention = {
-      missingBio: candidatesWithCounts.filter(c => !c.bio),
       missingImage: candidatesWithCounts.filter(c => !c.imageUrl),
-      missingExperience: candidatesWithCounts.filter(c => 
-        c._count.leaderships === 0 && c._count.workExps === 0
-      ),
-      incompleteProfile: candidatesWithCounts.filter(c => 
-        !c.bio || !c.imageUrl || (c._count.leaderships === 0 && c._count.workExps === 0)
-      )
+      missingCredential: candidatesWithCounts.filter(c => !c.credentialUrl),
     };
 
     // Calculate competition analysis
@@ -317,17 +303,15 @@ export async function GET(request: NextRequest) {
     const summary = {
       totalCandidates,
       newCandidates,
-      candidatesWithBio,
       candidatesWithImage,
       candidatesWithVotes,
-      candidatesWithoutBio: totalCandidates - candidatesWithBio,
       candidatesWithoutImage: totalCandidates - candidatesWithImage,
       candidatesWithoutVotes: totalCandidates - candidatesWithVotes,
       totalVotes,
       averageVotesPerCandidate: totalCandidates > 0 ? 
         Math.round((totalVotes / totalCandidates) * 100) / 100 : 0,
       profileCompletionRate: totalCandidates > 0 ? 
-        Math.round(((candidatesWithBio + candidatesWithImage) / (totalCandidates * 2)) * 100) : 0,
+        Math.round(((candidatesWithCredentials + candidatesWithImage) / (totalCandidates * 2)) * 100) : 0,
       totalPositions: positionDetails.length,
       totalParties: partyDetails.length,
       independentCandidates: candidatesByParty.find(p => p.partyId === null)?._count.id || 0
@@ -358,32 +342,17 @@ export async function GET(request: NextRequest) {
         experienceMetrics,
         competitionAnalysis,
         candidatesNeedingAttention: {
-          missingBio: candidatesNeedingAttention.missingBio.map(c => ({
-            id: c.id,
-            name: `${c.voter.firstName} ${c.voter.lastName}`,
-            position: c.position.name,
-            party: c.party?.name || 'Independent'
-          })),
           missingImage: candidatesNeedingAttention.missingImage.map(c => ({
             id: c.id,
             name: `${c.voter.firstName} ${c.voter.lastName}`,
             position: c.position.name,
             party: c.party?.name || 'Independent'
           })),
-          missingExperience: candidatesNeedingAttention.missingExperience.map(c => ({
+          missingCredential: candidatesNeedingAttention.missingCredential.map(c => ({
             id: c.id,
             name: `${c.voter.firstName} ${c.voter.lastName}`,
             position: c.position.name,
             party: c.party?.name || 'Independent'
-          })),
-          incompleteProfile: candidatesNeedingAttention.incompleteProfile.map(c => ({
-            id: c.id,
-            name: `${c.voter.firstName} ${c.voter.lastName}`,
-            position: c.position.name,
-            party: c.party?.name || 'Independent',
-            missingBio: !c.bio,
-            missingImage: !c.imageUrl,
-            missingExperience: c._count.leaderships === 0 && c._count.workExps === 0
           }))
         },
         audit

@@ -47,6 +47,14 @@ const organizations = [
     membersCount: 1200,
     photoUrl: "/assets/sample/logo.png",
     letterUrl: "/assets/sample/letter.pdf"
+  },
+  // New organization for ibits
+  {
+    name: "Institute of Bachelors in Information Technology Studies",
+    email: "org@ibits.com",
+    membersCount: 1500,
+    photoUrl: "/assets/sample/logo.png",
+    letterUrl: "/assets/sample/letter.pdf"
   }
 ];
 
@@ -65,6 +73,12 @@ const adminUsers = [
     name: "Principal Lisa Brown",
     email: "lisa.brown@metrohigh.edu", 
     password: "Admin@789"
+  },
+  // New admin for ibits
+  {
+    name: "Brian Sebastian",
+    email: "brian@ibits.com",
+    password: "Admin@999"
   }
 ];
 
@@ -87,29 +101,29 @@ const elections = [
 ];
 
 const positions = [
-  { name: "President", description: "Student body president", voteLimit: 1, numOfWinners: 1, order: 1 },
-  { name: "Vice President", description: "Student body vice president", voteLimit: 1, numOfWinners: 1, order: 2 },
-  { name: "Secretary", description: "Student council secretary", voteLimit: 1, numOfWinners: 1, order: 3 },
-  { name: "Treasurer", description: "Student council treasurer", voteLimit: 1, numOfWinners: 1, order: 4 },
-  { name: "Senator", description: "Student senators", voteLimit: 3, numOfWinners: 5, order: 5 },
-  { name: "Class Representative", description: "Class representatives", voteLimit: 2, numOfWinners: 3, order: 6 }
+  { name: "President", voteLimit: 1, numOfWinners: 1, order: 1 },
+  { name: "Vice President", voteLimit: 1, numOfWinners: 1, order: 2 },
+  { name: "Secretary", voteLimit: 1, numOfWinners: 1, order: 3 },
+  { name: "Treasurer", voteLimit: 1, numOfWinners: 1, order: 4 },
+  { name: "Senator", voteLimit: 3, numOfWinners: 5, order: 5 },
+  { name: "Class Representative", voteLimit: 2, numOfWinners: 3, order: 6 }
 ];
 
 const parties = [
-  { name: "Progressive Students", color: "#3B82F6", description: "Advocating for progressive student policies" },
-  { name: "Unity Party", color: "#10B981", description: "Bringing students together for common goals" },
-  { name: "Innovation Alliance", color: "#8B5CF6", description: "Promoting innovation and technology in education" },
-  { name: "Student Voice", color: "#F59E0B", description: "Amplifying every student's voice in governance" }
+  { name: "Progressive Students", color: "#3B82F6" },
+  { name: "Unity Party", color: "#10B981" },
+  { name: "Innovation Alliance", color: "#8B5CF6" },
+  { name: "Student Voice", color: "#F59E0B" }
 ];
 
 const votingScopes = [
-  { type: "LEVEL", name: "Undergraduate", description: "All undergraduate students" },
-  { type: "LEVEL", name: "Graduate", description: "All graduate students" },
-  { type: "DEPARTMENT", name: "Engineering", description: "Engineering department students" },
-  { type: "DEPARTMENT", name: "Business", description: "Business department students" },
-  { type: "DEPARTMENT", name: "Arts & Sciences", description: "Arts and Sciences students" },
-  { type: "AREA", name: "Campus North", description: "Students in north campus area" },
-  { type: "AREA", name: "Campus South", description: "Students in south campus area" }
+  { name: "Undergraduate", description: "All undergraduate students" },
+  { name: "Graduate", description: "All graduate students" },
+  { name: "Engineering", description: "Engineering department students" },
+  { name: "Business", description: "Business department students" },
+  { name: "Arts & Sciences", description: "Arts and Sciences students" },
+  { name: "Campus North", description: "Students in north campus area" },
+  { name: "Campus South", description: "Students in south campus area" }
 ];
 
 // Generate realistic voter data
@@ -145,39 +159,12 @@ async function generateVoters(electionId, count = 100) {
       firstName,
       lastName,
       contactNum: `+1${Math.floor(Math.random() * 900000000) + 100000000}`,
-      address: `${Math.floor(Math.random() * 9999) + 1} Student St, Campus City`,
       isVerified: Math.random() > 0.1, // 90% verified
-      isActive: Math.random() > 0.05, // 95% active
-      hasVoted: Math.random() > 0.7 // 30% have voted
+      isActive: Math.random() > 0.05 // 95% active
     });
   }
   
   return voters;
-}
-
-// Generate candidate experiences
-function generateExperiences() {
-  const leadership = [
-    { organization: "Student Government", position: "Class Representative", dateRange: "2023-2024" },
-    { organization: "Debate Club", position: "Vice President", dateRange: "2022-2023" },
-    { organization: "Honor Society", position: "Secretary", dateRange: "2023-Present" },
-    { organization: "Volunteer Corps", position: "Team Leader", dateRange: "2022-2024" }
-  ];
-
-  const work = [
-    { company: "Campus Library", role: "Student Assistant", dateRange: "2023-Present" },
-    { company: "Local Restaurant", role: "Server", dateRange: "2022-2023" },
-    { company: "Tutoring Center", role: "Math Tutor", dateRange: "2023-2024" },
-    { company: "Summer Camp", role: "Counselor", dateRange: "Summer 2023" }
-  ];
-
-  const education = [
-    { school: "Metro High School", educationLevel: "High School Diploma", dateRange: "2018-2022" },
-    { school: "University of Technology", educationLevel: "Bachelor's in Progress", dateRange: "2022-Present" },
-    { school: "Community College", educationLevel: "Associate Degree", dateRange: "2020-2022" }
-  ];
-
-  return { leadership, work, education };
 }
 
 async function seedDatabase() {
@@ -189,9 +176,6 @@ async function seedDatabase() {
     await db.auditTableAffected.deleteMany({});
     await db.audits.deleteMany({});
     await db.voteResponse.deleteMany({});
-    await db.candidateEducationLevel.deleteMany({});
-    await db.candidateWorkExperience.deleteMany({});
-    await db.candidateLeadershipExperience.deleteMany({});
     await db.candidate.deleteMany({});
     await db.voter.deleteMany({});
     await db.position.deleteMany({});
@@ -237,6 +221,8 @@ async function seedDatabase() {
     // Create elections with a plan: org[0] gets many elections, org[1] gets one, org[2] gets none
     const createdElections = [];
     const noScopeElectionIds = new Set();
+    // Track ibits election to customize scopes/positions/voters
+    const ibitsElectionIds = new Set();
 
     // Helper for creating an election + schedule + MFA
     async function createElectionForOrg(org, electionDef) {
@@ -273,6 +259,7 @@ async function seedDatabase() {
     const org0 = createdOrgs[0];
     const org1 = createdOrgs[1];
     const org2 = createdOrgs[2];
+    const org3 = createdOrgs[3]; // ibits
 
     if (org0) {
       // First org has MANY elections (sample: 2 elections)
@@ -295,9 +282,20 @@ async function seedDatabase() {
       console.log(`   • No elections created for: ${org2.name}`);
     }
 
+    // ibits: create dedicated election
+    if (org3) {
+      const ibitsElection = await createElectionForOrg(org3, {
+        name: "IBITS Election",
+        description: "Election for the Institute of Bachelors in Information Technology Studies",
+        allowSurvey: false,
+      });
+      ibitsElectionIds.add(ibitsElection.id);
+      console.log(`   → Marked as IBITS ELECTION: ${ibitsElection.name}`);
+    }
+
     console.log("📍 Creating voting scopes...");
     
-    // Create voting scopes for each election ensuring a single scope type per election
+    // Create voting scopes for each election (no scope type)
     const createdScopes = [];
     const scopesByElection = new Map();
     for (const election of createdElections) {
@@ -307,8 +305,26 @@ async function seedDatabase() {
         continue;
       }
 
-      // Determine scope type per election (example rule: department-focused election gets DEPARTMENT)
-      const scopeType = election.name.toLowerCase().includes("department") ? "DEPARTMENT" : "LEVEL";
+      // IBITS ELECTION: exactly 3 scopes Level 1/2/3
+      if (ibitsElectionIds.has(election.id)) {
+        const ibitsScopeNames = ["Level 1", "Level 2", "Level 3"];
+        const scopesForElection = [];
+        for (const name of ibitsScopeNames) {
+          const scope = await db.votingScope.create({
+            data: {
+              name,
+              description: `${name} voters`,
+              electionId: election.id,
+            },
+          });
+          createdScopes.push(scope);
+          scopesForElection.push(scope);
+        }
+        scopesByElection.set(election.id, scopesForElection);
+        console.log(`   ✓ ${election.name}: created ${scopesForElection.length} scope(s) [IBITS ELECTION]`);
+        continue;
+      }
+
       const options = votingScopes; // no per-row type filtering
       const toCreate = options.slice(0, Math.min(3, options.length));
 
@@ -316,9 +332,8 @@ async function seedDatabase() {
       for (const scopeDef of toCreate) {
         const scope = await db.votingScope.create({
           data: {
-            // scopeDef may contain 'type' originally; omit it now
             name: scopeDef.name,
-            description: scopeDef.description,
+            description: scopeDef.description || `${scopeDef.name} group`,
             electionId: election.id,
           },
         });
@@ -327,7 +342,7 @@ async function seedDatabase() {
       }
 
       scopesByElection.set(election.id, scopesForElection);
-      console.log(`   ✓ ${election.name}: created ${scopesForElection.length} ${scopeType} scope(s)`);
+      console.log(`   ✓ ${election.name}: created ${scopesForElection.length} scope(s)`);
     }
 
     console.log("🎭 Creating parties...");
@@ -354,6 +369,36 @@ async function seedDatabase() {
     for (const election of createdElections) {
       const scopesForElection = scopesByElection.get(election.id) || [];
       const positionsForElection = [];
+
+      // IBITS ELECTION: create exactly 3 positions LEVEL 1/2/3 bound 1:1 to Level 1/2/3 scopes
+      if (ibitsElectionIds.has(election.id)) {
+        const byName = new Map(scopesForElection.map((s) => [s.name.toLowerCase(), s]));
+        const ibitsPositions = [
+          { name: "LEVEL 1", scopeKey: "level 1" },
+          { name: "LEVEL 2", scopeKey: "level 2" },
+          { name: "LEVEL 3", scopeKey: "level 3" },
+        ];
+        let order = 1;
+        for (const p of ibitsPositions) {
+          const scope = byName.get(p.scopeKey);
+          if (!scope) continue;
+          const pos = await db.position.create({
+            data: {
+              name: p.name,
+              voteLimit: 1,
+              numOfWinners: 1,
+              order: order++,
+              electionId: election.id,
+              votingScopeId: scope.id,
+            },
+          });
+          createdPositions.push(pos);
+          positionsForElection.push(pos);
+        }
+        positionsByElection.set(election.id, positionsForElection);
+        console.log(`   ✓ ${election.name}: created ${positionsForElection.length} position(s) [IBITS ELECTION]`);
+        continue;
+      }
 
       if (scopesForElection.length === 0) {
         // NO SCOPE: create one set of positions without votingScopeId
@@ -385,7 +430,7 @@ async function seedDatabase() {
       }
 
       positionsByElection.set(election.id, positionsForElection);
-      console.log(`   ✓ ${election.name}: created ${positionsForElection.length} positions${scopesForElection.length ? ` across ${scopesForElection.length} scope(s)` : " (NO SCOPE)"}`);
+      console.log(`   ✓ ${election.name}: created ${positionsForElection.length} position(s)`);
     }
 
     console.log("👥 Creating voters...");
@@ -396,6 +441,22 @@ async function seedDatabase() {
       const voters = await generateVoters(election.id, 50); // 50 voters per election
       const scopesForElection = scopesByElection.get(election.id) || [];
 
+      // IBITS ELECTION: distribute evenly across Level 1/2/3 scopes
+      if (ibitsElectionIds.has(election.id) && scopesForElection.length > 0) {
+        for (let i = 0; i < voters.length; i++) {
+          const voter = voters[i];
+          const assignedScope = scopesForElection[i % scopesForElection.length];
+          const createdVoter = await db.voter.create({
+            data: {
+              ...voter,
+              votingScopeId: assignedScope.id,
+            },
+          });
+          createdVoters.push(createdVoter);
+        }
+        continue;
+      }
+
       for (const voter of voters) {
         const randomScope = scopesForElection.length
           ? scopesForElection[Math.floor(Math.random() * scopesForElection.length)]
@@ -404,7 +465,6 @@ async function seedDatabase() {
           data: {
             ...voter,
             votingScopeId: randomScope ? randomScope.id : null,
-            votedAt: voter.hasVoted ? new Date() : null,
           },
         });
         createdVoters.push(createdVoter);
@@ -412,17 +472,16 @@ async function seedDatabase() {
     }
 
     console.log("🏃‍♂️ Creating candidates...");
-    
+
     // Track created candidates for reporting
     const createdCandidates = [];
-    
+
     // Create candidates (some voters become candidates) within their scope (or globally for NO SCOPE)
-    const experiences = generateExperiences();
     for (const election of createdElections) {
       const electionVoters = createdVoters.filter((v) => v.electionId === election.id);
       const electionPositions = positionsByElection.get(election.id) || createdPositions.filter((p) => p.electionId === election.id);
       const electionParties = createdParties.filter((p) => p.electionId === election.id);
-      
+
       for (const position of electionPositions) {
         const scopedVoters = electionVoters.filter((v) => v.votingScopeId === position.votingScopeId);
         if (scopedVoters.length === 0) continue;
@@ -431,7 +490,7 @@ async function seedDatabase() {
         for (let i = 0; i < Math.min(numCandidates, scopedVoters.length); i++) {
           const voterIndex = Math.floor(Math.random() * scopedVoters.length);
           const voter = scopedVoters[voterIndex];
-          
+
           // Skip if this voter is already a candidate
           const existingCandidate = await db.candidate.findUnique({
             where: { voterId: voter.id },
@@ -448,54 +507,21 @@ async function seedDatabase() {
               positionId: position.id,
               partyId: randomParty?.id || null,
               isNew: Math.random() > 0.7, // 30% are new
-              bio: `Experienced candidate committed to representing students with integrity and dedication. Passionate about making positive changes in our academic community.`,
               imageUrl: `/assets/sample/logo.png`,
+              credentialUrl: `/assets/sample/credential.pdf`,
             },
           });
 
           // Record for reporting
           createdCandidates.push(candidate);
-
-          if (Math.random() > 0.3) {
-            const randomLeadership = experiences.leadership[Math.floor(Math.random() * experiences.leadership.length)];
-            await db.candidateLeadershipExperience.create({
-              data: {
-                candidateId: candidate.id,
-                ...randomLeadership,
-                description: "Led various initiatives and contributed to organizational success.",
-              },
-            });
-          }
-
-          if (Math.random() > 0.4) {
-            const randomWork = experiences.work[Math.floor(Math.random() * experiences.work.length)];
-            await db.candidateWorkExperience.create({
-              data: {
-                candidateId: candidate.id,
-                ...randomWork,
-                description: "Gained valuable skills and experience in professional environment.",
-              },
-            });
-          }
-
-          if (Math.random() > 0.2) {
-            const randomEducation = experiences.education[Math.floor(Math.random() * experiences.education.length)];
-            await db.candidateEducationLevel.create({
-              data: {
-                candidateId: candidate.id,
-                ...randomEducation,
-                description: "Academic achievements and educational background.",
-              },
-            });
-          }
         }
       }
     }
 
     console.log("🗳️ Creating vote responses...");
     
-    // Create some vote responses for voters who have voted, restricted to their scope (or global for NO SCOPE)
-    const votedVoters = createdVoters.filter((v) => v.hasVoted);
+    // Create some vote responses for a random subset of voters, restricted to their scope (or global for NO SCOPE)
+    const votedVoters = createdVoters.filter(() => Math.random() > 0.7);
     for (const voter of votedVoters) {
       const electionPositions = createdPositions.filter(
         (p) => p.electionId === voter.electionId && p.votingScopeId === voter.votingScopeId
@@ -524,7 +550,7 @@ async function seedDatabase() {
                 candidateId: candidate.id,
                 positionId: position.id,
                 voteHash: `hash_${voter.id}_${candidate.id}_${Date.now()}`,
-                timestamp: voter.votedAt || new Date(),
+                timestamp: new Date(),
               },
             });
           }
@@ -595,11 +621,11 @@ async function seedDatabase() {
       for (const e of adminElections) {
         const scopes = (scopesByElection.get(e.id) || []);
         const noScope = scopes.length === 0;
-        const scopeInfo = noScope ? "NO SCOPE" : `${scopes[0]?.type} (${scopes.length})`;
+        const scopeInfo = noScope ? "NO SCOPE" : `${scopes.length} scope(s)`;
         const posCount = createdPositions.filter((p) => p.electionId === e.id).length;
         const voterCount = createdVoters.filter((v) => v.electionId === e.id).length;
         const candCount = createdCandidates.filter((c) => c.electionId === e.id).length;
-        const partyCount = createdParties.filter((p) => e.electionId === p.electionId).length;
+        const partyCount = createdParties.filter((p) => p.electionId === e.id).length;
         const voteCount = await db.voteResponse.count({ where: { electionId: e.id } });
 
         console.log(`     • ${e.name} → scope: ${scopeInfo}`);

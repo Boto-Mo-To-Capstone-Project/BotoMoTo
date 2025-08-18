@@ -1,45 +1,13 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
-import { apiResponse } from "@/lib/apiResponse";
-import { validateWithZod } from "@/lib/validateWithZod";
-import { createAuditLog } from "@/lib/audit";
 import db from "@/lib/db/db";
 import { ROLES, ORGANIZATION_STATUS } from "@/lib/constants";
-import { z } from "zod";
+import { apiResponse } from "@/lib/apiResponse";
+import { createAuditLog } from "@/lib/audit";
+import { validateWithZod } from "@/lib/validateWithZod";
+import { candidateSchema } from "@/lib/schema";
 
-// Bulk operations schema
-const bulkCreateCandidatesSchema = z.object({
-  electionId: z.number().int().positive("Election ID must be a positive integer"),
-  candidates: z.array(z.object({
-    voterId: z.number().int().positive("Voter ID must be a positive integer"),
-    positionId: z.number().int().positive("Position ID must be a positive integer"),
-    partyId: z.number().int().positive("Party ID must be a positive integer").optional(),
-    isNew: z.boolean().default(false),
-    imageUrl: z.string().url("Image URL must be valid").optional(),
-    bio: z.string().max(1000, "Bio must be at most 1000 characters").optional()
-  })).min(1, "At least one candidate is required").max(50, "Maximum 50 candidates per bulk operation")
-});
-
-const bulkUpdateCandidatesSchema = z.object({
-  electionId: z.number().int().positive("Election ID must be a positive integer"),
-  updates: z.array(z.object({
-    candidateId: z.number().int().positive("Candidate ID must be a positive integer"),
-    positionId: z.number().int().positive("Position ID must be a positive integer").optional(),
-    partyId: z.number().int().positive("Party ID must be a positive integer").optional(),
-    isNew: z.boolean().optional(),
-    imageUrl: z.string().url("Image URL must be valid").optional(),
-    bio: z.string().max(1000, "Bio must be at most 1000 characters").optional()
-  })).min(1, "At least one update is required").max(50, "Maximum 50 updates per bulk operation")
-});
-
-const bulkDeleteCandidatesSchema = z.object({
-  electionId: z.number().int().positive("Election ID must be a positive integer"),
-  candidateIds: z.array(z.number().int().positive("Candidate ID must be a positive integer"))
-    .min(1, "At least one candidate ID is required")
-    .max(50, "Maximum 50 candidates per bulk delete operation")
-});
-
-// Handle POST request for bulk candidate creation
+// Handle POST request for bulk candidate operations
 export async function POST(request: NextRequest) {
   try {
     // Authenticate the user
@@ -47,643 +15,290 @@ export async function POST(request: NextRequest) {
     const user = session?.user;
 
     if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to create candidates",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
+      return apiResponse({ success: false, message: "You must be logged in to perform bulk candidate operations", error: "Unauthorized", status: 401 });
     }
 
     // Check if user has admin role
     if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin users can create candidates",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
+      return apiResponse({ success: false, message: "Only admin users can perform bulk candidate operations", error: "Forbidden", status: 403 });
     }
 
     const body = await request.json();
+    const { operation, candidateIds, electionId, candidates: candidatesData } = body || {};
 
-    // Validate request body
-    const validation = validateWithZod(bulkCreateCandidatesSchema, body);
-    if (!('data' in validation)) return validation;
+    // Validate required fields
+    if (!operation) {
+      return apiResponse({ success: false, message: "Operation type is required", error: "Bad Request", status: 400 });
+    }
 
-    const data = validation.data;
+    if (!electionId) {
+      return apiResponse({ success: false, message: "Election ID is required", error: "Bad Request", status: 400 });
+    }
+
+    const electionIdInt = parseInt(String(electionId));
+    if (isNaN(electionIdInt)) {
+      return apiResponse({ success: false, message: "Invalid election ID", error: "Bad Request", status: 400 });
+    }
 
     // Verify election exists and user has access
     const election = await db.election.findUnique({
       where: {
-        id: data.electionId,
-        isDeleted: false
+        id: electionIdInt,
+        isDeleted: false,
       },
-      select: {
-        id: true,
-        name: true,
-        status: true,
+      include: {
         organization: {
           select: {
             id: true,
             adminId: true,
-            status: true
-          }
-        }
-      }
-    });
-
-    if (!election) {
-      return apiResponse({
-        success: false,
-        message: "Election not found or has been deleted",
-        data: null,
-        error: "Not Found",
-        status: 404
-      });
-    }
-
-    // Check if admin owns this election
-    if (user.role === ROLES.ADMIN && election.organization.adminId !== user.id) {
-      return apiResponse({
-        success: false,
-        message: "You can only create candidates for your organization's elections",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
-
-    // Check organization status
-    if (election.organization.status !== ORGANIZATION_STATUS.APPROVED) {
-      return apiResponse({
-        success: false,
-        message: "Organization must be approved to manage candidates",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
-
-    // Validate all voter IDs exist and belong to the election
-    const voterIds = data.candidates.map((c: any) => c.voterId);
-    const voters = await db.voter.findMany({
-      where: {
-        id: { in: voterIds },
-        electionId: data.electionId,
-        isDeleted: false
-      },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true
-      }
-    });
-
-    if (voters.length !== voterIds.length) {
-      const foundVoterIds = voters.map(v => v.id);
-      const missingVoterIds = voterIds.filter((id: number) => !foundVoterIds.includes(id));
-      return apiResponse({
-        success: false,
-        message: `Some voters not found in this election: ${missingVoterIds.join(', ')}`,
-        data: null,
-        error: "Bad Request",
-        status: 400
-      });
-    }
-
-    // Check for existing candidates among the voters
-    const existingCandidates = await db.candidate.findMany({
-      where: {
-        voterId: { in: voterIds },
-        isDeleted: false
-      },
-      select: {
-        voterId: true,
-        voter: {
-          select: {
-            firstName: true,
-            lastName: true
-          }
-        }
-      }
-    });
-
-    if (existingCandidates.length > 0) {
-      const existingNames = existingCandidates.map(c => 
-        `${c.voter.firstName} ${c.voter.lastName} (ID: ${c.voterId})`
-      );
-      return apiResponse({
-        success: false,
-        message: `Some voters are already candidates: ${existingNames.join(', ')}`,
-        data: null,
-        error: "Conflict",
-        status: 409
-      });
-    }
-
-    // Validate all position IDs exist and belong to the election
-    const positionIdsSet = new Set(data.candidates.map((c: any) => c.positionId as number));
-    const positionIds = Array.from(positionIdsSet) as number[];
-    const positions = await db.position.findMany({
-      where: {
-        id: { in: positionIds },
-        electionId: data.electionId,
-        isDeleted: false
-      },
-      select: {
-        id: true,
-        name: true
-      }
-    });
-
-    if (positions.length !== positionIds.length) {
-      const foundPositionIds = positions.map(p => p.id);
-      const missingPositionIds = positionIds.filter(id => !foundPositionIds.includes(id));
-      return apiResponse({
-        success: false,
-        message: `Some positions not found in this election: ${missingPositionIds.join(', ')}`,
-        data: null,
-        error: "Bad Request",
-        status: 400
-      });
-    }
-
-    // Validate party IDs if provided
-    const partyIdsSet = new Set(data.candidates.map((c: any) => c.partyId).filter(Boolean));
-    const partyIds = Array.from(partyIdsSet) as number[];
-    if (partyIds.length > 0) {
-      const parties = await db.party.findMany({
-        where: {
-          id: { in: partyIds },
-          electionId: data.electionId,
-          isDeleted: false
-        },
-        select: {
-          id: true,
-          name: true
-        }
-      });
-
-      if (parties.length !== partyIds.length) {
-        const foundPartyIds = parties.map(p => p.id);
-        const missingPartyIds = partyIds.filter(id => !foundPartyIds.includes(id));
-        return apiResponse({
-          success: false,
-          message: `Some parties not found in this election: ${missingPartyIds.join(', ')}`,
-          data: null,
-          error: "Bad Request",
-          status: 400
-        });
-      }
-    }
-
-    // Create candidates in transaction
-    const results = await db.$transaction(async (tx) => {
-      const createdCandidates = [];
-
-      for (const candidateData of data.candidates) {
-        const candidate = await tx.candidate.create({
-          data: {
-            electionId: data.electionId,
-            voterId: candidateData.voterId,
-            positionId: candidateData.positionId,
-            partyId: candidateData.partyId || null,
-            imageUrl: candidateData.imageUrl || null,
-            bio: candidateData.bio || null,
-            isNew: candidateData.isNew || false
+            status: true,
+            name: true,
           },
-          select: {
-            id: true,
-            voter: {
-              select: {
-                firstName: true,
-                lastName: true
-              }
-            },
-            position: {
-              select: {
-                name: true
-              }
-            },
-            party: {
-              select: {
-                name: true
-              }
-            }
-          }
-        });
-
-        createdCandidates.push(candidate);
-      }
-
-      return createdCandidates;
-    });
-
-    // Create audit log
-    const audit = await createAuditLog({
-      user,
-      action: "CREATE",
-      request,
-      resource: "CANDIDATE",
-      resourceId: data.electionId,
-      message: `Bulk created ${results.length} candidates for election: ${election.name}`,
-    });
-
-    return apiResponse({
-      success: true,
-      message: `Successfully created ${results.length} candidates`,
-      data: {
-        candidates: results,
-        count: results.length,
-        audit
+        },
       },
-      error: null,
-      status: 201
-    });
-
-  } catch (error) {
-    console.error("Bulk candidate creation error:", error);
-    return apiResponse({
-      success: false,
-      message: "Failed to create candidates",
-      data: null,
-      error: typeof error === "string" ? error : "Internal server error",
-      status: 500
-    });
-  }
-}
-
-// Handle PUT request for bulk candidate updates
-export async function PUT(request: NextRequest) {
-  try {
-    // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to update candidates",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Check if user has admin role
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin users can update candidates",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
-
-    const body = await request.json();
-
-    // Validate request body
-    const validation = validateWithZod(bulkUpdateCandidatesSchema, body);
-    if (!('data' in validation)) return validation;
-
-    const data = validation.data;
-
-    // Verify election exists and user has access
-    const election = await db.election.findUnique({
-      where: {
-        id: data.electionId,
-        isDeleted: false
-      },
-      select: {
-        id: true,
-        name: true,
-        organization: {
-          select: {
-            adminId: true,
-            status: true
-          }
-        }
-      }
     });
 
     if (!election) {
-      return apiResponse({
-        success: false,
-        message: "Election not found or has been deleted",
-        data: null,
-        error: "Not Found",
-        status: 404
-      });
+      return apiResponse({ success: false, message: "Election not found or has been deleted", error: "Not Found", status: 404 });
     }
 
     // Check if admin owns this election
     if (user.role === ROLES.ADMIN && election.organization.adminId !== user.id) {
-      return apiResponse({
-        success: false,
-        message: "You can only update candidates from your organization's elections",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
+      return apiResponse({ success: false, message: "You can only perform bulk operations on candidates from your organization's elections", error: "Forbidden", status: 403 });
     }
 
-    // Check organization status
+    // Only approved organizations can modify candidates
     if (election.organization.status !== ORGANIZATION_STATUS.APPROVED) {
-      return apiResponse({
-        success: false,
-        message: "Organization must be approved to manage candidates",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
+      return apiResponse({ success: false, message: "Only approved organizations can perform bulk candidate operations", error: "Forbidden", status: 403 });
     }
 
-    // Verify all candidate IDs exist and belong to the election
-    const candidateIds = data.updates.map((u: any) => u.candidateId);
-    const candidates = await db.candidate.findMany({
-      where: {
-        id: { in: candidateIds },
-        electionId: data.electionId,
-        isDeleted: false
-      },
-      select: {
-        id: true,
-        voter: {
-          select: {
-            firstName: true,
-            lastName: true
-          }
-        }
-      }
-    });
+    let result;
 
-    if (candidates.length !== candidateIds.length) {
-      const foundCandidateIds = candidates.map(c => c.id);
-      const missingCandidateIds = candidateIds.filter((id: number) => !foundCandidateIds.includes(id));
-      return apiResponse({
-        success: false,
-        message: `Some candidates not found in this election: ${missingCandidateIds.join(', ')}`,
-        data: null,
-        error: "Bad Request",
-        status: 400
-      });
+    switch (operation) {
+      case "bulk_create":
+        result = await handleBulkCreate(electionIdInt, candidatesData, user, request);
+        break;
+      case "soft_delete":
+        result = await handleBulkDelete(electionIdInt, candidateIds, user, request, election);
+        break;
+      default:
+        return apiResponse({ success: false, message: "Unsupported bulk operation", error: "Bad Request", status: 400 });
     }
 
-    // Update candidates in transaction
-    const results = await db.$transaction(async (tx) => {
-      const updatedCandidates = [];
-
-      for (const updateData of data.updates) {
-        const updateFields: any = {
-          updatedAt: new Date()
-        };
-
-        if (updateData.positionId !== undefined) updateFields.positionId = updateData.positionId;
-        if (updateData.partyId !== undefined) updateFields.partyId = updateData.partyId;
-        if (updateData.isNew !== undefined) updateFields.isNew = updateData.isNew;
-        if (updateData.imageUrl !== undefined) updateFields.imageUrl = updateData.imageUrl;
-        if (updateData.bio !== undefined) updateFields.bio = updateData.bio;
-
-        const candidate = await tx.candidate.update({
-          where: { id: updateData.candidateId },
-          data: updateFields,
-          select: {
-            id: true,
-            voter: {
-              select: {
-                firstName: true,
-                lastName: true
-              }
-            }
-          }
-        });
-
-        updatedCandidates.push(candidate);
-      }
-
-      return updatedCandidates;
-    });
-
-    // Create audit log
-    const audit = await createAuditLog({
-      user,
-      action: "UPDATE",
-      request,
-      resource: "CANDIDATE",
-      resourceId: data.electionId,
-      message: `Bulk updated ${results.length} candidates for election: ${election.name}`,
-    });
-
-    return apiResponse({
-      success: true,
-      message: `Successfully updated ${results.length} candidates`,
-      data: {
-        candidates: results,
-        count: results.length,
-        audit
-      },
-      error: null,
-      status: 200
-    });
-
+    return result;
   } catch (error) {
-    console.error("Bulk candidate update error:", error);
-    return apiResponse({
-      success: false,
-      message: "Failed to update candidates",
-      data: null,
-      error: typeof error === "string" ? error : "Internal server error",
-      status: 500
-    });
+    console.error("Bulk candidate operation error:", error);
+    return apiResponse({ success: false, message: "Failed to perform bulk candidate operation", error: typeof error === "string" ? error : "Internal server error", status: 500 });
   }
 }
 
-// Handle DELETE request for bulk candidate deletion
-export async function DELETE(request: NextRequest) {
-  try {
-    // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
+// Handle bulk creation of candidates
+async function handleBulkCreate(electionId: number, candidatesData: any[], user: any, request: NextRequest) {
+  if (!candidatesData || !Array.isArray(candidatesData) || candidatesData.length === 0) {
+    return apiResponse({ success: false, message: "Candidates data is required for bulk creation", error: "Bad Request", status: 400 });
+  }
 
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to delete candidates",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
+  const normalized = candidatesData.map((c, idx) => ({
+    index: idx,
+    data: {
+      electionId,
+      voterId: Number(c.voterId),
+      positionId: Number(c.positionId),
+      // Optional fields: if invalid or null, omit so Zod optional passes
+      ...(c.partyId != null && !Number.isNaN(Number(c.partyId)) ? { partyId: Number(c.partyId) } : {}),
+      ...(typeof c.isNew === "boolean" ? { isNew: c.isNew } : {}),
+      ...(c.imageUrl ? { imageUrl: String(c.imageUrl) } : {}),
+      ...(c.credentialUrl ? { credentialUrl: String(c.credentialUrl) } : {}),
+      // bio is only in update schema; ignore on create if provided
+    },
+  }));
+
+  const validatedCandidates: any[] = [];
+  const errors: Array<{ index: number; error: string }> = [];
+
+  // Validate each candidate
+  for (const item of normalized) {
+    const validation = validateWithZod(candidateSchema, item.data);
+    if ("data" in validation) {
+      validatedCandidates.push(validation.data);
+    } else {
+      errors.push({ index: item.index, error: "Candidate validation failed" });
     }
+  }
 
-    // Check if user has admin role
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin users can delete candidates",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+  if (errors.length > 0) {
+    return apiResponse({ success: false, message: "Validation errors found in candidate data", data: { errors }, error: "Bad Request", status: 400 });
+  }
 
-    const body = await request.json();
+  // Check for duplicate voterIds within the batch
+  const voterIds = validatedCandidates.map((c) => c.voterId);
+  const duplicateVoterIds = voterIds.filter((id, i) => voterIds.indexOf(id) !== i);
+  if (duplicateVoterIds.length > 0) {
+    return apiResponse({ success: false, message: "Duplicate voter IDs found within the batch", data: { duplicateVoterIds: Array.from(new Set(duplicateVoterIds)) }, error: "Bad Request", status: 400 });
+  }
 
-    // Validate request body
-    const validation = validateWithZod(bulkDeleteCandidatesSchema, body);
-    if (!('data' in validation)) return validation;
+  // Validate referenced entities exist and belong to the election
+  const [voters, positions, parties] = await Promise.all([
+    db.voter.findMany({ where: { id: { in: voterIds }, electionId, isDeleted: false }, select: { id: true } }),
+    db.position.findMany({ where: { id: { in: validatedCandidates.map((c) => c.positionId) }, electionId, isDeleted: false }, select: { id: true } }),
+    db.party.findMany({ where: { id: { in: validatedCandidates.map((c) => c.partyId).filter(Boolean) as number[] }, electionId, isDeleted: false }, select: { id: true } }),
+  ]);
 
-    const data = validation.data;
+  const foundVoterIds = new Set(voters.map((v) => v.id));
+  const foundPositionIds = new Set(positions.map((p) => p.id));
+  const foundPartyIds = new Set(parties.map((p) => p.id));
 
-    // Verify election exists and user has access
-    const election = await db.election.findUnique({
-      where: {
-        id: data.electionId,
-        isDeleted: false
-      },
-      select: {
-        id: true,
-        name: true,
-        organization: {
-          select: {
-            adminId: true,
-            status: true
-          }
-        }
-      }
-    });
+  const missingVoters = voterIds.filter((id) => !foundVoterIds.has(id));
+  if (missingVoters.length > 0) {
+    return apiResponse({ success: false, message: "Some voters were not found in this election", data: { missingVoters }, error: "Not Found", status: 404 });
+  }
 
-    if (!election) {
-      return apiResponse({
-        success: false,
-        message: "Election not found or has been deleted",
-        data: null,
-        error: "Not Found",
-        status: 404
-      });
-    }
+  const missingPositions = validatedCandidates.map((c) => c.positionId).filter((id) => !foundPositionIds.has(id));
+  if (missingPositions.length > 0) {
+    return apiResponse({ success: false, message: "Some positions were not found in this election", data: { missingPositions }, error: "Not Found", status: 404 });
+  }
 
-    // Check if admin owns this election
-    if (user.role === ROLES.ADMIN && election.organization.adminId !== user.id) {
-      return apiResponse({
-        success: false,
-        message: "You can only delete candidates from your organization's elections",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+  const providedPartyIds = validatedCandidates.map((c) => c.partyId).filter(Boolean) as number[];
+  const missingParties = providedPartyIds.filter((id) => !foundPartyIds.has(id));
+  if (missingParties.length > 0) {
+    return apiResponse({ success: false, message: "Some parties were not found in this election", data: { missingParties }, error: "Not Found", status: 404 });
+  }
 
-    // Check organization status
-    if (election.organization.status !== ORGANIZATION_STATUS.APPROVED) {
-      return apiResponse({
-        success: false,
-        message: "Organization must be approved to manage candidates",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
-
-    // Verify all candidate IDs exist and belong to the election
-    const candidates = await db.candidate.findMany({
-      where: {
-        id: { in: data.candidateIds },
-        electionId: data.electionId,
-        isDeleted: false
-      },
-      select: {
-        id: true,
-        voter: {
-          select: {
-            firstName: true,
-            lastName: true
-          }
-        },
-        _count: {
-          select: {
-            voteResponses: true
-          }
-        }
-      }
-    });
-
-    if (candidates.length !== data.candidateIds.length) {
-      const foundCandidateIds = candidates.map(c => c.id);
-      const missingCandidateIds = data.candidateIds.filter((id: number) => !foundCandidateIds.includes(id));
-      return apiResponse({
-        success: false,
-        message: `Some candidates not found in this election: ${missingCandidateIds.join(', ')}`,
-        data: null,
-        error: "Bad Request",
-        status: 400
-      });
-    }
-
-    // Check if any candidates have votes
-    const candidatesWithVotes = candidates.filter(c => c._count.voteResponses > 0);
-    if (candidatesWithVotes.length > 0) {
-      const candidateNames = candidatesWithVotes.map(c => 
-        `${c.voter.firstName} ${c.voter.lastName} (${c._count.voteResponses} votes)`
-      );
-      return apiResponse({
-        success: false,
-        message: `Cannot delete candidates who have received votes: ${candidateNames.join(', ')}`,
-        data: null,
-        error: "Conflict",
-        status: 409
-      });
-    }
-
-    // Delete candidates in transaction
-    const deletedCount = await db.$transaction(async (tx) => {
-      await tx.candidate.updateMany({
-        where: {
-          id: { in: data.candidateIds }
-        },
-        data: {
-          isDeleted: true,
-          deletedAt: new Date(),
-          updatedAt: new Date()
-        }
-      });
-
-      return data.candidateIds.length;
-    });
-
-    // Create audit log
-    const audit = await createAuditLog({
-      user,
-      action: "DELETE",
-      request,
-      resource: "CANDIDATE",
-      resourceId: data.electionId,
-      message: `Bulk deleted ${deletedCount} candidates from election: ${election.name}`,
-    });
-
-    return apiResponse({
-      success: true,
-      message: `Successfully deleted ${deletedCount} candidates`,
-      data: {
-        deletedCandidateIds: data.candidateIds,
-        count: deletedCount,
-        audit
-      },
-      error: null,
-      status: 200
-    });
-
-  } catch (error) {
-    console.error("Bulk candidate deletion error:", error);
+  // Check if any voters are already candidates (prevent duplicates)
+  const existingCandidates = await db.candidate.findMany({
+    where: {
+      electionId,
+      voterId: { in: voterIds },
+      isDeleted: false,
+    },
+    select: { voterId: true },
+  });
+  if (existingCandidates.length > 0) {
     return apiResponse({
       success: false,
-      message: "Failed to delete candidates",
-      data: null,
-      error: typeof error === "string" ? error : "Internal server error",
-      status: 500
+      message: "Some voters are already candidates in this election",
+      data: { existingVoterIds: existingCandidates.map((c) => c.voterId) },
+      error: "Conflict",
+      status: 409,
     });
   }
+
+  // Create candidates
+  const toCreate = validatedCandidates.map((c) => ({
+    electionId: c.electionId,
+    voterId: c.voterId,
+    positionId: c.positionId,
+    partyId: c.partyId ?? null,
+    imageUrl: (c as any).imageUrl ?? null,
+    credentialUrl: (c as any).credentialUrl ?? null,
+    isNew: c.isNew ?? false,
+  }));
+
+  const created = await db.candidate.createMany({ data: toCreate });
+
+  // Fetch created rows for response
+  const createdCandidates = await db.candidate.findMany({
+    where: { electionId, voterId: { in: voterIds }, isDeleted: false },
+    select: {
+      id: true,
+      electionId: true,
+      isNew: true,
+      imageUrl: true,
+      credentialUrl: true,
+      voter: { select: { id: true, firstName: true, lastName: true, email: true } },
+      position: { select: { id: true, name: true } },
+      party: { select: { id: true, name: true, color: true } },
+    },
+  });
+
+  const audit = await createAuditLog({
+    user,
+    action: "CREATE",
+    request,
+    resource: "CANDIDATE",
+    resourceId: electionId,
+    newData: { createdCount: created.count, voterIds },
+    message: `Bulk created ${created.count} candidates`,
+  });
+
+  return apiResponse({
+    success: true,
+    message: `Successfully created ${created.count} candidates`,
+    data: { createdCount: created.count, candidates: createdCandidates, audit },
+    status: 201,
+  });
+}
+
+// Handle bulk deletion of candidates
+async function handleBulkDelete(electionId: number, candidateIds: number[], user: any, request: NextRequest, election: any) {
+  if (!candidateIds || !Array.isArray(candidateIds) || candidateIds.length === 0) {
+    return apiResponse({ success: false, message: "Candidate IDs are required for bulk deletion", error: "Bad Request", status: 400 });
+  }
+
+  // Validate candidate IDs
+  const invalidIds = candidateIds.filter((id) => typeof id !== "number" || isNaN(id) || id <= 0);
+  if (invalidIds.length > 0) {
+    return apiResponse({ success: false, message: "Invalid candidate IDs provided", data: { invalidIds }, error: "Bad Request", status: 400 });
+  }
+
+  // Check if candidates exist and belong to the election
+  const candidates = await db.candidate.findMany({
+    where: {
+      id: { in: candidateIds },
+      electionId,
+      isDeleted: false,
+    },
+    select: {
+      id: true,
+      voter: { select: { firstName: true, lastName: true } },
+      _count: { select: { voteResponses: true } },
+    },
+  });
+
+  if (candidates.length !== candidateIds.length) {
+    const foundIds = candidates.map((c) => c.id);
+    const notFoundIds = candidateIds.filter((id) => !foundIds.includes(id));
+    return apiResponse({ success: false, message: "Some candidates not found or don't belong to this election", data: { notFoundIds }, error: "Not Found", status: 404 });
+  }
+
+  // Check for candidates with votes
+  const candidatesWithVotes = candidates.filter((c) => c._count.voteResponses > 0);
+  if (candidatesWithVotes.length > 0) {
+    return apiResponse({
+      success: false,
+      message: "Cannot delete candidates who have received votes",
+      data: {
+        candidatesWithVotes: candidatesWithVotes.map((c) => ({ id: c.id, name: `${c.voter.firstName} ${c.voter.lastName}`.trim() })),
+      },
+      error: "Conflict",
+      status: 409,
+    });
+  }
+
+  // Soft delete candidates
+  const deleted = await db.candidate.updateMany({
+    where: { id: { in: candidateIds }, electionId, isDeleted: false },
+    data: { isDeleted: true, deletedAt: new Date(), updatedAt: new Date() },
+  });
+
+  const audit = await createAuditLog({
+    user,
+    action: "DELETE",
+    request,
+    resource: "CANDIDATE",
+    resourceId: electionId,
+    deletionType: "SOFT",
+    message: `Bulk deleted ${deleted.count} candidates from election: ${election.name}`,
+  });
+
+  return apiResponse({
+    success: true,
+    message: `Successfully deleted ${deleted.count} candidates`,
+    data: {
+      deletedCount: deleted.count,
+      deletedCandidates: candidates.map((c) => ({ id: c.id, name: `${c.voter.firstName} ${c.voter.lastName}`.trim() })),
+      audit,
+    },
+    status: 200,
+  });
 }

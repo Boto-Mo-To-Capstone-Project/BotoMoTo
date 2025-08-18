@@ -62,8 +62,13 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             name: true,
-            type: true
           }
+        },
+        voteResponses: {
+          where: { electionId: { not: undefined as any } },
+          select: { id: true, timestamp: true },
+          orderBy: { timestamp: 'desc' },
+          take: 1
         }
       }
     });
@@ -90,6 +95,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Compute voted status from latest vote
+    const latestVote = voter.voteResponses[0];
+    const hasVoted = !!latestVote;
+
     // Check if voter is active
     if (!voter.isActive) {
       return apiResponse({
@@ -109,14 +118,8 @@ export async function POST(request: NextRequest) {
         case "DRAFT":
           message = "Election has not started yet.";
           break;
-        case "PAUSED":
-          message = "Election is temporarily paused.";
-          break;
         case "CLOSED":
           message = "Election has ended.";
-          break;
-        case "ARCHIVED":
-          message = "Election has been archived.";
           break;
       }
 
@@ -128,7 +131,7 @@ export async function POST(request: NextRequest) {
             id: voter.id,
             firstName: voter.firstName,
             lastName: voter.lastName,
-            hasVoted: voter.hasVoted
+            voted: hasVoted
           },
           election: {
             id: voter.election.id,
@@ -156,7 +159,7 @@ export async function POST(request: NextRequest) {
               id: voter.id,
               firstName: voter.firstName,
               lastName: voter.lastName,
-              hasVoted: voter.hasVoted
+              voted: hasVoted
             },
             election: {
               id: voter.election.id,
@@ -180,7 +183,7 @@ export async function POST(request: NextRequest) {
               id: voter.id,
               firstName: voter.firstName,
               lastName: voter.lastName,
-              hasVoted: voter.hasVoted
+              voted: hasVoted
             },
             election: {
               id: voter.election.id,
@@ -197,7 +200,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if voter has already voted
-    if (voter.hasVoted) {
+    if (hasVoted) {
       return apiResponse({
         success: false,
         message: "You have already voted in this election.",
@@ -206,8 +209,7 @@ export async function POST(request: NextRequest) {
             id: voter.id,
             firstName: voter.firstName,
             lastName: voter.lastName,
-            hasVoted: voter.hasVoted,
-            votedAt: voter.votedAt
+            voted: hasVoted
           },
           election: {
             id: voter.election.id,
@@ -241,7 +243,7 @@ export async function POST(request: NextRequest) {
           lastName: voter.lastName,
           email: voter.email,
           isVerified: true,
-          hasVoted: voter.hasVoted,
+          voted: hasVoted,
           votingScope: voter.votingScope
         },
         election: {

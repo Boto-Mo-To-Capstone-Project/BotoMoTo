@@ -11,7 +11,7 @@ import { createAuditLog } from "@/lib/audit";
 // Handle GET request to fetch a specific voting scope
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -28,7 +28,8 @@ export async function GET(
       });
     }
 
-    const votingScopeId = parseInt(params.id);
+    const { id } = await params;
+    const votingScopeId = parseInt(id);
     if (isNaN(votingScopeId)) {
       return apiResponse({
         success: false,
@@ -142,7 +143,7 @@ export async function GET(
 // Handle PUT request to update a specific voting scope
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -170,7 +171,8 @@ export async function PUT(
       });
     }
 
-    const votingScopeId = parseInt(params.id);
+    const { id } = await params;
+    const votingScopeId = parseInt(id);
     if (isNaN(votingScopeId)) {
       return apiResponse({
         success: false,
@@ -318,7 +320,7 @@ export async function PUT(
 // Handle DELETE request to delete a specific voting scope
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -346,7 +348,8 @@ export async function DELETE(
       });
     }
 
-    const votingScopeId = parseInt(params.id);
+    const { id } = await params;
+    const votingScopeId = parseInt(id);
     if (isNaN(votingScopeId)) {
       return apiResponse({
         success: false,

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { MdAdd, MdDownload, MdFilterList, MdDelete, MdEdit } from "react-icons/md";
 import { SubmitButton } from '@/components/SubmitButton';
@@ -18,7 +18,16 @@ interface UiElection {
   time: string;
 }
 
+// Wrapper component that provides the Suspense boundary required by Next.js
 export default function ElectionDashboardPage() {
+  return (
+    <Suspense fallback={<div className="w-full p-4 text-center text-gray-500">Loading…</div>}>
+      <ElectionDashboardContent />
+    </Suspense>
+  );
+}
+
+function ElectionDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const eidParam = searchParams.get('eid');
@@ -76,9 +85,13 @@ export default function ElectionDashboardPage() {
         if (!cancelled) setElectionsList(mapped);
       } catch (err) {
         console.error(err);
-        !cancelled && toast.error('Failed to load elections');
+        if (!cancelled) {
+          toast.error('Failed to load elections');
+        }
       } finally {
-        !cancelled && setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
     load();

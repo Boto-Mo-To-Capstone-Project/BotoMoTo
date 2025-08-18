@@ -121,13 +121,9 @@ async function validateSeedData() {
             name: true
           }
         },
-        bio: true,
         isNew: true,
         _count: {
           select: {
-            leaderships: true,
-            workExps: true,
-            educations: true,
             voteResponses: true
           }
         }
@@ -138,10 +134,8 @@ async function validateSeedData() {
     candidates.forEach(candidate => {
       const name = `${candidate.voter.firstName} ${candidate.voter.lastName}`;
       const party = candidate.party ? candidate.party.name : 'Independent';
-      const experiences = candidate._count.leaderships + candidate._count.workExps + candidate._count.educations;
       console.log(`   ${name} - ${candidate.position.name} (${party})`);
-      console.log(`      New: ${candidate.isNew}, Experiences: ${experiences}, Votes: ${candidate._count.voteResponses}`);
-      console.log(`      Bio: ${candidate.bio ? candidate.bio.substring(0, 50) + '...' : 'No bio'}`);
+      console.log(`      New: ${candidate.isNew}, Votes: ${candidate._count.voteResponses}`);
     });
 
     // Check voting statistics
@@ -161,35 +155,44 @@ async function validateSeedData() {
       console.log(`   No votes cast yet`);
     }
 
-    // Check voter statistics
-    const voterStats = await db.voter.groupBy({
-      by: ['electionId', 'hasVoted'],
-      _count: {
-        id: true
-      },
-      where: {
-        isDeleted: false
-      }
+    // Check voter statistics (computed voted status via VoteResponse)
+    const voterTotals = await db.voter.groupBy({
+      by: ['electionId'],
+      _count: { id: true },
+      where: { isDeleted: false }
     });
 
-    console.log(`\n👥 Voter Statistics:`);
-    const votersByElection = {};
-    voterStats.forEach(stat => {
-      if (!votersByElection[stat.electionId]) {
-        votersByElection[stat.electionId] = { voted: 0, notVoted: 0 };
-      }
-      if (stat.hasVoted) {
-        votersByElection[stat.electionId].voted = stat._count.id;
-      } else {
-        votersByElection[stat.electionId].notVoted = stat._count.id;
-      }
+    // Distinct voters who cast at least one vote per election
+    const votedDistinct = await db.voteResponse.groupBy({
+      by: ['electionId', 'voterId']
     });
 
-    Object.entries(votersByElection).forEach(([electionId, stats]) => {
-      const total = stats.voted + stats.notVoted;
-      const percentage = total > 0 ? ((stats.voted / total) * 100).toFixed(1) : 0;
-      console.log(`   Election ${electionId}: ${stats.voted}/${total} voted (${percentage}%)`);
+    const totalByElection = new Map();
+    voterTotals.forEach(stat => {
+      totalByElection.set(stat.electionId, stat._count.id);
     });
+
+    const votedByElection = new Map();
+    votedDistinct.forEach(row => {
+      votedByElection.set(row.electionId, (votedByElection.get(row.electionId) || 0) + 1);
+    });
+
+    console.log(`\n👥 Voter Statistics (computed):`);
+    const electionIds = new Set([
+      ...Array.from(totalByElection.keys()),
+      ...Array.from(votedByElection.keys())
+    ]);
+
+    if (electionIds.size === 0) {
+      console.log(`   No voters found`);
+    } else {
+      Array.from(electionIds).sort((a, b) => Number(a) - Number(b)).forEach((electionId) => {
+        const total = totalByElection.get(electionId) || 0;
+        const voted = Math.min(votedByElection.get(electionId) || 0, total);
+        const percentage = total > 0 ? ((voted / total) * 100).toFixed(1) : 0;
+        console.log(`   Election ${electionId}: ${voted}/${total} voted (${percentage}%)`);
+      });
+    }
 
     // ==== NEW: Business-rule checks for scopes, positions, voters, candidates, and votes ====
     console.log("\n🧪 Consistency checks (scopes, positions, voters, candidates, votes)...\n");

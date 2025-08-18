@@ -10,7 +10,7 @@ import { createAuditLog } from "@/lib/audit";
 // Handle GET request to fetch a specific position
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -27,7 +27,8 @@ export async function GET(
       });
     }
 
-    const positionId = parseInt(params.id);
+    const { id } = await params;
+    const positionId = parseInt(id);
     if (isNaN(positionId)) {
       return apiResponse({
         success: false,
@@ -64,7 +65,6 @@ export async function GET(
           select: {
             id: true,
             name: true,
-            type: true,
             description: true
           }
         },
@@ -87,11 +87,9 @@ export async function GET(
                 id: true,
                 name: true,
                 color: true,
-                logoUrl: true
               }
             },
             imageUrl: true,
-            bio: true,
             isNew: true
           }
         },
@@ -170,7 +168,7 @@ export async function GET(
 // Handle PUT request to update a specific position
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -198,7 +196,8 @@ export async function PUT(
       });
     }
 
-    const positionId = parseInt(params.id);
+    const { id } = await params;
+    const positionId = parseInt(id);
     if (isNaN(positionId)) {
       return apiResponse({
         success: false,
@@ -335,7 +334,6 @@ export async function PUT(
     // Store old data for comparison
     const oldData = {
       name: existingPosition.name,
-      description: existingPosition.description,
       voteLimit: existingPosition.voteLimit,
       numOfWinners: existingPosition.numOfWinners,
       votingScopeId: existingPosition.votingScopeId,
@@ -347,7 +345,6 @@ export async function PUT(
       where: { id: positionId },
       data: {
         name,
-        description,
         voteLimit,
         numOfWinners,
         votingScopeId,
@@ -370,8 +367,7 @@ export async function PUT(
         votingScope: {
           select: {
             id: true,
-            name: true,
-            type: true
+            name: true
           }
         },
         _count: {
@@ -427,7 +423,7 @@ export async function PUT(
 // Handle DELETE request to delete a specific position
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }>  }
 ) {
   try {
     // Authenticate the user
@@ -455,7 +451,8 @@ export async function DELETE(
       });
     }
 
-    const positionId = parseInt(params.id);
+    const { id } = await params;
+    const positionId = parseInt(id);
     if (isNaN(positionId)) {
       return apiResponse({
         success: false,
@@ -472,7 +469,9 @@ export async function DELETE(
         id: positionId,
         isDeleted: false
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
         election: {
           select: {
             id: true,
@@ -485,11 +484,12 @@ export async function DELETE(
             }
           }
         },
-        _count: {
-          select: {
-            candidates: true,
-            voteResponses: true
-          }
+        candidates: {
+          where: { isDeleted: false },
+          select: { id: true }
+        },
+        voteResponses: {
+          select: { id: true }
         }
       }
     });
@@ -516,7 +516,7 @@ export async function DELETE(
     }
 
     // Check if position has candidates or votes
-    if (position._count.candidates > 0) {
+    if (position.candidates.length > 0) {
       return apiResponse({
         success: false,
         message: "Cannot delete position that has candidates. Please remove all candidates first.",
@@ -526,7 +526,7 @@ export async function DELETE(
       });
     }
 
-    if (position._count.voteResponses > 0) {
+    if (position.voteResponses.length > 0) {
       return apiResponse({
         success: false,
         message: "Cannot delete position that has votes",

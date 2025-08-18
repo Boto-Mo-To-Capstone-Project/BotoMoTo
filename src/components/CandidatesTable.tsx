@@ -7,7 +7,6 @@ interface Candidate {
   name: string;
   position: string;
   partylist: string;
-  department: string;
   email: string;
 }
 
@@ -16,9 +15,9 @@ interface CandidatesTableProps {
   selectedIds: number[];
   onCheckboxChange: (id: number) => void;
   onRowClick?: (candidate: Candidate) => void;
-  sortCol: keyof Candidate | null;
+  sortCol: "name" | "position" | "partylist" |  "email" | null;
   sortDir: "asc" | "desc";
-  onSort: (col: keyof Candidate) => void;
+  onSort: (col: "name" | "position" | "partylist" | "email") => void;
   page: number;
   totalPages: number;
   onFirst: () => void;
@@ -113,20 +112,9 @@ const CandidatesTable: React.FC<CandidatesTableProps> = ({
               </th>
               <th
                 className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
-                onClick={() => onSort("department")}
-              >
-                Department{" "}
-                {sortCol === "department" ? (
-                  sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
-                ) : (
-                  <FaSort className="inline opacity-50" />
-                )}
-              </th>
-              <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
                 onClick={() => onSort("email")}
               >
-                Email address{" "}
+                Email{" "}
                 {sortCol === "email" ? (
                   sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
                 ) : (
@@ -134,7 +122,7 @@ const CandidatesTable: React.FC<CandidatesTableProps> = ({
                 )}
               </th>
               <th className="py-2 px-3 border-b border-gray-200">
-                Download Credentials
+                Credentials
               </th>
             </tr>
           </thead>
@@ -152,7 +140,7 @@ const CandidatesTable: React.FC<CandidatesTableProps> = ({
                   className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
                   onClick={e => {
                     if ((e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
-                    onRowClick && onRowClick(candidate);
+                    onRowClick?.(candidate);
                   }}
                 >
                   <td className="py-2 px-3 align-middle">
@@ -165,7 +153,6 @@ const CandidatesTable: React.FC<CandidatesTableProps> = ({
                   <td className="py-2 px-3 align-middle">{candidate.name}</td>
                   <td className="py-2 px-3 align-middle">{candidate.position}</td>
                   <td className="py-2 px-3 align-middle">{candidate.partylist}</td>
-                  <td className="py-2 px-3 align-middle">{candidate.department}</td>
                   <td className="py-2 px-3 align-middle">{candidate.email}</td>
                   <td className="py-2 px-3 align-middle">
                     {/* Download credentials button/logic here */}
@@ -177,7 +164,7 @@ const CandidatesTable: React.FC<CandidatesTableProps> = ({
         </table>
       </div>
       {/* Pagination controls with padding, outside the table */}
-      <div className="flex items-center gap-2 mt-4 w-full relative xxs:flex-wrap px-3 pb-3">
+      <div className="flex items-center gap-2 mt-4 w-full relative xxs:flex-wrap">
         <button onClick={onFirst} disabled={page === 1} title="First"><MdFirstPage size={22} /></button>
         <button onClick={onPrev} disabled={page === 1} title="Prev"><MdChevronLeft size={22} /></button>
         <span>{totalPages > 0 ? page : 1}</span>

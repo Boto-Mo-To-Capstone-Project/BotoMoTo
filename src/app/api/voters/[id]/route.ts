@@ -10,7 +10,7 @@ import { createAuditLog } from "@/lib/audit";
 // Handle GET request to fetch a specific voter
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -38,7 +38,8 @@ export async function GET(
       });
     }
 
-    const voterId = parseInt(params.id);
+    const { id } = await params;
+    const voterId = parseInt(id);
     if (isNaN(voterId)) {
       return apiResponse({
         success: false,
@@ -74,7 +75,7 @@ export async function GET(
           select: {
             id: true,
             name: true,
-            type: true
+            description: true
           }
         },
         candidate: {
@@ -112,6 +113,14 @@ export async function GET(
       });
     }
 
+    // Compute hasVoted and latest vote timestamp
+    const latestVote = await db.voteResponse.findFirst({
+      where: { electionId: voter.election.id, voterId: voter.id },
+      orderBy: { timestamp: 'desc' },
+      select: { timestamp: true }
+    });
+    const hasVoted = !!latestVote;
+
     const audit = await createAuditLog({
       user,
       action: "READ",
@@ -125,7 +134,7 @@ export async function GET(
       success: true,
       message: "Voter fetched successfully",
       data: {
-        voter,
+        voter: { ...voter, voted: hasVoted },
         audit
       },
       error: null,
@@ -146,7 +155,7 @@ export async function GET(
 // Handle PUT request to update a specific voter
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -174,7 +183,8 @@ export async function PUT(
       });
     }
 
-    const voterId = parseInt(params.id);
+    const { id } = await params;
+    const voterId = parseInt(id);
     if (isNaN(voterId)) {
       return apiResponse({
         success: false,
@@ -196,7 +206,6 @@ export async function PUT(
       middleName, 
       lastName, 
       votingScopeId, 
-      address, 
       isActive 
     } = validation.data;
 
@@ -245,7 +254,11 @@ export async function PUT(
     }
 
     // Check if voter has already voted (prevent major changes)
-    if (existingVoter.hasVoted) {
+    const voted = await db.voteResponse.findFirst({
+      where: { electionId: existingVoter.electionId, voterId: existingVoter.id },
+      select: { id: true }
+    });
+    if (voted) {
       return apiResponse({
         success: false,
         message: "Cannot update voter information after they have voted",
@@ -308,7 +321,6 @@ export async function PUT(
         middleName: middleName || null,
         lastName,
         votingScopeId: votingScopeId || null,
-        address: address || null,
         isActive
       },
       include: {
@@ -328,7 +340,7 @@ export async function PUT(
           select: {
             id: true,
             name: true,
-            type: true
+            description: true
           }
         }
       }
@@ -336,11 +348,11 @@ export async function PUT(
 
     // Compare and log changed fields
     const changedFields: Record<string, { old: any; new: any }> = {};
-    const fieldsToCheck = ["email", "contactNum", "firstName", "middleName", "lastName", "votingScopeId", "address", "isActive"] as const;
+    const fieldsToCheck = ["email", "contactNum", "firstName", "middleName", "lastName", "votingScopeId", "isActive"] as const;
     
     for (const key of fieldsToCheck) {
-      if (existingVoter[key] !== updatedVoter[key]) {
-        changedFields[key] = { old: existingVoter[key], new: updatedVoter[key] };
+      if ((existingVoter as any)[key] !== (updatedVoter as any)[key]) {
+        changedFields[key] = { old: (existingVoter as any)[key], new: (updatedVoter as any)[key] };
       }
     }
 
@@ -378,7 +390,7 @@ export async function PUT(
 // Handle DELETE request to delete a specific voter
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate the user
@@ -406,7 +418,8 @@ export async function DELETE(
       });
     }
 
-    const voterId = parseInt(params.id);
+    const { id } = await params;
+    const voterId = parseInt(id);
     if (isNaN(voterId)) {
       return apiResponse({
         success: false,
@@ -462,7 +475,11 @@ export async function DELETE(
     }
 
     // Check if voter has already voted (prevent deletion)
-    if (existingVoter.hasVoted) {
+    const voted = await db.voteResponse.findFirst({
+      where: { electionId: existingVoter.electionId, voterId: existingVoter.id },
+      select: { id: true }
+    });
+    if (voted) {
       return apiResponse({
         success: false,
         message: "Cannot delete voter after they have voted",

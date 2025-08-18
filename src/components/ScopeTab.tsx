@@ -8,23 +8,7 @@ interface Scope {
   description: string;
 }
 
-interface ScopeTabProps {
-  scopingType: string;
-  setScopingType: (v: string) => void;
-  scopingNames: { name: string; description: string }[];
-  setScopingNames: React.Dispatch<React.SetStateAction<{ name: string; description: string }[]>>;
-  search: string;
-  setSearch: (v: string) => void;
-  scopeTypeDisplayLabel?: string; // current election-level type label to display
-}
-
 export function ScopeTab({
-  scopingType,
-  setScopingType,
-  scopingNames = [],
-  setScopingNames,
-  search,
-  setSearch,
   showCreateModal,
   setShowCreateModal,
   selectedIds,
@@ -32,8 +16,7 @@ export function ScopeTab({
   remoteRows,
   onSave,
   initialData,
-  scopeTypeDisplayLabel,
-}: ScopeTabProps & {
+}: {
   showCreateModal: boolean;
   setShowCreateModal: (v: boolean) => void;
   selectedIds: number[];
@@ -45,14 +28,8 @@ export function ScopeTab({
   const [sortCol, setSortCol] = useState<keyof Scope | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
-  // Build table data from scopingNames (fallback when remoteRows is not provided)
-  const scopeTableData = scopingNames.map((item, idx) => ({
-    id: idx,
-    name: item.name,
-    description: item.description,
-  }));
-
-  const rows: Scope[] = remoteRows ?? scopeTableData;
+  // Use remote rows directly; legacy local scoping types/names removed
+  const rows: Scope[] = remoteRows ?? [];
 
   // Sorting logic
   const handleSort = (col: keyof Scope) => {
@@ -90,7 +67,7 @@ export function ScopeTab({
       setShowCreateModal(false);
       return;
     }
-    setScopingNames(prev => [...prev, ...scopes]);
+    // No local fallback list anymore; rely on remote save
     setShowCreateModal(false);
   };
 
@@ -101,7 +78,6 @@ export function ScopeTab({
         onClose={() => setShowCreateModal(false)}
         onSave={handleScopeModalSave}
         initialData={initialData ?? undefined}
-        defaultTypeLabel={scopeTypeDisplayLabel}
       />
       <ScopeTable
         scopeData={sortedScopeTableData}
@@ -119,7 +95,6 @@ export function ScopeTab({
         onLast={() => { throw new Error("Function not implemented."); }}
         pageSize={0}
         onPageSizeChange={() => { throw new Error("Function not implemented."); }}
-        typeLabel={scopeTypeDisplayLabel}
       />
     </>
   );
