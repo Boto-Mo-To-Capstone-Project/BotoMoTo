@@ -171,6 +171,32 @@ export default function SuperAdminTicketsPage() {
   const ongoingTableData = ongoingTickets.map((r) => buildRow(r, false));
   const resolvedTableData = resolvedTickets.map((r) => buildRow(r, true));
 
+  // NEW: Pagination for Ongoing table
+  const [ongoingPage, setOngoingPage] = useState(1);
+  const [ongoingPageSize, setOngoingPageSize] = useState(3);
+  const ongoingTotalPages = Math.max(1, Math.ceil(ongoingTableData.length / ongoingPageSize));
+  const ongoingFirst = () => setOngoingPage(1);
+  const ongoingPrev = () => setOngoingPage((p) => Math.max(1, p - 1));
+  const ongoingNext = () => setOngoingPage((p) => Math.min(ongoingTotalPages, p + 1));
+  const ongoingLast = () => setOngoingPage(ongoingTotalPages);
+  const ongoingPageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setOngoingPageSize(Number(e.target.value));
+    setOngoingPage(1);
+  };
+
+  // NEW: Pagination for Resolved table
+  const [resolvedPage, setResolvedPage] = useState(1);
+  const [resolvedPageSize, setResolvedPageSize] = useState(3);
+  const resolvedTotalPages = Math.max(1, Math.ceil(resolvedTableData.length / resolvedPageSize));
+  const resolvedFirst = () => setResolvedPage(1);
+  const resolvedPrev = () => setResolvedPage((p) => Math.max(1, p - 1));
+  const resolvedNext = () => setResolvedPage((p) => Math.min(resolvedTotalPages, p + 1));
+  const resolvedLast = () => setResolvedPage(resolvedTotalPages);
+  const resolvedPageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setResolvedPageSize(Number(e.target.value));
+    setResolvedPage(1);
+  };
+
   return (
     <>
       <Toaster position="top-center" />
@@ -188,7 +214,15 @@ export default function SuperAdminTicketsPage() {
                 title="Ongoing Tickets"
                 columns={["Organization_Name", "Ticket", "Status", "Actions"]}
                 data={Array.isArray(ongoingTableData) ? ongoingTableData : []}
-                pageSize={3}
+                // required pagination props
+                page={ongoingPage}
+                totalPages={ongoingTotalPages}
+                onFirst={ongoingFirst}
+                onPrev={ongoingPrev}
+                onNext={ongoingNext}
+                onLast={ongoingLast}
+                pageSize={ongoingPageSize}
+                onPageSizeChange={ongoingPageSizeChange}
               />
             )}
           </div>
@@ -202,7 +236,15 @@ export default function SuperAdminTicketsPage() {
                 title="Resolved Tickets"
                 columns={["Organization_Name", "Ticket", "Status", "Actions"]}
                 data={Array.isArray(resolvedTableData) ? resolvedTableData : []}
-                pageSize={3}
+                // required pagination props
+                page={resolvedPage}
+                totalPages={resolvedTotalPages}
+                onFirst={resolvedFirst}
+                onPrev={resolvedPrev}
+                onNext={resolvedNext}
+                onLast={resolvedLast}
+                pageSize={resolvedPageSize}
+                onPageSizeChange={resolvedPageSizeChange}
               />
             )}
           </div>

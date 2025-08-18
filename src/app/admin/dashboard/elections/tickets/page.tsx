@@ -90,6 +90,32 @@ export default function AdminTicketsPage() {
   const activeTableData = ongoingTickets.map((r) => buildRow(r));
   const historyTableData = historyTickets.map((r) => buildRow(r));
 
+  // NEW: Pagination state for Active Ticket table
+  const [activePage, setActivePage] = useState(1);
+  const [activePageSize, setActivePageSize] = useState(3);
+  const activeTotalPages = Math.max(1, Math.ceil(activeTableData.length / activePageSize));
+  const activeFirst = () => setActivePage(1);
+  const activePrev = () => setActivePage((p) => Math.max(1, p - 1));
+  const activeNext = () => setActivePage((p) => Math.min(activeTotalPages, p + 1));
+  const activeLast = () => setActivePage(activeTotalPages);
+  const activePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setActivePageSize(Number(e.target.value));
+    setActivePage(1);
+  };
+
+  // NEW: Pagination state for Ticket History table
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPageSize, setHistoryPageSize] = useState(3);
+  const historyTotalPages = Math.max(1, Math.ceil(historyTableData.length / historyPageSize));
+  const historyFirst = () => setHistoryPage(1);
+  const historyPrev = () => setHistoryPage((p) => Math.max(1, p - 1));
+  const historyNext = () => setHistoryPage((p) => Math.min(historyTotalPages, p + 1));
+  const historyLast = () => setHistoryPage(historyTotalPages);
+  const historyPageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setHistoryPageSize(Number(e.target.value));
+    setHistoryPage(1);
+  };
+
   return (
     <>
       <Toaster position="top-center" />
@@ -114,7 +140,15 @@ export default function AdminTicketsPage() {
                 title="Active Ticket"
                 columns={["Organization_Name", "Ticket", "Status", "Actions"]}
                 data={Array.isArray(activeTableData) ? activeTableData : []}
-                pageSize={3}
+                // required pagination props
+                page={activePage}
+                totalPages={activeTotalPages}
+                onFirst={activeFirst}
+                onPrev={activePrev}
+                onNext={activeNext}
+                onLast={activeLast}
+                pageSize={activePageSize}
+                onPageSizeChange={activePageSizeChange}
               />
             )}
           </div>
@@ -128,7 +162,15 @@ export default function AdminTicketsPage() {
                 title="Ticket History"
                 columns={["Organization_Name", "Ticket", "Status", "Actions"]}
                 data={Array.isArray(historyTableData) ? historyTableData : []}
-                pageSize={3}
+                // required pagination props
+                page={historyPage}
+                totalPages={historyTotalPages}
+                onFirst={historyFirst}
+                onPrev={historyPrev}
+                onNext={historyNext}
+                onLast={historyLast}
+                pageSize={historyPageSize}
+                onPageSizeChange={historyPageSizeChange}
               />
             )}
           </div>

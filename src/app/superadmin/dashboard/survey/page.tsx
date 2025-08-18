@@ -55,6 +55,19 @@ export default function SuperAdminSurveyPage() {
     load();
   }, []);
 
+  // NEW: pagination state and handlers to satisfy Table props
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const handleFirst = () => setPage(1);
+  const handlePrev = () => setPage((p) => Math.max(1, p - 1));
+  const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
+  const handleLast = () => setPage(totalPages);
+  const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setPageSize(Number(e.target.value));
+    setPage(1);
+  };
+
   return (
     <>
       <Toaster position="top-center" />
@@ -83,7 +96,15 @@ export default function SuperAdminSurveyPage() {
                   "Is_Active",
                 ]}
                 data={rows}
-                pageSize={5}
+                // required pagination props
+                page={page}
+                totalPages={totalPages}
+                onFirst={handleFirst}
+                onPrev={handlePrev}
+                onNext={handleNext}
+                onLast={handleLast}
+                pageSize={pageSize}
+                onPageSizeChange={handlePageSizeChange}
               />
             )}
           </div>
