@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { Suspense, useState, useRef, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { SubmitButton } from "@/components/SubmitButton";
 import SearchBar from '@/components/SearchBar';
@@ -15,6 +15,15 @@ function getApiErrorMessage(json: any, fallback: string) {
   if (json && typeof json.message === 'string' && json.message) return json.message;
   if (json && typeof json.error === 'string' && json.error) return json.error;
   return fallback;
+}
+
+// Wrapper component that provides the Suspense boundary required by Next.js
+export default function CreateElectionPage() {
+  return (
+    <Suspense fallback={<div className="w-full p-4 text-center text-gray-500">Loading…</div>}>
+      <CreateElectionContent />
+    </Suspense>
+  );
 }
 
 type TabType = "election" | "scope" | "party";
@@ -38,7 +47,7 @@ interface PartyRow {
   color: string;
 }
 
-export default function CreateElectionPage() {
+function CreateElectionContent() {
   const [activeTab, setActiveTab] = useState<TabType>("election");
   const [electionData, setElectionData] = useState<ElectionFormData>({
     name: "",
