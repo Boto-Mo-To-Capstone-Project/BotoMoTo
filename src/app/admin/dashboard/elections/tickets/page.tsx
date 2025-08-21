@@ -6,6 +6,7 @@ import Table from "@/components/TableComponent";
 import TicketChatModal from "@/components/TicketChatModal";
 import CreateTicketModal from "@/components/CreateTicketModal";
 import Button from "@/components/Button";
+import { toSentenceCase } from "@/hooks/useSentenceCase";
 
 export default function AdminTicketsPage() {
   const [tickets, setTickets] = useState<any[]>([]);
@@ -117,6 +118,12 @@ export default function AdminTicketsPage() {
     setHistoryPage(1);
   };
 
+  const displayMap: Record<string, string> = {
+      IN_PROGRESS: "IN PROGRESS",
+      IS_DONE: "IS DONE",
+      // add more mappings here...
+    };
+
   return (
     <>
       <Toaster position="top-center" />
@@ -152,7 +159,7 @@ export default function AdminTicketsPage() {
                   </p>
                   <p>
                     <span className="font-semibold">Status:</span>{" "}
-                    {ongoingTickets[0].Status}
+                    {toSentenceCase(displayMap[ongoingTickets[0].Status] ?? ongoingTickets[0].Status) }
                   </p>
                   <div className="mt-2">
                     <Button  

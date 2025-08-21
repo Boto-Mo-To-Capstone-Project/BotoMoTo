@@ -6,6 +6,7 @@ import SearchBar from "./SearchBar";
 import { FaSort, FaSortDown, FaSortUp } from "react-icons/fa";
 import { SubmitButton } from "./SubmitButton";
 import { useRouter } from "next/navigation";
+import { toSentenceCase } from "@/hooks/useSentenceCase";
 
 type TableProps = {
   title: string;
@@ -216,7 +217,7 @@ export default function Table({
                   </td>
                   {columns.map((col) => (
                     <td key={col} className="py-2 px-3 align-middle truncate max-w-[180px]">
-                      {row[col]}
+                      {typeof row[col] === "string" ? toSentenceCase(row[col]) : row[col]}
                     </td>
                   ))}
                   {showActions && (

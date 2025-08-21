@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import Table from "@/components/TableComponent";
 import TicketChatModal from "@/components/TicketChatModal";
+import { toSentenceCase } from "@/hooks/useSentenceCase";
 
 export default function SuperAdminTicketsPage() {
   const [tickets, setTickets] = useState<any[]>([]);
@@ -130,7 +131,7 @@ export default function SuperAdminTicketsPage() {
               className="px-3 py-1 bg-green-200 text-green-800 rounded min-w-[100px] text-left cursor-not-allowed"
               disabled
             >
-              {row.Status}
+              {toSentenceCase(row.Status)}
             </button>
           ) : (
             <>
@@ -139,7 +140,7 @@ export default function SuperAdminTicketsPage() {
                 onClick={() => handleStatusClick(row._original.id)}
                 disabled={updatingStatusId === row._original.id}
               >
-                {displayMap[row.Status] ?? row.Status}
+                {toSentenceCase(displayMap[row.Status] ?? row.Status) }
               </button>
               {statusDropdown[row._original.id] && (
                 <div className="fixed z-50 mt-1 bg-white border border-gray-200 rounded shadow right-10 sm:right-auto">
@@ -152,7 +153,7 @@ export default function SuperAdminTicketsPage() {
                       onClick={() => handleStatusChange(row._original, status)}
                       disabled={updatingStatusId === row._original.id || status === row.Status}
                     >
-                      {displayMap[status] ?? status}
+                      {toSentenceCase(displayMap[status] ?? status)}
                     </button>
                   ))}
                 </div>
