@@ -290,11 +290,20 @@ export async function POST(request: NextRequest) {
             name: `${candidate.voter.firstName}${candidate.voter.middleName ? ` ${candidate.voter.middleName}` : ''} ${candidate.voter.lastName}`,
             party: candidate.party ? candidate.party.name : 'Independent',
             partyColor: candidate.party ? candidate.party.color : '#6B7280',
-            img: candidate.imageUrl || '/assets/sample/logo.png', // Changed from 'image' to 'img' to match Candidate type
+            img: candidate.imageUrl || '/assets/sample/logo.png',
+            credentialsUrl: candidate.credentialUrl || undefined // Use the credentialUrl as-is from database
           }))
         })),
       parties: parties.map(party => party.name)
     };
+
+    // log the credentials URL
+    if (positions.some(pos => pos.candidates.some(c => c.credentialUrl))) {
+      console.log("Credentials URLs found for candidates in ballot data.");
+      console.log(positions.flatMap(pos => pos.candidates.map(c => c.credentialUrl)));
+    } else {
+      console.log("No credentials URLs found for candidates in ballot data.");
+    }
 
     console.log("Ballot data fetched successfully:", ballotData);
     // Return successful verification

@@ -75,7 +75,7 @@ const BallotForm = () => {
   return (
     <BallotComponent
       ballotData={ballotData}
-      electionName={voterData.election?.name || '2025 Election of Provident'}
+      electionName={voterData.election?.name || 'Election Name'}
       mode="voter"
       onCancel={handleCancel}
       onReview={handleReview}
