@@ -124,6 +124,13 @@ export default function Table({
     setSelectedRows(newSet);
   };
 
+  // Map only specific raw values to display-friendly versions
+  const displayMap: Record<string, string> = {
+    IN_PROGRESS: "IN PROGRESS",
+    IS_DONE: "IS DONE",
+    // add more mappings here...
+  };
+
   return (
     <div className="w-full p-4 bg-white shadow rounded-xl mt-5">
       {/* search and tablename and actions div */}
@@ -215,7 +222,7 @@ export default function Table({
                   </td>
                   {columns.map((col) => (
                     <td key={col} className="py-2 px-3 align-middle truncate max-w-[180px]">
-                      {row[col]}
+                      {displayMap[row[col]] ?? row[col]}
                     </td>
                   ))}
                   {showActions && (
