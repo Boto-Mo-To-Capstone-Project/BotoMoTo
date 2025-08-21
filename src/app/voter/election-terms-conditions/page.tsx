@@ -4,20 +4,37 @@ import Button from "@/components/Button";
 
 import termsAndConditionList from "@/app/assets/termsAndConditionList"; // example image for open state
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 const ElectionTermsCondition = () => {
   const [isChecked, setIsChecked] = useState(false); // so checkbutton must be clicked before proceeding
+  const [voterData, setVoterData] = useState<any>(null);
 
   const router = useRouter(); // to go to another route
+
+  useEffect(() => {
+    // Get voter data from localStorage
+    const storedData = localStorage.getItem("voterData");
+    if (storedData) {
+      setVoterData(JSON.parse(storedData));
+    }
+  }, []);
+
+  const handleStartVoting = () => {
+    if (!isChecked) {
+      alert("Please read and agree to the Terms and Conditions before proceeding.");
+      return;
+    }
+    router.push("/voter/ballot-form");
+  };
 
   return (
     <main className="flex flex-col items-center gap-10 px-10 pb-20 pt-40 text-justify">
       <div className="text-center space-y-2">
         <p className="voter-election-heading">Terms and Conditions</p>
         <p className="voter-election-subheading">
-          You&apos;re voting in the 2025 Election of Provident
+          You&apos;re voting in the {voterData?.election?.name || '2025 Election of Provident'}
         </p>
       </div>
       <div className="lg:w-3/5">
@@ -83,7 +100,7 @@ const ElectionTermsCondition = () => {
         <Button
           variant="long_primary"
           disabled={!isChecked}
-          onClick={() => router.push("/voter/ballot-form")}
+          onClick={handleStartVoting}
         >
           Start Voting
         </Button>
