@@ -1,13 +1,59 @@
 "use client"; // useRouter needs a client component
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/Button";
 import Image from "next/image";
 
 import EnterVoterCode from "@/app/assets/EnterVoterCode.png";
 import OtpInput from "@/components/OtpInput";
+
 const VoterLoginPage = () => {
   const router = useRouter(); // to go to another route
+  const [voterCode, setVoterCode] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleOtpChange = (value: string) => {
+    setVoterCode(value);
+  };
+
+  const handleSubmit = async () => {
+    if (voterCode.length !== 6) {
+      setError("Please enter a complete 6-digit code");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch('/api/voters/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: voterCode })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to verify voter code");
+      }
+
+      // Store voter and election information in localStorage
+      localStorage.setItem("voterData", JSON.stringify({
+        voter: data.data.voter,
+        election: data.data.election
+      }));
+      
+      // Navigate to election status page
+      router.push("/voter/election-status");
+    } catch (err: any) {
+      setError(err.message || "Invalid voter code. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <main className=" flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
@@ -22,17 +68,18 @@ const VoterLoginPage = () => {
 
       <Image src={EnterVoterCode} height={300} alt="BotoMoToLogo" />
       <div className="flex flex-col gap-2">
-        {" "}
         <p className="voterlogin-label">Enter Unique Code</p>
-        <OtpInput length={6} />
+        <OtpInput length={6} onChange={handleOtpChange} />
+        {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
       </div>
 
       <div className="flex flex-col gap-4 w-4/5 xs:w-auto">
         <Button
           variant="long_primary"
-          onClick={() => router.push("/voter/election-status")}
+          onClick={handleSubmit}
+          disabled={isLoading}
         >
-          Submit
+          {isLoading ? "Verifying..." : "Submit"}
         </Button>
         <Button variant="long_secondary">Cancel</Button>
       </div>

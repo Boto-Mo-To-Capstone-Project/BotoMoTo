@@ -10,11 +10,11 @@ import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
 import { AuthFooter } from "@/components/AuthFooter";
 import { ErrorMessage } from "@/components/ErrorMessage";
-import { OtpInputFour } from "@/components/OtpInput";
+import OtpInput from "@/components/OtpInput";
 import AuthContainer from '@/components/AuthContainer';
 
 export default function ForgotPasswordOtpPage() {
-  const [otp, setOtp] = useState(["", "", "", ""]);
+  const [otpValue, setOtpValue] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -34,7 +34,7 @@ export default function ForgotPasswordOtpPage() {
 
     try {
       // TODO: Implement password reset logic
-      console.log("OTP:", otp.join(""));
+      console.log("OTP:", otpValue);
       console.log("New password:", password);
       // For now, just simulate success
       router.push("/auth/login");
@@ -72,14 +72,9 @@ export default function ForgotPasswordOtpPage() {
             <label className="block text-sm font-medium text-[var(--color-black)] mb-1">
               One Time Password
             </label>
-            <OtpInputFour
-              value={otp}
-              onChange={(index: number, val: string) => {
-                const newOtp = [...otp];
-                newOtp[index] = val;
-                setOtp(newOtp);
-              }}
+            <OtpInput
               length={4}
+              onChange={(value) => setOtpValue(value)}
             />
           </div>
 
