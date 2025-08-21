@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { FiSend, FiPaperclip, FiX } from "react-icons/fi";
-import { io } from "socket.io-client";
-
-const socket = io("http://localhost:3000"); // Use your server URL
+// ...existing code...
+// removed: import { io } from "socket.io-client";
+// removed: const socket = io("http://localhost:3000"); // Use your server URL
 
 interface TicketChatModalProps {
   open: boolean;
@@ -41,24 +41,8 @@ export default function TicketChatModal({
     return [];
   }, [ticket, localMessages]);
 
-  // WebSockets
-  useEffect(() => {
-    if (!open || !ticket) return;
-
-    // Join the ticket room
-    socket.emit("joinTicket", ticket.id);
-
-    // Listen for new messages
-    socket.on("messageReceived", (message) => {
-      setLocalMessages((prev) => [...prev, message]);
-    });
-
-    // Cleanup on close/unmount
-    return () => {
-      socket.emit("leaveTicket", ticket.id);
-      socket.off("messageReceived");
-    };
-  }, [open, ticket]);
+  // WebSockets removed — component will not connect or listen for socket events
+  // (users will need to refresh to see messages posted by others)
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -180,12 +164,9 @@ export default function TicketChatModal({
         messageObj
       ]);
       
-      // Emit via websocket
-      socket.emit("newMessage", {
-        ticketId: ticket.id,
-        message: messageObj
-      });
-      
+      // Removed websocket emit — no socket used anymore
+      // socket.emit("newMessage", { ticketId: ticket.id, message: messageObj });
+
       // Clear inputs
       setReply("");
       setFile(null);
