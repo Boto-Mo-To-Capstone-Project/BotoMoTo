@@ -174,7 +174,7 @@ export default function Table({
                 <th
                   key={col}
                   onClick={() => handleSort(col)}
-                  className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                  className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 >
                   {String(col).replaceAll("_", " ")}
                   {sortConfig.column === col ? (
