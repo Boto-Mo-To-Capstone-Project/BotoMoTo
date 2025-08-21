@@ -230,6 +230,73 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Fetch ballot data for the voter's election and voting scope
+    const positions = await db.position.findMany({
+      where: {
+        electionId: voter.election.id,
+        OR: [
+          { votingScopeId: voter.votingScopeId },
+          { votingScopeId: null } // Include positions without specific voting scope
+        ],
+        isDeleted: false
+      },
+      orderBy: { order: 'asc' },
+      include: {
+        candidates: {
+          where: { isDeleted: false },
+          include: {
+            voter: {
+              select: {
+                firstName: true,
+                middleName: true,
+                lastName: true
+              }
+            },
+            party: {
+              select: {
+                id: true,
+                name: true,
+                color: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Fetch all parties for the election
+    const parties = await db.party.findMany({
+      where: {
+        electionId: voter.election.id,
+        isDeleted: false
+      },
+      select: {
+        id: true,
+        name: true,
+        color: true
+      }
+    });
+
+    // Transform ballot data to match the expected format
+    // Filter out positions that have no candidates
+    const ballotData = {
+      positions: positions
+        .filter(position => position.candidates.length > 0)
+        .map(position => ({
+          name: position.name,
+          maxSelections: position.voteLimit,
+          candidates: position.candidates.map(candidate => ({
+            id: candidate.id,
+            name: `${candidate.voter.firstName}${candidate.voter.middleName ? ` ${candidate.voter.middleName}` : ''} ${candidate.voter.lastName}`,
+            party: candidate.party ? candidate.party.name : 'Independent',
+            partyColor: candidate.party ? candidate.party.color : '#6B7280',
+            img: candidate.imageUrl || '/assets/sample/logo.png', // Changed from 'image' to 'img' to match Candidate type
+          }))
+        })),
+      parties: parties.map(party => party.name)
+    };
+
+    console.log("Ballot data fetched successfully:", ballotData);
     // Return successful verification
     return apiResponse({
       success: true,
@@ -253,7 +320,8 @@ export async function POST(request: NextRequest) {
           isLive: voter.election.isLive,
           mfaSettings: voter.election.mfaSettings,
           schedule: voter.election.schedule
-        }
+        },
+        ballotData
       },
       error: null,
       status: 200

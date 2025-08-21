@@ -40,10 +40,11 @@ const VoterLoginPage = () => {
         throw new Error(data.message || "Failed to verify voter code");
       }
 
-      // Store voter and election information in localStorage
+      // Store voter, election, and ballot information in localStorage
       localStorage.setItem("voterData", JSON.stringify({
         voter: data.data.voter,
-        election: data.data.election
+        election: data.data.election,
+        ballotData: data.data.ballotData
       }));
       
       // Navigate to election status page

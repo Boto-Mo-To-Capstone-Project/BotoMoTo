@@ -13,6 +13,7 @@ type CandidateCategoryProps = {
   candidateList: Candidate[];
   onSelectCandidate: (candidate: Candidate) => void;
   onDeselectCandidate: (candidate: Candidate) => void;
+  disabled?: boolean; // For preview mode
 };
 
 const CandidateCategory = ({
@@ -21,6 +22,7 @@ const CandidateCategory = ({
   candidateList,
   onSelectCandidate,
   onDeselectCandidate,
+  disabled = false,
 }: CandidateCategoryProps) => {
   const [openIndexes, setOpenIndexes] = useState<number[]>([]); // open accordion
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
@@ -32,6 +34,8 @@ const CandidateCategory = ({
   };
 
   const handleSelect = (candidate: Candidate) => {
+    if (disabled) return; // Don't allow selection in preview mode
+    
     const candidateName = candidate.name; // get the name from candidate object
 
     if (selectedCandidates.includes(candidateName)) {
@@ -78,8 +82,9 @@ const CandidateCategory = ({
                     <input
                       type="checkbox"
                       checked={selectedCandidates.includes(candidate.name)}
-                      className="accent-primary min-h-5 min-w-5"
+                      className={`accent-primary min-h-5 min-w-5 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                       onChange={() => handleSelect(candidate)}
+                      disabled={disabled}
                     />
                     <img
                       src={
