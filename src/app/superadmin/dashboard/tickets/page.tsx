@@ -113,6 +113,13 @@ export default function SuperAdminTicketsPage() {
     }
   );
 
+    // Map only specific raw values to display-friendly versions
+    const displayMap: Record<string, string> = {
+      IN_PROGRESS: "IN PROGRESS",
+      IS_DONE: "IS DONE",
+      // add more mappings here...
+    };
+
   const buildRow = (row: any, isResolved: boolean) => {
     return {
       ...row,
@@ -120,7 +127,7 @@ export default function SuperAdminTicketsPage() {
         <div className="relative inline-block">
           {isResolved ? (
             <button
-              className="px-3 py-1 bg-gray-200 text-gray-600 rounded min-w-[100px] text-left cursor-not-allowed"
+              className="px-3 py-1 bg-green-200 text-green-800 rounded min-w-[100px] text-left cursor-not-allowed"
               disabled
             >
               {row.Status}
@@ -128,24 +135,24 @@ export default function SuperAdminTicketsPage() {
           ) : (
             <>
               <button
-                className="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 min-w-[100px] text-left"
+                className="px-3 py-1 bg-red-100 text-primary rounded hover:bg-red-200 min-w-[100px] text-left"
                 onClick={() => handleStatusClick(row._original.id)}
                 disabled={updatingStatusId === row._original.id}
               >
-                {row.Status}
+                {displayMap[row.Status] ?? row.Status}
               </button>
               {statusDropdown[row._original.id] && (
-                <div className="absolute z-10 mt-1 bg-white border border-gray-200 rounded shadow w-full">
+                <div className="fixed z-50 mt-1 bg-white border border-gray-200 rounded shadow right-10 sm:right-auto">
                   {TICKET_STATUSES.map((status) => (
                     <button
                       key={status}
-                      className={`block w-full text-left px-4 py-2 hover:bg-blue-50 ${
-                        status === row.Status ? "font-bold text-blue-700" : ""
+                      className={`block w-full text-left px-4 py-2 hover:bg-red-50 ${
+                        status === row.Status ? "font-bold text-primary" : ""
                       }`}
                       onClick={() => handleStatusChange(row._original, status)}
                       disabled={updatingStatusId === row._original.id || status === row.Status}
                     >
-                      {status}
+                      {displayMap[status] ?? status}
                     </button>
                   ))}
                 </div>
@@ -156,7 +163,7 @@ export default function SuperAdminTicketsPage() {
       ),
       Actions: (
         <button
-          className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+          className="px-3 py-1 bg-primary text-white rounded hover:bg-gray-300"
           onClick={() => {
             setSelectedTicket(row._original);
             setModalOpen(true);

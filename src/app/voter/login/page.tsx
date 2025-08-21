@@ -7,6 +7,7 @@ import Image from "next/image";
 
 import EnterVoterCode from "@/app/assets/EnterVoterCode.png";
 import OtpInput from "@/components/OtpInput";
+import toast, { Toaster } from "react-hot-toast";
 
 const VoterLoginPage = () => {
   const router = useRouter(); // to go to another route
@@ -20,7 +21,9 @@ const VoterLoginPage = () => {
 
   const handleSubmit = async () => {
     if (voterCode.length !== 6) {
-      setError("Please enter a complete 6-digit code");
+      const msg = "Please enter a complete 6-digit code";
+      setError(msg);
+      toast.error(msg); // 👈 show in toast
       return;
     }
 
@@ -57,6 +60,7 @@ const VoterLoginPage = () => {
 
   return (
     <main className=" flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
+      <Toaster position="top-center" />
       <div className="text-center space-y-2">
         <p className="voterlogin-heading">Enter Voter Code</p>
         <p className="voterlogin-subheading">
@@ -70,7 +74,7 @@ const VoterLoginPage = () => {
       <div className="flex flex-col gap-2">
         <p className="voterlogin-label">Enter Unique Code</p>
         <OtpInput length={6} onChange={handleOtpChange} />
-        {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+        {/* {error && <p className="text-red-500 text-sm mt-1">{error}</p>} */}
       </div>
 
       <div className="flex flex-col gap-4 w-4/5 xs:w-auto">
