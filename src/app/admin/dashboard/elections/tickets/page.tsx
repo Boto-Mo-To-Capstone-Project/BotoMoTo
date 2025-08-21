@@ -5,6 +5,7 @@ import toast, { Toaster } from "react-hot-toast";
 import Table from "@/components/TableComponent";
 import TicketChatModal from "@/components/TicketChatModal";
 import CreateTicketModal from "@/components/CreateTicketModal";
+import Button from "@/components/Button";
 
 export default function AdminTicketsPage() {
   const [tickets, setTickets] = useState<any[]>([]);
@@ -123,33 +124,49 @@ export default function AdminTicketsPage() {
         <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
           <div className="flex items-center justify-between mb-4">
             <div />
-            <button
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold"
+            <Button
               onClick={handleCreateTicket}
+              className="mr-3 mt-4"
             >
               Create Ticket
-            </button>
+            </Button>
           </div>
 
           {/* Active Ticket (above) */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-3 mb-6">
             {loading ? (
               <div>Loading...</div>
+            ) : ongoingTickets.length === 0 ? (
+              <div className="text-gray text-lg">No active ticket</div>
             ) : (
-              <Table
-                title="Active Ticket"
-                columns={["Organization_Name", "Ticket", "Status", "Actions"]}
-                data={Array.isArray(activeTableData) ? activeTableData : []}
-                // required pagination props
-                page={activePage}
-                totalPages={activeTotalPages}
-                onFirst={activeFirst}
-                onPrev={activePrev}
-                onNext={activeNext}
-                onLast={activeLast}
-                pageSize={activePageSize}
-                onPageSizeChange={activePageSizeChange}
-              />
+              <div className="w-full p-4 shadow rounded-xl mt-5">
+                <p className="text-lg font-semibold mb-2 text-green-700">Active Ticket</p>
+                <div className="flex flex-col gap-4">
+                  <p>
+                    <span className="font-semibold">Organization:</span>{" "}
+                    {ongoingTickets[0].Organization_Name}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Ticket:</span>{" "}
+                    {ongoingTickets[0].Ticket}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Status:</span>{" "}
+                    {ongoingTickets[0].Status}
+                  </p>
+                  <div className="mt-2">
+                    <Button  
+                      className="w-full"         
+                      onClick={() => {
+                        setSelectedTicket(ongoingTickets[0]._original);
+                        setModalOpen(true);
+                      }}
+                    >
+                      View
+                    </Button>
+                  </div>         
+                </div>
+              </div>
             )}
           </div>
 

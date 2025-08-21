@@ -124,6 +124,13 @@ export default function Table({
     setSelectedRows(newSet);
   };
 
+  // Map only specific raw values to display-friendly versions
+  const displayMap: Record<string, string> = {
+    IN_PROGRESS: "IN PROGRESS",
+    IS_DONE: "IS DONE",
+    // add more mappings here...
+  };
+
   return (
     <div className="w-full p-4 bg-white shadow rounded-xl mt-5">
       {/* search and tablename and actions div */}
@@ -215,7 +222,7 @@ export default function Table({
                   </td>
                   {columns.map((col) => (
                     <td key={col} className="py-2 px-3 align-middle truncate max-w-[180px]">
-                      {row[col]}
+                      {displayMap[row[col]] ?? row[col]}
                     </td>
                   ))}
                   {showActions && (
@@ -267,7 +274,8 @@ export default function Table({
         <button onClick={props.onFirst} disabled={props.page === 1} title="First"><MdFirstPage size={22} /></button>
         <button onClick={props.onPrev} disabled={props.page === 1} title="Prev"><MdChevronLeft size={22} /></button>
         <span>{props.page}</span>
-        <span>of {props.totalPages}</span>
+        <span>of </span>
+        <span>{props.totalPages}</span>
         <button onClick={props.onNext} disabled={props.page === props.totalPages} title="Next"><MdChevronRight size={22} /></button>
         <button onClick={props.onLast} disabled={props.page === props.totalPages} title="Last"><MdLastPage size={22} /></button>
         <span className="text-sm text-gray-500 flex items-center gap-1 sm:ml-auto xxs:w-full xxs:mt-1">
