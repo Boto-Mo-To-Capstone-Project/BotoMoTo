@@ -4,8 +4,9 @@
 import { useState } from "react";
 import { Candidate } from "@/types";
 import React from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye } from "lucide-react";
 import SectionHeaderContainer from "./SectionHeaderContainer";
+import FileViewer from "./FileViewer";
 
 type CandidateCategoryProps = {
   position: string;
@@ -13,6 +14,7 @@ type CandidateCategoryProps = {
   candidateList: Candidate[];
   onSelectCandidate: (candidate: Candidate) => void;
   onDeselectCandidate: (candidate: Candidate) => void;
+  disabled?: boolean; // For preview mode
 };
 
 const CandidateCategory = ({
@@ -21,17 +23,38 @@ const CandidateCategory = ({
   candidateList,
   onSelectCandidate,
   onDeselectCandidate,
+  disabled = false,
 }: CandidateCategoryProps) => {
-  const [openIndexes, setOpenIndexes] = useState<number[]>([]); // open accordion
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
+  const [fileViewerOpen, setFileViewerOpen] = useState(false);
+  const [selectedCredential, setSelectedCredential] = useState<{
+    url: string;
+    candidateName: string;
+  } | null>(null);
 
-  const toggleAccordion = (index: number) => {
-    setOpenIndexes((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
-    ); // to open and close accordion
+  const handleViewCredentials = (candidate: Candidate) => {
+    // Check if candidate has credentialsUrl (from API) or credentials (fallback)
+    const credentialsUrl = candidate.credentialsUrl || candidate.credentials;
+    
+    if (credentialsUrl) {
+      setSelectedCredential({
+        url: credentialsUrl,
+        candidateName: candidate.name
+      });
+      setFileViewerOpen(true);
+    } else {
+      alert("No credentials available for this candidate.");
+    }
+  };
+
+  const closeFileViewer = () => {
+    setFileViewerOpen(false);
+    setSelectedCredential(null);
   };
 
   const handleSelect = (candidate: Candidate) => {
+    if (disabled) return; // Don't allow selection in preview mode
+    
     const candidateName = candidate.name; // get the name from candidate object
 
     if (selectedCandidates.includes(candidateName)) {
@@ -72,48 +95,52 @@ const CandidateCategory = ({
           </thead>
           <tbody className="divide-y divide-gray-200">
             {candidateList.map((candidate, index) => (
-              <React.Fragment key={candidate.name}>
-                <tr className="bg-white hover:bg-gray-50">
-                  <td className="px-4 py-2 candidate-category-name flex gap-3 items-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedCandidates.includes(candidate.name)}
-                      className="accent-primary min-h-5 min-w-5"
-                      onChange={() => handleSelect(candidate)}
-                    />
-                    <img
-                      src={
-                        candidate.img ||
-                        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaHfpIhAPZHSbZstaGEgFBIjZZ-Y-K533dag&s"
-                      }
-                      alt={`${candidate.name} photo`}
-                      className="w-10 h-10 object-cover rounded-full"
-                    />
-                    <strong>{candidate.name}</strong>
-                  </td>
-                  <td className="px-4 py-2 candidate-category-name">
-                    {candidate.party}
-                  </td>
-                  <td className="px-4 py-2 text-center">
-                    <button onClick={() => toggleAccordion(index)} className="">
-                      {openIndexes.includes(index) ? <EyeOff /> : <Eye />}
-                    </button>
-                  </td>
-                </tr>
-                {openIndexes.includes(index) && (
-                  <tr className="bg-gray-50">
-                    <td colSpan={3} className="px-4 py-4 ">
-                      <p className="candidate-category-desc">
-                        {candidate.credentials}
-                      </p>
-                    </td>
-                  </tr>
-                )}
-              </React.Fragment>
+              <tr key={candidate.name} className="bg-white hover:bg-gray-50">
+                <td className="px-4 py-2 candidate-category-name flex gap-3 items-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedCandidates.includes(candidate.name)}
+                    className={`accent-primary min-h-5 min-w-5 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onChange={() => handleSelect(candidate)}
+                    disabled={disabled}
+                  />
+                  <img
+                    src={
+                      candidate.img ||
+                      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaHfpIhAPZHSbZstaGEgFBIjZZ-Y-K533dag&s"
+                    }
+                    alt={`${candidate.name} photo`}
+                    className="w-10 h-10 object-cover rounded-full"
+                  />
+                  <strong>{candidate.name}</strong>
+                </td>
+                <td className="px-4 py-2 candidate-category-name">
+                  {candidate.party}
+                </td>
+                <td className="px-4 py-2 text-center">
+                  <button 
+                    onClick={() => handleViewCredentials(candidate)} 
+                    className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    title={`View ${candidate.name}'s credentials`}
+                  >
+                    <Eye size={18} />
+                  </button>
+                </td>
+              </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* File Viewer Modal */}
+      {fileViewerOpen && selectedCredential && (
+        <FileViewer
+          fileUrl={selectedCredential.url}
+          fileName={`${selectedCredential.candidateName}_credentials`}
+          title={`${selectedCredential.candidateName} - Credentials`}
+          onClose={closeFileViewer}
+        />
+      )}
     </div>
   );
 };

@@ -17,15 +17,15 @@ const nextConfig: NextConfig = {
               "img-src 'self' data:;",
               "font-src 'self';",
               "connect-src 'self';",
-              "frame-src 'none';",
-              "object-src 'none';"
+              "frame-src 'self';", // Allow iframes from same origin for PDF viewing
+              "object-src 'self';" // Allow objects from same origin for PDF viewing
             ].join(" ")
           },
           
-          // X-Frame-Options
+          // X-Frame-Options - Allow same origin for PDF viewing
           {
             key: "X-Frame-Options",
-            value: "DENY"
+            value: "SAMEORIGIN"
           },
           
           // X-Content-Type-Options
