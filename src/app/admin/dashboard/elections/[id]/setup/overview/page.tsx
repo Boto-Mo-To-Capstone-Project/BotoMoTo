@@ -1,149 +1,130 @@
 "use client";
-import { useRef, useState } from "react";
 import { SubmitButton } from '@/components/SubmitButton';
-import { FileDropzone } from '@/components/FileDropzone';
-import { UploadedFileDisplay } from "@/components/UploadedFileDisplay";
-import Scope from "@/app/assets/Scope.png";
-import Party from "@/app/assets/Party.png";
 import Voter from "@/app/assets/Voter.png";
 import Position from "@/app/assets/Position.png";
 import Candidate from "@/app/assets/Candidate.png";
 import ElectionStatus from "@/app/assets/ElectionStatus.png";
-import { StepsSection } from '@/components/StepsSection';
-import { SetupCard } from '@/components/SetupCard';
+import  Setup from "@/app/assets/Setup.png";
 
-const steps = [
-  "Step 1: Click 'Add Scope' – Set eligibility rules or levels for voting, such as limiting access based on voter level (e.g., Level 1, 2, 3).",
-  "Step 2: Click 'Add Voter' – This allows you to add all the voters who will participate in any of the elections.",
-  "Step 3: Click 'Add Position' – Use this to manage all positions that candidates will run for (e.g., President, Secretary).",
-  "Step 4: Click 'Add Party' – Register and manage political parties or groups to which candidates may belong.",
-  "Step 5: Click 'Add Candidate' – Manage the candidates running for each position. You can input their details and assign them to specific positions.",
-];
+import { useState } from "react";
+import { FiMoreHorizontal } from "react-icons/fi";
+import { MdFileUpload } from 'react-icons/md';
 
 const setupCards = [
   {
-    title: "Add Scope",
-    desc: "Set eligibility rules and levels for voting. Example: Level 1, 2, 3.",
-    img: Scope,
-    href: "#",
-  },
-  {
-    title: "Add Party",
-    desc: 'Step 2: Click "Add Party" Register and manage political parties or groups to which candidates may belong.',
-    img: Party,
-    href: "#",
-  },
-  {
     title: "Add Voter",
-    desc: "Add or upload voters. This button allows you to add voters to all elections.",
+    desc: "Add voters to the election or use the import button for batch upload.",
     img: Voter,
-    href: "#",
+    bg: "bg-violet-100",
+    text: "text-violet-900",
   },
   {
     title: "Add Position",
-    desc: "Support the setup of positions (e.g., President, Secretary).",
+    desc: "Define the election positions (e.g. President, Secretary).",
     img: Position,
-    href: "#",
+    bg: "bg-pink-100",
+    text: "text-pink-900",
   },
   {
     title: "Add Candidate",
     desc: "Manage the candidates running for each position.",
     img: Candidate,
-    href: "#",
+    bg: "bg-yellow-100",
+    text: "text-yellow-900",
   },
   {
-    title: "Election Status",
-    desc: "Configure the status of the election.",
+    title: "Manage Election",
+    desc: "Setup the election configurations.",
     img: ElectionStatus,
-    href: "#",
+    bg: "bg-green-100",
+    text: "text-green-900",
   },
 ];
 
 export default function ElectionSetupOverview() {
-  // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
-  const fileInputRef = useRef(null);
-  // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setUploadedFile(e.target.files[0]);
-    }
-  };
-
-  const templateFile = new File([""], "TemplateFile_BatchUpload.csv", { type: "text/csv", lastModified: new Date().getTime() });
+  const [showSteps, setShowSteps] = useState(false);
 
   return (
-    <div className="flex min-h-screen">
-      {/* <AdminSidebar variant="default" /> */}
-      <main className="flex-1 bg-white p-4 sm:p-8 w-full min-w-0">
-        <h1 className="text-2xl font-bold mb-1">Configuration</h1>
-        <p className="text-gray-600 mb-6">After creating the election form, proceed with the configuration by following these steps to complete the election setup:</p>
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4 mb-6">
-          {/* Responsive action buttons, right aligned on desktop */}
-          <div className="w-full flex gap-2 md:w-auto md:ml-auto justify-end">
-            <SubmitButton
-              label="Cancel"
-              variant="small-action"
-              onClick={() => {}}
-            />
-            <SubmitButton
-              label="Save"
-              variant="small"
-              onClick={() => {}}
-            />
+      <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8 pt-4">
+
+        {/* Red Header Card */}
+        <div className="flex items-center rounded-2xl bg-red-800 mb-6 px-6 py-6 relative overflow-hidden mt-8">
+          <div>
+            <h2 className="text-white text-xl font-semibold mb-2">Hi, Brian King!</h2>
+            <p className="text-white text-base">
+              Follow the steps below to complete election setup.
+            </p>
           </div>
         </div>
 
-        {/* Steps for Election Setup */}
-        <StepsSection steps={steps} />
-
-        {/* Batch Upload */}
-        <div className="w-full mb-6 flex flex-col md:flex-row md:items-start md:gap-6">
-          {/* Left column: label and description */}
-          <div className="md:w-1/3 w-full mb-4 md:mb-0">
-            <div className="font-semibold text-base">Batch upload (CSV or Excel)</div>
-            <div className="text-sm text-gray-600 mt-1">
-              Batch Upload lets you import position records using CSV or Excel files to save time and avoid manual typing.
+        {/* Election Setup Steps Dropdown */}
+        <div className="mb-6 px-2 sm:px-5">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between rounded-t-xl">
+              <span className="font-semibold text-base py-4 pl-5">Steps for Election Setup</span>
+              <button
+                className="p-2 rounded-full hover:bg-gray-200 transition mr-3"
+                onClick={() => setShowSteps((prev) => !prev)}
+                aria-label="Show steps"
+              >
+                <FiMoreHorizontal size={22} className="text-gray-400" />
+              </button>
+            </div>
+            <div className="border-b border-gray-200 shadow-sm" />
+            {showSteps && (
+              <div className="border border-red-400 rounded-lg m-4 p-4 text-gray-700 text-sm bg-white">
+                <ol className="space-y-2 list-decimal ml-4">
+                  <li>Click "Add Voter" to add voters to the election.</li>
+                  <li>Click "Add Position" to manage the positions that the candidates will run for in the election.</li>
+                  <li>Click "Add Candidate" to add candidates, input their details, and assign them to specific positions.</li>
+                  <li>
+                    <span className="flex items-center gap-2">
+                      Note: Import button can be used for easy batch upload.
+                      <SubmitButton
+                        label=""
+                        variant="action"
+                        icon={<MdFileUpload size={20} />}
+                        title="Import"
+                      />
+                    </span>
+                  </li>
+                </ol>
+              </div>
+            )}
+            {/* Setup Cards/Buttons inside the card */}
+            <div className="main-content pb-3 px-2 sm:px-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-2 sm:mt-0 p-4">
+                {setupCards.map((card, idx) => (
+                  <button
+                    key={idx}
+                    className={`
+              ${card.bg} rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200 p-2
+              border-4 border-transparent
+              ${idx === 0 ? "hover:border-violet-700" : ""}
+              ${idx === 1 ? "hover:border-pink-700" : ""}
+              ${idx === 2 ? "hover:border-yellow-700" : ""}
+              ${idx === 3 ? "hover:border-green-700" : ""}
+              flex flex-col items-center text-center h-full
+            `}
+                    onClick={() => {
+                      // Add navigation logic here
+                    }}
+                  >
+                    <div className="w-full mb-2">
+                        <img
+                          src={card.img.src}
+                          alt={card.title}
+                          className="w-full h-40 object-contain rounded-xl p-2 bg-[# ]"
+                        />
+                    </div>
+                    <h3 className={`text-[14px] font-semibold mb-2 px-0 sm:px-0 ${card.text} text-left w-full`}>{card.title}</h3>
+                    <p className={`text-[12px] ${card.text} text-left w-full`}>{card.desc}</p>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-          {/* Right column: dropzone and template */}
-          <div className="md:w-2/3 w-full flex flex-col items-center">
-            <FileDropzone
-              label=""
-              description=""
-              accept=".csv,.xlsx,.xls"
-              onChange={handleFileChange}
-              fileTypeText="SVG, PNG, JPG or GIF files, 800×400px"
-            />
-            <UploadedFileDisplay
-              file={templateFile}
-              onDownload={() => {
-                window.open("/assets/template_pdf/sample_org_letter.pdf", "_blank", "noopener,noreferrer");
-              }}
-              className="mt-4 w-full max-w-[380px] mx-auto"
-            />
-          </div>
         </div>
-
-        {/* Button for Election Setup */}
-        <div className="mb-2 font-semibold">Button for Election Setup</div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 w-full">
-          {setupCards.map((card, idx) => (
-            <SetupCard
-              key={idx}
-              title={card.title}
-              desc={card.desc}
-              img={card.img}
-              onClick={() => {
-                // Add navigation logic here
-                console.log(`Clicked ${card.title}`);
-                // Example: router.push(card.href);
-              }}
-            />
-          ))}
-        </div>
-      </main>
-    </div>
+      </div>
   );
 }
