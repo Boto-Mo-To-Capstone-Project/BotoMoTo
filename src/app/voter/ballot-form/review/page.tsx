@@ -5,27 +5,46 @@ import { RootState } from "@/store";
 import Button from "@/components/Button";
 import { useRouter } from "next/navigation";
 import CandidateRow from "@/components/CandidateRow";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SectionHeaderContainer from "@/components/SectionHeaderContainer";
 
 const ReviewPage = () => {
   const [isChecked, setIsChecked] = useState(false); // so checkbutton must be clicked before proceeding
+  const [voterData, setVoterData] = useState<any>(null);
 
   const router = useRouter(); // to go to another route
 
   const selections = useSelector((state: RootState) => state.ballot.selections);
 
+  // Get voter data from localStorage
+  useEffect(() => {
+    const storedData = localStorage.getItem("voterData");
+    if (storedData) {
+      const data = JSON.parse(storedData);
+      setVoterData(data);
+    }
+  }, []);
+
+  const electionName = voterData?.election?.name || '2025 Election of Provident';
+  const voterScope = voterData?.voter?.votingScope?.name;
+
+  console.log("stored data:", voterData);
   // return this if no votes yet
   if (Object.keys(selections).length === 0) {
     return (
       <div className="flex flex-col items-center mt-40 gap-30">
         <div className="text-center space-y-2">
           <p className="voter-election-heading">Ballot Form Review</p>
-          <p className=" voter-election-subheading">
-            You're voting in the 2025 Election of Provident
+          <p className="voter-election-subheading">
+            You're voting in the {electionName}
           </p>
+          {voterScope && (
+            <p className="voter-election-desc text-blue-600">
+              <strong>Voting Scope:</strong> {voterScope}
+            </p>
+          )}
         </div>
-        <p className=" voter-election-heading">No votes were selected.</p>
+        <p className="voter-election-heading">No votes were selected.</p>
         <Button
           variant="long_secondary"
           onClick={() => router.push("/voter/ballot-form")}
@@ -41,8 +60,13 @@ const ReviewPage = () => {
       <div className="text-center space-y-2">
         <p className="voter-election-heading">Ballot Form Review</p>
         <p className="voter-election-subheading">
-          You're voting in the 2025 Election of Provident
+          You're voting in the {electionName}
         </p>
+        {voterScope && (
+          <p className="voter-election-desc text-blue-600">
+            <strong>Voting Scope:</strong> {voterScope}
+          </p>
+        )}
       </div>
       <div className="w-full lg:w-3/5 flex flex-col">
         <div className="mt-5 space-y-3 w-full">

@@ -98,7 +98,7 @@ const CandidateCategory = ({
           </thead>
           <tbody className="divide-y divide-gray-200">
             {candidateList.map((candidate, index) => (
-              <tr key={candidate.id} className="bg-white hover:bg-gray-50">
+              <tr key={candidate.id} className="bg-white hover:bg-gray-50" onClick={() => handleSelect(candidate)}>
                 <td className="px-4 py-2 candidate-category-name flex gap-3 items-center">
                   <input
                     type="checkbox"
