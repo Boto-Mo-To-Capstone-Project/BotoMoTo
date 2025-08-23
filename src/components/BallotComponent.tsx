@@ -12,6 +12,7 @@ import {
   selectCandidate,
   deselectCandidate,
   clearSelections,
+  voteStraight,
 } from "@/store/ballotSlice";
 
 interface BallotData {
@@ -57,9 +58,16 @@ const BallotComponent = ({
   };
 
   // Redux dispatch when deselecting a candidate (only in voter mode)
-  const handleDeselectCandidate = (position: string, candidateName: string) => {
+  const handleDeselectCandidate = (position: string, candidateId: string) => {
     if (mode === 'voter') {
-      dispatch(deselectCandidate({ position, candidateName }));
+      dispatch(deselectCandidate({ position, candidateId }));
+    }
+  };
+
+  // Handle vote straight by party
+  const handleVoteStraight = (party: string) => {
+    if (mode === 'voter') {
+      dispatch(voteStraight({ party, ballotData }));
     }
   };
 
@@ -128,6 +136,7 @@ const BallotComponent = ({
           <Dropdown
             label="Vote Straight (Party)"
             options={parties}
+            onSelect={handleVoteStraight}
           />
         )}
 
@@ -150,7 +159,7 @@ const BallotComponent = ({
                 handleSelectCandidate(position, candidate)
               }
               onDeselectCandidate={(candidate) =>
-                handleDeselectCandidate(position, candidate.name)
+                handleDeselectCandidate(position, candidate.id)
               }
               disabled={mode === 'preview'}
             />

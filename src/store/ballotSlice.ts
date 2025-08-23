@@ -52,7 +52,7 @@ const ballotSlice = createSlice({
 
       // prevent duplicate selection
       const alreadySelected = state.selections[position].some(
-        (c) => c.name === candidate.name
+        (c) => c.id === candidate.id
       );
       if (!alreadySelected) {
         state.selections[position].push(candidate);
@@ -61,13 +61,13 @@ const ballotSlice = createSlice({
     // when deselecting a candidate
     deselectCandidate(
       state, 
-      action: PayloadAction<{ position: string; candidateName: string }>
+      action: PayloadAction<{ position: string; candidateId: string }>
     ) {
-      const { position, candidateName } = action.payload;
+      const { position, candidateId } = action.payload;
       if (state.selections[position]) {
-        // Remove candidate by name
+        // Remove candidate by ID
         state.selections[position] = state.selections[position].filter(
-          (c) => c.name !== candidateName
+          (c) => c.id !== candidateId
         );
         // If no candidates remain, remove the position from state
         if (state.selections[position].length === 0) {
@@ -82,9 +82,44 @@ const ballotSlice = createSlice({
     clearSelections(state) {
       state.selections = {};
     },
+    // eto ay for voting straight by party
+
+    // Vote straight by party - selects candidates from the same party
+    voteStraight(
+      state,
+      action: PayloadAction<{
+        party: string;
+        ballotData: {
+          positions: {
+            name: string;
+            maxSelections: number;
+            candidates: Candidate[];
+          }[];
+        };
+      }>
+    ) {
+      const { party, ballotData } = action.payload;
+      
+      // Clear existing selections first
+      state.selections = {};
+      
+      // For each position, select candidates from the chosen party
+      ballotData.positions.forEach(position => {
+        const partyCandidates = position.candidates.filter(
+          candidate => candidate.party === party
+        );
+        
+        // Only select up to the maxSelections limit for this position
+        const candidatesToSelect = partyCandidates.slice(0, position.maxSelections);
+        
+        if (candidatesToSelect.length > 0) {
+          state.selections[position.name] = candidatesToSelect;
+        }
+      });
+    },
   },
 });
 
-export const { selectCandidate, deselectCandidate, clearSelections } = ballotSlice.actions;
+export const { selectCandidate, deselectCandidate, clearSelections, voteStraight } = ballotSlice.actions;
 
 export default ballotSlice.reducer;

@@ -18,6 +18,11 @@ const Dropdown = ({ label, options, onSelect }: DropdownProps) => {
     onSelect?.(option);
   };
 
+  const handleReset = () => {
+    setSelected(null);
+    setIsOpen(false);
+  };
+
   return (
     <div className="w-64 relative">
       <label className="block mb-2 voter-election-desc">
@@ -34,6 +39,9 @@ const Dropdown = ({ label, options, onSelect }: DropdownProps) => {
 
       {isOpen && (
         <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+          <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-500 border-b border-gray-200" onClick={handleReset} >
+            Clear selection
+          </li>
           {options.map((option) => (
             <li
               key={option}
