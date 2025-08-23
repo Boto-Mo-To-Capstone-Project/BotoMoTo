@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "db:migrate": "npx prisma migrate dev",
+    "db:deploy": "npx prisma migrate deploy",
     "db:reset": "prisma migrate reset && prisma migrate dev",
     "db:studio": "prisma studio",
     "create-superadmin": "node scripts/create-superadmin.mjs",

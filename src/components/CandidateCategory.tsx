@@ -25,7 +25,7 @@ const CandidateCategory = ({
   onDeselectCandidate,
   disabled = false,
 }: CandidateCategoryProps) => {
-  const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
+  const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]); // Track by candidate ID instead of name
   const [fileViewerOpen, setFileViewerOpen] = useState(false);
   const [selectedCredential, setSelectedCredential] = useState<{
     url: string;
@@ -55,18 +55,18 @@ const CandidateCategory = ({
   const handleSelect = (candidate: Candidate) => {
     if (disabled) return; // Don't allow selection in preview mode
     
-    const candidateName = candidate.name; // get the name from candidate object
+    const candidateId = candidate.id; // Use ID instead of name for tracking
 
-    if (selectedCandidates.includes(candidateName)) {
+    if (selectedCandidates.includes(candidateId)) {
       // Deselect
       setSelectedCandidates((prev) =>
-        prev.filter((name) => name !== candidateName)
+        prev.filter((id) => id !== candidateId)
       );
       onDeselectCandidate(candidate);
     } else {
       // check if voter exceeds the select count of the position
       if (selectedCandidates.length < selectCount) {
-        setSelectedCandidates((prev) => [...prev, candidateName]);
+        setSelectedCandidates((prev) => [...prev, candidateId]);
         onSelectCandidate(candidate);
       } else {
         alert(`You can only select up to ${selectCount} candidate(s).`);
@@ -95,11 +95,11 @@ const CandidateCategory = ({
           </thead>
           <tbody className="divide-y divide-gray-200">
             {candidateList.map((candidate, index) => (
-              <tr key={candidate.name} className="bg-white hover:bg-gray-50">
+              <tr key={candidate.id} className="bg-white hover:bg-gray-50">
                 <td className="px-4 py-2 candidate-category-name flex gap-3 items-center">
                   <input
                     type="checkbox"
-                    checked={selectedCandidates.includes(candidate.name)}
+                    checked={selectedCandidates.includes(candidate.id)}
                     className={`accent-primary min-h-5 min-w-5 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onChange={() => handleSelect(candidate)}
                     disabled={disabled}
