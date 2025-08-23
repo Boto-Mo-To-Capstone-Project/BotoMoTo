@@ -47,7 +47,11 @@ export default function VoterTable({
     } else {
       // Check all
       props.voters.forEach(v => {
-        if (!selectedIds.includes(v.id)) onCheckboxChange && onCheckboxChange(v.id);
+        if (!selectedIds.includes(v.id)) {
+          if (onCheckboxChange) {
+            onCheckboxChange(v.id);
+          }
+        }
       });
     }
   };
@@ -63,7 +67,7 @@ export default function VoterTable({
                 <input
                   type="checkbox"
                   checked={allChecked}
-                  ref={el => { if (el) el.indeterminate = !allChecked && someChecked; }}
+                  ref={el => { if (el) {el.indeterminate = !allChecked && someChecked;} }}
                   onChange={handleHeaderCheckbox}
                 />
               </th>
@@ -138,8 +142,12 @@ export default function VoterTable({
                   className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
                   onClick={e => {
                     if ((e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
-                    onCheckboxChange && onCheckboxChange(voter.id);
-                    props.onRowClick && props.onRowClick(voter);
+                    if (onCheckboxChange) {
+                      onCheckboxChange(voter.id);
+                    }
+                    if (props.onRowClick) {
+                      props.onRowClick(voter);
+                    }
                   }}
                 >
                   <td className="py-2 px-3 align-middle">
