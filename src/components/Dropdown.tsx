@@ -6,9 +6,10 @@ type DropdownProps = {
   label: string;
   options: string[];
   onSelect?: (value: string) => void;
+  onClear?: () => void;
 };
 
-const Dropdown = ({ label, options, onSelect }: DropdownProps) => {
+const Dropdown = ({ label, options, onSelect, onClear }: DropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -16,6 +17,12 @@ const Dropdown = ({ label, options, onSelect }: DropdownProps) => {
     setSelected(option);
     setIsOpen(false);
     onSelect?.(option);
+  };
+
+  const handleReset = () => {
+    setSelected(null);
+    setIsOpen(false);
+    onClear?.(); // Call the clear callback if provided
   };
 
   return (
@@ -34,6 +41,9 @@ const Dropdown = ({ label, options, onSelect }: DropdownProps) => {
 
       {isOpen && (
         <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+          <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-500 border-b border-gray-200" onClick={handleReset} >
+            Clear selection
+          </li>
           {options.map((option) => (
             <li
               key={option}

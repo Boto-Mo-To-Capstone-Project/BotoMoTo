@@ -12,6 +12,7 @@ import {
   selectCandidate,
   deselectCandidate,
   clearSelections,
+  voteStraight,
 } from "@/store/ballotSlice";
 
 interface BallotData {
@@ -27,6 +28,7 @@ interface BallotComponentProps {
   ballotData: BallotData;
   electionName: string;
   mode: 'voter' | 'preview';
+  voterScope?: string; // Add scope information
   onCancel?: () => void;
   onReview?: () => void;
   onBack?: () => void;
@@ -36,6 +38,7 @@ const BallotComponent = ({
   ballotData, 
   electionName, 
   mode, 
+  voterScope,
   onCancel, 
   onReview,
   onBack 
@@ -57,9 +60,23 @@ const BallotComponent = ({
   };
 
   // Redux dispatch when deselecting a candidate (only in voter mode)
-  const handleDeselectCandidate = (position: string, candidateName: string) => {
+  const handleDeselectCandidate = (position: string, candidateId: string) => {
     if (mode === 'voter') {
-      dispatch(deselectCandidate({ position, candidateName }));
+      dispatch(deselectCandidate({ position, candidateId }));
+    }
+  };
+
+  // Handle vote straight by party
+  const handleVoteStraight = (party: string) => {
+    if (mode === 'voter') {
+      dispatch(voteStraight({ party, ballotData }));
+    }
+  };
+
+  // Handle clearing all selections
+  const handleClearAllSelections = () => {
+    if (mode === 'voter') {
+      dispatch(clearSelections());
     }
   };
 
@@ -72,8 +89,8 @@ const BallotComponent = ({
     selectionLimits[position.name] = position.maxSelections;
   });
 
-  // Get unique parties from candidates (fallback if not provided)
-  const parties = ballotData.parties || [
+  // Get unique parties from candidates in current ballot scope (better filtering)
+  const availableParties = [
     ...new Set(
       ballotData.positions
         .flatMap(pos => pos.candidates)
@@ -123,19 +140,33 @@ const BallotComponent = ({
           </li>
         </div>
 
+        {/* Voter scope information */}
+        {voterScope && (
+          <div className="mb-5 p-3 border rounded-md bg-blue-50 border-blue-200">
+            <p className="voter-election-desc text-blue-800">
+              <strong>Your Voting Scope:</strong> {voterScope}
+            </p>
+            <p className="voter-election-desc text-blue-600 text-sm mt-1">
+              You can only vote for candidates within your assigned scope.
+            </p>
+          </div>
+        )}
+
         {/* Party dropdown - only show in voter mode */}
-        {mode === 'voter' && parties.length > 0 && (
+        {mode === 'voter' && availableParties.length > 0 && (
           <Dropdown
             label="Vote Straight (Party)"
-            options={parties}
+            options={availableParties}
+            onSelect={handleVoteStraight}
+            onClear={handleClearAllSelections}
           />
         )}
 
         {/* Preview mode party info */}
-        {mode === 'preview' && parties.length > 0 && (
+        {mode === 'preview' && availableParties.length > 0 && (
           <div className="mb-5 p-4 border rounded-md bg-gray-50">
             <p className="voter-election-desc font-semibold">Available Parties:</p>
-            <p className="voter-election-desc">{parties.join(', ')}</p>
+            <p className="voter-election-desc">{availableParties.join(', ')}</p>
           </div>
         )}
 
@@ -150,7 +181,7 @@ const BallotComponent = ({
                 handleSelectCandidate(position, candidate)
               }
               onDeselectCandidate={(candidate) =>
-                handleDeselectCandidate(position, candidate.name)
+                handleDeselectCandidate(position, candidate.id)
               }
               disabled={mode === 'preview'}
             />

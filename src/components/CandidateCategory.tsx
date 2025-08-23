@@ -7,6 +7,8 @@ import React from "react";
 import { Eye } from "lucide-react";
 import SectionHeaderContainer from "./SectionHeaderContainer";
 import FileViewer from "./FileViewer";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 
 type CandidateCategoryProps = {
   position: string;
@@ -25,7 +27,11 @@ const CandidateCategory = ({
   onDeselectCandidate,
   disabled = false,
 }: CandidateCategoryProps) => {
-  const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]); // Track by candidate ID instead of name
+  // Get selected candidates from Redux store for this position
+  const selectedCandidatesFromRedux = useSelector((state: RootState) => 
+    state.ballot.selections[position] || []
+  );
+  
   const [fileViewerOpen, setFileViewerOpen] = useState(false);
   const [selectedCredential, setSelectedCredential] = useState<{
     url: string;
@@ -55,18 +61,15 @@ const CandidateCategory = ({
   const handleSelect = (candidate: Candidate) => {
     if (disabled) return; // Don't allow selection in preview mode
     
-    const candidateId = candidate.id; // Use ID instead of name for tracking
+    // Check if candidate is already selected (compare by ID)
+    const isSelected = selectedCandidatesFromRedux.some(c => c.id === candidate.id);
 
-    if (selectedCandidates.includes(candidateId)) {
+    if (isSelected) {
       // Deselect
-      setSelectedCandidates((prev) =>
-        prev.filter((id) => id !== candidateId)
-      );
       onDeselectCandidate(candidate);
     } else {
-      // check if voter exceeds the select count of the position
-      if (selectedCandidates.length < selectCount) {
-        setSelectedCandidates((prev) => [...prev, candidateId]);
+      // Check if voter exceeds the select count of the position
+      if (selectedCandidatesFromRedux.length < selectCount) {
         onSelectCandidate(candidate);
       } else {
         alert(`You can only select up to ${selectCount} candidate(s).`);
@@ -95,11 +98,11 @@ const CandidateCategory = ({
           </thead>
           <tbody className="divide-y divide-gray-200">
             {candidateList.map((candidate, index) => (
-              <tr key={candidate.id} className="bg-white hover:bg-gray-50">
+              <tr key={candidate.id} className="bg-white hover:bg-gray-50" onClick={() => handleSelect(candidate)}>
                 <td className="px-4 py-2 candidate-category-name flex gap-3 items-center">
                   <input
                     type="checkbox"
-                    checked={selectedCandidates.includes(candidate.id)}
+                    checked={selectedCandidatesFromRedux.some(c => c.id === candidate.id)}
                     className={`accent-primary min-h-5 min-w-5 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onChange={() => handleSelect(candidate)}
                     disabled={disabled}
@@ -112,7 +115,13 @@ const CandidateCategory = ({
                     alt={`${candidate.name} photo`}
                     className="w-10 h-10 object-cover rounded-full"
                   />
-                  <strong>{candidate.name}</strong>
+                  <div className="flex flex-col">
+                    <strong>{candidate.name}</strong>
+                    {/* Show ID only if there might be duplicate names */}
+                    {candidateList.filter(c => c.name === candidate.name).length > 1 && (
+                      <span className="text-xs text-gray-500">ID: {candidate.id}</span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-2 candidate-category-name">
                   {candidate.party}

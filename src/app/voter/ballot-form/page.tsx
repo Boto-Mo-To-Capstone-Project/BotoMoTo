@@ -13,6 +13,7 @@ const BallotForm = () => {
     const storedData = localStorage.getItem("voterData");
     if (storedData) {
       const data = JSON.parse(storedData);
+      console.log("Voter Data loaded:", data); // Debug log
       setVoterData(data);
     } else {
       // If no voter data, redirect to login
@@ -45,7 +46,11 @@ const BallotForm = () => {
   if (!voterData) {
     return (
       <main className="flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
-        <p>Loading ballot...</p>
+        {/* new loading state baka gawin ko rin sa ibang pages */}
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p>Loading ballot...</p>
+        </div>
       </main>
     );
   }
@@ -76,6 +81,7 @@ const BallotForm = () => {
     <BallotComponent
       ballotData={ballotData}
       electionName={voterData.election?.name || 'Election Name'}
+      voterScope={voterData.voter?.votingScope?.name}
       mode="voter"
       onCancel={handleCancel}
       onReview={handleReview}
