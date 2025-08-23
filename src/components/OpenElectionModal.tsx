@@ -147,7 +147,7 @@ export function OpenElectionModal({
                 <SubmitButton
                   type="submit"
                   variant="small"
-                  label="Send"
+                  label="Submit"
                   className="px-5 py-2.5 text-sm font-medium rounded-lg"
                 />
               </div>
