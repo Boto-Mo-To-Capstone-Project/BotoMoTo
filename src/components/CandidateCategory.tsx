@@ -115,7 +115,13 @@ const CandidateCategory = ({
                     alt={`${candidate.name} photo`}
                     className="w-10 h-10 object-cover rounded-full"
                   />
-                  <strong>{candidate.name}</strong>
+                  <div className="flex flex-col">
+                    <strong>{candidate.name}</strong>
+                    {/* Show ID only if there might be duplicate names */}
+                    {candidateList.filter(c => c.name === candidate.name).length > 1 && (
+                      <span className="text-xs text-gray-500">ID: {candidate.id}</span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-2 candidate-category-name">
                   {candidate.party}

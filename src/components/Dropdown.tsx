@@ -6,9 +6,10 @@ type DropdownProps = {
   label: string;
   options: string[];
   onSelect?: (value: string) => void;
+  onClear?: () => void;
 };
 
-const Dropdown = ({ label, options, onSelect }: DropdownProps) => {
+const Dropdown = ({ label, options, onSelect, onClear }: DropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -21,6 +22,7 @@ const Dropdown = ({ label, options, onSelect }: DropdownProps) => {
   const handleReset = () => {
     setSelected(null);
     setIsOpen(false);
+    onClear?.(); // Call the clear callback if provided
   };
 
   return (
