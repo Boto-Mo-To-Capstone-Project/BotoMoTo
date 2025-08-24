@@ -13,6 +13,7 @@ export default function SuperAdminSurveyPage() {
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedSurvey, setSelectedSurvey] = useState<any | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   useEffect(() => {
     const load = async () => {
@@ -68,6 +69,36 @@ export default function SuperAdminSurveyPage() {
     setPage(1);
   };
 
+  // Action handlers
+  const handleAdd = () => {
+    // TODO: Implement add functionality
+    toast.success("Add button clicked");
+  };
+
+  const handleImport = () => {
+    // TODO: Implement import functionality
+    toast.success("Import button clicked");
+  };
+
+  const handleEdit = () => {
+    // TODO: Implement edit functionality
+    toast.success("Edit button clicked");
+  };
+
+  const handleFilter = () => {
+    // TODO: Implement filter functionality
+    toast.success("Filter button clicked");
+  };
+
+  const handleDelete = () => {
+    // TODO: Implement delete functionality
+    toast.success("Delete button clicked");
+  };
+
+  const handleSelectionChange = (newSelectedIds: string[]) => {
+    setSelectedIds(newSelectedIds);
+  };
+
   return (
     <>
       <Toaster position="top-center" />
@@ -83,6 +114,8 @@ export default function SuperAdminSurveyPage() {
                 Loading surveys...
               </div>
             ) : (
+              
+
               <Table
                 title="All Surveys"
                 columns={[
@@ -96,11 +129,18 @@ export default function SuperAdminSurveyPage() {
                   "Is_Active",
                 ]}
                 data={rows}
+                showActions={true}
+                actions={["add", "edit", "delete"]}
+                selectedIds={selectedIds}
+                onSelectionChange={handleSelectionChange}
+                onAdd={handleAdd}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
                 // required pagination props
                 page={page}
                 totalPages={totalPages}
                 onFirst={handleFirst}
-                onPrev={handlePrev}
+                onPrev={handlePrev} 
                 onNext={handleNext}
                 onLast={handleLast}
                 pageSize={pageSize}
