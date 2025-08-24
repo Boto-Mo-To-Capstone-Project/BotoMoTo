@@ -47,7 +47,11 @@ export default function VoterTable({
     } else {
       // Check all
       props.voters.forEach(v => {
-        if (!selectedIds.includes(v.id)) onCheckboxChange && onCheckboxChange(v.id);
+        if (!selectedIds.includes(v.id)) {
+          if (onCheckboxChange) {
+            onCheckboxChange(v.id);
+          }
+        }
       });
     }
   };
@@ -63,12 +67,12 @@ export default function VoterTable({
                 <input
                   type="checkbox"
                   checked={allChecked}
-                  ref={el => { if (el) el.indeterminate = !allChecked && someChecked; }}
+                  ref={el => { if (el) {el.indeterminate = !allChecked && someChecked;} }}
                   onChange={handleHeaderCheckbox}
                 />
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("name")}
               >
                 Name{" "}
@@ -79,7 +83,7 @@ export default function VoterTable({
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("status")}
               >
                 Status{" "}
@@ -90,7 +94,7 @@ export default function VoterTable({
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("scope")}
               >
                 Scope{" "}
@@ -101,10 +105,10 @@ export default function VoterTable({
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("email")}
               >
-                Email address{" "}
+                Email{" "}
                 {props.sortCol === "email" ? (
                   props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
                 ) : (
@@ -112,22 +116,25 @@ export default function VoterTable({
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("contactNumber")}
               >
-                Contact Number{" "}
+                Contact{" "}
                 {props.sortCol === "contactNumber" ? (
                   props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
                 ) : (
                   <FaSort className="inline opacity-50" />
                 )}
               </th>
+              <th className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap">
+                Status{" "}
+              </th>
             </tr>
           </thead>
           <tbody>
             {props.voters.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-4 text-center text-gray-400">
+                <td colSpan={8} className="px-4 py-4 text-center text-gray-400">
                   No voters found.
                 </td>
               </tr>
@@ -138,8 +145,12 @@ export default function VoterTable({
                   className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
                   onClick={e => {
                     if ((e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
-                    onCheckboxChange && onCheckboxChange(voter.id);
-                    props.onRowClick && props.onRowClick(voter);
+                    if (onCheckboxChange) {
+                      onCheckboxChange(voter.id);
+                    }
+                    if (props.onRowClick) {
+                      props.onRowClick(voter);
+                    }
                   }}
                 >
                   <td className="py-2 px-3 align-middle">
@@ -161,6 +172,11 @@ export default function VoterTable({
                   <td className="py-2 px-3 align-middle truncate max-w-[120px]">{voter.scope}</td>
                   <td className="py-2 px-3 align-middle truncate max-w-[180px]">{voter.email}</td>
                   <td className="py-2 px-3 align-middle truncate max-w-[140px]">{voter.contactNumber}</td>
+                  <td className="py-2 px-3 align-middle truncate max-w-[120px]">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                      Not Sent hardcoded
+                    </span>
+                  </td>
                 </tr>
               ))
             )}

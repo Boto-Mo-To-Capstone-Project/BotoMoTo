@@ -13,7 +13,6 @@ const VoterLoginPage = () => {
   const router = useRouter(); // to go to another route
   const [voterCode, setVoterCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const handleOtpChange = (value: string) => {
     setVoterCode(value);
@@ -22,13 +21,11 @@ const VoterLoginPage = () => {
   const handleSubmit = async () => {
     if (voterCode.length !== 6) {
       const msg = "Please enter a complete 6-digit code";
-      setError(msg);
       toast.error(msg); // 👈 show in toast
       return;
     }
 
     setIsLoading(true);
-    setError("");
 
     try {
       const response = await fetch('/api/voters/verify', {
@@ -39,21 +36,24 @@ const VoterLoginPage = () => {
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to verify voter code");
+      if (response.ok && data.success) {
+        toast.success("Voter code verified successfully!"); // 👈 show in toast
+        // Store voter, election, and ballot information in localStorage
+        localStorage.setItem("voterData", JSON.stringify({
+          voter: data.data.voter,
+          election: data.data.election,
+          ballotData: data.data.ballotData
+        }));
+        // Navigate to election status page
+        router.push("/voter/election-status");
+      } else {
+        const errorMessage = data.message || "Failed to verify voter code";
+        toast.error(errorMessage); // 👈 show in toast
       }
 
-      // Store voter, election, and ballot information in localStorage
-      localStorage.setItem("voterData", JSON.stringify({
-        voter: data.data.voter,
-        election: data.data.election,
-        ballotData: data.data.ballotData
-      }));
-      
-      // Navigate to election status page
-      router.push("/voter/election-status");
     } catch (err: any) {
-      setError(err.message || "Invalid voter code. Please try again.");
+      toast.error("An error occurred. Please try again."); // 👈 show in toast
+      console.error("Error verifying voter code:", err);
     } finally {
       setIsLoading(false);
     }

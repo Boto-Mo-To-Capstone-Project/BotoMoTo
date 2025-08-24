@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { MdAdd, MdCheckCircleOutline, MdChevronLeft, MdChevronRight, MdFirstPage, MdLastPage, MdOutlineCancel } from "react-icons/md";
+import { MdAdd, MdCheckCircleOutline, MdChevronLeft, MdChevronRight, MdFirstPage, MdLastPage, MdOutlineCancel, MdFileUpload, MdEdit, MdFilterList, MdDelete } from "react-icons/md";
 import SearchBar from "./SearchBar";
 import { FaSort, FaSortDown, FaSortUp } from "react-icons/fa";
 import { SubmitButton } from "./SubmitButton";
@@ -13,9 +13,18 @@ type TableProps = {
   columns: string[];
   data: Record<string, any>[];
   showActions?: boolean; // if table has actions
+  actions?: string[]; // array of action types: "add", "import", "edit", "filter", "delete", "approve", "reject"
+  selectedIds?: string[]; // selected row IDs for action buttons
+  onSelectionChange?: (selectedIds: string[]) => void; // callback for selection changes
   onApprove?: (row: Record<string, any>) => void;
   onReject?: (row: Record<string, any>) => void;
   onRowClick?: (row: Record<string, any>) => void; // NEW: row click handler
+  // Action handlers
+  onAdd?: () => void;
+  onImport?: () => void;
+  onEdit?: () => void;
+  onFilter?: () => void;
+  onDelete?: () => void;
   pageSize: number;
   page: number;
   totalPages: number;
@@ -33,9 +42,17 @@ export default function Table({
   columns,
   data,
   showActions,
+  actions = [],
+  selectedIds = [],
+  onSelectionChange,
   onApprove,
   onReject,
   onRowClick,
+  onAdd,
+  onImport,
+  onEdit,
+  onFilter,
+  onDelete,
   
   ...props
 }: TableProps) {
@@ -101,28 +118,54 @@ export default function Table({
     );
 
   const toggleSelectAll = () => {
-    const start = (currentPage - 1) *  props.pageSize;
+    const start = (currentPage - 1) * props.pageSize;
     const newSet = new Set(selectedRows);
+    const newSelectedIds = [...selectedIds];
+    
     if (isAllSelected) {
       for (let i = 0; i < paginatedData.length; i++) {
-        newSet.delete(start + i);
+        const globalIndex = start + i;
+        newSet.delete(globalIndex);
+        const rowId = String(paginatedData[i].Survey_ID || paginatedData[i].id || globalIndex);
+        const idIndex = newSelectedIds.indexOf(rowId);
+        if (idIndex > -1) {
+          newSelectedIds.splice(idIndex, 1);
+        }
       }
     } else {
       for (let i = 0; i < paginatedData.length; i++) {
-        newSet.add(start + i);
+        const globalIndex = start + i;
+        newSet.add(globalIndex);
+        const rowId = String(paginatedData[i].Survey_ID || paginatedData[i].id || globalIndex);
+        if (!newSelectedIds.includes(rowId)) {
+          newSelectedIds.push(rowId);
+        }
       }
     }
     setSelectedRows(newSet);
+    onSelectionChange?.(newSelectedIds);
   };
 
   const toggleSelectRow = (globalIndex: number) => {
     const newSet = new Set(selectedRows);
+    const row = paginatedData[globalIndex - (currentPage - 1) * props.pageSize];
+    const rowId = String(row.Survey_ID || row.id || globalIndex);
+    const newSelectedIds = [...selectedIds];
+    
     if (newSet.has(globalIndex)) {
       newSet.delete(globalIndex);
+      const idIndex = newSelectedIds.indexOf(rowId);
+      if (idIndex > -1) {
+        newSelectedIds.splice(idIndex, 1);
+      }
     } else {
       newSet.add(globalIndex);
+      if (!newSelectedIds.includes(rowId)) {
+        newSelectedIds.push(rowId);
+      }
     }
     setSelectedRows(newSet);
+    onSelectionChange?.(newSelectedIds);
   };
 
 
@@ -142,19 +185,112 @@ export default function Table({
 
           {showActions && (
           <div className="flex-shrink-0 flex gap-2">
-            <SubmitButton
-              label="Approve"
-              variant="action"
-              icon={<MdCheckCircleOutline size={20} color="green"/>}
-              title="Add"
-            />
-            <SubmitButton
-              label="Reject"
-              variant="action"
-              icon={<MdOutlineCancel size={20} color="red"/>}
-              title="Add"
-            />
-            
+            {actions?.includes("add") && (
+              <SubmitButton
+                label=""
+                variant="action"
+                icon={<MdAdd size={20} />}
+                title="Add"
+                onClick={onAdd}
+              />
+            )}
+
+            {actions?.includes("import") && (
+              <SubmitButton
+                label=""
+                variant="action"
+                icon={<MdFileUpload size={20} />}
+                title="Import"
+                onClick={onImport}
+              />
+            )}
+
+            {actions?.includes("edit") && (
+              <SubmitButton
+                label=""
+                variant="action"
+                icon={<MdEdit size={20} />}
+                title="Edit"
+                onClick={selectedIds.length === 1 ? onEdit : undefined}
+                className={
+                  selectedIds.length === 1
+                    ? ""
+                    : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
+                }
+              />
+            )}
+
+            {actions?.includes("filter") && (
+              <SubmitButton
+                label=""
+                variant="action"
+                icon={<MdFilterList size={20} />}
+                title="Filter"
+                onClick={selectedIds.length >= 1 ? onFilter : undefined}
+                className={
+                  selectedIds.length >= 1
+                    ? ""
+                    : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
+                }
+              />
+            )}
+
+            {actions?.includes("delete") && (
+              <SubmitButton
+                label=""
+                variant="action"
+                icon={<MdDelete size={20} />}
+                title="Delete"
+                onClick={selectedIds.length >= 1 ? onDelete : undefined}
+                className={
+                  selectedIds.length >= 1
+                    ? ""
+                    : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
+                }
+              />
+            )}
+
+            {actions?.includes("approve") && (
+              <SubmitButton
+                label="Approve"
+                variant="action"
+                icon={<MdCheckCircleOutline size={20} />}
+                title="Approve"
+                onClick={selectedIds.length >= 1 ? () => {
+                  // Handle approve for selected rows
+                  const selectedRows = data.filter(row => 
+                    selectedIds.includes(String(row.Survey_ID || row.id))
+                  );
+                  selectedRows.forEach(row => onApprove?.(row));
+                } : undefined}
+                className={
+                  selectedIds.length >= 1
+                    ? ""
+                    : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
+                }
+              />
+            )}
+
+            {actions?.includes("reject") && (
+              <SubmitButton
+                label="Reject"
+                variant="action"
+                icon={<MdOutlineCancel size={20} />}
+                title="Reject"
+                onClick={selectedIds.length >= 1 ? () => {
+                  // Handle reject for selected rows
+                  const selectedRows = data.filter(row => 
+                    selectedIds.includes(String(row.Survey_ID || row.id))
+                  );
+                  selectedRows.forEach(row => onReject?.(row));
+                } : undefined}
+                className={
+                  selectedIds.length >= 1
+                    ? ""
+                    : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
+                }
+              />
+            )}
         </div>
          )}
       </div>
@@ -220,33 +356,6 @@ export default function Table({
                       {typeof row[col] === "string" ? toSentenceCase(row[col]) : row[col]}
                     </td>
                   ))}
-                  {showActions && (
-                    <td
-                      className="p-3 border-b space-x-2 flex justify-center"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onApprove?.(row);
-                        }}
-                        className="p-2 bg-green-900 text-white rounded hover:bg-green-700"
-                        title="Approve"
-                      >
-                        <MdCheckCircleOutline size={20} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onReject?.(row);
-                        }}
-                        className="p-2 bg-red-900 text-white rounded hover:bg-red-700"
-                        title="Reject"
-                      >
-                        <MdOutlineCancel size={20} />
-                      </button>
-                    </td>
-                  )}
                 </tr>
               );
             })}

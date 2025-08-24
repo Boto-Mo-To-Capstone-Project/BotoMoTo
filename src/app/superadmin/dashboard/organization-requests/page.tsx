@@ -19,6 +19,7 @@ export default function SuperAdminOrgRequestPage() {
   const [orgRequests, setOrgRequests] = useState<Record<string, any>[]>([]);
   const [allOrgs, setAllOrgs] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   
     const [search, setSearch] = useState("");
@@ -163,6 +164,10 @@ export default function SuperAdminOrgRequestPage() {
     }
   };
 
+  const handleSelectionChange = (newSelectedIds: string[]) => {
+    setSelectedIds(newSelectedIds);
+  };
+
   const columns = ["Name", "Email", "Members", "Photo", "Letter", "Status", "Admin"];
 
   return (
@@ -185,6 +190,9 @@ export default function SuperAdminOrgRequestPage() {
                   columns={columns}
                   data={orgRequests}
                   showActions={true}
+                  actions={["approve", "reject"]}
+                  selectedIds={selectedIds}
+                  onSelectionChange={handleSelectionChange}
                   onApprove={handleApprove}
                   onReject={handleReject}
                   page={page}

@@ -283,6 +283,7 @@ export async function POST(request: NextRequest) {
       positions: positions
         .filter(position => position.candidates.length > 0)
         .map(position => ({
+          id: position.id,
           name: position.name,
           maxSelections: position.voteLimit,
           candidates: position.candidates.map(candidate => ({
