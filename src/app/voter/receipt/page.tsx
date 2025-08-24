@@ -6,21 +6,41 @@ import Button from "@/components/Button";
 import { useRouter } from "next/navigation";
 import CandidateRow from "@/components/CandidateRow";
 import SectionHeaderContainer from "@/components/SectionHeaderContainer";
+import { useState, useEffect } from "react";
 
 const VoteReceipt = () => {
+  const [voterData, setVoterData] = useState<any>(null);
+
   const router = useRouter(); // to go to another route
 
   const selections = useSelector((state: RootState) => state.ballot.selections);
 
+  // Get voter data from localStorage
+  useEffect(() => {
+    const storedData = localStorage.getItem("voterData");
+    if (storedData) {
+      const data = JSON.parse(storedData);
+      setVoterData(data);
+    }
+  }, []);
+
+  const electionName = voterData?.election?.name;
+  const voterScope = voterData?.voter?.votingScope?.name;
+  
   // return this if no votes yet
   if (Object.keys(selections).length === 0) {
     return (
       <div className="flex flex-col items-center mt-40 gap-30">
         <div className="text-center space-y-2">
           <p className="voter-election-heading">Vote Receipt</p>
-          <p className=" voter-election-subheading">
-            You voted in the 2025 Election of Provident
+          <p className="voter-election-subheading">
+          You're voting in the {electionName}
+        </p>
+        {voterScope && (
+          <p className="voter-election-desc text-blue-600">
+            <strong>Voting Scope:</strong> {voterScope}
           </p>
+        )}
         </div>
         <p className=" voter-election-heading">No votes were selected.</p>
         <Button
@@ -37,8 +57,13 @@ const VoteReceipt = () => {
       <div className="text-center space-y-2">
         <p className="voter-election-heading">Vote Receipt</p>
         <p className="voter-election-subheading">
-          You voted in the 2025 Election of Provident
+          You voted in the {electionName}
         </p>
+        {voterScope && (
+          <p className="voter-election-desc text-blue-600">
+            <strong>Voting Scope:</strong> {voterScope}
+          </p>
+        )}
       </div>
       <div className="w-full lg:w-3/5 flex flex-col">
         <div className="mt-5 space-y-3 w-full">
@@ -51,14 +76,14 @@ const VoteReceipt = () => {
                 <table className="w-full divide-y divide-gray-200 border border-gray-300 bg-gray-10 ">
                   <thead>
                     {/* uncomment nalang kung gusto makita ung candidate at party */}
-                    {/* <tr>
+                    <tr>
                     <th className="px-4 py-2 candidate-category-desc w-3/4">
                       Candidate
                     </th>
                     <th className="px-4 py-2 candidate-category-desc w-1/4">
                       Party
                     </th>
-                  </tr> */}
+                  </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {candidates && candidates.length > 0 ? (

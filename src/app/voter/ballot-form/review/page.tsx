@@ -7,12 +7,12 @@ import { useRouter } from "next/navigation";
 import CandidateRow from "@/components/CandidateRow";
 import SectionHeaderContainer from "@/components/SectionHeaderContainer";
 import { useState, useEffect } from "react";
+import toast, { Toaster } from "react-hot-toast";
 
 const ReviewPage = () => {
   const [isChecked, setIsChecked] = useState(false);
   const [voterData, setVoterData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const router = useRouter();
 
@@ -33,17 +33,16 @@ const ReviewPage = () => {
   // Submit vote function
   const handleSubmitVote = async () => {
     if (!voterData?.voter?.code) {
-      setSubmitError("Voter code not found. Please try logging in again.");
+      toast.error("Voter code not found. Please try logging in again.");
       return;
     }
 
     if (!voterData?.ballotData?.positions) {
-      setSubmitError("Ballot data not found. Please try logging in again.");
+      toast.error("Ballot data not found. Please try logging in again."); 
       return;
     }
 
     setIsSubmitting(true);
-    setSubmitError(null);
 
     try {
       // Convert selections to the format expected by the API
@@ -94,11 +93,11 @@ const ReviewPage = () => {
       } else {
         // Handle API errors
         const errorMessage = result.message || result.error || "Failed to submit votes";
-        setSubmitError(errorMessage);
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error("Error submitting votes:", error);
-      setSubmitError("Network error. Please check your connection and try again.");
+      toast.error("Network error. Please check your connection and try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -134,6 +133,7 @@ const ReviewPage = () => {
 
   return (
     <main className="flex flex-col items-center gap-10 px-10 pb-20 pt-40 text-justify">
+      <Toaster position="top-center" /> 
       <div className="text-center space-y-2">
         <p className="voter-election-heading">Ballot Form Review</p>
         <p className="voter-election-subheading">
@@ -195,11 +195,6 @@ const ReviewPage = () => {
           ))}
         </div>
         <div className="mt-10">
-          {submitError && (
-            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-              {submitError}
-            </div>
-          )}
           <div className="flex gap-3 justify-center items-center">
             <input
               type="checkbox"
