@@ -1,16 +1,18 @@
 "use client";
 import { SubmitButton } from '@/components/SubmitButton';
 
-import Email from "@/app/assets/Email.png";
 import BallotPreview from "@/app/assets/BallotPreview.png";
+import Email from "@/app/assets/Email.png";
+import Setup from "@/app/assets/Setup.png";
 import OpenElection from "@/app/assets/OpenElection.png";
+import LiveDashboard from "@/app/assets/LiveDashboard.png";
 
 import { useState } from "react";
 import { MFAModal } from '@/components/MFAModal';
 import { OpenElectionModal } from '@/components/OpenElectionModal';
 import { FiMoreHorizontal } from "react-icons/fi";
-import LiveDashboard from "@/app/assets/LiveDashboard.png";
 import { MdFileUpload } from 'react-icons/md';
+import { useParams, useRouter } from 'next/navigation';
 
 const setupCards = [
     {
@@ -31,7 +33,7 @@ const setupCards = [
     {
       title: "MFA",
       desc: "Choose a multi-factor authentication method for voters.",
-      img: Email,
+      img: Setup,
       bg: "bg-violet-100",
       text: "text-violet-900",
     },
@@ -53,6 +55,10 @@ const setupCards = [
 ];
 
 function ManageElectionPage() {
+  const params = useParams<{ id: string }>();
+  const electionId = Number(params?.id);
+  const router = useRouter();
+
   const [showSteps, setShowSteps] = useState(false);
   const [showMFAModal, setShowMFAModal] = useState(false);
   const [showOpenElectionModal, setShowOpenElectionModal] = useState(false);
@@ -122,11 +128,21 @@ function ManageElectionPage() {
               flex flex-col items-center text-left w-full h-60 lg:h-auto
           `}
                   onClick={() => {
+                    if (card.title === 'Ballot Preview') {
+                      router.push(`/admin/dashboard/elections/${electionId}/setup/manage-election/ballot-preview`);
+                    }
+                    if (card.title === 'Sending of Emails') {
+                      router.push(`/admin/dashboard/elections/${electionId}/setup/manage-election/send-email`);
+                    }
                     if (card.title === 'MFA') {
                       setShowMFAModal(true);
                     }
                     if (card.title === 'Open Election') {
                       setShowOpenElectionModal(true);
+                    }
+                    if (card.title === 'Live Dashboard') {
+                      // Navigate to Live Dashboard page
+                      router.push(`/admin/dashboard/elections/${electionId}/setup/manage-election/live-dashboard`);
                     }
                     // Add navigation logic for other cards here
                   }}

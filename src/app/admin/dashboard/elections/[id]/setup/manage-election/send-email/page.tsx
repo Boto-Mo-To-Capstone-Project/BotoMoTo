@@ -1,13 +1,29 @@
-
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MdAdd } from "react-icons/md";
 import { SubmitButton } from "@/components/SubmitButton";
 import SearchBar from "@/components/SearchBar";
 import SendEmailTable from "@/components/sendEmailTable";
 import { TrialSendingModal } from "@/components/TrialSendingModal";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import toast, { Toaster } from "react-hot-toast";
+
+// Debounce hook
+function useDebouncedValue<T>(value: T, delay = 400) {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setV(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return v;
+}
 
 export default function SendEmailPage() {
+  const params = useParams<{ id: string }>();
+  const electionId = Number(params?.id);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState("");

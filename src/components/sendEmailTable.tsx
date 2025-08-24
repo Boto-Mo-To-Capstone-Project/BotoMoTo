@@ -108,7 +108,7 @@ export default function VoterTable({
                 className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
                 onClick={() => props.onSort("email")}
               >
-                Email address{" "}
+                Email{" "}
                 {props.sortCol === "email" ? (
                   props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
                 ) : (
@@ -119,13 +119,16 @@ export default function VoterTable({
                 className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
                 onClick={() => props.onSort("contactNumber")}
               >
-                Contact Number{" "}
+                Contact{" "}
                 {props.sortCol === "contactNumber" ? (
                   props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
                 ) : (
                   <FaSort className="inline opacity-50" />
                 )}
               </th>
+
+              // add codesendStatus column here
+              // also add votingscope column here
             </tr>
           </thead>
           <tbody>
