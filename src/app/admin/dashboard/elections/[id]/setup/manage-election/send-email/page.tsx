@@ -27,6 +27,7 @@ export default function SendEmailPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 400);
   const [sortCol, setSortCol] = useState<
     | "name"
     | "status"
@@ -41,9 +42,20 @@ export default function SendEmailPage() {
   const [showTrialSendingModal, setShowTrialSendingModal] = useState(false);
   const [showSendDropdown, setShowSendDropdown] = useState(false);
 
-  // Placeholder: Replace with actual voter data fetch logic
-  const voters: any[] = [];
-  const totalPages = 1;
+  // Data state from API
+  const [rows, setRows] = useState<Array<{
+    id: number;
+    name: string;
+    status: string;
+    scope: string;
+    email: string;
+    contactNumber: string;
+    birthdate: string;
+    voted: boolean;
+  }>>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const handleFirst = () => setPage(1);
   const handlePrev = () => setPage((p) => Math.max(1, p - 1));
@@ -81,8 +93,95 @@ export default function SendEmailPage() {
     alert(`Send email: ${count}`);
   };
 
+  // Initialize state from URL once
+  const initializedFromURL = useRef(false);
+  useEffect(() => {
+    if (initializedFromURL.current) return;
+    initializedFromURL.current = true;
+
+    const sp = new URLSearchParams(searchParams?.toString() || "");
+    const p = Number(sp.get("page") || 1);
+    const l = Number(sp.get("limit") || 10);
+    const s = sp.get("search") || "";
+
+    if (!Number.isNaN(p) && p > 0) setPage(p);
+    if (!Number.isNaN(l) && l > 0) setPageSize(l);
+    setSearch(s);
+  }, [searchParams]);
+
+  // Keep URL in sync with state
+  useEffect(() => {
+    const current = searchParams?.toString() || "";
+    const sp = new URLSearchParams(current);
+    sp.set("page", String(page));
+    sp.set("limit", String(pageSize));
+    if (debouncedSearch) sp.set("search", debouncedSearch); else sp.delete("search");
+
+    const target = sp.toString();
+    if (target !== current) {
+      router.replace(`?${target}`, { scroll: false });
+    }
+  }, [page, pageSize, debouncedSearch, router, searchParams]);
+
+  // Fetch voters from API
+  useEffect(() => {
+    if (!electionId || Number.isNaN(electionId)) return;
+
+    const ctrl = new AbortController();
+    const run = async () => {
+      setLoading(true);
+      try {
+        const qs = new URLSearchParams({
+          electionId: String(electionId),
+          page: String(page),
+          limit: String(pageSize),
+          ...(debouncedSearch ? { search: debouncedSearch } : {}),
+          ...(sortCol ? { sortCol: sortCol, sortDir: sortDir } : {}),
+        });
+        const res = await fetch(`/api/voters?${qs.toString()}`, {
+          method: "GET",
+          signal: ctrl.signal,
+        });
+        const json = await res.json();
+
+        if (!res.ok || json?.success === false) {
+          toast.error(json?.message || "Failed to fetch voters");
+          return;
+        }
+
+        // Map API voter -> table row
+        const mapped = (json.data?.voters || []).map((v: any) => ({
+          id: v.id,
+          name: `${v.lastName ?? ""}, ${v.firstName ?? ""}${v.middleName ? " " + v.middleName : ""}`
+            .trim()
+            .replace(/^,\s*/, ""),
+          status: v.isActive ? "Active" : "Inactive",
+          scope: v.votingScope?.name ?? "—",
+          email: v.email ?? "",
+          contactNumber: v.contactNum ?? "",
+          birthdate: "",
+          voted: !!v.voted,
+        }));
+
+        setRows(mapped);
+        setTotalPages(json.data?.pagination?.totalPages || 1);
+      } catch (e: any) {
+        if (e?.name !== "AbortError") {
+          console.error("Failed to fetch voters:", e);
+          toast.error("Failed to load voters");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    run();
+    return () => ctrl.abort();
+  }, [electionId, page, pageSize, debouncedSearch, sortCol, sortDir, reloadKey]);
+
   return (
     <>
+      <Toaster position="top-center" />
       <div
         id="main-window-template-component"
         className="app h-full flex flex-col min-h-[calc(100vh-4rem)] bg-gray-50"
@@ -159,7 +258,7 @@ export default function SendEmailPage() {
           {/* Table */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-5">
             <SendEmailTable
-              voters={voters}
+              voters={rows}
               sortCol={sortCol}
               sortDir={sortDir}
               onSort={handleSort}

@@ -72,7 +72,7 @@ export default function VoterTable({
                 />
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("name")}
               >
                 Name{" "}
@@ -83,7 +83,7 @@ export default function VoterTable({
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("status")}
               >
                 Status{" "}
@@ -94,7 +94,7 @@ export default function VoterTable({
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("scope")}
               >
                 Scope{" "}
@@ -105,7 +105,7 @@ export default function VoterTable({
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("email")}
               >
                 Email{" "}
@@ -116,7 +116,7 @@ export default function VoterTable({
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("contactNumber")}
               >
                 Contact{" "}
@@ -126,15 +126,15 @@ export default function VoterTable({
                   <FaSort className="inline opacity-50" />
                 )}
               </th>
-
-              // add codesendStatus column here
-              // also add votingscope column here
+              <th className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap">
+                Status{" "}
+              </th>
             </tr>
           </thead>
           <tbody>
             {props.voters.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-4 text-center text-gray-400">
+                <td colSpan={8} className="px-4 py-4 text-center text-gray-400">
                   No voters found.
                 </td>
               </tr>
@@ -172,6 +172,11 @@ export default function VoterTable({
                   <td className="py-2 px-3 align-middle truncate max-w-[120px]">{voter.scope}</td>
                   <td className="py-2 px-3 align-middle truncate max-w-[180px]">{voter.email}</td>
                   <td className="py-2 px-3 align-middle truncate max-w-[140px]">{voter.contactNumber}</td>
+                  <td className="py-2 px-3 align-middle truncate max-w-[120px]">
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                      Not Sent hardcoded
+                    </span>
+                  </td>
                 </tr>
               ))
             )}
