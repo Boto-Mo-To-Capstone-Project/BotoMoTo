@@ -7,6 +7,8 @@
   },
   "scripts": {
     "dev": "next dev --turbopack",
+    "worker": "tsx src/lib/queue/worker.ts",
+    "dev:all": "concurrently -k -n web,worker \"npm:dev\" \"npm:worker\"",
     "build": "npx prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
@@ -23,6 +25,7 @@
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
     "@aws-sdk/client-sesv2": "^3.873.0",
+    "@aws-sdk/client-sqs": "^3.873.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@heroicons/react": "^2.2.0",
@@ -37,6 +40,7 @@
     "bcryptjs": "^3.0.2",
     "chart.js": "^4.5.0",
     "cookie": "^1.0.2",
+    "graphile-worker": "^0.16.6",
     "jose": "^6.0.10",
     "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
