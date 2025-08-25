@@ -99,6 +99,13 @@ enum AuditAction {
   REJECT
   UPLOAD
 }
+
+// Code send status enum
+enum CodeSendStatus {
+  PENDING
+  SENT
+  FAILED
+}
  
 model Account {
   id                String  @id @default(cuid())
@@ -248,7 +255,7 @@ model Voter {
   firstName       String
   middleName      String?
   lastName        String
-  codeSendStatus  String    @default("PENDING")
+  codeSendStatus  CodeSendStatus @default(PENDING)
   isVerified      Boolean   @default(false)
   votingScopeId   Int?
   isActive        Boolean   @default(true)

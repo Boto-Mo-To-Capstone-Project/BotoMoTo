@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
       case 'resend_codes':
         result = await db.voter.updateMany({
           where: { id: { in: validVoterIds } },
-          data: { codeSendStatus: "RESENT" }
+          data: { codeSendStatus: "SENT" }
         });
         auditMessage = `Bulk resent codes to ${result.count} voters`;
         break;

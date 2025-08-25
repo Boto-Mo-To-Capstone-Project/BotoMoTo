@@ -188,16 +188,16 @@ export default function VoterTable({
                       let textColor = 'text-gray-700';
                       let displayText = voter.codeSendStatus || 'Pending';
 
-                      // Handle different status variations based on actual database values
-                      if (codeSendStatus === 'sent' || codeSendStatus === 'delivered' || codeSendStatus === 'success') {
+                      // Handle different status variations based on actual database enum values
+                      if (codeSendStatus === 'sent') {
                         bgColor = 'bg-green-100';
                         textColor = 'text-green-700';
                         displayText = 'Sent';
-                      } else if (codeSendStatus === 'failed' || codeSendStatus === 'error' || codeSendStatus === 'bounced') {
+                      } else if (codeSendStatus === 'failed') {
                         bgColor = 'bg-red-100';
                         textColor = 'text-red-700';
                         displayText = 'Failed';
-                      } else if (codeSendStatus === 'pending' || codeSendStatus === 'queued' || codeSendStatus === 'waiting') {
+                      } else if (codeSendStatus === 'pending') {
                         bgColor = 'bg-yellow-100';
                         textColor = 'text-yellow-700';
                         displayText = 'Pending';
