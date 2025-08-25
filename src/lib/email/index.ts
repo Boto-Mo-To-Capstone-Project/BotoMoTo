@@ -10,6 +10,10 @@ import { EmailAddress } from "./types";
 // Provider imports
 import { ResendEmailProvider, SesEmailProvider, GmailSmtpProvider } from "./providers";
 
+// Template imports
+import { templateEngine } from "./templates";
+import { templateRegistry } from "./templates/registry";
+
 let emailServiceInstance: EmailService | null = null;
 let configCache: EmailConfig | null = null;
 
@@ -116,7 +120,16 @@ export function resetEmailService(): void {
   configCache = null;
 }
 
+/**
+ * Initialize template engine with default templates
+ */
+export function initializeTemplates(): void {
+  templateEngine.registerAll(templateRegistry);
+}
+
 // Re-export commonly used types and functions
 export type { EmailMessage, EmailAddress, EmailAttachment, SendResult } from "./types";
 export type { EmailProvider } from "./provider";
 export { EmailService } from "./service";
+export { templateEngine } from "./templates";
+export { templateRegistry } from "./templates/registry";

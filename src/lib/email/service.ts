@@ -1,5 +1,6 @@
 import { EmailProvider } from "./provider";
 import { EmailMessage, EmailAddress, SendResult, SendBulkResult, SendOptions } from "./types";
+import { templateEngine, TemplateVariables } from "./templates";
 
 type EmailServiceOptions = {
   defaultFrom?: EmailAddress;
@@ -218,5 +219,63 @@ export class EmailService {
     ];
     
     return permanentPatterns.some(pattern => message.includes(pattern));
+  }
+
+  /**
+   * Send email using a template
+   */
+  async sendTemplate(
+    templateId: string, 
+    variables: TemplateVariables, 
+    to: EmailAddress | EmailAddress[],
+    options?: SendOptions
+  ): Promise<SendResult> {
+    try {
+      // Render template
+      const templateResult = await templateEngine.render(templateId, variables);
+      
+      // Create email message
+      const message: EmailMessage = {
+        to,
+        subject: templateResult.subject || 'No Subject',
+        html: templateResult.html,
+        text: templateResult.text,
+        replyTo: this.defaultReplyTo,
+      };
+      
+      return await this.send(message, options);
+    } catch (error) {
+      throw new Error(`Failed to send template email: ${error instanceof Error ? error.message : error}`);
+    }
+  }
+
+  /**
+   * Send bulk emails using a template
+   */
+  async sendBulkTemplate(
+    templateId: string,
+    recipients: Array<{ to: EmailAddress; variables: TemplateVariables }>,
+    options?: SendOptions
+  ): Promise<SendBulkResult> {
+    try {
+      // Render template for each recipient
+      const messages: EmailMessage[] = await Promise.all(
+        recipients.map(async (recipient) => {
+          const templateResult = await templateEngine.render(templateId, recipient.variables);
+          
+          return {
+            to: recipient.to,
+            subject: templateResult.subject || 'No Subject',
+            html: templateResult.html,
+            text: templateResult.text,
+            replyTo: this.defaultReplyTo,
+          };
+        })
+      );
+      
+      return await this.sendBulk(messages, options);
+    } catch (error) {
+      throw new Error(`Failed to send bulk template emails: ${error instanceof Error ? error.message : error}`);
+    }
   }
 }
