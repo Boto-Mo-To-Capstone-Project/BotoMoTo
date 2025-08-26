@@ -170,23 +170,24 @@ export default function Table({
 
 
   return (
-    <div className="w-full px-4 bg-white shadow rounded-xl mt-5 overflow-x-auto overflow-y-auto max-h-[600px] min-w-max">
-      {/* sticky header */}
-      <div className="sticky top-0 z-20 bg-white py-4">
-        <div className="flex justify-between items-center">
-          <p className="text-lg font-semibold ml-2"> {title}</p>
-          {/* Search bar */}
-          <SearchBar
-            value={searchTerm}
-            placeholder ={`Search for ${title}`}
-            onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-            }}/>
+  <div className="w-full px-4 bg-white shadow rounded-xl mt-5">
+    {/* Sticky header: title + search + actions */}
+    <div className="sticky top-0 z-20 bg-white py-4">
+      <div className="flex justify-between items-center">
+        <p className="text-lg font-semibold ml-2"> {title}</p>
+        {/* Search bar */}
+        <SearchBar
+          value={searchTerm}
+          placeholder={`Search for ${title}`}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1);
+          }}/>
 
-            {showActions && (
-            <div className="flex-shrink-0 flex gap-2">
-              {actions?.includes("add") && (
+        {showActions && (
+          <div className="flex-shrink-0 flex gap-2">
+            {/* your action buttons here */}
+            {actions?.includes("add") && (
                 <SubmitButton
                   label=""
                   variant="action"
@@ -293,13 +294,14 @@ export default function Table({
                 />
               )}
           </div>
-          )}
-        </div>
+        )}
       </div>
+    </div>
 
-      {/* Table */}        
+    {/* Table */}
+    <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
       <table className="w-full text-sm border-separate border-spacing-0">
-        <thead className="bg-gray-50 sticky top-[73px] shadow">
+        <thead className="bg-gray-50 sticky top-0 z-10 shadow">
           <tr className="text-left text-gray-700 border-b font-semibold text-base">
             <th className="py-2 px-3 border-b border-gray-200">
               <input
@@ -318,16 +320,16 @@ export default function Table({
                 {String(col).replaceAll("_", " ")}
                 {sortConfig.column === col ? (
                   <span className="ml-2">
-                    {sortConfig.direction === "asc" ? 
-                    <FaSortUp className="inline" /> : 
-                    <FaSortDown className="inline" />}
+                    {sortConfig.direction === "asc" ?
+                      <FaSortUp className="inline" /> : 
+                      <FaSortDown className="inline" />}
                   </span>
                 ) : (
                   <span className="ml-2">
                     <FaSort className="inline opacity-50" />
                   </span>
-                
-              )}
+
+                )}
               </th>
             ))}
           </tr>
@@ -372,30 +374,31 @@ export default function Table({
           )}
         </tbody>
       </table>
-    
-      {/* Pagination - moved outside the scrollable table wrapper */}
-      <div className="sticky bottom-0 z-20 bg-white flex items-center gap-2 mt-4 h-10">
-        <button onClick={props.onFirst} disabled={props.page === 1} title="First"><MdFirstPage size={22} /></button>
-        <button onClick={props.onPrev} disabled={props.page === 1} title="Prev"><MdChevronLeft size={22} /></button>
-        <span>{props.page}</span>
-        <span>of </span>
-        <span>{props.totalPages}</span>
-        <button onClick={props.onNext} disabled={props.page === props.totalPages} title="Next"><MdChevronRight size={22} /></button>
-        <button onClick={props.onLast} disabled={props.page === props.totalPages} title="Last"><MdLastPage size={22} /></button>
-        <span className="text-sm text-gray-500 flex items-center gap-1 sm:ml-auto xxs:w-full xxs:mt-1">
-          Page Size:
-          <select
-            value={props.pageSize}
-            onChange={props.onPageSizeChange}
-            className="border rounded px-1 py-0.5 text-sm ml-1 min-w-[64px] w-auto"
-          >
-            <option>10</option>
-            <option>20</option>
-            <option>50</option>
-            <option>100</option>
-          </select>
-        </span>
-      </div> 
     </div>
+
+    {/* Pagination - moved outside the scrollable table wrapper */}
+    <div className="sticky bottom-0 z-20 bg-white flex items-center gap-2 mt-4 h-10">
+      <button onClick={props.onFirst} disabled={props.page === 1} title="First"><MdFirstPage size={22} /></button>
+      <button onClick={props.onPrev} disabled={props.page === 1} title="Prev"><MdChevronLeft size={22} /></button>
+      <span>{props.page}</span>
+      <span>of </span>
+      <span>{props.totalPages}</span>
+      <button onClick={props.onNext} disabled={props.page === props.totalPages} title="Next"><MdChevronRight size={22} /></button>
+      <button onClick={props.onLast} disabled={props.page === props.totalPages} title="Last"><MdLastPage size={22} /></button>
+      <span className="text-sm text-gray-500 flex items-center gap-1 sm:ml-auto xxs:w-full xxs:mt-1">
+        Page Size:
+        <select
+          value={props.pageSize}
+          onChange={props.onPageSizeChange}
+          className="border rounded px-1 py-0.5 text-sm ml-1 min-w-[64px] w-auto"
+        >
+          <option>10</option>
+          <option>20</option>
+          <option>50</option>
+          <option>100</option>
+        </select>
+      </span>
+    </div>
+  </div>
   );
 }
