@@ -3,6 +3,7 @@ import { render } from '@react-email/render';
 import Handlebars from 'handlebars';
 import juice from 'juice';
 import { convert } from 'html-to-text';
+import React from 'react';
 
 import {
   TemplateEngine,
@@ -66,9 +67,6 @@ export class EmailTemplateEngine implements TemplateEngine {
     variables: TemplateVariables
   ): Promise<TemplateResult> {
     try {
-      // Import React for creating elements
-      const React = require('react');
-      
       // Render React component to HTML
       const Component = template.component;
       const element = React.createElement(Component, variables);
