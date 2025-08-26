@@ -183,6 +183,8 @@ model Organization {
   // contactDetails OrgContactDetails[]
   elections      Election[]
   tickets        Ticket[]
+  emailLogs      EmailLog[]
+  emailSuppressions EmailSuppression[]
 }
 
 model Election {
@@ -209,6 +211,7 @@ model Election {
   candidates   Candidate[]
   voteResponses VoteResponse[]
   broadcasts   Broadcast[]
+  emailLogs    EmailLog[]
 }
 
 model ElectionSched {
@@ -321,7 +324,7 @@ model Party {
   color       String
   
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  updatedAt   DateTime  @default(now())
   deletedAt   DateTime?
   isDeleted   Boolean   @default(false)
 
@@ -479,4 +482,119 @@ model SystemMetric {
   // Index for time-series queries
   @@index([metricType, recordedAt])
   @@map("system_metrics")
+}
+
+// Email System Models
+
+model EmailLog {
+  id            String        @id @default(cuid())
+  
+  // Message details
+  messageId     String?       // Provider-specific message ID
+  templateId    String?       // Template used (if any)
+  
+  // Recipients
+  toEmail       String        // Primary recipient email
+  toName        String?       // Primary recipient name
+  ccEmails      String[]      // CC emails (array)
+  bccEmails     String[]      // BCC emails (array)
+  
+  // Content
+  subject       String
+  htmlSize      Int?          // Size of HTML content in bytes
+  textSize      Int?          // Size of text content in bytes
+  attachments   Int?          @default(0) // Number of attachments
+  
+  // Sending details
+  provider      String        // Email provider used (resend, ses, gmail-smtp)
+  status        EmailStatus   @default(PENDING)
+  
+  // Timing
+  queuedAt      DateTime      @default(now())
+  sentAt        DateTime?     // When successfully sent
+  deliveredAt   DateTime?     // When delivered (from webhook)
+  openedAt      DateTime?     // When first opened (from webhook)
+  clickedAt     DateTime?     // When first clicked (from webhook)
+  
+  // Error tracking
+  error         String?       // Error message if failed
+  retryCount    Int           @default(0)
+  lastRetryAt   DateTime?
+  
+  // Metadata
+  tags          Json?         // Custom tags for tracking
+  campaign      String?       // Campaign identifier
+  
+  // Relations
+  organizationId Int?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  
+  electionId     Int?
+  election       Election?     @relation(fields: [electionId], references: [id], onDelete: SetNull)
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  // Indexes for performance
+  @@index([toEmail, createdAt])
+  @@index([provider, status, createdAt])
+  @@index([templateId, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([electionId, createdAt])
+  @@index([status, queuedAt])
+  @@map("email_logs")
+}
+
+model EmailSuppression {
+  id            String              @id @default(cuid())
+  email         String              @unique // Suppressed email address
+  reason        SuppressionReason   
+  source        String?             // Where the suppression came from
+  
+  // Timing
+  suppressedAt  DateTime            @default(now())
+  expiresAt     DateTime?           // When suppression expires (null = permanent)
+  
+  // Metadata
+  bounceType    String?             // Hard bounce, soft bounce, etc.
+  complaintType String?             // Spam complaint type
+  metadata      Json?               // Additional provider-specific data
+  
+  // Relations
+  organizationId Int?
+  organization   Organization?       @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  
+  // Indexes
+  @@index([email])
+  @@index([reason, suppressedAt])
+  @@index([organizationId, email])
+  @@index([expiresAt])
+  @@map("email_suppressions")
+}
+
+// Email-related enums
+
+enum EmailStatus {
+  PENDING       // Queued for sending
+  SENDING       // Currently being sent
+  SENT          // Successfully sent to provider
+  DELIVERED     // Delivered to recipient
+  OPENED        // Email was opened
+  CLICKED       // Email was clicked
+  BOUNCED       // Bounced back
+  COMPLAINED    // Marked as spam
+  FAILED        // Failed to send
+  SUPPRESSED    // Blocked due to suppression
+}
+
+enum SuppressionReason {
+  BOUNCE        // Email bounced
+  COMPLAINT     // Spam complaint
+  UNSUBSCRIBE   // User unsubscribed
+  MANUAL        // Manually added
+  INVALID       // Invalid email address
+  BLOCKED       // Blocked by provider
 }
