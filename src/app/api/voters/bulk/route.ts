@@ -4,6 +4,8 @@ import db from "@/lib/db/db";
 import { ROLES } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
 import { createAuditLog } from "@/lib/audit";
+import { createEmailService, initializeTemplates } from "@/lib/email";
+import { enqueueVotingCodes } from "@/lib/queue/helpers";
 
 // Handle POST request for bulk voter operations
 export async function POST(request: NextRequest) {
@@ -130,21 +132,260 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'send_codes':
-        // This would typically integrate with an email/SMS service
-        // For now, we'll just update the codeSendStatus
-        result = await db.voter.updateMany({
-          where: { id: { in: validVoterIds } },
-          data: { codeSendStatus: "SENT" }
-        });
-        auditMessage = `Bulk sent codes to ${result.count} voters`;
+        try {
+          // Initialize email templates
+          initializeTemplates();
+          
+          // Get full voter details with election info
+          const votersWithDetails = await db.voter.findMany({
+            where: { id: { in: validVoterIds } },
+            include: {
+              election: {
+                select: {
+                  id: true,
+                  name: true,
+                  organization: {
+                    select: { id: true, name: true }
+                  }
+                }
+              }
+            }
+          });
+
+          // Update voters status to SENDING (codes already exist in 'code' field)
+          const updatePromises = votersWithDetails.map((voter) => 
+            db.voter.update({
+              where: { id: voter.id },
+              data: { 
+                codeSendStatus: "SENDING" 
+              }
+            })
+          );
+          
+          await Promise.all(updatePromises);
+
+          // Prepare voting codes data
+          const voterCodes = votersWithDetails.map((voter) => ({
+            id: voter.id.toString(),
+            email: voter.email!,
+            name: `${voter.firstName} ${voter.lastName}`.trim(),
+            votingCode: voter.code, // Use existing 6-digit code from database
+          }));
+
+          // Enqueue voting codes email job
+          const jobIds = await enqueueVotingCodes(
+            votersWithDetails[0].election.id.toString(),
+            voterCodes,
+            {
+              templateId: 'voting-code',
+              templateVars: {
+                electionName: votersWithDetails[0].election.name,
+                startDate: 'TBD', // TODO: Get from election schedule
+                endDate: 'TBD',   // TODO: Get from election schedule
+              }
+            }
+          );
+
+          result = { 
+            count: votersWithDetails.length, 
+            jobIds,
+            codes: votersWithDetails.length 
+          };
+          auditMessage = `Bulk sent codes to ${votersWithDetails.length} voters (Jobs: ${jobIds.length})`;
+
+        } catch (error) {
+          console.error('Error sending voting codes:', error);
+          
+          // Reset status to PENDING on error
+          await db.voter.updateMany({
+            where: { id: { in: validVoterIds } },
+            data: { codeSendStatus: "PENDING" }
+          });
+          
+          return apiResponse({
+            success: false,
+            message: "Failed to send voting codes",
+            data: null,
+            error: error instanceof Error ? error.message : "Unknown error",
+            status: 500
+          });
+        }
         break;
 
       case 'resend_codes':
-        result = await db.voter.updateMany({
-          where: { id: { in: validVoterIds } },
-          data: { codeSendStatus: "SENT" }
-        });
-        auditMessage = `Bulk resent codes to ${result.count} voters`;
+        try {
+          // Initialize email templates
+          initializeTemplates();
+          
+          // Get voters with existing codes (use 'code' field, not 'votingCode')
+          const votersWithCodes = await db.voter.findMany({
+            where: { 
+              id: { in: validVoterIds },
+              code: { not: "" } // Code exists and is not empty
+            },
+            include: {
+              election: {
+                select: {
+                  id: true,
+                  name: true,
+                  organization: {
+                    select: { id: true, name: true }
+                  }
+                }
+              }
+            }
+          });
+
+          if (votersWithCodes.length === 0) {
+            return apiResponse({
+              success: false,
+              message: "No voters found with existing voting codes",
+              data: null,
+              error: "Bad Request",
+              status: 400
+            });
+          }
+
+          // Update status to SENDING
+          await db.voter.updateMany({
+            where: { id: { in: votersWithCodes.map(v => v.id) } },
+            data: { codeSendStatus: "SENDING" }
+          });
+
+          // Prepare voting codes data for resend
+          const voterCodes = votersWithCodes.map((voter) => ({
+            id: voter.id.toString(),
+            email: voter.email!,
+            name: `${voter.firstName} ${voter.lastName}`.trim(),
+            votingCode: voter.code, // Use existing 6-digit code from database
+          }));
+
+          // Enqueue voting codes email jobs
+          const jobIds = await enqueueVotingCodes(
+            votersWithCodes[0].election.id.toString(),
+            voterCodes,
+            {
+              templateId: 'voting-code',
+              templateVars: {
+                electionName: votersWithCodes[0].election.name,
+                startDate: 'TBD', // TODO: Get from election schedule
+                endDate: 'TBD',   // TODO: Get from election schedule
+              }
+            }
+          );
+
+          result = { 
+            count: votersWithCodes.length, 
+            jobIds,
+            codes: votersWithCodes.length 
+          };
+          auditMessage = `Bulk resent codes to ${votersWithCodes.length} voters (Jobs: ${jobIds.length})`;
+          
+        } catch (error) {
+          console.error('Error resending voting codes:', error);
+          
+          // Reset status to FAILED on error
+          await db.voter.updateMany({
+            where: { id: { in: validVoterIds } },
+            data: { codeSendStatus: "FAILED" }
+          });
+          
+          return apiResponse({
+            success: false,
+            message: "Failed to resend voting codes",
+            data: null,
+            error: error instanceof Error ? error.message : "Unknown error",
+            status: 500
+          });
+        }
+        break;
+
+      case 'retry_failed':
+        try {
+          // Initialize email templates
+          initializeTemplates();
+          
+          // Get voters with FAILED status
+          const failedVoters = await db.voter.findMany({
+            where: { 
+              id: { in: validVoterIds },
+              codeSendStatus: "FAILED"
+            },
+            include: {
+              election: {
+                select: {
+                  id: true,
+                  name: true,
+                  organization: {
+                    select: { id: true, name: true }
+                  }
+                }
+              }
+            }
+          });
+
+          if (failedVoters.length === 0) {
+            return apiResponse({
+              success: false,
+              message: "No failed voters found to retry",
+              data: null,
+              error: "Bad Request",
+              status: 400
+            });
+          }
+
+          // Update status to SENDING
+          await db.voter.updateMany({
+            where: { id: { in: failedVoters.map(v => v.id) } },
+            data: { codeSendStatus: "SENDING" }
+          });
+
+          // Prepare voting codes data for retry
+          const voterCodes = failedVoters.map((voter) => ({
+            id: voter.id.toString(),
+            email: voter.email!,
+            name: `${voter.firstName} ${voter.lastName}`.trim(),
+            votingCode: voter.code,
+          }));
+
+          // Enqueue voting codes email jobs
+          const jobIds = await enqueueVotingCodes(
+            failedVoters[0].election.id.toString(),
+            voterCodes,
+            {
+              templateId: 'voting-code',
+              templateVars: {
+                electionName: failedVoters[0].election.name,
+                startDate: 'TBD', // TODO: Get from election schedule
+                endDate: 'TBD',   // TODO: Get from election schedule
+              }
+            }
+          );
+
+          result = { 
+            count: failedVoters.length, 
+            jobIds,
+            codes: failedVoters.length 
+          };
+          auditMessage = `Bulk retried failed codes to ${failedVoters.length} voters (Jobs: ${jobIds.length})`;
+          
+        } catch (error) {
+          console.error('Error retrying failed voting codes:', error);
+          
+          // Reset status to FAILED on error
+          await db.voter.updateMany({
+            where: { id: { in: validVoterIds } },
+            data: { codeSendStatus: "FAILED" }
+          });
+          
+          return apiResponse({
+            success: false,
+            message: "Failed to retry voting codes",
+            data: null,
+            error: error instanceof Error ? error.message : "Unknown error",
+            status: 500
+          });
+        }
         break;
 
       case 'assign_scope':
