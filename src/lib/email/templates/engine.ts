@@ -1,8 +1,8 @@
-// Template engine dependencies will be installed when needed
-// import { render } from '@react-email/render';
-// import Handlebars from 'handlebars';
-// import juice from 'juice';
-// import { convert } from 'html-to-text';
+// Template engine dependencies
+import { render } from '@react-email/render';
+import Handlebars from 'handlebars';
+import juice from 'juice';
+import { convert } from 'html-to-text';
 
 import {
   TemplateEngine,
@@ -12,6 +12,7 @@ import {
   ReactEmailTemplate,
   RawHtmlTemplate,
 } from './types';
+import { templateRegistry } from './registry';
 import { inlineCss, htmlToText } from './utils';
 
 export class EmailTemplateEngine implements TemplateEngine {
@@ -64,8 +65,32 @@ export class EmailTemplateEngine implements TemplateEngine {
     template: ReactEmailTemplate,
     variables: TemplateVariables
   ): Promise<TemplateResult> {
-    // TODO: Implement React Email rendering when dependencies are available
-    throw new Error('React Email rendering not yet implemented. Install @react-email/render first.');
+    try {
+      // Import React for creating elements
+      const React = require('react');
+      
+      // Render React component to HTML
+      const Component = template.component;
+      const element = React.createElement(Component, variables);
+      const html = await render(element);
+      
+      // Process subject template
+      const subject = this.simpleTemplateReplace(template.defaultSubject || 'No Subject', variables);
+      
+      // Inline CSS for better email client compatibility
+      const inlinedHtml = await inlineCss(html);
+      
+      // Generate plain text version
+      const text = htmlToText(html);
+      
+      return {
+        html: inlinedHtml,
+        text,
+        subject
+      };
+    } catch (error) {
+      throw new Error(`Failed to render React template: ${error instanceof Error ? error.message : error}`);
+    }
   }
 
   private async renderRawHtmlTemplate(
@@ -111,4 +136,4 @@ export class EmailTemplateEngine implements TemplateEngine {
 /**
  * Default template engine instance
  */
-export const templateEngine = new EmailTemplateEngine();
+export const templateEngine = new EmailTemplateEngine(templateRegistry);
