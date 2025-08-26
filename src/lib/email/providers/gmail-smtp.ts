@@ -37,7 +37,7 @@ export class GmailSmtpProvider implements EmailProvider {
     });
   }
 
-  async send(message: EmailMessage, options?: SendOptions): Promise<SendResult> {
+  async send(message: EmailMessage & { from: EmailAddress }, options?: SendOptions): Promise<SendResult> {
     try {
       const from = this.getFromAddress(options);
       

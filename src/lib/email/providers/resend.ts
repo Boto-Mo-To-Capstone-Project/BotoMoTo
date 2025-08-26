@@ -22,9 +22,9 @@ export class ResendEmailProvider implements EmailProvider {
     this.client = new Resend(apiKey);
   }
 
-  async send(message: EmailMessage, options?: SendOptions): Promise<SendResult> {
+  async send(message: EmailMessage & { from: EmailAddress }, options?: SendOptions): Promise<SendResult> {
     try {
-      const from = this.getFromAddress(options);
+      const from = message.from;
       
       const to = Array.isArray(message.to) 
         ? message.to.map(toStringAddr) 
@@ -70,13 +70,27 @@ export class ResendEmailProvider implements EmailProvider {
         }));
       }
 
+      console.log("[Resend] Sending email with payload:", {
+        from: payload.from,
+        to: payload.to,
+        subject: payload.subject,
+        hasHtml: !!payload.html,
+        hasText: !!payload.text
+      });
+
       const response = await this.client.emails.send(payload);
 
       if (response.error) {
-        throw new Error(`Resend API error: ${response.error.message}`);
+        console.error("[Resend] API Error Details:", response.error);
+        throw new Error(`Resend API error: ${response.error.message || JSON.stringify(response.error)}`);
       }
 
-      return { id: response.data?.id ?? "" };
+      if (!response.data) {
+        console.error("[Resend] No data in response:", response);
+        throw new Error("Resend API returned no data");
+      }
+
+      return { id: response.data.id ?? "" };
     } catch (error) {
       throw new Error(`Resend send failed: ${(error as Error).message}`);
     }
@@ -97,10 +111,4 @@ export class ResendEmailProvider implements EmailProvider {
     };
   }
 
-  private getFromAddress(options?: SendOptions): EmailAddress {
-    if (options?.from) {
-      return options.from;
-    }
-    throw new Error("From address is required for Resend");
-  }
 }

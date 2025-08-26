@@ -136,7 +136,7 @@ export class EmailService {
     );
   }
 
-  private enrichMessage(message: EmailMessage, options?: SendOptions): EmailMessage {
+  private enrichMessage(message: EmailMessage, options?: SendOptions): EmailMessage & { from: EmailAddress } {
     const from = options?.from || this.defaultFrom;
     if (!from) {
       throw new Error("No 'from' address specified and no default from address configured");
@@ -144,6 +144,7 @@ export class EmailService {
 
     return {
       ...message,
+      from,
       replyTo: message.replyTo || this.defaultReplyTo,
       headers: {
         'X-Mailer': 'Next-RBAC Email Service',
@@ -154,7 +155,7 @@ export class EmailService {
 
   private async sendWithRetry(
     provider: EmailProvider, 
-    message: EmailMessage, 
+    message: EmailMessage & { from: EmailAddress }, 
     options?: SendOptions
   ): Promise<SendResult> {
     let lastError: Error | null = null;
@@ -181,7 +182,7 @@ export class EmailService {
 
   private async sendConcurrent(
     provider: EmailProvider,
-    messages: EmailMessage[],
+    messages: (EmailMessage & { from: EmailAddress })[],
     options?: SendOptions,
     concurrency: number = 10
   ): Promise<SendResult[]> {

@@ -16,14 +16,16 @@ export interface EmailProvider {
 
   /**
    * Send a single email
+   * Note: message will be enriched by EmailService with 'from' address before calling this method
    */
-  send(message: EmailMessage, options?: SendOptions): Promise<SendResult>;
+  send(message: EmailMessage & { from: EmailAddress }, options?: SendOptions): Promise<SendResult>;
 
   /**
    * Send bulk emails (optional - providers may not support native bulk)
    * If not implemented, EmailService will fall back to concurrent single sends
+   * Note: messages will be enriched by EmailService with 'from' address before calling this method
    */
-  sendBulk?(messages: EmailMessage[], options?: SendOptions): Promise<SendBulkResult>;
+  sendBulk?(messages: (EmailMessage & { from: EmailAddress })[], options?: SendOptions): Promise<SendBulkResult>;
 
   /**
    * Verify provider connection (optional - for health checks)

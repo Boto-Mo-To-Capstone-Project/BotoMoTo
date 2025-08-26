@@ -32,7 +32,7 @@ export class SesEmailProvider implements EmailProvider {
     });
   }
 
-  async send(message: EmailMessage, options?: SendOptions): Promise<SendResult> {
+  async send(message: EmailMessage & { from: EmailAddress }, options?: SendOptions): Promise<SendResult> {
     try {
       const from = this.getFromAddress(options);
       
@@ -48,7 +48,7 @@ export class SesEmailProvider implements EmailProvider {
     }
   }
 
-  async sendBulk(messages: EmailMessage[], options?: SendOptions): Promise<SendBulkResult> {
+  async sendBulk(messages: (EmailMessage & { from: EmailAddress })[], options?: SendOptions): Promise<SendBulkResult> {
     try {
       const from = this.getFromAddress(options);
       
