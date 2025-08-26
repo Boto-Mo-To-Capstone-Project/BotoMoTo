@@ -20,7 +20,15 @@
     "seed": "node scripts/seed-data.mjs",
     "seed:quick": "node scripts/quick-seed.mjs",
     "seed:validate": "node scripts/validate-seed.mjs",
-    "db:reset-data": "node scripts/reset-db.mjs"
+    "db:reset-data": "node scripts/reset-db.mjs",
+    "env:validate": "node scripts/validate-env.mjs",
+    "env:test": "node scripts/test-connectivity.mjs",
+    "env:check": "npm run env:validate && npm run env:test",
+    "email:test": "curl -X GET \"http://localhost:3000/api/email/test\" || echo 'Start the dev server first: npm run dev'",
+    "email:test-send": "curl -X POST \"http://localhost:3000/api/email/test\" -H \"Content-Type: application/json\" -d '{\"to\":\"brianmaysebastian@gmail.com\"}' || echo 'Start the dev server first: npm run dev'",
+    "email:preview": "curl \"http://localhost:3000/api/email/template/voting-code/preview\" || echo 'Start the dev server first: npm run dev'",
+    "deploy:check": "npm run env:validate && npm run build && echo '✅ Ready for deployment'",
+    "production:setup": "cp .env.production .env && npm run env:validate && npm run db:deploy"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",

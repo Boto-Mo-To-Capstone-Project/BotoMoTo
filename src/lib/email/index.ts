@@ -28,7 +28,13 @@ export function createEmailService(): EmailService {
   const config = getEmailConfig();
   const providers = createProviders(config);
   const defaultFrom = parseEmailAddress(config.EMAIL_FROM);
+  if (!defaultFrom) {
+    throw new Error("EMAIL_FROM is missing or invalid. Check .env file.");
+  }
   const defaultReplyTo = parseEmailAddress(config.EMAIL_REPLY_TO);
+  if (!defaultFrom) {
+    throw new Error("EMAIL_FROM is missing or invalid. Check .env file.");
+  }
 
   emailServiceInstance = new EmailService({
     providers,
