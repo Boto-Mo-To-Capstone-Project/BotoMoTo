@@ -65,7 +65,7 @@ export async function GET(
       }
 
       // Return the file with appropriate headers
-      return new Response(fileBuffer, {
+      return new Response(new Uint8Array(fileBuffer), {
         status: 200,
         headers: {
           'Content-Type': contentType,
