@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createEmailService } from '@/lib/email';
 
+/**
+ * Comprehensive Email Test Endpoint
+ * 
+ * Uses Resend's official test email addresses to avoid domain reputation issues:
+ * - delivered@resend.dev - Tests successful delivery
+ * - delivered+label@resend.dev - Tests with labeling for tracking
+ * 
+ * These test addresses are provided by Resend specifically for development
+ * and testing purposes without damaging domain reputation.
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -16,7 +26,7 @@ export async function POST(request: NextRequest) {
       console.log('[Test 1] Testing single email send...');
       try {
         const singleResult = await emailService.send({
-          to: { email: 'yasgamingofficial@gmail.com', name: 'Test User' },
+          to: { email: 'delivered@resend.dev', name: 'Test User' },
           subject: 'Single Email Test',
           html: '<h1>This is a test email</h1><p>Testing single send functionality.</p>',
           text: 'This is a test email. Testing single send functionality.',
@@ -44,19 +54,19 @@ export async function POST(request: NextRequest) {
       try {
         const bulkMessages = [
           {
-            to: { email: 'yasgamingofficial@gmail.com', name: 'Test User 1' },
+            to: { email: 'delivered+bulk1@resend.dev', name: 'Test User 1' },
             subject: 'Bulk Email Test 1',
             html: '<h1>Bulk Email Test</h1><p>This is message 1 in the bulk test.</p>',
             text: 'Bulk Email Test. This is message 1 in the bulk test.',
           },
           {
-            to: { email: 'brianmaysebastian@gmail.com', name: 'Test User 2' },
+            to: { email: 'delivered+bulk2@resend.dev', name: 'Test User 2' },
             subject: 'Bulk Email Test 2', 
             html: '<h1>Bulk Email Test</h1><p>This is message 2 in the bulk test.</p>',
             text: 'Bulk Email Test. This is message 2 in the bulk test.',
           },
           {
-            to: { email: 'botomoto.evoting@gmail.com', name: 'Test User 3' },
+            to: { email: 'delivered+bulk3@resend.dev', name: 'Test User 3' },
             subject: 'Bulk Email Test 3',
             html: '<h1>Bulk Email Test</h1><p>This is message 3 in the bulk test.</p>',
             text: 'Bulk Email Test. This is message 3 in the bulk test.',
@@ -98,7 +108,7 @@ export async function POST(request: NextRequest) {
             organizationName: 'Test Organization',
             contactEmail: 'support@test.com'
           },
-          { email: 'yasgamingofficial@gmail.com', name: 'Test User' }
+          { email: 'delivered+template@resend.dev', name: 'Test User' }
         );
 
         results.push({
@@ -121,7 +131,7 @@ export async function POST(request: NextRequest) {
       console.log('[Test 4] Testing email with attachments...');
       try {
         const attachmentResult = await emailService.send({
-          to: { email: 'yasgamingofficial@gmail.com', name: 'Test User' },
+          to: { email: 'delivered+attachment@resend.dev', name: 'Test User' },
           subject: 'Email with Attachment Test',
           html: '<h1>Attachment Test</h1><p>This email contains a test attachment.</p>',
           text: 'Attachment Test. This email contains a test attachment.',
@@ -156,7 +166,7 @@ export async function POST(request: NextRequest) {
       try {
         // Just test that the service was created successfully
         const testConfigResult = await emailService.send({
-          to: { email: 'yasgamingofficial@gmail.com', name: 'Config Test' },
+          to: { email: 'delivered+config@resend.dev', name: 'Config Test' },
           subject: 'Configuration Test',
           html: '<p>Testing email service configuration.</p>',
           text: 'Testing email service configuration.',
