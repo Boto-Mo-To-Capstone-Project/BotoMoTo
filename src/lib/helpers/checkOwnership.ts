@@ -1,10 +1,12 @@
 import { apiResponse } from '@/lib/apiResponse';
 import { ROLES } from '@/lib/constants';
 
-//resourceAdminId is the ID of the admin who owns the resource
-//user is the currently authenticated user
-//This function checks if the user has ownership of the resource
-export function checkOwnership(user: any, resourceAdminId: string) {
+interface OwnershipResult {
+  allowed: boolean;
+  response: Response; // always a Response (never undefined)
+}
+
+export function checkOwnership(user: any, resourceAdminId: string): OwnershipResult {
   if (user.role === ROLES.ADMIN && user.id !== resourceAdminId) {
     return {
       allowed: false,
@@ -17,5 +19,13 @@ export function checkOwnership(user: any, resourceAdminId: string) {
     };
   }
 
-  return { allowed: true };
+  // ✅ still return a response when ownership is valid
+  return {
+    allowed: true,
+    response: apiResponse({
+      success: true,
+      message: 'Ownership verified',
+      status: 200,
+    }),
+  };
 }
