@@ -6,6 +6,7 @@ import { apiResponse } from "@/lib/apiResponse";
 import { createAuditLog } from "@/lib/audit";
 import { createEmailService, initializeTemplates } from "@/lib/email";
 import { enqueueVotingCodes } from "@/lib/queue/helpers";
+import { formatElectionSchedule } from "@/lib/email/templates/data";
 
 // Handle POST request for bulk voter operations
 export async function POST(request: NextRequest) {
@@ -172,6 +173,15 @@ export async function POST(request: NextRequest) {
             votingCode: voter.code, // Use existing 6-digit code from database
           }));
 
+          // Get election schedule if available
+          const electionSchedule = await db.electionSched.findUnique({
+            where: { electionId: votersWithDetails[0].election.id }
+          });
+
+          const scheduleData = electionSchedule 
+            ? formatElectionSchedule(electionSchedule.dateStart, electionSchedule.dateFinish)
+            : { startDate: 'TBD', endDate: 'TBD', expiryDate: 'End of voting period' };
+
           // Enqueue voting codes email job
           const jobIds = await enqueueVotingCodes(
             votersWithDetails[0].election.id.toString(),
@@ -179,9 +189,9 @@ export async function POST(request: NextRequest) {
             {
               templateId: 'voting-code',
               templateVars: {
-                electionName: votersWithDetails[0].election.name,
-                startDate: 'TBD', // TODO: Get from election schedule
-                endDate: 'TBD',   // TODO: Get from election schedule
+                electionTitle: votersWithDetails[0].election.name,
+                organizationName: votersWithDetails[0].election.organization.name,
+                ...scheduleData,
               }
             }
           );
@@ -260,6 +270,15 @@ export async function POST(request: NextRequest) {
             votingCode: voter.code, // Use existing 6-digit code from database
           }));
 
+          // Get election schedule if available
+          const electionSchedule = await db.electionSched.findUnique({
+            where: { electionId: votersWithCodes[0].election.id }
+          });
+
+          const scheduleData = electionSchedule 
+            ? formatElectionSchedule(electionSchedule.dateStart, electionSchedule.dateFinish)
+            : { startDate: 'TBD', endDate: 'TBD', expiryDate: 'End of voting period' };
+
           // Enqueue voting codes email jobs
           const jobIds = await enqueueVotingCodes(
             votersWithCodes[0].election.id.toString(),
@@ -267,9 +286,9 @@ export async function POST(request: NextRequest) {
             {
               templateId: 'voting-code',
               templateVars: {
-                electionName: votersWithCodes[0].election.name,
-                startDate: 'TBD', // TODO: Get from election schedule
-                endDate: 'TBD',   // TODO: Get from election schedule
+                electionTitle: votersWithCodes[0].election.name,
+                organizationName: votersWithCodes[0].election.organization.name,
+                ...scheduleData,
               }
             }
           );
@@ -348,6 +367,15 @@ export async function POST(request: NextRequest) {
             votingCode: voter.code,
           }));
 
+          // Get election schedule if available
+          const electionSchedule = await db.electionSched.findUnique({
+            where: { electionId: failedVoters[0].election.id }
+          });
+
+          const scheduleData = electionSchedule 
+            ? formatElectionSchedule(electionSchedule.dateStart, electionSchedule.dateFinish)
+            : { startDate: 'TBD', endDate: 'TBD', expiryDate: 'End of voting period' };
+
           // Enqueue voting codes email jobs
           const jobIds = await enqueueVotingCodes(
             failedVoters[0].election.id.toString(),
@@ -355,9 +383,9 @@ export async function POST(request: NextRequest) {
             {
               templateId: 'voting-code',
               templateVars: {
-                electionName: failedVoters[0].election.name,
-                startDate: 'TBD', // TODO: Get from election schedule
-                endDate: 'TBD',   // TODO: Get from election schedule
+                electionTitle: failedVoters[0].election.name,
+                organizationName: failedVoters[0].election.organization.name,
+                ...scheduleData,
               }
             }
           );

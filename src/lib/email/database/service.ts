@@ -270,6 +270,53 @@ export class EmailDatabaseService {
       },
     });
   }
+
+  /**
+   * Update email log by message ID
+   */
+  async updateEmailLogByMessageId(messageId: string, data: UpdateEmailLogData): Promise<EmailLog | null> {
+    try {
+      // First find the email log by message ID
+      const emailLog = await db.emailLog.findFirst({
+        where: { messageId }
+      });
+      
+      if (!emailLog) {
+        console.warn(`Email log not found for message ID: ${messageId}`);
+        return null;
+      }
+      
+      // Update using the found ID
+      return await db.emailLog.update({
+        where: { id: emailLog.id },
+        data,
+      });
+    } catch (error) {
+      console.error('Failed to update email log by message ID:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Add email to suppression list
+   */
+  async addSuppression(data: CreateSuppressionData): Promise<EmailSuppression> {
+    return await db.emailSuppression.upsert({
+      where: { email: data.email },
+      update: {
+        reason: data.reason,
+        source: data.source,
+        bounceType: data.bounceType,
+        complaintType: data.complaintType,
+        metadata: data.metadata,
+        suppressedAt: new Date(),
+      },
+      create: {
+        ...data,
+        suppressedAt: new Date(),
+      },
+    });
+  }
 }
 
 /**

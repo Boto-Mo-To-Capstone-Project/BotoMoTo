@@ -1,7 +1,26 @@
-import { TemplateRegistry, RawHtmlTemplate } from './types';
+import { TemplateRegistry, RawHtmlTemplate, ReactEmailTemplate } from './types';
+import { VotingCodeTemplate, VotingCodeTemplateProps } from './voting-code';
 
 /**
- * Sample voting code email template
+ * Voting code React Email template
+ */
+export const votingCodeReactTemplate: ReactEmailTemplate = {
+  component: VotingCodeTemplate,
+  defaultSubject: 'Your Voting Code - {{electionTitle}}',
+  previewProps: {
+    voterName: 'Juan Dela Cruz',
+    votingCode: '123456',
+    electionTitle: 'Student Council Elections 2024',
+    organizationName: 'Sample University',
+    expiryDate: 'December 31, 2024 at 11:59 PM',
+    startDate: 'December 1, 2024 at 8:00 AM',
+    endDate: 'December 15, 2024 at 6:00 PM',
+    instructions: 'Visit the voting portal and enter your 6-digit code when prompted. Make sure to vote for all available positions.'
+  }
+};
+
+/**
+ * Legacy raw HTML template (fallback)
  */
 export const votingCodeTemplate: RawHtmlTemplate = {
   html: `
@@ -26,7 +45,7 @@ export const votingCodeTemplate: RawHtmlTemplate = {
         </div>
         <div class="content">
           <p>Dear {{voterName}},</p>
-          <p>Your voting code for the <strong>{{electionName}}</strong> election is:</p>
+          <p>Your voting code for the <strong>{{electionTitle}}</strong> election is:</p>
           <div class="code">{{votingCode}}</div>
           <p>Please keep this code secure and use it to cast your vote. The voting period is from {{startDate}} to {{endDate}}.</p>
           <p>If you have any questions, please contact the election administrator.</p>
@@ -38,25 +57,23 @@ export const votingCodeTemplate: RawHtmlTemplate = {
     </body>
     </html>
   `,
-  text: `
-Your Voting Code
+  text: `Your Voting Code
 
 Dear {{voterName}},
 
-Your voting code for the {{electionName}} election is: {{votingCode}}
+Your voting code for the {{electionTitle}} election is: {{votingCode}}
 
 Please keep this code secure and use it to cast your vote. 
 The voting period is from {{startDate}} to {{endDate}}.
 
 If you have any questions, please contact the election administrator.
 
-This is an automated message. Please do not reply to this email.
-  `,
-  defaultSubject: 'Your Voting Code - {{electionName}}',
+This is an automated message. Please do not reply to this email.`,
+  defaultSubject: 'Your Voting Code - {{electionTitle}}',
   previewProps: {
     voterName: 'John Doe',
-    electionName: 'Student Council Election 2025',
-    votingCode: 'ABC123XYZ',
+    electionTitle: 'Student Council Election 2025',
+    votingCode: 'ABC123',
     startDate: 'March 1, 2025',
     endDate: 'March 7, 2025'
   }
@@ -66,7 +83,8 @@ This is an automated message. Please do not reply to this email.
  * Default template registry
  */
 export const defaultTemplates: TemplateRegistry = {
-  'voting-code': votingCodeTemplate,
+  'voting-code': votingCodeReactTemplate, // Use React Email template as primary
+  'voting-code-html': votingCodeTemplate, // Keep raw HTML as fallback
 };
 
 /**
