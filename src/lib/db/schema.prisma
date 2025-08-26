@@ -103,6 +103,7 @@ enum AuditAction {
 // Code send status enum
 enum CodeSendStatus {
   PENDING
+  SENDING
   SENT
   FAILED
 }
@@ -252,7 +253,7 @@ model VotingScope {
 model Voter {
   id              Int       @id @default(autoincrement())
   electionId      Int
-  code            String    @unique // Globally unique voter code
+  code            String    @unique // Globally unique voter code (also serves as voting code)
   email           String?
   contactNum      String?
   firstName       String

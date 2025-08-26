@@ -1,5 +1,26 @@
 import { JobHandler, JobDefinition } from "../types";
 import { createEmailService } from "../../email";
+import db from "../../db/db";
+
+// Helper function to update voter send status
+async function updateVoterEmailStatus(
+  voterId: string, 
+  status: 'PENDING' | 'SENDING' | 'SENT' | 'FAILED',
+  messageId?: string | null,
+  error?: string | null
+) {
+  try {
+    await db.voter.update({
+      where: { id: parseInt(voterId) },
+      data: { 
+        codeSendStatus: status,
+        // Could add more fields like lastEmailSentAt, emailError if needed
+      }
+    });
+  } catch (err) {
+    console.error(`Failed to update voter ${voterId} status to ${status}:`, err);
+  }
+}
 
 // Email job payload types
 export type SendEmailJobPayload = {
@@ -78,6 +99,11 @@ export const sendEmailHandler: JobHandler<SendEmailJobPayload> = async (payload,
     //   await updateVoterEmailStatus(payload.voterId, 'SENT', result.id);
     // }
 
+    // Update voter status on success
+    if (payload.voterId) {
+      await updateVoterEmailStatus(payload.voterId, 'SENT', result.id);
+    }
+
     return {
       success: true,
       result: {
@@ -94,10 +120,10 @@ export const sendEmailHandler: JobHandler<SendEmailJobPayload> = async (payload,
       voterId: payload.voterId,
     });
 
-    // TODO: Update database status (will be implemented in Step 6)
-    // if (payload.voterId) {
-    //   await updateVoterEmailStatus(payload.voterId, 'FAILED', null, errorMessage);
-    // }
+    // Update voter status on failure
+    if (payload.voterId) {
+      await updateVoterEmailStatus(payload.voterId, 'FAILED', null, errorMessage);
+    }
 
     return {
       success: false,
@@ -143,8 +169,18 @@ export const sendBulkEmailHandler: JobHandler<SendBulkEmailJobPayload> = async (
             attachments: email.attachments,
           });
           
+          // Update voter status on success
+          if (email.voterId) {
+            await updateVoterEmailStatus(email.voterId, 'SENT', result.id);
+          }
+          
           return { success: true, result, email };
         } catch (error) {
+          // Update voter status on failure
+          if (email.voterId) {
+            await updateVoterEmailStatus(email.voterId, 'FAILED', null, (error as Error).message);
+          }
+          
           return { success: false, error: (error as Error).message, email };
         }
       });
