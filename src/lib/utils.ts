@@ -3,6 +3,15 @@ import db from "@/lib/db/db";
 /**
  * Generate a unique voter code
  * @returns A unique 6-digit voter code
+ * 
+ * Alternative formats (uncomment and modify if needed):
+ * - ABC123 format (3 letters + 3 numbers):
+ *   const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+ *   const numbers = '0123456789';
+ *   let code = '';
+ *   for (let i = 0; i < 3; i++) code += letters.charAt(Math.floor(Math.random() * letters.length));
+ *   for (let i = 0; i < 3; i++) code += numbers.charAt(Math.floor(Math.random() * numbers.length));
+ *   return code;
  */
 export async function generateUniqueVoterCode(): Promise<string> {
   let code: string;
@@ -58,6 +67,9 @@ export async function isVoterCodeUnique(code: string): Promise<boolean> {
  * Validate voter code format
  * @param code The code to validate
  * @returns True if the format is valid, false otherwise
+ * 
+ * Alternative validation patterns:
+ * - ABC123 format: /^[A-Z]{3}[0-9]{3}$/.test(code)
  */
 export function isValidVoterCodeFormat(code: string): boolean {
   // Check if code is exactly 6 digits
