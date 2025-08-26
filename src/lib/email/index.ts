@@ -133,3 +133,4 @@ export type { EmailProvider } from "./provider";
 export { EmailService } from "./service";
 export { templateEngine } from "./templates";
 export { templateRegistry } from "./templates/registry";
+export { emailDatabase } from "./database";

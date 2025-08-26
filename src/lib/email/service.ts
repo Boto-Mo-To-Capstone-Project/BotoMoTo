@@ -1,6 +1,7 @@
 import { EmailProvider } from "./provider";
 import { EmailMessage, EmailAddress, SendResult, SendBulkResult, SendOptions } from "./types";
 import { templateEngine, TemplateVariables } from "./templates";
+import { emailDatabase, CreateEmailLogData } from "./database";
 
 type EmailServiceOptions = {
   defaultFrom?: EmailAddress;
@@ -276,6 +277,83 @@ export class EmailService {
       return await this.sendBulk(messages, options);
     } catch (error) {
       throw new Error(`Failed to send bulk template emails: ${error instanceof Error ? error.message : error}`);
+    }
+  }
+
+  /**
+   * Log email to database
+   */
+  private async logEmailToDatabase(
+    message: EmailMessage,
+    provider: string,
+    options?: {
+      templateId?: string;
+      organizationId?: number;
+      electionId?: number;
+      messageId?: string;
+      status?: 'PENDING' | 'SENT' | 'FAILED';
+      error?: string;
+    }
+  ): Promise<string | null> {
+    try {
+      const toAddress = Array.isArray(message.to) ? message.to[0] : message.to;
+      const ccEmails = message.cc?.map(addr => addr.email) || [];
+      const bccEmails = message.bcc?.map(addr => addr.email) || [];
+      
+      const logData: CreateEmailLogData = {
+        templateId: options?.templateId,
+        toEmail: toAddress.email,
+        toName: toAddress.name,
+        ccEmails,
+        bccEmails,
+        subject: message.subject,
+        htmlSize: message.html?.length,
+        textSize: message.text?.length,
+        attachments: message.attachments?.length || 0,
+        provider,
+        status: options?.status || 'PENDING',
+        organizationId: options?.organizationId,
+        electionId: options?.electionId,
+        messageId: options?.messageId,
+      };
+
+      const emailLog = await emailDatabase.logEmail(logData);
+      
+      // Update with error if provided
+      if (options?.error) {
+        await emailDatabase.updateEmailLog(emailLog.id, {
+          error: options.error,
+          status: 'FAILED',
+        });
+      }
+      return emailLog.id;
+    } catch (error) {
+      console.error('[EmailService] Failed to log email to database:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Update email log status
+   */
+  private async updateEmailLogStatus(
+    logId: string,
+    status: 'SENT' | 'FAILED' | 'DELIVERED',
+    options?: {
+      messageId?: string;
+      error?: string;
+    }
+  ): Promise<void> {
+    try {
+      await emailDatabase.updateEmailLog(logId, {
+        status,
+        messageId: options?.messageId,
+        error: options?.error,
+        sentAt: status === 'SENT' ? new Date() : undefined,
+        deliveredAt: status === 'DELIVERED' ? new Date() : undefined,
+      });
+    } catch (error) {
+      console.error('[EmailService] Failed to update email log:', error);
     }
   }
 }
