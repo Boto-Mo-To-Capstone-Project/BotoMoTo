@@ -126,23 +126,15 @@ export default function SendEmailPage() {
 
   const handleTemplatePreview = async () => {
     try {
-      // Generate preview with fixed sample data
-      const sampleData = {
-        voterName: "John Doe",
-        votingCode: "123456",
-        electionTitle: "Test Election",
-        organizationName: "Test Organization",
-        startDate: "2024-01-15",
-        endDate: "2024-01-16",
-        expiryDate: "2024-01-20",
-        instructions: "Please vote by the deadline."
-      };
-
-      const response = await fetch(`/api/email/preview/?template=${selectedTemplate}`, {
+      // Use the specific template preview endpoint that returns HTML directly
+      const response = await fetch(`/api/email/template/${selectedTemplate}/preview`, {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(sampleData)
+        headers: { "Content-Type": "application/json" }
       });
+      
+      if (!response.ok) {
+        throw new Error(`Preview failed: ${response.statusText}`);
+      }
       
       const html = await response.text();
       
@@ -623,6 +615,23 @@ export default function SendEmailPage() {
           // TODO: Implement trial sending logic
         }}
       />
+
+      {/* FileViewer for template preview */}
+      {showFileViewer && (
+        <FileViewer
+          fileUrl={fileViewerUrl}
+          fileName={`${selectedTemplate}-preview.html`}
+          title={`Template Preview: ${selectedTemplate.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}`}
+          fileType="text"
+          onClose={() => {
+            setShowFileViewer(false);
+            if (fileViewerUrl) {
+              URL.revokeObjectURL(fileViewerUrl);
+              setFileViewerUrl("");
+            }
+          }}
+        />
+      )}
     </>
   );
 }
