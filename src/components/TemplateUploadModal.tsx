@@ -130,23 +130,58 @@ export function TemplateUploadModal({
               />
               <FileDropzone
                 label="Email Template File*"
-                description="Upload an HTML file for your email template. You can use variables like {{voterName}}, {{votingCode}}, etc."
+                description=""
                 accept=".html,.htm,text/html"
                 onChange={handleFileUpload}
                 fileTypeText="HTML files only (max. 2MB)"
                 id="template-upload"
               />
+              
+              {/* Sample Template Download */}
+              {!templateFile && (
+                <div className="border-2 border-[var(--color-primary)] rounded-lg p-3 flex items-center gap-3 mb-4">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-[var(--color-primary)] leading-tight">
+                      Sample Email Template
+                    </div>
+                    <div className="text-xs text-gray-500">Download example with all required variables</div>
+                  </div>
+                  <a
+                    href="/assets/sample/email-template.html"
+                    download
+                    className="text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] p-2 rounded transition"
+                    title="Download sample template"
+                  >
+                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                  </a>
+                </div>
+              )}
               {templateFile && (
                 <div className="w-full">
                   <UploadedFileDisplay file={templateFile} />
-                  <div className="mt-2 p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-700 font-medium">Available Variables:</p>
-                    <p className="text-xs text-blue-600 mt-1">
-                      {`{{voterName}}, {{votingCode}}, {{electionTitle}}, {{organizationName}}, {{startDate}}, {{endDate}}, {{instructions}}`}
-                    </p>
-                  </div>
+                  
                 </div>
               )}
+
+              <div className="mt-2 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-700 font-medium mb-2">Template Variables Guide:</p>
+                    <div className="text-xs text-blue-600 space-y-1">
+                      <p><span className="font-medium">Required:</span> <code>{"{{voterName}}"}</code>, <code>{"{{votingCode}}"}</code>, <code>{"{{electionTitle}}"}</code>, <code>{"{{organizationName}}"}</code></p>
+                      <p><span className="font-medium">Optional:</span> <code>{"{{startDate}}"}</code>, <code>{"{{endDate}}"}</code>, <code>{"{{instructions}}"}</code></p>
+                      <p className="text-blue-500 italic">These placeholders will be replaced with actual values when emails are sent.</p>
+                    </div>
+                  </div>
               <div className="flex justify-end gap-2 mt-6">
                 <SubmitButton 
                   label="Cancel" 

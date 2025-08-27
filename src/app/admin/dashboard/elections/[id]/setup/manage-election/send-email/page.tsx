@@ -196,7 +196,7 @@ export default function SendEmailPage() {
       return { success: true };
     } catch (error: any) {
       console.error("Template upload failed:", error);
-      toast.error(error.message || "Failed to upload template");
+      // Don't show another toast here since we already showed one above
       throw error; // Re-throw to let modal handle the error state
     }
   };
