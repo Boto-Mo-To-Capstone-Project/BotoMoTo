@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Download, ZoomIn, ZoomOut, RotateCw, Play, Pause, Volume2, VolumeX, ExternalLink } from "lucide-react";
+import { X, Download, ZoomIn, ZoomOut, RotateCw, Play, Pause, Volume2, VolumeX, ExternalLink, Smartphone, Monitor } from "lucide-react";
 
 type SupportedFileType = "pdf" | "image" | "video" | "audio" | "text" | "unknown";
 
@@ -19,6 +19,7 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
   const [fileType, setFileType] = useState<SupportedFileType>(explicitFileType || "unknown");
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
   
   // Detect file type based on extension if not explicitly provided
   useEffect(() => {
@@ -194,11 +195,18 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
         
       case "text":
         return (
-          <div className="flex items-center justify-center h-[calc(90vh-120px)] bg-white p-4 overflow-auto">
+          <div className="flex items-center justify-center h-[calc(90vh-120px)] bg-white overflow-auto">
             <iframe
               src={fileUrl}
-              className="w-full h-full border border-gray-300"
+              className="w-full h-full border border-gray-300 shadow-lg"
               title={title || "Text Viewer"}
+              style={{
+                minWidth: viewMode === 'desktop' ? '800px' : '375px',
+                transform: zoom !== 100 ? `scale(${zoom / 100})` : undefined,
+                transformOrigin: 'top left'
+              }}
+              sandbox="allow-same-origin allow-scripts"
+              loading="lazy"
             />
           </div>
         );
@@ -222,7 +230,7 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
   const renderControls = () => {
     const controls = [];
     
-    if (fileType === "image" || fileType === "pdf") {
+    if (fileType === "image" || fileType === "pdf" ) {
       controls.push(
         <button
           key="zoom-out"
@@ -259,6 +267,30 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
       );
     }
     
+    
+    
+    // Mobile/Desktop toggle for HTML templates (text fileType)
+    if (fileType === "text" && (fileName?.includes('.html') || fileUrl.includes('email'))) {
+      controls.push(
+        <button
+          key="mobile-view"
+          onClick={() => setViewMode('mobile')}
+          className={`p-2 rounded ${viewMode === 'mobile' ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-200'}`}
+          title="Mobile View"
+        >
+          <Smartphone size={18} />
+        </button>,
+        <button
+          key="desktop-view"
+          onClick={() => setViewMode('desktop')}
+          className={`p-2 rounded ${viewMode === 'desktop' ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-200'}`}
+          title="Desktop View"
+        >
+          <Monitor size={18} />
+        </button>
+      );
+    }
+    
     // Download button for all file types
     controls.push(
       <button
@@ -270,7 +302,7 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
         <Download size={18} />
       </button>
     );
-    
+
     // Open in new tab button for PDFs and other files that might have viewing issues
     if (fileType === "pdf" || fileType === "text") {
       controls.push(
