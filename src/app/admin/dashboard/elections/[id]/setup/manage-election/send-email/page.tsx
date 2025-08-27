@@ -126,8 +126,8 @@ export default function SendEmailPage() {
 
   const handleTemplatePreview = async () => {
     try {
-      // Use the specific template preview endpoint that returns HTML directly
-      const response = await fetch(`/api/email/template/${selectedTemplate}/preview`, {
+      // Use the general preview API endpoint with template query parameter
+      const response = await fetch(`/api/email/preview?template=${selectedTemplate}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" }
       });

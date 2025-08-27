@@ -291,7 +291,7 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center">
+    <div className="fixed inset-0 z-[9999] bg-black bg-opacity-75 flex items-center justify-center">
       <div className="bg-white w-full h-full max-w-6xl max-h-[90vh] flex flex-col rounded-lg overflow-hidden">
         {/* Header */}
         <div className="bg-gray-100 px-4 py-3 flex items-center justify-between border-b">
