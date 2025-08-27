@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db/db';
-import path from 'path';
-import fs from 'fs/promises';
 import { requireAuth } from '@/lib/helpers/requireAuth';
 import { ROLES } from '@/lib/constants';
 
@@ -25,36 +23,32 @@ export async function GET(
         id: templateId,
         organizationId: user.organization.id,
         type: 'CUSTOM'
+      },
+      select: {
+        id: true,
+        name: true,
+        fileName: true,
+        htmlContent: true
       }
     });
 
-    if (!template || !template.filePath) {
+    if (!template || !template.htmlContent) {
       return NextResponse.json(
-        { success: false, message: 'Template file not found' },
+        { success: false, message: 'Template not found or has no content' },
         { status: 404 }
       );
     }
 
-    // Read file from disk
-    const fullPath = path.join(process.cwd(), 'public', template.filePath);
+    // Serve HTML content directly from database
+    const htmlBuffer = Buffer.from(template.htmlContent, 'utf-8');
     
-    try {
-      const fileBuffer = await fs.readFile(fullPath);
-      
-      return new NextResponse(fileBuffer, {
-        headers: {
-          'Content-Type': 'text/html',
-          'Content-Disposition': `attachment; filename="${template.fileName || 'template.html'}"`,
-          'Content-Length': fileBuffer.length.toString(),
-        },
-      });
-    } catch (error) {
-      console.error('Error reading template file:', error);
-      return NextResponse.json(
-        { success: false, message: 'Failed to read template file' },
-        { status: 500 }
-      );
-    }
+    return new NextResponse(htmlBuffer, {
+      headers: {
+        'Content-Type': 'text/html',
+        'Content-Disposition': `attachment; filename="${template.fileName || 'template.html'}"`,
+        'Content-Length': htmlBuffer.length.toString(),
+      },
+    });
 
   } catch (error) {
     console.error('Error downloading template:', error);

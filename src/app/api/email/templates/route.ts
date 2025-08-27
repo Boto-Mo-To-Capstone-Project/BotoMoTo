@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db/db';
-import { auth } from '@/lib/auth';
-import { templateEngine } from '@/lib/email/templates';
 import { templateRegistry } from '@/lib/email/templates/registry';
-import path from 'path';
-import fs from 'fs/promises';
 import { requireAuth } from '@/lib/helpers/requireAuth';
 import { ROLES } from '@/lib/constants';
 
@@ -73,7 +69,7 @@ export async function GET(request: NextRequest) {
             description: customTemplate.description,
             type: 'custom',
             createdAt: customTemplate.createdAt.toISOString(),
-            fileUrl: customTemplate.filePath ? `/api/email/templates/${customTemplate.id}/download` : null
+            fileUrl: `/api/email/templates/${customTemplate.id}/download` // Always available since content is in DB
           }
         });
       }
@@ -107,8 +103,7 @@ export async function GET(request: NextRequest) {
         templateId: true,
         name: true,
         description: true,
-        createdAt: true,
-        filePath: true
+        createdAt: true
       },
       orderBy: {
         createdAt: 'desc'
@@ -123,7 +118,7 @@ export async function GET(request: NextRequest) {
       description: template.description,
       type: 'custom' as const,
       createdAt: template.createdAt.toISOString(),
-      fileUrl: template.filePath ? `/api/email/templates/${template.id}/download` : null
+      fileUrl: `/api/email/templates/${template.id}/download` // Always available since content is in DB
     }));
 
     // Remove duplicates by templateId (in case there are duplicate database entries)
@@ -229,15 +224,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create upload directory if it doesn't exist
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'templates');
-    await fs.mkdir(uploadDir, { recursive: true });
-
-    // Save file to disk
-    const fileName = `${templateId}.html`;
-    const filePath = path.join(uploadDir, fileName);
-    const fileBuffer = Buffer.from(await templateFile.arrayBuffer());
-    await fs.writeFile(filePath, fileBuffer);
 
     // Use transaction to ensure data consistency and prevent duplicates
     const savedTemplate = await db.$transaction(async (tx) => {
@@ -264,17 +250,6 @@ export async function POST(request: NextRequest) {
           select: { id: true, filePath: true }
         });
 
-        // Delete old template files
-        for (const oldTemplate of oldTemplates) {
-          if (oldTemplate.filePath) {
-            try {
-              const fullPath = path.join(process.cwd(), 'public', oldTemplate.filePath);
-              await fs.unlink(fullPath);
-            } catch (error) {
-              console.warn('Failed to delete old template file:', error);
-            }
-          }
-        }
 
         // Delete old template records
         await tx.emailTemplate.deleteMany({
@@ -284,7 +259,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Save new template to database
+      // Save new template to database (HTML content only, no file storage)
       return await tx.emailTemplate.create({
         data: {
           name: templateName.trim(),
@@ -295,7 +270,6 @@ export async function POST(request: NextRequest) {
           defaultSubject: 'Your Voting Code - {{electionTitle}}',
           fileName: templateFile.name,
           fileSize: templateFile.size,
-          filePath: `/uploads/templates/${fileName}`,
           organizationId: organizationId,
           createdBy: user.id
         }
@@ -370,16 +344,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Delete file from disk if exists
-    if (template.filePath) {
-      try {
-        const fullPath = path.join(process.cwd(), 'public', template.filePath);
-        await fs.unlink(fullPath);
-      } catch (error) {
-        console.warn('Failed to delete template file:', error);
-        // Continue with database deletion even if file deletion fails
-      }
-    }
+    // No file deletion needed since we only store HTML content in database
 
     // Delete from database
     await db.emailTemplate.delete({

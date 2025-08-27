@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { templateEngine } from '@/lib/email/templates';
 import { templateRegistry } from '@/lib/email/templates/registry';
 import db from '@/lib/db/db';
-import { auth } from '@/lib/auth';
 import { requireAuth } from "@/lib/helpers/requireAuth";
 import { ROLES } from "@/lib/constants";
 
