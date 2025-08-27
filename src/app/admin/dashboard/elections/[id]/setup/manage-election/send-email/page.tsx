@@ -51,7 +51,12 @@ export default function SendEmailPage() {
   
   // Template state
   const [selectedTemplate, setSelectedTemplate] = useState<string>("voting-code");
-  const [availableTemplates, setAvailableTemplates] = useState<string[]>([]);
+  const [availableTemplates, setAvailableTemplates] = useState<Array<{
+    id: string;
+    name: string;
+    type: 'system' | 'custom';
+    description?: string;
+  }>>([]);
   const [showTemplateUpload, setShowTemplateUpload] = useState(false);
   const [showFileViewer, setShowFileViewer] = useState(false);
   const [fileViewerUrl, setFileViewerUrl] = useState<string>("");
@@ -117,10 +122,10 @@ export default function SendEmailPage() {
   // Template handlers
   const fetchAvailableTemplates = async () => {
     try {
-      const response = await fetch("/api/email/preview");
+      const response = await fetch("/api/email/templates");
       const data = await response.json();
-      if (data.available) {
-        setAvailableTemplates(data.available);
+      if (data.success && data.templates) {
+        setAvailableTemplates(data.templates);
       }
     } catch (error) {
       console.error("Failed to fetch templates:", error);
@@ -169,7 +174,6 @@ export default function SendEmailPage() {
       if (data.description) {
         formData.append("description", data.description);
       }
-      formData.append("electionId", String(electionId));
 
       const response = await fetch("/api/email/templates", {
         method: "POST",
@@ -178,6 +182,7 @@ export default function SendEmailPage() {
 
       const result = await response.json();
       if (!response.ok || !result.success) {
+        toast.error(result.message || "Failed to upload template");
         throw new Error(result.message || "Failed to upload template");
       }
 
@@ -186,9 +191,13 @@ export default function SendEmailPage() {
       
       // Refresh available templates
       await fetchAvailableTemplates();
+      
+      // Return success to indicate completion
+      return { success: true };
     } catch (error: any) {
       console.error("Template upload failed:", error);
       toast.error(error.message || "Failed to upload template");
+      throw error; // Re-throw to let modal handle the error state
     }
   };
 
@@ -198,7 +207,7 @@ export default function SendEmailPage() {
 
   const handleDeleteTemplate = async (templateId: string) => {
     try {
-      const response = await fetch(`/api/email/templates/${templateId}`, {
+      const response = await fetch(`/api/email/templates?templateId=${templateId}`, {
         method: "DELETE",
       });
 
@@ -272,6 +281,7 @@ export default function SendEmailPage() {
           operation: "send_codes",
           voterIds: voterIds,
           electionId: electionId,
+          templateId: selectedTemplate, // Include selected template
         }),
       });
 
@@ -324,6 +334,7 @@ export default function SendEmailPage() {
           operation: "retry_failed",
           voterIds: failedIds,
           electionId: electionId,
+          templateId: selectedTemplate, // Include selected template
         }),
       });
 

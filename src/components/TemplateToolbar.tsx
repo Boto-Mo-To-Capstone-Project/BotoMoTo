@@ -4,7 +4,12 @@ import { FiChevronDown, FiEye, FiUpload, FiSettings } from "react-icons/fi";
 
 interface TemplateToolbarProps {
   selectedTemplate: string;
-  availableTemplates: string[];
+  availableTemplates: Array<{
+    id: string;
+    name: string;
+    type: 'system' | 'custom';
+    description?: string;
+  }>;
   onTemplateChange: (template: string) => void;
   onPreview: () => void;
   onUpload: () => void;
@@ -65,7 +70,9 @@ export function TemplateToolbar({
           {/* Header / current selection */}
           <div className="px-4 py-3 border-b border-gray-100">
             <p className="text-xs uppercase tracking-wide text-gray-500 mb-1">Current Template</p>
-            <p className="text-sm font-medium text-gray-800 truncate">{formatTemplateName(selectedTemplate)}</p>
+            <p className="text-sm font-medium text-gray-800 truncate">
+              {availableTemplates.find(t => t.id === selectedTemplate)?.name || formatTemplateName(selectedTemplate)}
+            </p>
           </div>
 
             {/* Template list */}
@@ -75,17 +82,25 @@ export function TemplateToolbar({
                 {availableTemplates.length === 0 && (
                   <li className="text-xs text-gray-400 px-3 py-2">No templates available</li>
                 )}
-                {availableTemplates.map(t => {
-                  const active = t === selectedTemplate;
+                {availableTemplates.map((template, index) => {
+                  const active = template.id === selectedTemplate;
+                  // Use index as fallback to ensure unique keys even with duplicate IDs
+                  const uniqueKey = `${template.id}-${template.type}-${index}`;
                   return (
-                    <li key={t}>
+                    <li key={uniqueKey}>
                       <button
                         type="button"
-                        onClick={() => { onTemplateChange(t); }}
+                        onClick={() => { onTemplateChange(template.id); }}
                         className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md text-left text-sm transition-colors ${active ? 'bg-orange-50 text-orange-700 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
-                        <span className="truncate">{formatTemplateName(t)}</span>
-                        {active && <span className="w-2 h-2 rounded-full bg-orange-500" />}
+                        <div className="flex-1 min-w-0">
+                          <span className="truncate block">{template.name}</span>
+                          {template.description && (
+                            <span className="text-xs text-gray-500 truncate block">{template.description}</span>
+                          )}
+                          <span className="text-xs text-gray-400 capitalize">{template.type}</span>
+                        </div>
+                        {active && <span className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0" />}
                       </button>
                     </li>
                   );

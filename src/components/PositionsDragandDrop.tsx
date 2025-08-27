@@ -74,6 +74,11 @@ export const DragandDropdown: React.FC<DragandDropdownProps> = ({
 
       if (isValidType) {
         setSelectedFile(file);
+        
+        // Clear the input value to allow re-uploading the same file
+        const input = document.getElementById(id) as HTMLInputElement | null;
+        if (input) input.value = '';
+        
         const syntheticEvent = {
           target: { files: files }
         } as React.ChangeEvent<HTMLInputElement>;

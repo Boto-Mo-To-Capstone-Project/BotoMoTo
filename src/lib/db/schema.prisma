@@ -514,7 +514,7 @@ model EmailTemplate {
   // Audit fields
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
-  createdBy      Int?      // User who created the template
+  createdBy      String?
   
   // Ensure unique template IDs per organization
   @@unique([organizationId, templateId])

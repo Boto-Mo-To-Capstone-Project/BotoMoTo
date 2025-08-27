@@ -26,6 +26,7 @@ export function TemplateUploadModal({
   const [templateName, setTemplateName] = useState("");
   const [description, setDescription] = useState("");
   const [templateFile, setTemplateFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -33,12 +34,18 @@ export function TemplateUploadModal({
       setTemplateName("");
       setDescription("");
       setTemplateFile(null);
+      setIsSubmitting(false);
     }
   }, [open]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Prevent duplicate uploads of the same file
+      if (templateFile && templateFile.name === file.name && templateFile.size === file.size) {
+        return;
+      }
+      
       setTemplateFile(file);
       // Auto-fill template name from filename if empty
       if (!templateName) {
@@ -50,16 +57,26 @@ export function TemplateUploadModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!templateFile) {
+    
+    if (!templateFile || isSubmitting) {
       return;
     }
 
-    // Just call the parent handler - let it handle the API call
-    onSave({
-      templateName: templateName.trim(),
-      templateFile,
-      description: description.trim() || undefined,
-    });
+    setIsSubmitting(true);
+    try {
+      // Just call the parent handler - let it handle the API call
+      await onSave({
+        templateName: templateName.trim(),
+        templateFile,
+        description: description.trim() || undefined,
+      });
+      // If we reach here, the upload was successful and modal should close
+    } catch (error) {
+      // Parent handler will show error toast, just reset submitting state
+      console.error("Upload failed:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!open) return null;
@@ -141,7 +158,7 @@ export function TemplateUploadModal({
                   label="Upload" 
                   variant="small" 
                   type="submit" 
-                  isLoading={isLoading}
+                  isLoading={isLoading || isSubmitting}
                 />
               </div>
             </form>

@@ -79,6 +79,10 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
           target: { files: files }
         } as React.ChangeEvent<HTMLInputElement>;
         
+        // Clear the input value to allow re-uploading the same file
+        const input = document.getElementById(id) as HTMLInputElement | null;
+        if (input) input.value = '';
+        
         onChange(syntheticEvent);
       } else {
         console.warn(`Invalid file type: ${file.name} (${file.type}). Accepted: ${accept}`);
