@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { operation, voterIds, electionId, data: operationData } = body;
+    const { operation, voterIds, electionId, data: operationData, templateId } = body;
 
     // Validate required fields
     if (!operation || !voterIds || !Array.isArray(voterIds) || voterIds.length === 0) {
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
             votersWithDetails[0].election.id.toString(),
             voterCodes,
             {
-              templateId: 'voting-code',
+              templateId: templateId || 'voting-code', // Use provided template or default
               templateVars: {
                 electionTitle: votersWithDetails[0].election.name,
                 organizationName: votersWithDetails[0].election.organization.name,
@@ -284,7 +284,7 @@ export async function POST(request: NextRequest) {
             votersWithCodes[0].election.id.toString(),
             voterCodes,
             {
-              templateId: 'voting-code',
+              templateId: templateId || 'voting-code', // Use provided template or default
               templateVars: {
                 electionTitle: votersWithCodes[0].election.name,
                 organizationName: votersWithCodes[0].election.organization.name,
