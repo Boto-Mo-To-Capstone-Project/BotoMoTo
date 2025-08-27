@@ -6,6 +6,9 @@ import { SubmitButton } from "@/components/SubmitButton";
 import SearchBar from "@/components/SearchBar";
 import SendEmailTable from "@/components/sendEmailTable";
 import { TrialSendingModal } from "@/components/TrialSendingModal";
+import { TemplateToolbar } from "@/components/TemplateToolbar";
+import { TemplateUploadModal } from "@/components/TemplateUploadModal";
+import { TemplateManagementModal } from "@/components/TemplateManagementModal";
 import FileViewer from "@/components/FileViewer";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
@@ -44,6 +47,7 @@ export default function SendEmailPage() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showTrialSendingModal, setShowTrialSendingModal] = useState(false);
   const [showSendDropdown, setShowSendDropdown] = useState(false);
+  const [showTemplateManagement, setShowTemplateManagement] = useState(false);
   
   // Template state
   const [selectedTemplate, setSelectedTemplate] = useState<string>("voting-code");
@@ -146,6 +150,83 @@ export default function SendEmailPage() {
 
   const handleTemplateUpload = () => {
     setShowTemplateUpload(true);
+  };
+
+  const handleTemplateUploadSave = async (data: { 
+    templateName: string; 
+    templateFile: File | null; 
+    description?: string;
+  }) => {
+    try {
+      if (!data.templateFile) {
+        toast.error("Please select a template file");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("templateName", data.templateName);
+      formData.append("templateFile", data.templateFile);
+      if (data.description) {
+        formData.append("description", data.description);
+      }
+      formData.append("electionId", String(electionId));
+
+      const response = await fetch("/api/email/templates", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Failed to upload template");
+      }
+
+      toast.success("Template uploaded successfully");
+      setShowTemplateUpload(false);
+      
+      // Refresh available templates
+      await fetchAvailableTemplates();
+    } catch (error: any) {
+      console.error("Template upload failed:", error);
+      toast.error(error.message || "Failed to upload template");
+    }
+  };
+
+  const handleTemplateManagement = () => {
+    setShowTemplateManagement(true);
+  };
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    try {
+      const response = await fetch(`/api/email/templates/${templateId}`, {
+        method: "DELETE",
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Failed to delete template");
+      }
+
+      toast.success("Template deleted successfully");
+      
+      // Refresh available templates
+      await fetchAvailableTemplates();
+      
+      // Reset selected template if it was deleted
+      if (selectedTemplate === templateId) {
+        setSelectedTemplate("voting-code");
+      }
+    } catch (error: any) {
+      console.error("Template deletion failed:", error);
+      toast.error(error.message || "Failed to delete template");
+    }
+  };
+
+  const handleManagementPreview = (templateId: string) => {
+    // Close management modal and preview the template
+    setShowTemplateManagement(false);
+    setSelectedTemplate(templateId);
+    setTimeout(() => handleTemplatePreview(), 100);
   };
 
   const handleSendEmail = async (type: "all" | "selected") => {
@@ -454,36 +535,15 @@ export default function SendEmailPage() {
               />
             </div>
             
-            {/* Template selector and actions */}
-            <div className="flex-shrink-0 flex gap-2 items-center">
-              <select
-                value={selectedTemplate}
-                onChange={(e) => setSelectedTemplate(e.target.value)}
-                className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
-              >
-                {availableTemplates.map(template => (
-                  <option key={template} value={template}>
-                    {template.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  </option>
-                ))}
-              </select>
-              
-              <SubmitButton
-                label=""
-                variant="action"
-                icon={<FiEye size={16} />}
-                title="Preview Template"
-                onClick={handleTemplatePreview}
-                className="px-3 py-2"
-              />
-              
-              <SubmitButton
-                label=""
-                variant="action"
-                icon={<FiUpload size={16} />}
-                title="Upload Custom Template"
-                onClick={handleTemplateUpload}
-                className="px-3 py-2"
+            {/* Template toolbar */}
+            <div className="flex-shrink-0">
+              <TemplateToolbar
+                selectedTemplate={selectedTemplate}
+                availableTemplates={availableTemplates}
+                onTemplateChange={setSelectedTemplate}
+                onPreview={handleTemplatePreview}
+                onUpload={handleTemplateUpload}
+                onManage={handleTemplateManagement}
               />
             </div>
             
@@ -627,6 +687,23 @@ export default function SendEmailPage() {
           }}
         />
       )}
+
+      {/* Template Upload Modal */}
+      <TemplateUploadModal
+        open={showTemplateUpload}
+        onClose={() => setShowTemplateUpload(false)}
+        onSave={handleTemplateUploadSave}
+        isLoading={false}
+      />
+
+      {/* Template Management Modal */}
+      <TemplateManagementModal
+        open={showTemplateManagement}
+        onClose={() => setShowTemplateManagement(false)}
+        onDeleteTemplate={handleDeleteTemplate}
+        onPreviewTemplate={handleManagementPreview}
+        isLoading={false}
+      />
     </>
   );
 }
