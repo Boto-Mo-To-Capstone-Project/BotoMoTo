@@ -1,10 +1,12 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { MdAdd } from "react-icons/md";
+import { FiCheck, FiMail, FiRotateCcw, FiEye, FiUpload, FiSettings } from "react-icons/fi";
 import { SubmitButton } from "@/components/SubmitButton";
 import SearchBar from "@/components/SearchBar";
 import SendEmailTable from "@/components/sendEmailTable";
 import { TrialSendingModal } from "@/components/TrialSendingModal";
+import FileViewer from "@/components/FileViewer";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -42,6 +44,13 @@ export default function SendEmailPage() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showTrialSendingModal, setShowTrialSendingModal] = useState(false);
   const [showSendDropdown, setShowSendDropdown] = useState(false);
+  
+  // Template state
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("voting-code");
+  const [availableTemplates, setAvailableTemplates] = useState<string[]>([]);
+  const [showTemplateUpload, setShowTemplateUpload] = useState(false);
+  const [showFileViewer, setShowFileViewer] = useState(false);
+  const [fileViewerUrl, setFileViewerUrl] = useState<string>("");
   
   // Email sending state
   const [sendingStatus, setSendingStatus] = useState<{
@@ -99,6 +108,58 @@ export default function SendEmailPage() {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
+  };
+
+  // Template handlers
+  const fetchAvailableTemplates = async () => {
+    try {
+      const response = await fetch("/api/email/preview");
+      const data = await response.json();
+      if (data.available) {
+        setAvailableTemplates(data.available);
+      }
+    } catch (error) {
+      console.error("Failed to fetch templates:", error);
+      toast.error("Failed to load templates");
+    }
+  };
+
+  const handleTemplatePreview = async () => {
+    try {
+      // Generate preview with fixed sample data
+      const sampleData = {
+        voterName: "John Doe",
+        votingCode: "123456",
+        electionTitle: "Test Election",
+        organizationName: "Test Organization",
+        startDate: "2024-01-15",
+        endDate: "2024-01-16",
+        expiryDate: "2024-01-20",
+        instructions: "Please vote by the deadline."
+      };
+
+      const response = await fetch(`/api/email/preview/?template=${selectedTemplate}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sampleData)
+      });
+      
+      const html = await response.text();
+      
+      // Create blob URL for FileViewer
+      const blob = new Blob([html], { type: 'text/html' });
+      const previewUrl = URL.createObjectURL(blob);
+      
+      setFileViewerUrl(previewUrl);
+      setShowFileViewer(true);
+    } catch (error) {
+      console.error("Template preview failed:", error);
+      toast.error("Failed to preview template");
+    }
+  };
+
+  const handleTemplateUpload = () => {
+    setShowTemplateUpload(true);
   };
 
   const handleSendEmail = async (type: "all" | "selected") => {
@@ -381,6 +442,11 @@ export default function SendEmailPage() {
     };
   }, [electionId]);
 
+  // Fetch available templates on mount
+  useEffect(() => {
+    fetchAvailableTemplates();
+  }, []);
+
   return (
     <>
       <Toaster position="top-center" />
@@ -399,6 +465,39 @@ export default function SendEmailPage() {
                   setSearch(e.target.value);
                   setPage(1);
                 }}
+              />
+            </div>
+            
+            {/* Template selector and actions */}
+            <div className="flex-shrink-0 flex gap-2 items-center">
+              <select
+                value={selectedTemplate}
+                onChange={(e) => setSelectedTemplate(e.target.value)}
+                className="border border-gray-300 rounded px-3 py-2 text-sm bg-white"
+              >
+                {availableTemplates.map(template => (
+                  <option key={template} value={template}>
+                    {template.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </option>
+                ))}
+              </select>
+              
+              <SubmitButton
+                label=""
+                variant="action"
+                icon={<FiEye size={16} />}
+                title="Preview Template"
+                onClick={handleTemplatePreview}
+                className="px-3 py-2"
+              />
+              
+              <SubmitButton
+                label=""
+                variant="action"
+                icon={<FiUpload size={16} />}
+                title="Upload Custom Template"
+                onClick={handleTemplateUpload}
+                className="px-3 py-2"
               />
             </div>
             
@@ -450,7 +549,7 @@ export default function SendEmailPage() {
                   <div className="absolute right-0 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black/5 z-50">
                     <div className="py-1">
                       <button
-                        className={`block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${
+                        className={`flex items-center gap-2 w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${
                           selectedIds.length === 0 
                             ? 'text-gray-400 cursor-not-allowed' 
                             : 'text-gray-700'
@@ -458,22 +557,25 @@ export default function SendEmailPage() {
                         onClick={() => handleSendEmail("selected")}
                         disabled={selectedIds.length === 0}
                       >
-                        ✅ Send to Selected ({selectedIds.length} voters)
+                        <FiCheck size={16} />
+                        Selected ({selectedIds.length})
                       </button>
                       <button
-                        className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => handleSendEmail("all")}
                       >
-                        📧 Send to All ({rows.length} voters)
+                        <FiMail size={16} />
+                        All ({rows.length})
                       </button>
                       {sendingStatus.failed > 0 && (
                         <>
                           <hr className="my-1" />
                           <button
-                            className="block w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50"
+                            className="flex items-center gap-2 w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50"
                             onClick={() => handleRetryFailed()}
                           >
-                            🔄 Retry Failed ({sendingStatus.failed})
+                            <FiRotateCcw size={16} />
+                            Retry Failed ({sendingStatus.failed})
                           </button>
                         </>
                       )}
