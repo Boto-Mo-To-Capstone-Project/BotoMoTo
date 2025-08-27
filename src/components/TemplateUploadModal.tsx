@@ -48,11 +48,13 @@ export function TemplateUploadModal({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!templateFile) {
       return;
     }
+
+    // Just call the parent handler - let it handle the API call
     onSave({
       templateName: templateName.trim(),
       templateFile,

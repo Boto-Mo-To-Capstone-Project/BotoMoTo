@@ -31,7 +31,7 @@ export const VotingCodeTemplate: React.FC<VotingCodeTemplateProps> = ({
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Your Voting Code for {electionTitle}</title>
+        <title>{`Your Voting Code for ${electionTitle}`}</title>
         <style dangerouslySetInnerHTML={{
           __html: `
             body {

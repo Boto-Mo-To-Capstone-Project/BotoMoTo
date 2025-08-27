@@ -1,5 +1,6 @@
 import { JobHandler, JobDefinition } from "../types";
 import { createEmailService } from "../../email";
+import { templateEngine } from "../../email/templates";
 import db from "../../db/db";
 
 // Helper function to update voter send status
@@ -72,8 +73,41 @@ export const sendEmailHandler: JobHandler<SendEmailJobPayload> = async (payload,
     };
 
     if (payload.templateId) {
-      // TODO: Template rendering will be implemented in Step 4
-      context.logger.warn("Template rendering not yet implemented, using provided html/text");
+      try {
+        // Get organization ID from election if available
+        let organizationId: number | undefined;
+        if (payload.electionId) {
+          const election = await db.election.findUnique({
+            where: { id: parseInt(payload.electionId) },
+            select: { orgId: true }
+          });
+          organizationId = election?.orgId;
+        }
+        
+        // Render template using enhanced method
+        const templateResult = await templateEngine.renderWithCustomLoader(
+          payload.templateId,
+          payload.templateVars || {},
+          organizationId
+        );
+        
+        emailContent = {
+          html: templateResult.html,
+          text: templateResult.text || emailContent.text,
+          subject: templateResult.subject || emailContent.subject,
+        };
+        
+        context.logger.info(`Template rendered successfully`, {
+          templateId: payload.templateId,
+          organizationId,
+        });
+      } catch (error) {
+        context.logger.error(`Template rendering failed`, {
+          templateId: payload.templateId,
+          error: error instanceof Error ? error.message : error,
+        });
+        // Continue with provided html/text if template rendering fails
+      }
     }
 
     const result = await emailService.send({

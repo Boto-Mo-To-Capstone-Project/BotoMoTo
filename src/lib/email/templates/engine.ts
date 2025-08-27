@@ -129,6 +129,66 @@ export class EmailTemplateEngine implements TemplateEngine {
       return variables[key] || match;
     });
   }
+
+  /**
+   * Load a custom template from the database for the given organization
+   */
+  async loadCustomTemplate(templateId: string, organizationId: number): Promise<boolean> {
+    try {
+      // Import db here to avoid circular dependencies
+      const { default: db } = await import('@/lib/db/db');
+      
+      const customTemplate = await db.emailTemplate.findFirst({
+        where: {
+          templateId,
+          organizationId,
+          type: 'CUSTOM'
+        }
+      });
+
+      if (customTemplate) {
+        this.register(templateId, {
+          html: customTemplate.htmlContent,
+          text: customTemplate.textContent || undefined,
+          defaultSubject: customTemplate.defaultSubject || 'Your Voting Code - {{electionTitle}}',
+          previewProps: {
+            voterName: 'Juan Dela Cruz',
+            votingCode: '123456',
+            electionTitle: 'Student Council Elections 2024',
+            organizationName: 'Sample University',
+            expiryDate: 'December 31, 2024 at 11:59 PM',
+            startDate: 'December 1, 2024 at 8:00 AM',
+            endDate: 'December 15, 2024 at 6:00 PM',
+            instructions: 'Visit the voting portal and enter your 6-digit code when prompted.'
+          }
+        });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to load custom template:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Enhanced render method that can load custom templates on demand
+   */
+  async renderWithCustomLoader(templateId: string, variables: TemplateVariables, organizationId?: number): Promise<TemplateResult> {
+    // Check if template exists, if not try to load it
+    if (!(await this.exists(templateId))) {
+      if (organizationId) {
+        const loaded = await this.loadCustomTemplate(templateId, organizationId);
+        if (!loaded) {
+          throw new Error(`Template "${templateId}" not found`);
+        }
+      } else {
+        throw new Error(`Template "${templateId}" not found`);
+      }
+    }
+
+    return this.render(templateId, variables);
+  }
 }
 
 /**

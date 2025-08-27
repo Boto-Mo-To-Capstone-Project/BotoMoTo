@@ -60,9 +60,13 @@ export function TemplateManagementModal({
     
     setDeletingId(templateId);
     try {
+      // Call the parent handler to handle the deletion
       await onDeleteTemplate(templateId);
-      // Refresh templates list
+      // Refresh templates list after successful deletion
       await fetchTemplates();
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('Failed to delete template');
     } finally {
       setDeletingId(null);
     }
