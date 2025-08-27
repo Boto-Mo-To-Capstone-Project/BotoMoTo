@@ -186,6 +186,7 @@ model Organization {
   tickets        Ticket[]
   emailLogs      EmailLog[]
   emailSuppressions EmailSuppression[]
+  emailTemplates EmailTemplate[]
 }
 
 model Election {
@@ -486,6 +487,46 @@ model SystemMetric {
 }
 
 // Email System Models
+
+model EmailTemplate {
+  id             String    @id @default(cuid())
+  
+  // Template details
+  name           String    // User-friendly name
+  description    String?   // Optional description
+  templateId     String    // Unique identifier for template engine
+  type           TemplateType @default(CUSTOM)
+  
+  // Content
+  htmlContent    String    @db.Text // HTML template content
+  textContent    String?   @db.Text // Optional text version
+  defaultSubject String?   // Default subject line
+  
+  // File storage (for uploaded templates)
+  fileName       String?   // Original filename
+  fileSize       Int?      // File size in bytes
+  filePath       String?   // Storage path
+  
+  // Organization isolation
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Audit fields
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  createdBy      Int?      // User who created the template
+  
+  // Ensure unique template IDs per organization
+  @@unique([organizationId, templateId])
+  @@index([organizationId, type])
+  @@index([templateId])
+  @@map("email_templates")
+}
+
+enum TemplateType {
+  SYSTEM        // Built-in system templates
+  CUSTOM        // User-uploaded custom templates
+}
 
 model EmailLog {
   id            String        @id @default(cuid())
