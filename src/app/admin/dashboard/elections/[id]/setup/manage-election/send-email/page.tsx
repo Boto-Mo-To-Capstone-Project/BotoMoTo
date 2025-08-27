@@ -136,7 +136,7 @@ export default function SendEmailPage() {
   const handleTemplatePreview = async () => {
     try {
       // Use the API endpoint URL directly - no need to fetch and create blob
-      const previewUrl = `/api/email/preview?template=${selectedTemplate}`;
+      const previewUrl = `/api/email/templates/preview?template=${selectedTemplate}`;
       
       // Test if the endpoint responds correctly
       const response = await fetch(previewUrl);
