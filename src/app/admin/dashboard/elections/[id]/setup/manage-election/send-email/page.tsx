@@ -101,7 +101,7 @@ export default function SendEmailPage() {
     );
   };
 
-  const handleSendEmail = async (count: "all" | number) => {
+  const handleSendEmail = async (type: "all" | "selected") => {
     setShowSendDropdown(false);
     
     if (isSending) {
@@ -114,10 +114,19 @@ export default function SendEmailPage() {
       
       // Determine which voters to send to
       let voterIds: number[];
-      if (count === "all") {
+      if (type === "all") {
         voterIds = rows.map(row => row.id);
+      } else if (type === "selected") {
+        if (selectedIds.length === 0) {
+          toast.error("Please select voters first");
+          setIsSending(false);
+          return;
+        }
+        voterIds = selectedIds;
       } else {
-        voterIds = rows.slice(0, count).map(row => row.id);
+        toast.error("Invalid send type");
+        setIsSending(false);
+        return;
       }
 
       if (voterIds.length === 0) {
@@ -441,34 +450,21 @@ export default function SendEmailPage() {
                   <div className="absolute right-0 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black/5 z-50">
                     <div className="py-1">
                       <button
+                        className={`block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 ${
+                          selectedIds.length === 0 
+                            ? 'text-gray-400 cursor-not-allowed' 
+                            : 'text-gray-700'
+                        }`}
+                        onClick={() => handleSendEmail("selected")}
+                        disabled={selectedIds.length === 0}
+                      >
+                        ✅ Send to Selected ({selectedIds.length} voters)
+                      </button>
+                      <button
                         className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => handleSendEmail("all")}
                       >
-                        Send All ({rows.length} voters)
-                      </button>
-                      <button
-                        className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => handleSendEmail(20)}
-                      >
-                        Send 20
-                      </button>
-                      <button
-                        className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => handleSendEmail(50)}
-                      >
-                        Send 50
-                      </button>
-                      <button
-                        className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => handleSendEmail(100)}
-                      >
-                        Send 100
-                      </button>
-                      <button
-                        className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => handleSendEmail(200)}
-                      >
-                        Send 200
+                        📧 Send to All ({rows.length} voters)
                       </button>
                       {sendingStatus.failed > 0 && (
                         <>
@@ -477,7 +473,7 @@ export default function SendEmailPage() {
                             className="block w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50"
                             onClick={() => handleRetryFailed()}
                           >
-                            Retry Failed ({sendingStatus.failed})
+                            🔄 Retry Failed ({sendingStatus.failed})
                           </button>
                         </>
                       )}
