@@ -126,22 +126,16 @@ export default function SendEmailPage() {
 
   const handleTemplatePreview = async () => {
     try {
-      // Use the general preview API endpoint with template query parameter
-      const response = await fetch(`/api/email/preview?template=${selectedTemplate}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" }
-      });
+      // Use the API endpoint URL directly - no need to fetch and create blob
+      const previewUrl = `/api/email/preview?template=${selectedTemplate}`;
       
+      // Test if the endpoint responds correctly
+      const response = await fetch(previewUrl);
       if (!response.ok) {
         throw new Error(`Preview failed: ${response.statusText}`);
       }
       
-      const html = await response.text();
-      
-      // Create blob URL for FileViewer
-      const blob = new Blob([html], { type: 'text/html' });
-      const previewUrl = URL.createObjectURL(blob);
-      
+      // Set the API URL directly for FileViewer
       setFileViewerUrl(previewUrl);
       setShowFileViewer(true);
     } catch (error) {
@@ -625,10 +619,11 @@ export default function SendEmailPage() {
           fileType="text"
           onClose={() => {
             setShowFileViewer(false);
-            if (fileViewerUrl) {
+            // Only revoke blob URLs, not API URLs
+            if (fileViewerUrl && fileViewerUrl.startsWith('blob:')) {
               URL.revokeObjectURL(fileViewerUrl);
-              setFileViewerUrl("");
             }
+            setFileViewerUrl("");
           }}
         />
       )}
