@@ -12,6 +12,7 @@ import { TemplateManagementModal } from "@/components/TemplateManagementModal";
 import FileViewer from "@/components/FileViewer";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
+import { formatElectionSchedule } from "@/lib/email/templates/data";
 
 // Debounce hook
 function useDebouncedValue<T>(value: T, delay = 400) {
@@ -673,15 +674,88 @@ export default function SendEmailPage() {
       <TrialSendingModal
         open={showTrialSendingModal}
         onClose={() => setShowTrialSendingModal(false)}
-        onSave={function (data: {
+        onSave={async function (data: {
           voterName: string;
           email: string;
           contactNumber: string;
           voterLimit: number;
           numberOfWinners: number;
           votingScopeId?: number | null;
-        }): void {
-          // TODO: Implement trial sending logic
+        }) {
+          try {
+            // Get election details for template data
+            const electionResponse = await fetch(`/api/elections/${electionId}`);
+            const electionData = await electionResponse.json();
+            
+            if (!electionResponse.ok || !electionData.success) {
+              throw new Error("Failed to fetch election details");
+            }
+
+            const election = electionData.data;
+            
+            // Get election schedule for proper date formatting
+            const scheduleResponse = await fetch(`/api/elections/${electionId}/schedule`);
+            let scheduleData = { startDate: 'TBD', endDate: 'TBD', expiryDate: 'End of voting period' };
+            
+            if (scheduleResponse.ok) {
+              const scheduleResult = await scheduleResponse.json();
+              if (scheduleResult.success && scheduleResult.data) {
+                const formattedSchedule = formatElectionSchedule(
+                  scheduleResult.data.dateStart, 
+                  scheduleResult.data.dateFinish
+                );
+                
+                scheduleData = {
+                  startDate: formattedSchedule.startDate || 'TBD',
+                  endDate: formattedSchedule.endDate || 'TBD',
+                  expiryDate: formattedSchedule.expiryDate || 'End of voting period'
+                };
+              }
+            }
+            
+            // Generate a test voting code
+            const testVotingCode = Math.floor(Math.random() * 900000 + 100000).toString();
+
+            // Call the trial sending API
+            const response = await fetch("/api/email/trial-send", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                templateId: selectedTemplate,
+                recipientEmail: data.email,
+                recipientName: data.voterName,
+                templateData: {
+                  voterName: data.voterName,
+                  electionTitle: election.name,
+                  votingCode: testVotingCode,
+                  organizationName: election.organization?.name || "Sample Organization",
+                  electionDate: scheduleData.startDate,
+                  electionTime: scheduleData.endDate,
+                  startDate: scheduleData.startDate,
+                  endDate: scheduleData.endDate,
+                  expiryDate: scheduleData.expiryDate,
+                  contactEmail: 'support@boto-mo-to.online'
+                }
+              }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+              throw new Error(result.message || "Failed to send trial email");
+            }
+
+            toast.success(`Trial email sent successfully to ${data.email}`);
+            setShowTrialSendingModal(false);
+            
+            return { success: true };
+          } catch (error: any) {
+            console.error("Trial sending failed:", error);
+            toast.error(error.message || "Failed to send trial email");
+            throw error;
+          }
         }}
       />
 
