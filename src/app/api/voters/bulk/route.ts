@@ -153,25 +153,27 @@ export async function POST(request: NextRequest) {
             }
           });
 
-          // Update voters status to SENDING (codes already exist in 'code' field)
-          const updatePromises = votersWithDetails.map((voter) => 
-            db.voter.update({
-              where: { id: voter.id },
-              data: { 
-                codeSendStatus: "SENDING" 
-              }
-            })
-          );
-          
-          await Promise.all(updatePromises);
+          if (votersWithDetails.length === 0) {
+            return apiResponse({
+              success: false,
+              message: "No voters found to send codes to",
+              data: null,
+              error: "Not Found",
+              status: 404
+            });
+          }
 
-          // Prepare voting codes data
-          const voterCodes = votersWithDetails.map((voter) => ({
-            id: voter.id.toString(),
-            email: voter.email!,
-            name: `${voter.firstName} ${voter.lastName}`.trim(),
-            votingCode: voter.code, // Use existing 6-digit code from database
-          }));
+          // **DIRECT SENDING** - Same pattern as comprehensive test
+          console.log(`[Bulk Send] Using DIRECT sending for ${votersWithDetails.length} voters with template: ${templateId || 'voting-code'}`);
+          
+          // Create email service (same as comprehensive test)
+          const emailService = await createEmailService();
+          
+          // Update voters status to SENDING
+          await db.voter.updateMany({
+            where: { id: { in: validVoterIds } },
+            data: { codeSendStatus: "SENDING" }
+          });
 
           // Get election schedule if available
           const electionSchedule = await db.electionSched.findUnique({
@@ -182,29 +184,97 @@ export async function POST(request: NextRequest) {
             ? formatElectionSchedule(electionSchedule.dateStart, electionSchedule.dateFinish)
             : { startDate: 'TBD', endDate: 'TBD', expiryDate: 'End of voting period' };
 
-          // Enqueue voting codes email job
-          const jobIds = await enqueueVotingCodes(
-            votersWithDetails[0].election.id.toString(),
-            voterCodes,
-            {
-              templateId: templateId || 'voting-code', // Use provided template or default
-              templateVars: {
-                electionTitle: votersWithDetails[0].election.name,
-                organizationName: votersWithDetails[0].election.organization.name,
-                ...scheduleData,
-              }
-            }
-          );
+          // Process in chunks for reliability (like comprehensive test bulk pattern)
+          const CHUNK_SIZE = 50;
+          const chunks = [];
+          for (let i = 0; i < votersWithDetails.length; i += CHUNK_SIZE) {
+            chunks.push(votersWithDetails.slice(i, i + CHUNK_SIZE));
+          }
 
-          result = { 
-            count: votersWithDetails.length, 
-            jobIds,
-            codes: votersWithDetails.length 
+          let totalSent = 0;
+          let totalFailed = 0;
+          const failedVoters: any[] = [];
+
+          console.log(`[Bulk Send] Processing ${votersWithDetails.length} voters in ${chunks.length} chunks`);
+
+          for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+            console.log(`[Bulk Send] Processing chunk ${i + 1}/${chunks.length} (${chunk.length} voters)`);
+
+            try {
+              // Prepare bulk messages (same format as comprehensive test)
+              const bulkMessages = chunk.map(voter => ({
+                to: { email: voter.email!, name: `${voter.firstName} ${voter.lastName}`.trim() },
+                subject: `Your Voting Code for ${voter.election.name}`,
+                html: `
+                  <h1>Your Voting Code</h1>
+                  <p>Dear ${voter.firstName},</p>
+                  <p>Your voting code for <strong>${voter.election.name}</strong> is: <strong>${voter.code}</strong></p>
+                  <p>Please keep this code safe and use it to vote when the election opens.</p>
+                  <p>Election Details:</p>
+                  <ul>
+                    ${scheduleData.startDate ? `<li>Start: ${scheduleData.startDate}</li>` : ''}
+                    ${scheduleData.endDate ? `<li>End: ${scheduleData.endDate}</li>` : ''}
+                    ${scheduleData.expiryDate ? `<li>Voting expires: ${scheduleData.expiryDate}</li>` : ''}
+                  </ul>
+                  <p>Best regards,<br/>${voter.election.organization.name}</p>
+                `,
+                text: `Your voting code for ${voter.election.name} is: ${voter.code}. Please keep this code safe and use it to vote when the election opens. ${scheduleData.startDate ? `Start: ${scheduleData.startDate}` : ''} ${scheduleData.endDate ? `End: ${scheduleData.endDate}` : ''} - ${voter.election.organization.name}`
+              }));
+
+              // Direct bulk send (same method as comprehensive test)
+              const chunkResult = await emailService.sendBulk(bulkMessages);
+              
+              // Update successful voters
+              await db.voter.updateMany({
+                where: { id: { in: chunk.map(v => v.id) } },
+                data: {
+                  codeSendStatus: 'SENT'
+                }
+              });
+
+              totalSent += chunk.length;
+              console.log(`[Bulk Send] Chunk ${i + 1} completed successfully`);
+
+            } catch (chunkError) {
+              console.error(`[Bulk Send] Chunk ${i + 1} failed:`, chunkError);
+              
+              // Mark chunk voters as failed
+              await db.voter.updateMany({
+                where: { id: { in: chunk.map(v => v.id) } },
+                data: { codeSendStatus: 'FAILED' }
+              });
+
+              totalFailed += chunk.length;
+              failedVoters.push(...chunk.map(v => ({ 
+                ...v, 
+                error: chunkError instanceof Error ? chunkError.message : 'Unknown error'
+              })));
+            }
+
+            // Small delay between chunks (rate limiting)
+            if (i < chunks.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
+
+          result = {
+            method: 'direct',
+            total: votersWithDetails.length,
+            sent: totalSent,
+            failed: totalFailed,
+            successRate: `${Math.round((totalSent / votersWithDetails.length) * 100)}%`,
+            failedVoters: failedVoters.map(v => ({
+              id: v.id,
+              name: `${v.firstName} ${v.lastName}`.trim(),
+              email: v.email,
+              error: v.error
+            }))
           };
-          auditMessage = `Bulk sent codes to ${votersWithDetails.length} voters (Jobs: ${jobIds.length})`;
+          auditMessage = `Direct sent voting codes: ${totalSent} sent, ${totalFailed} failed`;
 
         } catch (error) {
-          console.error('Error sending voting codes:', error);
+          console.error('Direct bulk send error:', error);
           
           // Reset status to PENDING on error
           await db.voter.updateMany({
