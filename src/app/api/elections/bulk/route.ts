@@ -1,39 +1,19 @@
 import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
 import db from "@/lib/db/db";
 import { ROLES, ELECTION_STATUS, ORGANIZATION_STATUS } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
 import { createAuditLog } from "@/lib/audit";
 import { validateWithZod } from "@/lib/validateWithZod";
 import { electionSchema } from "@/lib/schema";
+import { requireAuth } from "@/lib/helpers/requireAuth";
 
 // Handle POST request for bulk election operations
 export async function POST(request: NextRequest) {
   try {
-    // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to perform bulk election operations",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Only admin and superadmin can perform bulk operations
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin and superadmin can perform bulk election operations",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+    // Authenticate the user - only admins and super admins can perform bulk operations
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const body = await request.json();
     const { operation, electionIds, elections: electionsData } = body;
@@ -85,29 +65,10 @@ export async function POST(request: NextRequest) {
 // Handle DELETE request for bulk deletion (admin can bulk delete their own elections)
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to perform bulk operations",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Only admin and superadmin can perform bulk delete
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin and superadmin can perform bulk delete operations",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+    // Authenticate the user - only admins and super admins can perform bulk delete
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const body = await request.json();
     const { electionIds } = body;

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/helpers/requireAuth";
 import db from "@/lib/db/db";
 import { ROLES } from "@/lib/constants";
 
@@ -10,17 +10,9 @@ import { ROLES } from "@/lib/constants";
 export async function GET(request: NextRequest) {
   try {
     // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return new Response("Unauthorized", { status: 401 });
-    }
-
-    // Check if user has admin role
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return new Response("Forbidden", { status: 403 });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const { searchParams } = new URL(request.url);
     const electionId = searchParams.get("electionId");

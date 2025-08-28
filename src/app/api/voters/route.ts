@@ -1,6 +1,5 @@
 // Import necessary modules and constants
 import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
 import db from "@/lib/db/db";
 import { ROLES } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
@@ -9,6 +8,7 @@ import { voterSchema, voterBulkUploadSchema } from "@/lib/schema";
 import { createAuditLog } from "@/lib/audit";
 import { generateUniqueVoterCode } from "@/lib/utils";
 import { Voter } from "@prisma/client";
+import { requireAuth } from "@/lib/helpers/requireAuth";
 
 // Import performance logging middleware
 import { withPerformanceLogging } from "@/lib/performance/middleware";
@@ -17,19 +17,9 @@ import { withPerformanceLogging } from "@/lib/performance/middleware";
 async function getVoters(request: NextRequest) {
   try {
     // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    // Check if user is authenticated
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to view voters",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     // Get election ID from query parameters
     const url = new URL(request.url);
@@ -306,30 +296,10 @@ async function getVoters(request: NextRequest) {
 // Handle POST request to create a new voter
 async function createVoter(request: NextRequest) {
   try {
-    // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to create voters",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Check if user has admin role
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin users can create voters",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+    // Authenticate the user - only admins can create voters
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     // Parse and validate input
     const body = await request.json();

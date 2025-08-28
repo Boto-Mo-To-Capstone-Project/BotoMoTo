@@ -1,41 +1,20 @@
 // Import necessary modules and constants
 import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
 import db from "@/lib/db/db";
 import { ROLES } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
 import { validateWithZod } from "@/lib/validateWithZod";
 import { votingScopeSchema } from "@/lib/schema";
 import { createAuditLog } from "@/lib/audit";
+import { requireAuth } from "@/lib/helpers/requireAuth";
 
 // Handle GET request to fetch voting scopes
 export async function GET(request: NextRequest) {
   try {
-    // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    // Check if user is authenticated
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to view voting scopes",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Deny access for voters
-    if (user.role === ROLES.VOTER) {
-      return apiResponse({
-        success: false,
-        message: "You do not have permission to view voting scopes",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+    // Authenticate the user - only admins can view voting scopes
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     // Get election ID from query parameters
     const url = new URL(request.url);
@@ -162,31 +141,10 @@ export async function GET(request: NextRequest) {
 // Handle POST request to create a new voting scope
 export async function POST(request: NextRequest) {
   try {
-    // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    // Check if user is authenticated
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to create a voting scope",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Check if user has admin role (only admins can create voting scopes)
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin users can create voting scopes",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+    // Authenticate the user - only admins can create voting scopes
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     // Parse request body
     const body = await request.json();
@@ -323,30 +281,10 @@ export async function POST(request: NextRequest) {
 // Handle DELETE request to delete all voting scopes of a specific election
 export async function DELETE(request: NextRequest) {
   try {
-    // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to delete voting scopes",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Check if user has admin role
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin users can delete voting scopes",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+    // Authenticate the user - only admins can delete voting scopes
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     // Get election ID from query parameters
     const url = new URL(request.url);

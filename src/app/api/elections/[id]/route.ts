@@ -1,6 +1,6 @@
 // Import necessary modules and constants
 import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/helpers/requireAuth";
 import db from "@/lib/db/db";
 import { ROLES, ELECTION_STATUS } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
@@ -14,18 +14,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to view election details",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const { id } = await params;
     const electionId = parseInt(id);
@@ -106,17 +97,6 @@ export async function GET(
       });
     }
 
-    // Only admin and superadmin can access this endpoint
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "You do not have permission to view election details",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
-
     const audit = await createAuditLog({
       user,
       action: "READ",
@@ -156,18 +136,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to update an election",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const { id } = await params;
     const electionId = parseInt(id);
@@ -228,17 +199,6 @@ export async function PUT(
       return apiResponse({
         success: false,
         message: "You can only update elections from your organization",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
-
-    // Only admin and superadmin can access this endpoint
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "You do not have permission to update elections",
         data: null,
         error: "Forbidden",
         status: 403
@@ -425,18 +385,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to delete an election",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const { id } = await params;
     const electionId = parseInt(id);
@@ -495,17 +446,6 @@ export async function DELETE(
       return apiResponse({
         success: false,
         message: "You can only delete elections from your organization",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
-
-    // Only admin and superadmin can access this endpoint
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "You do not have permission to delete elections",
         data: null,
         error: "Forbidden",
         status: 403
