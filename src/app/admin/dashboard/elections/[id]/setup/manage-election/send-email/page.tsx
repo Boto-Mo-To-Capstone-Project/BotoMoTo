@@ -683,40 +683,11 @@ export default function SendEmailPage() {
           votingScopeId?: number | null;
         }) {
           try {
-            // Get election details for template data
-            const electionResponse = await fetch(`/api/elections/${electionId}`);
-            const electionData = await electionResponse.json();
-            
-            if (!electionResponse.ok || !electionData.success) {
-              throw new Error("Failed to fetch election details");
-            }
-
-            const election = electionData.data;
-            
-            // Get election schedule for proper date formatting
-            const scheduleResponse = await fetch(`/api/elections/${electionId}/schedule`);
-            let scheduleData = { startDate: 'TBD', endDate: 'TBD', expiryDate: 'End of voting period' };
-            
-            if (scheduleResponse.ok) {
-              const scheduleResult = await scheduleResponse.json();
-              if (scheduleResult.success && scheduleResult.data) {
-                const formattedSchedule = formatElectionSchedule(
-                  scheduleResult.data.dateStart, 
-                  scheduleResult.data.dateFinish
-                );
-                
-                scheduleData = {
-                  startDate: formattedSchedule.startDate || 'TBD',
-                  endDate: formattedSchedule.endDate || 'TBD',
-                  expiryDate: formattedSchedule.expiryDate || 'End of voting period'
-                };
-              }
-            }
-            
             // Generate a test voting code
             const testVotingCode = Math.floor(Math.random() * 900000 + 100000).toString();
 
-            // Call the trial sending API
+            // Call the trial sending API with electionId
+            // The backend will fetch election details and enrich template data
             const response = await fetch("/api/email/trial-send", {
               method: "POST",
               headers: {
@@ -726,16 +697,10 @@ export default function SendEmailPage() {
                 templateId: selectedTemplate,
                 recipientEmail: data.email,
                 recipientName: data.voterName,
+                electionId: electionId, // Pass electionId for backend to fetch details
                 templateData: {
                   voterName: data.voterName,
-                  electionTitle: election.name,
                   votingCode: testVotingCode,
-                  organizationName: election.organization?.name || "Sample Organization",
-                  electionDate: scheduleData.startDate,
-                  electionTime: scheduleData.endDate,
-                  startDate: scheduleData.startDate,
-                  endDate: scheduleData.endDate,
-                  expiryDate: scheduleData.expiryDate,
                   contactEmail: 'support@boto-mo-to.online'
                 }
               }),

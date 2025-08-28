@@ -247,7 +247,7 @@ export async function POST(request: NextRequest) {
             createdAt: 'asc'
           },
           take: existingCount - 50,
-          select: { id: true, filePath: true }
+          select: { id: true }
         });
 
 
@@ -268,8 +268,6 @@ export async function POST(request: NextRequest) {
           type: 'CUSTOM',
           htmlContent,
           defaultSubject: 'Your Voting Code - {{electionTitle}}',
-          fileName: templateFile.name,
-          fileSize: templateFile.size,
           organizationId: organizationId,
           createdBy: user.id
         }

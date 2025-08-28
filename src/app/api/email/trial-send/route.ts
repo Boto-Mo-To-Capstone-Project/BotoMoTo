@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ROLES } from "@/lib/constants";
 import { createEmailService } from '@/lib/email';
+import { requireAuth } from '@/lib/helpers/requireAuth';
+import db from "@/lib/db/db";
 
 /**
  * Trial Email Send Endpoint
@@ -10,9 +13,20 @@ import { createEmailService } from '@/lib/email';
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { templateId, recipientEmail, recipientName, templateData } = body;
+    // Authenticate the user
 
+    const authResult = await requireAuth([ROLES.ADMIN]);
+    if (!authResult.authorized) {
+        return authResult.response;
+    }
+    const user = authResult.user;
+
+    const body = await request.json();
+    const { templateId, recipientEmail, recipientName, templateData, electionId } = body;
+
+
+    console.log('[Trial Email Send] Request body:', body);
+    
     // Validate required fields
     if (!templateId) {
       return NextResponse.json({
@@ -28,11 +42,51 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    if (!templateData) {
+    // Get organization ID for template lookup
+    const organizationId = user.organization?.id;
+    if (!organizationId) {
       return NextResponse.json({
         success: false,
-        message: 'Template data is required'
+        message: 'User is not associated with an organization'
       }, { status: 400 });
+    }
+
+    // Enrich template data with real data from database
+    let enrichedTemplateData = { ...templateData };
+    
+    // Always use organization name from user's database record
+    enrichedTemplateData.organizationName = user.organization.name;
+    
+    // If electionId is provided, get real election data
+    if (electionId) {
+      try {
+        const election = await db.election.findFirst({
+          where: {
+            id: parseInt(electionId),
+            orgId: organizationId // Use orgId instead of organization.adminId
+          },
+          include: {
+            schedule: true
+          }
+        });
+
+        if (election) {
+          // Import the schedule formatter
+          const { formatElectionSchedule } = await import("@/lib/email/templates/data");
+          
+          const scheduleData = election.schedule 
+            ? formatElectionSchedule(election.schedule.dateStart, election.schedule.dateFinish)
+            : { startDate: 'TBD', endDate: 'TBD', expiryDate: 'End of voting period' };
+
+          // Use real election data
+          enrichedTemplateData.electionTitle = election.name;
+          enrichedTemplateData.startDate = scheduleData.startDate;
+          enrichedTemplateData.endDate = scheduleData.endDate;
+          enrichedTemplateData.expiryDate = scheduleData.expiryDate;
+        }
+      } catch (error) {
+        console.warn('[Trial Email Send] Could not fetch election data:', error);
+      }
     }
 
     console.log('[Trial Email Send] Starting trial send...', {
@@ -46,11 +100,12 @@ export async function POST(request: NextRequest) {
     // Send the template email
     const result = await emailService.sendTemplate(
       templateId,
-      templateData,
+      enrichedTemplateData,
       { 
         email: recipientEmail, 
         name: recipientName || 'Test User' 
-      }
+      },
+      { organizationId }
     );
 
     console.log('[Trial Email Send] Success:', {

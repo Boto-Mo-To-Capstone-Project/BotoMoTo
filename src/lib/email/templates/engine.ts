@@ -15,6 +15,7 @@ import {
 } from './types';
 import { templateRegistry } from './registry';
 import { inlineCss, htmlToText } from './utils';
+import { emailDatabase } from '../database';
 
 export class EmailTemplateEngine implements TemplateEngine {
   private templates: TemplateRegistry = {};
@@ -37,25 +38,42 @@ export class EmailTemplateEngine implements TemplateEngine {
     this.templates = { ...this.templates, ...templates };
   }
 
-  async render(templateId: string, variables: TemplateVariables): Promise<TemplateResult> {
-    const template = this.templates[templateId];
-    if (!template) {
-      throw new Error(`Template "${templateId}" not found`);
+  async render(templateId: string, variables: TemplateVariables, organizationId?: number): Promise<TemplateResult> {
+    // First check registry templates (built-in)
+    const registryTemplate = this.templates[templateId];
+    if (registryTemplate) {
+      if (this.isReactTemplate(registryTemplate)) {
+        return this.renderReactTemplate(registryTemplate, variables);
+      } else {
+        return this.renderRawHtmlTemplate(registryTemplate, variables);
+      }
     }
 
-    if (this.isReactTemplate(template)) {
-      return this.renderReactTemplate(template, variables);
-    } else {
-      return this.renderRawHtmlTemplate(template, variables);
+    // Then check database templates (custom uploads)
+    const dbTemplate = await emailDatabase.getTemplate(templateId, organizationId);
+    if (dbTemplate) {
+      return this.renderDatabaseTemplate(dbTemplate, variables);
     }
+
+    throw new Error(`Template "${templateId}" not found in registry or database`);
   }
 
-  async exists(templateId: string): Promise<boolean> {
-    return templateId in this.templates;
+  async exists(templateId: string, organizationId?: number): Promise<boolean> {
+    // Check registry first
+    if (templateId in this.templates) {
+      return true;
+    }
+    
+    // Then check database
+    return await emailDatabase.templateExists(templateId, organizationId);
   }
 
-  async list(): Promise<string[]> {
-    return Object.keys(this.templates);
+  async list(organizationId?: number): Promise<string[]> {
+    const registryTemplates = Object.keys(this.templates);
+    const dbTemplates = await emailDatabase.listTemplates(organizationId);
+    
+    // Combine and deduplicate
+    return [...new Set([...registryTemplates, ...dbTemplates])];
   }
 
   private isReactTemplate(template: ReactEmailTemplate | RawHtmlTemplate): template is ReactEmailTemplate {
@@ -117,6 +135,35 @@ export class EmailTemplateEngine implements TemplateEngine {
       };
     } catch (error) {
       throw new Error(`Failed to render HTML template: ${error}`);
+    }
+  }
+
+  private async renderDatabaseTemplate(
+    dbTemplate: any,
+    variables: TemplateVariables
+  ): Promise<TemplateResult> {
+    try {
+      // Treat database templates as raw HTML templates
+      let html = this.simpleTemplateReplace(dbTemplate.htmlContent, variables);
+      
+      // Inline CSS for better email client compatibility
+      html = inlineCss(html);
+      
+      let text = dbTemplate.textContent 
+        ? this.simpleTemplateReplace(dbTemplate.textContent, variables) 
+        : htmlToText(html);
+        
+      let subject = dbTemplate.defaultSubject 
+        ? this.simpleTemplateReplace(dbTemplate.defaultSubject, variables) 
+        : variables.subject || 'No Subject';
+
+      return {
+        html,
+        text,
+        subject,
+      };
+    } catch (error) {
+      throw new Error(`Failed to render database template: ${error instanceof Error ? error.message : error}`);
     }
   }
 

@@ -27,7 +27,6 @@ export async function GET(
       select: {
         id: true,
         name: true,
-        fileName: true,
         htmlContent: true
       }
     });
@@ -45,7 +44,7 @@ export async function GET(
     return new NextResponse(htmlBuffer, {
       headers: {
         'Content-Type': 'text/html',
-        'Content-Disposition': `attachment; filename="${template.fileName || 'template.html'}"`,
+        'Content-Disposition': `attachment; filename="${template.name || 'template'}.html"`,
         'Content-Length': htmlBuffer.length.toString(),
       },
     });

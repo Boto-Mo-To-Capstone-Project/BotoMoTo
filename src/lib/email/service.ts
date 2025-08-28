@@ -230,11 +230,11 @@ export class EmailService {
     templateId: string, 
     variables: TemplateVariables, 
     to: EmailAddress | EmailAddress[],
-    options?: SendOptions
+    options?: SendOptions & { organizationId?: number }
   ): Promise<SendResult> {
     try {
-      // Render template
-      const templateResult = await templateEngine.render(templateId, variables);
+      // Render template with organization context
+      const templateResult = await templateEngine.render(templateId, variables, options?.organizationId);
       
       // Create email message
       const message: EmailMessage = {
@@ -257,13 +257,13 @@ export class EmailService {
   async sendBulkTemplate(
     templateId: string,
     recipients: Array<{ to: EmailAddress; variables: TemplateVariables }>,
-    options?: SendOptions
+    options?: SendOptions & { organizationId?: number }
   ): Promise<SendBulkResult> {
     try {
       // Render template for each recipient
       const messages: EmailMessage[] = await Promise.all(
         recipients.map(async (recipient) => {
-          const templateResult = await templateEngine.render(templateId, recipient.variables);
+          const templateResult = await templateEngine.render(templateId, recipient.variables, options?.organizationId);
           
           return {
             to: recipient.to,

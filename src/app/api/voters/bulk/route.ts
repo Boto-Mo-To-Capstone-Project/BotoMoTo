@@ -7,34 +7,18 @@ import { createAuditLog } from "@/lib/audit";
 import { createEmailService, initializeTemplates } from "@/lib/email";
 import { enqueueVotingCodes } from "@/lib/queue/helpers";
 import { formatElectionSchedule } from "@/lib/email/templates/data";
+import { requireAuth } from "@/lib/helpers/requireAuth";
 
 // Handle POST request for bulk voter operations
 export async function POST(request: NextRequest) {
   try {
     // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to perform bulk voter operations",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Check if user has admin role
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin users can perform bulk voter operations",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN]);
+        if (!authResult.authorized) {
+            return authResult.response;
+        }
+        const user = authResult.user;
+    
 
     const body = await request.json();
     const { operation, voterIds, electionId, data: operationData, templateId } = body;
@@ -227,7 +211,8 @@ export async function POST(request: NextRequest) {
                     expiryDate: scheduleData.expiryDate || 'End of voting period',
                     contactEmail: 'support@boto-mo-to.online'
                   },
-                  { email: voter.email!, name: `${voter.firstName} ${voter.lastName}`.trim() }
+                  { email: voter.email!, name: `${voter.firstName} ${voter.lastName}`.trim() },
+                  { organizationId: voter.election.organization.id }
                 )
               );
 

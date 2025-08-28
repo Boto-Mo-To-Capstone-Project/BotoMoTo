@@ -502,11 +502,6 @@ model EmailTemplate {
   textContent    String?   @db.Text // Optional text version
   defaultSubject String?   // Default subject line
   
-  // File storage (for uploaded templates)
-  fileName       String?   // Original filename
-  fileSize       Int?      // File size in bytes
-  filePath       String?   // Storage path
-  
   // Organization isolation
   organizationId Int
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
