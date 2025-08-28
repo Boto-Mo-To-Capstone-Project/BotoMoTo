@@ -10,13 +10,14 @@ interface Voter {
   contactNumber: string;
   birthdate: string;
   codeSendStatus: string; // Required field from database: "PENDING", "SENT", "FAILED", etc.
+  code: string; // Add voting code field
 }
 
 interface VoterTableProps {
   voters: Voter[];
-  sortCol: 'name' | 'status' | 'scope' | 'email' | 'contactNumber' | 'birthdate' | 'codeSendStatus' | null;
+  sortCol: 'name' | 'status' | 'scope' | 'email' | 'contactNumber' | 'birthdate' | 'codeSendStatus' | 'code' | null;
   sortDir: 'asc' | 'desc';
-  onSort: (col: 'name' | 'status' | 'scope' | 'email' | 'contactNumber' | 'birthdate' | 'codeSendStatus') => void;
+  onSort: (col: 'name' | 'status' | 'scope' | 'email' | 'contactNumber' | 'birthdate' | 'codeSendStatus' | 'code') => void;
   page: number;
   totalPages: number;
   onFirst: () => void;
@@ -129,6 +130,17 @@ export default function VoterTable({
               </th>
               <th
                 className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
+                onClick={() => props.onSort("code")}
+              >
+                Code{" "}
+                {props.sortCol === "code" ? (
+                  props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
+                ) : (
+                  <FaSort className="inline opacity-50" />
+                )}
+              </th>
+              <th
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("codeSendStatus")}
               >
                 Send Status{" "}
@@ -143,7 +155,7 @@ export default function VoterTable({
           <tbody>
             {props.voters.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-4 text-center text-gray-400">
+                <td colSpan={9} className="px-4 py-4 text-center text-gray-400">
                   No voters found.
                 </td>
               </tr>
@@ -181,6 +193,11 @@ export default function VoterTable({
                   <td className="py-2 px-3 align-middle truncate max-w-[120px]">{voter.scope}</td>
                   <td className="py-2 px-3 align-middle truncate max-w-[180px]">{voter.email}</td>
                   <td className="py-2 px-3 align-middle truncate max-w-[140px]">{voter.contactNumber}</td>
+                  <td className="py-2 px-3 align-middle truncate max-w-[100px]">
+                    <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                      {voter.code || '—'}
+                    </span>
+                  </td>
                   <td className="py-2 px-3 align-middle truncate max-w-[120px]">
                     {(() => {
                       const codeSendStatus = (voter.codeSendStatus || 'PENDING').toLowerCase();

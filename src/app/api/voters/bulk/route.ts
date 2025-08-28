@@ -137,9 +137,18 @@ export async function POST(request: NextRequest) {
           // Initialize email templates
           initializeTemplates();
           
+          console.log(`[Debug] Looking for voters with IDs: ${validVoterIds.join(', ')}`);
+          console.log(`[Debug] Election ID filter: ${electionId}`);
+          
           // Get full voter details with election info
           const votersWithDetails = await db.voter.findMany({
-            where: { id: { in: validVoterIds } },
+            where: { 
+              id: { in: validVoterIds },
+              isDeleted: false,
+              email: { not: null }, // Only voters with email addresses
+              code: { not: "" }, // Only voters with voting codes
+              ...(electionId && { electionId: parseInt(electionId) })
+            },
             include: {
               election: {
                 select: {
@@ -152,6 +161,8 @@ export async function POST(request: NextRequest) {
               }
             }
           });
+          
+          console.log(`[Debug] Found ${votersWithDetails.length} voters with details and codes`);
 
           if (votersWithDetails.length === 0) {
             return apiResponse({
@@ -202,28 +213,26 @@ export async function POST(request: NextRequest) {
             console.log(`[Bulk Send] Processing chunk ${i + 1}/${chunks.length} (${chunk.length} voters)`);
 
             try {
-              // Prepare bulk messages (same format as comprehensive test)
-              const bulkMessages = chunk.map(voter => ({
-                to: { email: voter.email!, name: `${voter.firstName} ${voter.lastName}`.trim() },
-                subject: `Your Voting Code for ${voter.election.name}`,
-                html: `
-                  <h1>Your Voting Code</h1>
-                  <p>Dear ${voter.firstName},</p>
-                  <p>Your voting code for <strong>${voter.election.name}</strong> is: <strong>${voter.code}</strong></p>
-                  <p>Please keep this code safe and use it to vote when the election opens.</p>
-                  <p>Election Details:</p>
-                  <ul>
-                    ${scheduleData.startDate ? `<li>Start: ${scheduleData.startDate}</li>` : ''}
-                    ${scheduleData.endDate ? `<li>End: ${scheduleData.endDate}</li>` : ''}
-                    ${scheduleData.expiryDate ? `<li>Voting expires: ${scheduleData.expiryDate}</li>` : ''}
-                  </ul>
-                  <p>Best regards,<br/>${voter.election.organization.name}</p>
-                `,
-                text: `Your voting code for ${voter.election.name} is: ${voter.code}. Please keep this code safe and use it to vote when the election opens. ${scheduleData.startDate ? `Start: ${scheduleData.startDate}` : ''} ${scheduleData.endDate ? `End: ${scheduleData.endDate}` : ''} - ${voter.election.organization.name}`
-              }));
+              // Send individual template emails for each voter in this chunk
+              const sendPromises = chunk.map(voter => 
+                emailService.sendTemplate(
+                  templateId || 'voting-code',
+                  {
+                    voterName: `${voter.firstName} ${voter.lastName}`.trim(),
+                    electionTitle: voter.election.name,
+                    votingCode: voter.code,
+                    organizationName: voter.election.organization.name,
+                    startDate: scheduleData.startDate || 'TBD',
+                    endDate: scheduleData.endDate || 'TBD', 
+                    expiryDate: scheduleData.expiryDate || 'End of voting period',
+                    contactEmail: 'support@boto-mo-to.online'
+                  },
+                  { email: voter.email!, name: `${voter.firstName} ${voter.lastName}`.trim() }
+                )
+              );
 
-              // Direct bulk send (same method as comprehensive test)
-              const chunkResult = await emailService.sendBulk(bulkMessages);
+              // Execute all sends for this chunk
+              const chunkResults = await Promise.all(sendPromises);
               
               // Update successful voters
               await db.voter.updateMany({

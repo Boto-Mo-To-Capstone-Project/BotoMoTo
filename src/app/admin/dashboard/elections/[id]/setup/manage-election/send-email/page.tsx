@@ -41,6 +41,7 @@ export default function SendEmailPage() {
     | "contactNumber"
     | "birthdate"
     | "codeSendStatus"
+    | "code"
     | null
   >(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -83,6 +84,7 @@ export default function SendEmailPage() {
     birthdate: string;
     voted: boolean;
     codeSendStatus: string;
+    code: string; // Add voting code field
   }>>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -105,6 +107,7 @@ export default function SendEmailPage() {
       | "contactNumber"
       | "birthdate"
       | "codeSendStatus"
+      | "code"
   ) => {
     if (sortCol === col) {
       setSortDir(sortDir === "asc" ? "desc" : "asc");
@@ -426,6 +429,7 @@ export default function SendEmailPage() {
           birthdate: "",
           voted: !!v.voted,
           codeSendStatus: v.codeSendStatus || "PENDING",
+          code: v.code || "—", // Add voting code display
         }));
 
         setRows(mapped);
