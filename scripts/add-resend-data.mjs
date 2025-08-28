@@ -150,7 +150,6 @@ async function addResendData() {
         ...resendElection,
         orgId: org.id,
         status: "ACTIVE",
-        isLive: true,
       },
     });
 

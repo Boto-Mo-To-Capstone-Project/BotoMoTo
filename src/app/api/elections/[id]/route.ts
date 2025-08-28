@@ -187,7 +187,7 @@ export async function PUT(
     const validation = validateWithZod(electionSchema, rawBody);
     if (!('data' in validation)) return validation;
     
-    const { name, description, status, isLive, allowSurvey } = validation.data;
+    const { name, description, status, allowSurvey } = validation.data;
 
     const election = await db.election.findUnique({
       where: {
@@ -272,7 +272,6 @@ export async function PUT(
       name: election.name,
       description: election.description,
       status: election.status,
-      isLive: election.isLive,
       allowSurvey: election.allowSurvey,
     } as const;
 
@@ -282,7 +281,6 @@ export async function PUT(
         name,
         description,
         status,
-        isLive,
         allowSurvey,
       },
       include: {
@@ -379,7 +377,7 @@ export async function PUT(
 
     // Compare and log changed fields
     const changedFields: Record<string, { old: any; new: any }> = {};
-    for (const key of ["name", "description", "status", "isLive", "allowSurvey"] as const) {
+    for (const key of ["name", "description", "status", "allowSurvey"] as const) {
       const oldVal = (oldData as any)[key];
       const newVal = (updatedElection as any)[key] ?? null;
       if (oldVal !== newVal) {

@@ -34,33 +34,25 @@ const ElectionStatus = () => {
         // Check if election is open based on the election data
         const election = data.election;
         
-        // Check election status
-        if (election.status !== "ACTIVE") {
+        // Simplified logic: Election is open only if status is ACTIVE
+        const isElectionActive = election.status === "ACTIVE";
+        
+        if (!isElectionActive) {
           setIsOpen(false);
           setIsLoading(false);
           return;
         }
 
-        // Check if election is live
-        if (!election.isLive) {
-          setIsOpen(false);
-          setIsLoading(false);
-          return;
-        }
-
-        // Check election schedule if available
+        // If election is active, check schedule if available
         if (election.schedule) {
           const now = new Date();
           const startDate = new Date(election.schedule.dateStart);
           const endDate = new Date(election.schedule.dateFinish);
 
-          if (now >= startDate && now <= endDate) {
-            setIsOpen(true);
-          } else {
-            setIsOpen(false);
-          }
+          // Election is open only if we're within the scheduled time
+          setIsOpen(now >= startDate && now <= endDate);
         } else {
-          // If no schedule but election is active and live, consider it open
+          // If no schedule but election is active, consider it open
           setIsOpen(true);
         }
 

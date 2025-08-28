@@ -182,7 +182,7 @@ async function createElection(request: NextRequest) {
     const validation = validateWithZod(electionSchema, rawBody);
     if (!("data" in validation)) return validation;
 
-    const { name, description, status, isLive, allowSurvey } = validation.data;
+    const { name, description, status, allowSurvey } = validation.data;
 
     // Extract optional schedule fields (support multiple shapes)
     const rawStart = rawBody?.schedule?.dateStart ?? rawBody?.schedule?.startDate ?? rawBody?.startDate ?? null;
@@ -246,8 +246,7 @@ async function createElection(request: NextRequest) {
         orgId: organization.id,
         name,
         description,
-        status: status || ELECTION_STATUS.ACTIVE,
-        isLive: isLive || false,
+        status: status || ELECTION_STATUS.DRAFT,
         allowSurvey: allowSurvey || false,
       },
       include: {

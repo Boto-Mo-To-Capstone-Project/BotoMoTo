@@ -153,11 +153,10 @@ const organizationSchema = z.object({
 const electionSchema = z.object({
   name: field.string("Election name", { min: 3, max: 100 }),
   description: field.string("Election description", { min: 10, max: 500 }),
-  status: z.enum(["ACTIVE", "CLOSED"], {
+  status: z.enum(["DRAFT", "ACTIVE", "CLOSED"], {
     required_error: "Election status is required",
     invalid_type_error: "Invalid election status"
-  }).default("ACTIVE"),
-  isLive: z.boolean().default(false),
+  }).default("DRAFT"),
   allowSurvey: z.boolean().default(false),
   // Optional schedule fields to allow flexible payloads; validated in route handlers
   startDate: z.union([z.string(), z.date()]).optional(),

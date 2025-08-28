@@ -36,7 +36,6 @@ async function validateSeedData() {
         id: true,
         name: true,
         status: true,
-        isLive: true,
         organization: {
           select: {
             name: true
@@ -63,7 +62,7 @@ async function validateSeedData() {
     console.log(`\n🗳️ Elections (${elections.length}):`);
     elections.forEach(election => {
       console.log(`   Election ${election.id}: ${election.name}`);
-      console.log(`      Status: ${election.status} (Live: ${election.isLive})`);
+      console.log(`      Status: ${election.status}`);
       console.log(`      Organization: ${election.organization.name}`);
       if (election.schedule) {
         console.log(`      Schedule: ${election.schedule.dateStart.toDateString()} - ${election.schedule.dateFinish.toDateString()}`);
