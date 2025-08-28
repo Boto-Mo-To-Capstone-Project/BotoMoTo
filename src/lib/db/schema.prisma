@@ -195,7 +195,6 @@ model Election {
   name        String
   description String
   status      ElectionStatus @default(DRAFT)
-  isLive      Boolean        @default(false) // For real-time voting
   allowSurvey Boolean        @default(false) // Enable post-vote survey
   
   createdAt   DateTime       @default(now())
@@ -454,7 +453,6 @@ model ApiLog {
   @@index([createdAt])
   @@index([endpoint, createdAt])
   @@index([statusCode, createdAt])
-  @@map("api_logs")
 }
 
 model UserSession {
@@ -471,7 +469,6 @@ model UserSession {
   // Indexes for concurrent user calculations
   @@index([startedAt, endedAt])
   @@index([userId, startedAt])
-  @@map("user_sessions")
 }
 
 model SystemMetric {
@@ -483,7 +480,6 @@ model SystemMetric {
   
   // Index for time-series queries
   @@index([metricType, recordedAt])
-  @@map("system_metrics")
 }
 
 // Email System Models
@@ -515,7 +511,6 @@ model EmailTemplate {
   @@unique([organizationId, templateId])
   @@index([organizationId, type])
   @@index([templateId])
-  @@map("email_templates")
 }
 
 enum TemplateType {
@@ -579,7 +574,6 @@ model EmailLog {
   @@index([organizationId, createdAt])
   @@index([electionId, createdAt])
   @@index([status, queuedAt])
-  @@map("email_logs")
 }
 
 model EmailSuppression {
@@ -609,7 +603,6 @@ model EmailSuppression {
   @@index([reason, suppressedAt])
   @@index([organizationId, email])
   @@index([expiresAt])
-  @@map("email_suppressions")
 }
 
 // Email-related enums
