@@ -1,28 +1,19 @@
 // Election status management endpoint (PATCH)
 import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
 import db from "@/lib/db/db";
 import { ROLES, ELECTION_STATUS } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
 import { createAuditLog } from "@/lib/audit";
+import { requireAuth } from "@/lib/helpers/requireAuth";
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to change election status",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const { id } = await params;
     const electionId = parseInt(id);
@@ -41,10 +32,10 @@ export async function PATCH(
     const body = await request.json();
     const { action } = body;
     
-    if (!action || !["close", "archive", "open", "pause", "resume"].includes(action)) {
+    if (!action || !["close", "open"].includes(action)) {
       return apiResponse({
         success: false,
-        message: "Invalid action. Must be 'close', 'archive', 'open', 'pause', or 'resume'",
+        message: "Invalid action. Must be 'close' or 'open'",
         data: null,
         error: "Bad Request",
         status: 400
@@ -96,17 +87,6 @@ export async function PATCH(
       });
     }
 
-    // Only admin and superadmin can access this endpoint
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "You do not have permission to change election status",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
-
     // Determine new status based on action
     let newStatus: string;
     let validTransitions: string[] = [];
@@ -114,23 +94,11 @@ export async function PATCH(
     switch (action) {
       case "close":
         newStatus = ELECTION_STATUS.CLOSED;
-        validTransitions = [ELECTION_STATUS.ACTIVE, ELECTION_STATUS.PAUSED];
-        break;
-      case "archive":
-        newStatus = ELECTION_STATUS.ARCHIVED;
-        validTransitions = [ELECTION_STATUS.CLOSED];
+        validTransitions = [ELECTION_STATUS.ACTIVE];
         break;
       case "open":
         newStatus = ELECTION_STATUS.ACTIVE;
-        validTransitions = [ELECTION_STATUS.DRAFT];
-        break;
-      case "pause":
-        newStatus = ELECTION_STATUS.PAUSED;
-        validTransitions = [ELECTION_STATUS.ACTIVE];
-        break;
-      case "resume":
-        newStatus = ELECTION_STATUS.ACTIVE;
-        validTransitions = [ELECTION_STATUS.PAUSED];
+        validTransitions = [ELECTION_STATUS.DRAFT, ELECTION_STATUS.CLOSED];
         break;
       default:
         return apiResponse({
