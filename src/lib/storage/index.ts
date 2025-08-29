@@ -258,10 +258,9 @@ export function generateStorageKey(
   fileType: string,
   filename: string
 ): string {
-  const timestamp = Date.now();
-  const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
-  
-  return `${category}/${entityId}/${fileType}/${timestamp}_${sanitizedFilename}`;
+  // Use the new utility function
+  const { generateObjectKey } = require('./utils');
+  return generateObjectKey(category, entityId, fileType, filename);
 }
 
 /**
@@ -343,5 +342,6 @@ export function validateFile(
 // Re-export types and utilities
 export * from './types';
 export * from './config';
+export * from './utils'; // New URL generation utilities
 export { StorageService } from './service';
 export { StorageLogger, StorageErrorHandler } from './logger';
