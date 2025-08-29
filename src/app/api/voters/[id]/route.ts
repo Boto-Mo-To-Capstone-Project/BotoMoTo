@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
 import db from "@/lib/db/db";
 import { ROLES } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
 import { validateWithZod } from "@/lib/validateWithZod";
 import { voterUpdateSchema } from "@/lib/schema";
 import { createAuditLog } from "@/lib/audit";
+import { requireAuth } from "@/lib/helpers/requireAuth";
 
 // Handle GET request to fetch a specific voter
 export async function GET(
@@ -14,29 +14,9 @@ export async function GET(
 ) {
   try {
     // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to view voters",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Check if user has admin role
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin users can view voter details",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const { id } = await params;
     const voterId = parseInt(id);
@@ -159,29 +139,9 @@ export async function PUT(
 ) {
   try {
     // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to update voters",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Check if user has admin role
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin users can update voters",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const { id } = await params;
     const voterId = parseInt(id);
@@ -393,30 +353,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to delete voters",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Check if user has admin role
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin users can delete voters",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+    // Authenticate the user - only admins can delete voters
+    const authResult = await requireAuth([ROLES.ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const { id } = await params;
     const voterId = parseInt(id);

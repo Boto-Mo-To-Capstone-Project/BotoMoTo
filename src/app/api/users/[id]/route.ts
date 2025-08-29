@@ -1,6 +1,5 @@
 // Import necessary modules and constants
 import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
 import db from "@/lib/db/db";
 import { ROLES } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
@@ -8,6 +7,7 @@ import { validateWithZod } from "@/lib/validateWithZod";
 import { userSchema } from "@/lib/schema";
 import { createAuditLog } from "@/lib/audit";
 import bcrypt from "bcryptjs";
+import { requireAuth } from "@/lib/helpers/requireAuth";
 
 // Handle GET request to fetch a specific user
 export async function GET(
@@ -15,19 +15,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to view this user",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
+    // Authenticate the user - only admins and super admins can access user data
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const userId = (await params).id;
 
@@ -116,19 +107,10 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to update users",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
+    // Authenticate the user - only admins and super admins can update user data
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const userId = (await params).id;
 
@@ -289,30 +271,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to delete users",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Only super admin can delete users
-    if (user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only super admin users can delete users",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+    // Authenticate the user - only super admin can delete users
+    const authResult = await requireAuth([ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const userId = (await params).id;
 

@@ -1,6 +1,5 @@
 // Import necessary modules and constants
 import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
 import db from "@/lib/db/db";
 import { ROLES, ELECTION_STATUS, ORGANIZATION_STATUS } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
@@ -127,27 +126,9 @@ async function getElections(request: NextRequest) {
 async function createElection(request: NextRequest) {
   try {
     // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: 'You must be logged in to create an election',
-        error: 'Unauthorized',
-        status: 401,
-      });
-    }
-
-    // Only admin users can create elections (superadmin should not have associated elections)
-    if (user.role !== ROLES.ADMIN) {
-      return apiResponse({
-        success: false,
-        message: 'Only admin users can create elections',
-        error: 'Forbidden',
-        status: 403,
-      });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     // Get user's organization and verify it's approved
     const organization = await db.organization.findUnique({
@@ -182,7 +163,7 @@ async function createElection(request: NextRequest) {
     const validation = validateWithZod(electionSchema, rawBody);
     if (!("data" in validation)) return validation;
 
-    const { name, description, status, isLive, allowSurvey } = validation.data;
+    const { name, description, status, allowSurvey } = validation.data;
 
     // Extract optional schedule fields (support multiple shapes)
     const rawStart = rawBody?.schedule?.dateStart ?? rawBody?.schedule?.startDate ?? rawBody?.startDate ?? null;
@@ -246,8 +227,7 @@ async function createElection(request: NextRequest) {
         orgId: organization.id,
         name,
         description,
-        status: status || ELECTION_STATUS.ACTIVE,
-        isLive: isLive || false,
+        status: status || ELECTION_STATUS.DRAFT,
         allowSurvey: allowSurvey || false,
       },
       include: {

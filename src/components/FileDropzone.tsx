@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useCallback } from "react";
+import { MdDocumentScanner } from "react-icons/md";
 
 interface FileDropzoneProps {
   label: string;
@@ -79,6 +80,10 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
           target: { files: files }
         } as React.ChangeEvent<HTMLInputElement>;
         
+        // Clear the input value to allow re-uploading the same file
+        const input = document.getElementById(id) as HTMLInputElement | null;
+        if (input) input.value = '';
+        
         onChange(syntheticEvent);
       } else {
         console.warn(`Invalid file type: ${file.name} (${file.type}). Accepted: ${accept}`);
@@ -92,7 +97,7 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
   };
 
   return (
-    <div className="w-full max-w-[380px]">
+    <div className="w-full">
       <label className="block text-sm font-medium text-[var(--color-black)] mb-1">
         {label}
       </label>
@@ -113,8 +118,8 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
         role="button"
         aria-label={label}
       >
-        <div className="text-center">
-          <div className="text-2xl mb-2">📄</div>
+        <div className="flex flex-col items-center justify-center w-full">
+          <MdDocumentScanner size={40} className="mb-2 text-gray-400" />
           <div>Click to upload or drag and drop</div>
           <div className="text-xs text-gray-400 mt-1">{fileTypeText}</div>
         </div>

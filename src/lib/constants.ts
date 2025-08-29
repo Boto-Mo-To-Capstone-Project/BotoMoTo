@@ -13,13 +13,11 @@ export const ORGANIZATION_STATUS = {
   SUSPENDED: "SUSPENDED",
 } as const;
 
-// Election statuses (DB-level). UI will use only ACTIVE and CLOSED.
+// Election statuses (matching Prisma schema)
 export const ELECTION_STATUS = {
   DRAFT: "DRAFT",
-  ACTIVE: "ACTIVE",
-  PAUSED: "PAUSED",
+  ACTIVE: "ACTIVE", 
   CLOSED: "CLOSED",
-  ARCHIVED: "ARCHIVED",
 } as const;
 
 // Ticket statuses

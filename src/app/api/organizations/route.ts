@@ -1,6 +1,5 @@
 // Import necessary modules and constants
 import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
 import db from "@/lib/db/db";
 import { ROLES, ORGANIZATION_STATUS, ALLOWED_FILE_TYPES, FILE_LIMITS } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/helpers/requireAuth";
 import db from "@/lib/db/db";
 import { ROLES, ORGANIZATION_STATUS } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
@@ -11,17 +11,9 @@ import { candidateSchema } from "@/lib/schema";
 export async function POST(request: NextRequest) {
   try {
     // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({ success: false, message: "You must be logged in to perform bulk candidate operations", error: "Unauthorized", status: 401 });
-    }
-
-    // Check if user has admin role
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({ success: false, message: "Only admin users can perform bulk candidate operations", error: "Forbidden", status: 403 });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     const body = await request.json();
     const { operation, candidateIds, electionId, candidates: candidatesData } = body || {};

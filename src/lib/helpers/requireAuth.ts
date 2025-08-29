@@ -4,7 +4,13 @@ import { ROLES } from '@/lib/constants';
 
 type Role = typeof ROLES[keyof typeof ROLES];
 
-export async function requireAuth(allowedRoles: Role[] = []) {
+interface AuthResult {
+  authorized: boolean;
+  user?: any;
+  response: Response; // always Response (never undefined)
+}
+
+export async function requireAuth(allowedRoles: Role[] = []): Promise<AuthResult> {
   const session = await auth();
   const user = session?.user;
 
@@ -32,5 +38,14 @@ export async function requireAuth(allowedRoles: Role[] = []) {
     };
   }
 
-  return { authorized: true, user };
+  // ✅ always include a valid response for consistency
+  return {
+    authorized: true,
+    user,
+    response: apiResponse({
+      success: true,
+      message: 'Authorized',
+      status: 200,
+    }),
+  };
 }

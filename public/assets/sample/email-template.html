@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{electionTitle}} - Voting Code</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .voting-code {
+            background-color: #f8f9fa;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            letter-spacing: 2px;
+        }
+        .important {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            font-size: 12px;
+            color: #6c757d;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{organizationName}}</h1>
+            <h2>{{electionTitle}}</h2>
+        </div>
+        
+        <p>Dear <strong>{{voterName}}</strong>,</p>
+        
+        <p>We are pleased to provide you with your unique voting code for the upcoming election. Please use this code to access your ballot and cast your vote.</p>
+        
+        <div class="voting-code">
+            {{votingCode}}
+        </div>
+        
+        <div class="important">
+            <h3>Important Information:</h3>
+            <ul>
+                <li><strong>Election Period:</strong> {{startDate}} to {{endDate}}</li>
+                <li><strong>Your voting code is unique and confidential</strong> - do not share it with anyone</li>
+                <li>Keep this email safe until you have voted</li>
+                <li>You can only vote once using this code</li>
+            </ul>
+        </div>
+        
+        <h3>Voting Instructions:</h3>
+        <div>{{instructions}}</div>
+        
+        <p>If you have any questions or encounter any issues while voting, please contact our support team.</p>
+        
+        <p>Thank you for participating in this democratic process.</p>
+        
+        <p>Best regards,<br>
+        <strong>{{organizationName}} Election Committee</strong></p>
+        
+        <div class="footer">
+            <p>This is an automated message. Please do not reply to this email.</p>
+            <p>Election: {{electionTitle}} | {{organizationName}}</p>
+        </div>
+    </div>
+</body>
+</html>

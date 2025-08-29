@@ -68,7 +68,6 @@ async function quickSeed() {
         name: "Test Election 2025",
         description: "Sample election for API testing",
         status: "ACTIVE",
-        isLive: true,
         allowSurvey: true
       }
     });

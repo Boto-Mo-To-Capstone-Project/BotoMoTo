@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
 import db from "@/lib/db/db";
 import { ROLES, ALLOWED_FILE_TYPES, FILE_LIMITS } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
@@ -19,7 +18,9 @@ export async function GET(
 ) {
   try {
     const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
-    if (!authResult.authorized) return authResult.response;
+    if (!authResult.authorized) {
+      return authResult.response;
+    }
     const user = authResult.user;
 
     const { id } = await params;
@@ -36,7 +37,9 @@ export async function GET(
     }
 
     const { organization, response } = await findOrganizationById(organizationId);
-    if (!organization) return response;
+    if (!organization) {
+      return response;
+    }
 
     // Admin can only view their own organization, superadmin can view any
     const isOwner = checkOwnership(user, organization.adminId);
@@ -81,7 +84,9 @@ export async function PUT(
 ) {
   try {
     const authResult = await requireAuth([ROLES.ADMIN]);
-    if (!authResult.authorized) return authResult.response;
+    if (!authResult.authorized) {
+      return authResult.response;
+    }
     const user = authResult.user;
 
     const { id } = await params;
@@ -310,7 +315,9 @@ export async function DELETE(
 ) {
   try {
     const authResult = await requireAuth([ROLES.ADMIN]);
-    if (!authResult.authorized) return authResult.response;
+    if (!authResult.authorized) {
+      return authResult.response;
+    }
     const user = authResult.user;
 
     const { id } = await params;

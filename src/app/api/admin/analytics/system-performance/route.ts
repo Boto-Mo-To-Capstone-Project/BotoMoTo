@@ -3,6 +3,7 @@ import { apiResponse } from '@/lib/apiResponse';
 import { PerformanceAnalyzer } from '@/lib/performance/analyzer';
 import { auth } from '@/lib/auth';
 import { requireAuth } from '@/lib/helpers/requireAuth';
+import { ROLES } from '@/lib/constants';
 
 
 /**
@@ -14,8 +15,10 @@ import { requireAuth } from '@/lib/helpers/requireAuth';
 export async function GET(request: NextRequest) {
   try {
     // Check authentication and authorization
-    const authResult = await requireAuth(['SUPER_ADMIN']);
-    if (!authResult.authorized) return authResult.response;
+    const authResult = await requireAuth([ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) {
+      return authResult.response;
+    }
 
     // Parse query parameters for date range
     const { searchParams } = new URL(request.url);

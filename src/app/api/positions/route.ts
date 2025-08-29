@@ -1,29 +1,19 @@
 import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
 import { apiResponse } from "@/lib/apiResponse";
 import { validateWithZod } from "@/lib/validateWithZod";
 import { createAuditLog } from "@/lib/audit";
 import { positionSchema } from "@/lib/schema";
 import db from "@/lib/db/db";
 import { ROLES, ORGANIZATION_STATUS } from "@/lib/constants";
+import { requireAuth } from "@/lib/helpers/requireAuth";
 
 // Handle GET request to fetch positions
 export async function GET(request: NextRequest) {
   try {
     // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    // Check if user is authenticated
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to view positions",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     // Get election ID from query parameters
     const url = new URL(request.url);
@@ -242,31 +232,10 @@ export async function GET(request: NextRequest) {
 // Handle POST request to create a new position
 export async function POST(request: NextRequest) {
   try {
-    // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    // Check if user is authenticated
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to create positions",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Check if user has admin role (only admins can create positions)
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin users can create positions",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+    // Authenticate the user - only admins can create positions
+    const authResult = await requireAuth([ROLES.ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     // Parse request body
     const body = await request.json();
@@ -608,29 +577,9 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to delete positions",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Check if user has admin role
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin users can delete positions",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     // Get election ID from query parameters
     const url = new URL(request.url);

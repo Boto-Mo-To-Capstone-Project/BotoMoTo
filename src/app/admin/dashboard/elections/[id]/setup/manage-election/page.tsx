@@ -13,6 +13,7 @@ import { OpenElectionModal } from '@/components/OpenElectionModal';
 import { FiMoreHorizontal } from "react-icons/fi";
 import { MdFileUpload } from 'react-icons/md';
 import { useParams, useRouter } from 'next/navigation';
+import { useSession } from "next-auth/react";
 
 const setupCards = [
     {
@@ -58,6 +59,7 @@ function ManageElectionPage() {
   const params = useParams<{ id: string }>();
   const electionId = Number(params?.id);
   const router = useRouter();
+  const { data: session } = useSession();
 
   const [showSteps, setShowSteps] = useState(false);
   const [showMFAModal, setShowMFAModal] = useState(false);
@@ -78,7 +80,7 @@ function ManageElectionPage() {
         {/* Red Header Card */}
         <div className="flex items-center rounded-2xl bg-red-800 mb-6 px-6 py-6 relative overflow-hidden mt-8">
           <div>
-            <h2 className="text-white text-xl font-semibold mb-2">Hi, Brian King!</h2>
+            <h2 className="text-white text-xl font-semibold mb-2">Hi, {session?.user?.name || 'User'}!</h2>
             <p className="text-white text-base">
               Follow the steps below to complete election setup.
             </p>

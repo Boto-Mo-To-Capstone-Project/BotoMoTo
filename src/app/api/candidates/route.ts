@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
 import { apiResponse } from "@/lib/apiResponse";
 import { validateWithZod } from "@/lib/validateWithZod";
 import { createAuditLog } from "@/lib/audit";
@@ -8,18 +7,16 @@ import db from "@/lib/db/db";
 import { ROLES, ORGANIZATION_STATUS, FILE_LIMITS } from "@/lib/constants";
 import { writeFile, mkdir } from 'fs/promises';
 import { join, extname } from 'path';
+import { requireAuth } from "@/lib/helpers/requireAuth";
+
 
 // Handle GET request to fetch candidates
 export async function GET(request: NextRequest) {
   try {
     // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    // Check if user is authenticated
-    if (!user) {
-      return apiResponse({ success: false, message: "You must be logged in to view candidates", error: "Unauthorized", status: 401 });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     // Get query parameters
     const url = new URL(request.url);
@@ -258,17 +255,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({ success: false, message: "You must be logged in to create candidates", error: "Unauthorized", status: 401 });
-    }
-
-    // Check if user has admin role
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({ success: false, message: "Only admin users can create candidates", error: "Forbidden", status: 403 });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     // Parse multipart form data
     const formData = await request.formData();
@@ -301,8 +290,6 @@ export async function POST(request: NextRequest) {
       positionId: parseInt(positionId),
       partyId: partyId && partyId !== 'null' ? parseInt(partyId) : null,
       isNew: isNew === 'true'
-      // Note: imageUrl and credentialUrl are handled separately via file uploads
-      // leaderships, workExperiences, and educations are not part of the current schema
     };
 
     // Validate numeric conversions

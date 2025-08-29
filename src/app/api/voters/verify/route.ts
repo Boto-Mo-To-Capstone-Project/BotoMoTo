@@ -42,7 +42,6 @@ export async function POST(request: NextRequest) {
             id: true,
             name: true,
             status: true,
-            isLive: true,
             isDeleted: true,
             schedule: {
               select: {
@@ -327,7 +326,6 @@ export async function POST(request: NextRequest) {
           id: voter.election.id,
           name: voter.election.name,
           status: voter.election.status,
-          isLive: voter.election.isLive,
           mfaSettings: voter.election.mfaSettings,
           schedule: voter.election.schedule
         },

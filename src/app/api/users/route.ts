@@ -1,6 +1,5 @@
 // Import necessary modules and constants
 import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
 import db from "@/lib/db/db";
 import { ROLES } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
@@ -8,6 +7,7 @@ import { validateWithZod } from "@/lib/validateWithZod";
 import { userSchema } from "@/lib/schema";
 import { createAuditLog } from "@/lib/audit";
 import bcrypt from "bcryptjs";
+import { requireAuth } from "@/lib/helpers/requireAuth";
 
 // Import performance logging middleware
 import { withPerformanceLogging } from "@/lib/performance/middleware";
@@ -16,19 +16,9 @@ import { withPerformanceLogging } from "@/lib/performance/middleware";
 async function getUsers(request: NextRequest) {
   try {
     // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    // Check if user is authenticated
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to view users",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     // Fetch users for super admin (can view all users)
     if (user.role === ROLES.SUPER_ADMIN) {
@@ -150,31 +140,10 @@ async function getUsers(request: NextRequest) {
 // Handle POST request to create a new user
 async function createUser(request: NextRequest) {
   try {
-    // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    // Check if user is authenticated
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to create a user",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Only super admin can create users
-    if (user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only super admin users can create users",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+    // Authenticate the user - only super admin can create users
+    const authResult = await requireAuth([ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     // Parse request body
     const body = await request.json();
@@ -261,30 +230,10 @@ async function createUser(request: NextRequest) {
 // Handle DELETE request to delete all users (super admin only)
 async function deleteUsers(request: NextRequest) {
   try {
-    // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to delete users",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Only super admin can delete all users
-    if (user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only super admin users can delete all users",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+    // Authenticate the user - only super admin can delete users
+    const authResult = await requireAuth([ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     // Get count of users to be deleted (excluding super admins and current user)
     const usersCount = await db.user.count({
@@ -351,18 +300,9 @@ async function deleteUsers(request: NextRequest) {
 async function updateUser(request: NextRequest) {
   try {
     // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to update your profile",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     // Parse request body
     const body = await request.json();

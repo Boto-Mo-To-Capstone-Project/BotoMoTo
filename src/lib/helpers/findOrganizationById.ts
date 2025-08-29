@@ -2,7 +2,12 @@
 import db from "@/lib/db/db";
 import { apiResponse } from "@/lib/apiResponse";
 
-export async function findOrganizationById(id: number) {
+interface FindOrganizationResult {
+  organization: any | null;
+  response: Response; // ✅ always Response
+}
+
+export async function findOrganizationById(id: number): Promise<FindOrganizationResult> {
   const organization = await db.organization.findUnique({
     where: {
       id,
@@ -42,9 +47,17 @@ export async function findOrganizationById(id: number) {
         message: "Organization not found or has been deleted",
         error: "Not Found",
         status: 404,
-      }),   
+      }),
     };
   }
 
-  return { organization, response: null };
+  return {
+    organization,
+    response: apiResponse({
+      success: true,
+      message: "Organization found",
+      data: organization,
+      status: 200,
+    }),
+  };
 }

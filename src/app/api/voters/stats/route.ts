@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/helpers/requireAuth";
 import db from "@/lib/db/db";
 import { ROLES } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
@@ -9,29 +9,9 @@ import { createAuditLog } from "@/lib/audit";
 export async function GET(request: NextRequest) {
   try {
     // Authenticate the user
-    const session = await auth();
-    const user = session?.user;
-
-    if (!user) {
-      return apiResponse({
-        success: false,
-        message: "You must be logged in to view voter statistics",
-        data: null,
-        error: "Unauthorized",
-        status: 401
-      });
-    }
-
-    // Check if user has admin role
-    if (user.role !== ROLES.ADMIN && user.role !== ROLES.SUPER_ADMIN) {
-      return apiResponse({
-        success: false,
-        message: "Only admin users can view voter statistics",
-        data: null,
-        error: "Forbidden",
-        status: 403
-      });
-    }
+    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
 
     // Get election ID from query parameters
     const url = new URL(request.url);
