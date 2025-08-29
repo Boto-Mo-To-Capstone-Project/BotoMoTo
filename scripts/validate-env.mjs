@@ -74,6 +74,14 @@ function validateEnvironment() {
     'gmail': ['GMAIL_USER', 'GMAIL_PASS']
   };
 
+  // Storage provider specific variables
+  const storageProviders = (process.env.STORAGE_PROVIDER || 'AUTO').toLowerCase();
+  const storageVars = {
+    's3': ['AWS_S3_BUCKET', 'AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'],
+    'local': ['LOCAL_STORAGE_PATH', 'LOCAL_BASE_URL'],
+    'auto': [] // AUTO detects available providers
+  };
+
   // Queue backend specific variables
   const queueVars = {
     'sqs': ['SQS_QUEUE_URL'],
@@ -113,6 +121,25 @@ function validateEnvironment() {
         warnings.push(`⚠️  Unknown email provider: ${provider}`);
       }
     }
+  }
+
+  // Check storage provider variables
+  log('\n📦 Checking Storage Provider Configuration...', 'bold');
+  
+  if (storageProviders === 'auto') {
+    success.push('✅ STORAGE_PROVIDER: AUTO - Detecting available providers');
+  } else if (storageVars[storageProviders]) {
+    log(`\n  Checking ${storageProviders.toUpperCase()} storage provider:`, 'yellow');
+    for (const varName of storageVars[storageProviders]) {
+      const value = process.env[varName];
+      if (!value) {
+        errors.push(`❌ ${varName}: Required for ${storageProviders} storage provider - MISSING`);
+      } else {
+        success.push(`✅ ${varName}: Found for ${storageProviders}`);
+      }
+    }
+  } else {
+    warnings.push(`⚠️  Unknown storage provider: ${storageProviders}`);
   }
 
   // Check queue backend variables

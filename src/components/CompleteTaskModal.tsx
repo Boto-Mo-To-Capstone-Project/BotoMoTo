@@ -18,6 +18,8 @@ interface CompleteTaskModalProps {
     logo: File | null;
     existingLogoUrl?: string;
     existingLetterUrl?: string;
+    existingLogoObjectKey?: string;
+    existingLetterObjectKey?: string;
   } | null;
   isLoading?: boolean;
   organizationId?: number | null;
@@ -34,6 +36,9 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
   // Add states for existing file URLs
   const [existingLogoUrl, setExistingLogoUrl] = useState<string>("");
   const [existingLetterUrl, setExistingLetterUrl] = useState<string>("");
+  // Add states for existing file object keys  
+  const [existingLogoObjectKey, setExistingLogoObjectKey] = useState<string>("");
+  const [existingLetterObjectKey, setExistingLetterObjectKey] = useState<string>("");
 
   // Populate form with initial data when modal opens
   useEffect(() => {
@@ -46,8 +51,12 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
       setLogo(initialData.logo);
       setExistingLogoUrl(initialData.existingLogoUrl || '');
       setExistingLetterUrl(initialData.existingLetterUrl || '');
+      setExistingLogoObjectKey(initialData.existingLogoObjectKey || '');
+      setExistingLetterObjectKey(initialData.existingLetterObjectKey || '');
       console.log('Existing logo URL:', initialData.existingLogoUrl);
       console.log('Existing letter URL:', initialData.existingLetterUrl);
+      console.log('Existing logo object key:', initialData.existingLogoObjectKey);
+      console.log('Existing letter object key:', initialData.existingLetterObjectKey);
     } else if (open && !initialData) {
       console.log('Modal opened without initial data');
       // Reset form when opening without initial data
@@ -58,6 +67,8 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
       setLogo(null);
       setExistingLogoUrl('');
       setExistingLetterUrl('');
+      setExistingLogoObjectKey('');
+      setExistingLetterObjectKey('');
     }
   }, [open, initialData]);
 
@@ -158,18 +169,19 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
           />
           {/* Logo display - show new upload or existing logo */}
           {logo && (
-            <div className="w-full max-w-[380px]">
-              <UploadedFileDisplay file={logo} />
+            <div className="w-full">
+              <UploadedFileDisplay file={logo} onRemove={() => setLogo(null)} />
             </div>
           )}
           {!logo && existingLogoUrl && (
-            <div className="w-full max-w-[380px]">
+            <div className="w-full">
               <UploadedFileDisplay 
                 file={createFileFromUrl(existingLogoUrl, "Current_Logo.png", "image/png")} 
                 isExistingFile={true}
                 fileUrl={existingLogoUrl}
                 organizationId={organizationId || undefined}
                 fileType="logo"
+                objectKey={existingLogoObjectKey}
               />
               <p className="text-sm text-gray-500 mt-1">Current logo (upload a new one to replace)</p>
             </div>
@@ -185,24 +197,25 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
           />
           {/* Letter display - show new upload, existing letter, or sample letter */}
           {organizationLetter && (
-            <div className="w-full max-w-[380px]">
-              <UploadedFileDisplay file={organizationLetter} />
+            <div className="w-full">
+              <UploadedFileDisplay file={organizationLetter} onRemove={() => setOrganizationLetter(null)} />
             </div>
           )}
           {!organizationLetter && existingLetterUrl && (
-            <div className="w-full max-w-[380px]">
+            <div className="w-full">
               <UploadedFileDisplay 
                 file={createFileFromUrl(existingLetterUrl, "Current_Letter.pdf", "application/pdf")} 
                 isExistingFile={true}
                 fileUrl={existingLetterUrl}
                 organizationId={organizationId || undefined}
                 fileType="letter"
+                objectKey={existingLetterObjectKey}
               />
               <p className="text-sm text-gray-500 mt-1">Current letter (upload a new one to replace)</p>
             </div>
           )}
           {!organizationLetter && !existingLetterUrl && sampleLetter && (
-            <div className="w-full max-w-[380px]">
+            <div className="w-full">
               <UploadedFileDisplay file={sampleLetter} />
             </div>
           )}
