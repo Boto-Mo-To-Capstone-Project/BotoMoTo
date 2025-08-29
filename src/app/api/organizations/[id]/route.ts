@@ -8,8 +8,43 @@ import { createAuditLog } from "@/lib/audit";
 import { requireAuth } from "@/lib/helpers/requireAuth";
 import { checkOwnership } from "@/lib/helpers/checkOwnership";
 import { findOrganizationById } from "@/lib/helpers/findOrganizationById";
-import { writeFile, mkdir } from 'fs/promises';
-import { join, extname } from 'path';  
+import { extname } from 'path';
+
+// Import storage system (replaces fs operations)
+import { uploadFile, generatePublicUrl, generatePresignedUrl, generateObjectKey } from "@/lib/storage";
+
+/**
+ * Transform organization data to include dynamically generated URLs
+ * Uses the new storage system to generate public/presigned URLs from object keys
+ */
+async function transformOrganizationWithUrls(organization: any) {
+  try {
+    const transformed = { ...organization };
+    
+    // Generate logo URL if object key exists
+    if (organization.logoObjectKey) {
+      transformed.logoUrl = generatePublicUrl(
+        organization.logoObjectKey, 
+        organization.logoProvider
+      );
+    }
+    
+    // Generate letter URL if object key exists (presigned for security)
+    if (organization.letterObjectKey) {
+      transformed.letterUrl = await generatePresignedUrl(
+        organization.letterObjectKey,
+        3600, // 1 hour expiration
+        organization.letterProvider
+      );
+    }
+    
+    return transformed;
+  } catch (error) {
+    console.error('Error generating URLs for organization:', error);
+    // Return organization without dynamic URLs if generation fails
+    return organization;
+  }
+}  
 
 // Handle GET request for specific organization (admin and superadmin)
 export async function GET(
@@ -58,10 +93,13 @@ export async function GET(
         : "Viewed own organization details (admin)",
     });
 
+    // Transform organization data to include dynamic URLs
+    const transformedOrg = await transformOrganizationWithUrls(organization);
+
     return apiResponse({
       success: true,
       message: "Organization details fetched successfully",
-      data: organization,
+      data: transformedOrg,
       error: null,
       status: 200
     });
@@ -133,8 +171,12 @@ export async function PUT(
       });
     }
 
-    let photoUrl = organization.photoUrl; // Keep existing if no new file
-    let letterUrl = organization.letterUrl; // Keep existing if no new file
+    let logoObjectKey = organization.logoObjectKey; // Keep existing if no new file
+    let letterObjectKey = organization.letterObjectKey; // Keep existing if no new file
+    let logoProvider = organization.logoProvider; // Keep existing provider
+    let letterProvider = organization.letterProvider; // Keep existing provider
+    let logoMetadata = organization.logoMetadata; // Keep existing metadata
+    let letterMetadata = organization.letterMetadata; // Keep existing metadata
 
     // Handle logo file upload if provided
     if (logoFile && logoFile.size > 0) {
@@ -157,18 +199,26 @@ export async function PUT(
         });
       }
 
-      // Upload new logo
-      const logoExt = extname(logoFile.name).toLowerCase();
-      const timestamp = Date.now();
-      const logoFilename = `org_${organizationId}_${timestamp}_logo${logoExt}`;
-      const logoDir = join(process.cwd(), 'src/app/assets/onboard/logo/');
-      const logoPath = join(logoDir, logoFilename);
-
-      await mkdir(logoDir, { recursive: true });
+      // Upload new logo using storage system
+      const logoKey = generateObjectKey('organizations', user.id, 'logo', logoFile.name);
       const logoBuffer = await logoFile.arrayBuffer();
-      await writeFile(logoPath, Buffer.from(logoBuffer));
+      
+      const logoUpload = await uploadFile(Buffer.from(logoBuffer), logoKey, {
+        contentType: logoFile.type,
+        isPublic: true, // Logos are public
+        metadata: { 
+          userId: user.id.toString(),
+          originalName: logoFile.name,
+          uploadType: 'organization_logo',
+          organizationId: organizationId.toString()
+        }
+      });
 
-      photoUrl = `/assets/onboard/logo/${logoFilename}`;
+      logoObjectKey = logoUpload.key;
+      logoProvider = logoUpload.provider;
+      logoMetadata = logoUpload.metadata;
+      
+      console.log(`📤 Logo updated - Provider: ${logoUpload.provider}, Key: ${logoUpload.key}`);
     }
 
     // Handle letter file upload if provided
@@ -192,27 +242,36 @@ export async function PUT(
         });
       }
 
-      // Upload new letter
-      const letterExt = extname(letterFile.name).toLowerCase();
-      const timestamp = Date.now();
-      const letterFilename = `org_${organizationId}_${timestamp}_letter${letterExt}`;
-      const letterDir = join(process.cwd(), 'src/app/assets/onboard/letter/');
-      const letterPath = join(letterDir, letterFilename);
-
-      await mkdir(letterDir, { recursive: true });
+      // Upload new letter using storage system
+      const letterKey = generateObjectKey('organizations', user.id, 'letter', letterFile.name);
       const letterBuffer = await letterFile.arrayBuffer();
-      await writeFile(letterPath, Buffer.from(letterBuffer));
+      
+      const letterUpload = await uploadFile(Buffer.from(letterBuffer), letterKey, {
+        contentType: letterFile.type,
+        isPublic: false, // Letters are private
+        metadata: { 
+          userId: user.id.toString(),
+          originalName: letterFile.name,
+          uploadType: 'organization_letter',
+          organizationId: organizationId.toString()
+        }
+      });
 
-      letterUrl = `/assets/onboard/letter/${letterFilename}`;
+      letterObjectKey = letterUpload.key;
+      letterProvider = letterUpload.provider;
+      letterMetadata = letterUpload.metadata;
+      
+      console.log(`📤 Letter updated - Provider: ${letterUpload.provider}, Key: ${letterUpload.key}`);
     }
 
-    // Validate organization data
+    // Validate organization data (no URLs needed, we store object keys)
     const orgData = {
       name,
       email,
       membersCount: Number(membersCount),
-      photoUrl,
-      letterUrl
+      // Legacy fields for validation compatibility - will be generated dynamically
+      photoUrl: logoObjectKey || organization.photoUrl,  // Use object key as placeholder
+      letterUrl: letterObjectKey || organization.letterUrl // Use object key as placeholder
     };
 
     const validation = validateWithZod(organizationSchema, orgData);
@@ -244,6 +303,9 @@ export async function PUT(
       name: organization.name,
       email: organization.email,
       membersCount: organization.membersCount,
+      logoObjectKey: organization.logoObjectKey,
+      letterObjectKey: organization.letterObjectKey,
+      // Keep legacy fields for compatibility
       photoUrl: organization.photoUrl,
       letterUrl: organization.letterUrl
     };
@@ -254,8 +316,16 @@ export async function PUT(
         name,
         email,
         membersCount: Number(membersCount),
-        photoUrl,
-        letterUrl,
+        // Store object keys and metadata instead of URLs
+        logoObjectKey,
+        letterObjectKey,
+        logoProvider,
+        letterProvider,
+        logoMetadata,
+        letterMetadata,
+        // Keep legacy fields for backward compatibility (temporarily)
+        photoUrl: logoObjectKey || organization.photoUrl,
+        letterUrl: letterObjectKey || organization.letterUrl,
       },
       include: { 
         admin: {
@@ -271,7 +341,7 @@ export async function PUT(
 
     // Compare and log changed fields
     const changedFields: Record<string, { old: any; new: any }> = {};
-    for (const key of ["name", "email", "membersCount", "photoUrl", "letterUrl"] as const) {
+    for (const key of ["name", "email", "membersCount", "logoObjectKey", "letterObjectKey"] as const) {
       if (oldData[key] !== updatedOrg[key]) {
         changedFields[key] = { old: oldData[key], new: updatedOrg[key] };
       }
@@ -289,10 +359,13 @@ export async function PUT(
         : "Updated own organization with files (admin)",
     });
 
+    // Transform organization data to include dynamic URLs
+    const transformedOrg = await transformOrganizationWithUrls(updatedOrg);
+
     return apiResponse({
       success: true,
       message: "Organization updated successfully",
-      data: { organization: updatedOrg, audit },
+      data: { organization: transformedOrg, audit },
       error: null,
       status: 200
     });

@@ -1,10 +1,6 @@
 import { useState, useEffect } from "react";
-import { AuthHeading } from "@/components/AuthHeading";
 import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
-import { FiDownload } from "react-icons/fi";
-import { FileDropzone } from "@/components/FileDropzone";
-import { UploadedFileDisplay } from "@/components/UploadedFileDisplay";
 
 type VotersModalProps = {
   open: boolean;
