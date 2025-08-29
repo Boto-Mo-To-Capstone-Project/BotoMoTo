@@ -25,10 +25,11 @@ export default function TeamItem({
 }: TeamItemProps) {
   return (
     <div className="w-full flex flex-col items-center sm:w-1/3 lg:w-1/6">
-      <div className="flex items-center justify-center w-20 h-20 rounded-full ">
+      <div className="flex items-center justify-center w-20 h-20 rounded-full">
         <Image
           src={image}
           alt={name}
+          className="rounded-full"
         />
       </div>
       <div className="text-center mt-4">
@@ -36,7 +37,7 @@ export default function TeamItem({
         <p className="text-md text-primary font-normal">{role}</p>
       </div>
       
-      <p className="text-center text-md mt-2 text-gray font-normal px-10 sm:px-0">{description}</p>
+      <p className="text-center text-md mt-2 text-gray font-normal px-10 sm:px-0 italic">{description}</p>
 
       <div className="flex mt-2">
         {socials.map((social, index) => {

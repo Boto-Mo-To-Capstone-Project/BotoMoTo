@@ -2,14 +2,27 @@ import Image from "next/image";
 import logo from "@/app/assets/Logomark.png"
 import aboutUsImage from "@/app/assets/DashboardImageFull.png"
 import GoalItem from "@/components/about-us/GoalItem";
-import { Rocket } from "lucide-react";
-import { FaGithubAlt, FaGithubSquare, FaLinkedin, FaLinkedinIn, FaTwitter, FaTwitterSquare } from "react-icons/fa";
+import { FileCheck, Gauge, GlobeLock, Lock, ShieldCheck, Users } from "lucide-react";
+import { FaGithub, FaLinkedinIn, } from "react-icons/fa";
 import TeamItem from "@/components/about-us/TeamItem";
 
-import stack_tailwind from "@/app/assets/stack-tailwind.png"
-import stack_next from "@/app/assets/stack-next.png"
-import stack_prisma from "@/app/assets/stack-prisma.png"
+import stack_tailwind from "@/app/assets/tech-stack/stack-tailwind.png"
+import stack_next from "@/app/assets/tech-stack/stack-next.png"
+import stack_prisma from "@/app/assets/tech-stack/stack-prisma.png"
+import stack_postgresql from "@/app/assets/tech-stack/stack-postgresql.png"
+import stack_resend from "@/app/assets/tech-stack/stack-resend.png"
+import stack_s3 from "@/app/assets/tech-stack/stack-s3.png"
+import stack_supabase from "@/app/assets/tech-stack/stack-supabase.png"
+import stack_ses from "@/app/assets/tech-stack/stack-ses.png"
+
+
 import AboutFooter from "@/components/about-us/AboutFooter";
+
+import Alpornon from "@/app/assets/team/Alpornon.png"
+import Sebastian from "@/app/assets/team/Sebastian.png"
+import King from "@/app/assets/team/King.png"
+import Edusma from "@/app/assets/team/Edusma.png"
+
 
 
 
@@ -20,79 +33,96 @@ const AboutPage = () => {
   { src: stack_next, alt: "Photo 1", },
   { src: stack_tailwind, alt: "Photo 2", },
   { src: stack_prisma, alt: "Photo 3", },
+  { src: stack_supabase, alt: "Photo 6", },
+  { src: stack_postgresql, alt: "Photo 7", },
+  { src: stack_s3, alt: "Photo 4", },
+  { src: stack_ses, alt: "Photo 5", },
+  { src: stack_resend, alt: "Photo 8", },
 
   ];
 
 
   const goals = [
     {
-      icon: Rocket,
-      title: "Simple multi-device votings",
+      icon: ShieldCheck,
+      title: "Secure & Accessible",
       description:
-        "Provide a simple and intuitive voting interface accessible on multiple devices.",
+        "Robust authentication and intuitive design",
     },
     {
-      icon: Rocket,
-      title: "Secure and private elections",
+      icon: Lock,
+      title: "Accurate & Confidential",
       description:
-        "Ensure vote integrity and privacy using secure authentication and encryption.",
+        "Flexible system ensuring data integrity",
     },
     {
-      icon: Rocket,
-      title: "Real-time results transparency",
+      icon: Users,
+      title: "Inclusive & Transparent",
       description:
-        "Deliver real-time results and analytics for transparency.",
+        "Mobile-friendly with voter receipts",
     },
     {
-      icon: Rocket,
-      title: "Cost and time efficiency",
+      icon: GlobeLock,
+      title: "Modern & Encrypted",
       description:
-        "Reduce the costs and time associated with traditional paper-based voting.",
+        "Web-based with advanced cryptography",
+    },
+    {
+      icon: FileCheck,
+      title: "Authentic Results",
+      description:
+        "Transparent and auditable election outcomes",
+    },
+    {
+      icon: Gauge,
+      title: "Reliable Performance",
+      description:
+        "Tested for efficiency and security",
     },
   ];
 
   const teamMembers = [
     {
-      image: logo,
-      name: "John Doe",
+      image: Alpornon,
+      name: "CJ Alpornon",
+      role: "Project Manager",
+      description:
+        "Just vibing with the code.",
+      socials: [
+        { icon: FaGithub, link: "https://github.com/haileyabadeerx" },
+        { icon: FaLinkedinIn, link: "https://www.linkedin.com/in/chrstnjulia/" },
+      ],
+    },
+    {
+      image: King,
+      name: "Marc King",
       role: "Frontend Developer",
       description:
-        "Passionate about building interactive and accessible web applications.",
+        "Frontend XP Grinder",
       socials: [
-        { icon: FaGithubSquare, link: "https://github.com/johndoe" },
-        { icon: FaLinkedinIn, link: "https://linkedin.com/in/johndoe" },
-        { icon: FaTwitter, link: "https://twitter.com/johndoe" },
+        { icon: FaLinkedinIn, link: "https://www.linkedin.com/in/marclawrenceking/" },
+
       ],
     },
     {
-      image: logo,
-      name: "Jane Smith",
-      role: "UI/UX Designer",
+      image: Sebastian,
+      name: "Bri Sebastian",
+      role: "Backend Developer",
       description:
-        "Designing beautiful, user-friendly interfaces with a focus on accessibility.",
+        "work smart, para may pang bebetime pa",
       socials: [
-        { icon: FaLinkedin, link: "https://linkedin.com/in/janesmith" },
-        { icon: FaTwitterSquare, link: "https://twitter.com/janesmith" },
+        { icon: FaLinkedinIn, link: "https://www.linkedin.com/in/brisebas/" },
       ],
     },
+    
     {
-      image: logo,
-      name: "Mike Johnson",
-      role: "Backend Engineer",
+      image: Edusma,
+      name: "MC Edusma",
+      role: "Frontend Developer & UI/UX",
       description:
-        "Loves solving complex problems and optimizing server performance.",
+        "Well, I named the system",
       socials: [
-        { icon: FaGithubAlt, link: "https://github.com/mikejohnson" },
-      ],
-    },
-    {
-      image: logo,
-      name: "Mike Johnson",
-      role: "Backend Engineer",
-      description:
-        "Loves solving complex problems and optimizing server performance.",
-      socials: [
-        { icon: FaGithubAlt, link: "https://github.com/mikejohnson" },
+        { icon: FaLinkedinIn, link: "https://ph.linkedin.com/in/marie-cris-edusma-98aa9a256" },
       ],
     },
   ];
@@ -123,7 +153,7 @@ const AboutPage = () => {
           </div>
           <div className="space-y-5 ">
             <p className="text-xl font-normal text-gray">Boto Mo To is a secure and user-friendly online voting system for small organizations such as student councils, and community groups. </p>
-            <p className="text-xl font-normal text-gray">It streamlines the election process, minimizes logistical issues, and ensures fair, accurate results.</p>
+            <p className="text-xl font-normal text-gray">It streamlines the election process, and ensures fair, accurate results.</p>
           </div>
         </div>
       </div>
@@ -145,7 +175,7 @@ const AboutPage = () => {
       </div>
     
       {/* our team */}
-      <div className="flex flex-col items-center gap-16 py-24 px-5 bg-gray-50">
+      <div className="flex flex-col items-center gap-16 py-24 px-5 bg-gray-50 w-full">
         <div className="flex flex-col items-center gap-3">
           <div className="text-center">
             <p className="text-md font-semibold text-primary ">Get to Know Us</p>
@@ -164,13 +194,13 @@ const AboutPage = () => {
       {/* Tech Stack */}
       <div className="flex flex-col items-center py-24 px-5 gap-2">
         <p className="text-md font-medium text-gray">Tech Stack</p>
-        <div className="flex flex-wrap justify-center items-center gap-20 p-4">
+        <div className="flex flex-wrap justify-center items-center gap-30 p-4">
           {images.map((img, index) => (
             <div key={index} className="flex-shrink-0">
               <Image
                 src={img.src}
                 alt={img.alt}
-                width="150"
+                width={150}
                 className="rounded-lg object-cover"
               />
             </div>
