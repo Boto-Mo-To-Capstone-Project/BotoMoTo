@@ -1,14 +1,14 @@
 import { StorageProvider, UploadOptions, UploadResult, S3Config, StorageError, UploadFailedError, FileNotFoundError } from '../types';
 
 /**
- * AWS S3 storage provider
+  * AWS S3 storage provider using AWS SDK v3
  * Primary cloud storage solution with full S3 features
  * 
- * Note: This implementation requires aws-sdk to be installed:
- * npm install aws-sdk @types/aws-sdk
+ * Note: This implementation requires aws-sdk v3 to be installed:
+ * npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
  */
 export class S3StorageProvider implements StorageProvider {
-  private s3: any; // Will be AWS.S3 instance when properly imported
+  private s3Client: any; // Will be S3Client instance when properly imported
   private config: S3Config;
   private isInitialized: boolean = false;
 
@@ -30,30 +30,31 @@ export class S3StorageProvider implements StorageProvider {
     if (this.isInitialized) return;
 
     try {
-      // Dynamic import of AWS SDK
-      const AWS = await import('aws-sdk');
-      const AWSInstance = AWS.default || AWS;
+      // Dynamic import of AWS SDK v3
+      const { S3Client } = await import('@aws-sdk/client-s3');
 
-      const s3Config: any = {
-        accessKeyId: this.config.accessKeyId,
-        secretAccessKey: this.config.secretAccessKey,
+      const clientConfig: any = {
         region: this.config.region,
+        credentials: {
+          accessKeyId: this.config.accessKeyId,
+          secretAccessKey: this.config.secretAccessKey,
+        },
       };
 
       // Add custom endpoint if specified (for S3-compatible services)
       if (this.config.endpoint) {
-        s3Config.endpoint = this.config.endpoint;
+        clientConfig.endpoint = this.config.endpoint;
       }
 
       // Force path style if specified
       if (this.config.forcePathStyle) {
-        s3Config.s3ForcePathStyle = true;
+        clientConfig.forcePathStyle = true;
       }
 
-      this.s3 = new AWSInstance.S3(s3Config);
+      this.s3Client = new S3Client(clientConfig);
       this.isInitialized = true;
     } catch (error) {
-      throw new Error('AWS SDK not found. Please install: npm install aws-sdk @types/aws-sdk');
+      throw new Error('AWS SDK v3 not found. Please install: npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner');
     }
   }
 
@@ -64,35 +65,25 @@ export class S3StorageProvider implements StorageProvider {
     await this.ensureInitialized();
 
     try {
-      const uploadParams: any = {
+      const { PutObjectCommand } = await import('@aws-sdk/client-s3');
+
+      const command = new PutObjectCommand({
         Bucket: this.config.bucket,
         Key: key,
         Body: file,
         ContentType: options.contentType,
-        ACL: options.isPublic ? 'public-read' : 'private',
-      };
-
-      // Add cache control if specified
-      if (options.cacheControl) {
-        uploadParams.CacheControl = options.cacheControl;
-      }
-
-      // Add content disposition if specified
-      if (options.contentDisposition) {
-        uploadParams.ContentDisposition = options.contentDisposition;
-      }
-
-      // Add metadata
-      if (options.metadata) {
-        uploadParams.Metadata = options.metadata;
-      }
+        // No ACL setting - files are private by default
+        CacheControl: options.cacheControl,
+        ContentDisposition: options.contentDisposition,
+        Metadata: options.metadata,
+      });
 
       // Perform the upload
-      const result = await this.s3.upload(uploadParams).promise();
+      const result = await this.s3Client.send(command);
 
-      // Generate URLs
-      const url = options.isPublic ? result.Location : await this.getSignedUrl(key, 3600);
-      const publicUrl = options.isPublic ? result.Location : undefined;
+      // Generate URLs - always use signed URLs for security
+      const url = await this.getSignedUrl(key, 3600);
+      const publicUrl = options.isPublic ? this.getPublicUrl(key) : undefined;
 
       return {
         key,
@@ -102,7 +93,7 @@ export class S3StorageProvider implements StorageProvider {
         size: file.length,
         metadata: {
           etag: result.ETag,
-          location: result.Location,
+          location: this.getPublicUrl(key),
           bucket: this.config.bucket,
           uploadedAt: new Date().toISOString(),
           ...options.metadata,
@@ -120,15 +111,19 @@ export class S3StorageProvider implements StorageProvider {
     await this.ensureInitialized();
 
     try {
-      await this.s3.deleteObject({
+      const { DeleteObjectCommand } = await import('@aws-sdk/client-s3');
+      
+      const command = new DeleteObjectCommand({
         Bucket: this.config.bucket,
         Key: key,
-      }).promise();
+      });
+
+      await this.s3Client.send(command);
     } catch (error: any) {
-      if (error.code === 'NoSuchKey') {
+      if (error.name === 'NoSuchKey') {
         throw new FileNotFoundError(key, 'S3', error);
       }
-      throw new StorageError(`Failed to delete file: ${key}`, 'S3', error.code, error);
+      throw new StorageError(`Failed to delete file: ${key}`, 'S3', error.name, error);
     }
   }
 
@@ -139,12 +134,15 @@ export class S3StorageProvider implements StorageProvider {
     await this.ensureInitialized();
 
     try {
-      const url = this.s3.getSignedUrl('getObject', {
+      const { GetObjectCommand } = await import('@aws-sdk/client-s3');
+      const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner');
+
+      const command = new GetObjectCommand({
         Bucket: this.config.bucket,
         Key: key,
-        Expires: expiresIn,
       });
 
+      const url = await getSignedUrl(this.s3Client, command, { expiresIn });
       return url;
     } catch (error: any) {
       throw new StorageError(`Failed to generate signed URL for: ${key}`, 'S3', 'SIGNED_URL_FAILED', error);
@@ -172,12 +170,14 @@ export class S3StorageProvider implements StorageProvider {
     try {
       await this.ensureInitialized();
 
-      // Try to list objects in the bucket (this checks credentials and bucket access)
-      await this.s3.listObjectsV2({
+      const { ListObjectsV2Command } = await import('@aws-sdk/client-s3');
+      
+      const command = new ListObjectsV2Command({
         Bucket: this.config.bucket,
         MaxKeys: 1,
-      }).promise();
+      });
 
+      await this.s3Client.send(command);
       return true;
     } catch (error) {
       console.warn('S3 health check failed:', error);
@@ -192,13 +192,17 @@ export class S3StorageProvider implements StorageProvider {
     await this.ensureInitialized();
 
     try {
-      await this.s3.headObject({
+      const { HeadObjectCommand } = await import('@aws-sdk/client-s3');
+      
+      const command = new HeadObjectCommand({
         Bucket: this.config.bucket,
         Key: key,
-      }).promise();
+      });
+
+      await this.s3Client.send(command);
       return true;
     } catch (error: any) {
-      if (error.code === 'NotFound' || error.code === 'NoSuchKey') {
+      if (error.name === 'NotFound' || error.name === 'NoSuchKey') {
         return false;
       }
       throw error;
@@ -219,10 +223,14 @@ export class S3StorageProvider implements StorageProvider {
     await this.ensureInitialized();
 
     try {
-      const result = await this.s3.headObject({
+      const { HeadObjectCommand } = await import('@aws-sdk/client-s3');
+      
+      const command = new HeadObjectCommand({
         Bucket: this.config.bucket,
         Key: key,
-      }).promise();
+      });
+
+      const result = await this.s3Client.send(command);
 
       return {
         exists: true,
@@ -233,10 +241,10 @@ export class S3StorageProvider implements StorageProvider {
         metadata: result.Metadata,
       };
     } catch (error: any) {
-      if (error.code === 'NotFound' || error.code === 'NoSuchKey') {
+      if (error.name === 'NotFound' || error.name === 'NoSuchKey') {
         return { exists: false };
       }
-      throw new StorageError(`Failed to get file info for: ${key}`, 'S3', error.code, error);
+      throw new StorageError(`Failed to get file info for: ${key}`, 'S3', error.name, error);
     }
   }
 
@@ -252,35 +260,27 @@ export class S3StorageProvider implements StorageProvider {
     await this.ensureInitialized();
 
     try {
+      const { createPresignedPost } = await import('@aws-sdk/s3-presigned-post');
+
       const params: any = {
         Bucket: this.config.bucket,
+        Key: key,
+        Conditions: [
+          ['content-length-range', 0, conditions?.maxFileSize || 10 * 1024 * 1024], // 10MB default
+          ['eq', '$Content-Type', contentType],
+        ],
         Fields: {
-          key,
           'Content-Type': contentType,
         },
         Expires: expiresIn,
       };
 
-      // Add ACL if public
-      if (conditions?.isPublic) {
-        params.Fields.acl = 'public-read';
-      }
+      const presignedPost = await createPresignedPost(this.s3Client, params);
 
-      // Add file size condition
-      if (conditions?.maxFileSize) {
-        params.Conditions = [
-          ['content-length-range', 0, conditions.maxFileSize],
-        ];
-      }
-
-      const presignedPost = await new Promise<{ url: string; fields: Record<string, string> }>((resolve, reject) => {
-        this.s3.createPresignedPost(params, (err: any, data: any) => {
-          if (err) reject(err);
-          else resolve(data);
-        });
-      });
-
-      return presignedPost;
+      return {
+        url: presignedPost.url,
+        fields: presignedPost.fields,
+      };
     } catch (error: any) {
       throw new StorageError(`Failed to generate presigned upload URL for: ${key}`, 'S3', 'PRESIGNED_FAILED', error);
     }
