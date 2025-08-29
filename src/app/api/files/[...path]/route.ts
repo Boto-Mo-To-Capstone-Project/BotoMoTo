@@ -109,9 +109,33 @@ export async function GET(
           },
         });
       } else {
-        // For S3, redirect to the actual S3 URL
-        const publicUrl = storage.getPublicUrl(objectKey);
-        return NextResponse.redirect(publicUrl);
+        // For S3, fetch the file through signed URL and proxy it
+        const signedUrl = await storage.getSignedUrl(objectKey, 3600); // 1 hour expiry
+        
+        // Fetch the file from S3
+        const response = await fetch(signedUrl);
+        if (!response.ok) {
+          return NextResponse.json(
+            { error: 'File not found in storage' },
+            { status: 404 }
+          );
+        }
+        
+        // Get the file content
+        const fileBuffer = await response.arrayBuffer();
+        
+        // Determine content type from file extension or S3 response
+        const contentType = response.headers.get('content-type') || 'application/octet-stream';
+        
+        // Return file with appropriate headers
+        return new NextResponse(fileBuffer, {
+          status: 200,
+          headers: {
+            'Content-Type': contentType,
+            'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+            'Content-Disposition': `inline; filename="${objectKey.split('/').pop()}"`,
+          },
+        });
       }
     } catch (error) {
       console.error('Error serving file:', error);
