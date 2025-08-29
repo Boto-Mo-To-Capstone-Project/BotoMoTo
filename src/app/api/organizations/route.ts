@@ -8,11 +8,46 @@ import { organizationSchema } from "@/lib/schema";
 import { createAuditLog } from "@/lib/audit";
 import { requireAuth } from "@/lib/helpers/requireAuth";
 import { checkOwnership } from "@/lib/helpers/checkOwnership";
-import { writeFile, mkdir } from 'fs/promises';
-import { join, extname } from 'path';
+import { extname } from 'path';
+
+// Import storage system (replaces fs operations)
+import { uploadFile, generatePublicUrl, generatePresignedUrl, generateObjectKey } from "@/lib/storage";
 
 // Import performance logging middleware
 import { withPerformanceLogging } from "@/lib/performance/middleware";
+
+/**
+ * Transform organization data to include dynamically generated URLs
+ * Uses the new storage system to generate public/presigned URLs from object keys
+ */
+async function transformOrganizationWithUrls(organization: any) {
+  try {
+    const transformed = { ...organization };
+    
+    // Generate logo URL if object key exists
+    if (organization.logoObjectKey) {
+      transformed.logoUrl = generatePublicUrl(
+        organization.logoObjectKey, 
+        organization.logoProvider
+      );
+    }
+    
+    // Generate letter URL if object key exists (presigned for security)
+    if (organization.letterObjectKey) {
+      transformed.letterUrl = await generatePresignedUrl(
+        organization.letterObjectKey,
+        3600, // 1 hour expiration
+        organization.letterProvider
+      );
+    }
+    
+    return transformed;
+  } catch (error) {
+    console.error('Error generating URLs for organization:', error);
+    // Return organization without dynamic URLs if generation fails
+    return organization;
+  }
+}
 
 // Handle GET request to fetch organizations (filtered by role)
 async function getOrganizations(request: NextRequest) {
@@ -90,6 +125,11 @@ async function getOrganizations(request: NextRequest) {
       message = "Your organizations fetched successfully (admin)";
     }
 
+    // Transform organizations to include dynamic URLs
+    const transformedOrganizations = await Promise.all(
+      organizations.map((org: any) => transformOrganizationWithUrls(org))
+    );
+
     const audit = await createAuditLog({
       user,
       action: "READ",
@@ -104,8 +144,8 @@ async function getOrganizations(request: NextRequest) {
       success: true,
       message,
       data: {
-        organizations,
-        totalCount: organizations.length,
+        organizations: transformedOrganizations,
+        totalCount: transformedOrganizations.length,
         audit
       },
       error: null,
@@ -217,42 +257,51 @@ async function createOrganization(request: NextRequest) {
       });
     }
 
-    // Upload files first and get their paths
+    // Upload files using storage system (S3 + local fallback)
     const logoExt = extname(logoFile.name).toLowerCase();
     const letterExt = extname(letterFile.name).toLowerCase();
-    const timestamp = Date.now();
     
-    const logoFilename = `org_${user.id}_${timestamp}_logo${logoExt}`;
-    const letterFilename = `org_${user.id}_${timestamp}_letter${letterExt}`;
+    // Generate standardized object keys
+    const logoKey = generateObjectKey('organizations', user.id, 'logo', logoFile.name);
+    const letterKey = generateObjectKey('organizations', user.id, 'letter', letterFile.name);
     
-    const logoDir = join(process.cwd(), 'src/app/assets/onboard/logo/');
-    const letterDir = join(process.cwd(), 'src/app/assets/onboard/letter/');
-    
-    const logoPath = join(logoDir, logoFilename);
-    const letterPath = join(letterDir, letterFilename);
-
-    // Create directories if they don't exist
-    await mkdir(logoDir, { recursive: true });
-    await mkdir(letterDir, { recursive: true });
-
-    // Save files
+    // Convert files to buffers
     const logoBuffer = await logoFile.arrayBuffer();
     const letterBuffer = await letterFile.arrayBuffer();
     
-    await writeFile(logoPath, Buffer.from(logoBuffer));
-    await writeFile(letterPath, Buffer.from(letterBuffer));
+    // Upload files with automatic S3 + local fallback
+    const [logoUpload, letterUpload] = await Promise.all([
+      uploadFile(Buffer.from(logoBuffer), logoKey, {
+        contentType: logoFile.type,
+        isPublic: true, // Logos are public
+        metadata: { 
+          userId: user.id.toString(),
+          originalName: logoFile.name,
+          uploadType: 'organization_logo'
+        }
+      }),
+      uploadFile(Buffer.from(letterBuffer), letterKey, {
+        contentType: letterFile.type,
+        isPublic: false, // Letters are private
+        metadata: { 
+          userId: user.id.toString(),
+          originalName: letterFile.name,
+          uploadType: 'organization_letter'
+        }
+      })
+    ]);
 
-    // Create file URLs for database
-    const photoUrl = `/assets/onboard/logo/${logoFilename}`;
-    const letterUrl = `/assets/onboard/letter/${letterFilename}`;
+    // Log which provider was used (for monitoring)
+    console.log(`📤 Files uploaded - Logo: ${logoUpload.provider}, Letter: ${letterUpload.provider}`);
 
-    // Validate organization data with file URLs
+    // Validate organization data (no URLs needed, we store object keys)
     const orgData = {
       name,
       email,
       membersCount: Number(membersCount),
-      photoUrl,
-      letterUrl
+      // Legacy fields for validation compatibility - will be generated dynamically
+      photoUrl: logoUpload.key,  // Use object key as placeholder
+      letterUrl: letterUpload.key // Use object key as placeholder
     };
 
     const validation = validateWithZod(organizationSchema, orgData);
@@ -268,8 +317,16 @@ async function createOrganization(request: NextRequest) {
           name,
           email,
           membersCount: Number(membersCount),
-          photoUrl,
-          letterUrl,
+          // Store object keys and metadata instead of URLs
+          logoObjectKey: logoUpload.key,
+          letterObjectKey: letterUpload.key,
+          logoProvider: logoUpload.provider,
+          letterProvider: letterUpload.provider,
+          logoMetadata: logoUpload.metadata,
+          letterMetadata: letterUpload.metadata,
+          // Keep legacy fields for backward compatibility (temporarily)
+          photoUrl: logoUpload.key,
+          letterUrl: letterUpload.key,
           status: ORGANIZATION_STATUS.PENDING,
         },
         include: { 
@@ -294,10 +351,13 @@ async function createOrganization(request: NextRequest) {
         message: `Restored organization for admin ${user.id}`,
       });
 
+      // Transform organization data to include dynamic URLs
+      const transformedOrg = await transformOrganizationWithUrls(restoredOrg);
+
       return apiResponse({
         success: true,
         message: "Organization restored and updated successfully",
-        data: { organization: restoredOrg, audit },
+        data: { organization: transformedOrg, audit },
         error: null,
         status: 200
       });
@@ -318,15 +378,23 @@ async function createOrganization(request: NextRequest) {
       });
     }
 
-    // Create a new organization with uploaded file paths
+    // Create a new organization with uploaded file object keys
     const organization = await db.organization.create({
       data: {
         adminId: user.id,
         name,
         email,
         membersCount: Number(membersCount),
-        photoUrl,
-        letterUrl,
+        // Store object keys and metadata instead of URLs
+        logoObjectKey: logoUpload.key,
+        letterObjectKey: letterUpload.key,
+        logoProvider: logoUpload.provider,
+        letterProvider: letterUpload.provider,
+        logoMetadata: logoUpload.metadata,
+        letterMetadata: letterUpload.metadata,
+        // Keep legacy fields for backward compatibility (temporarily)
+        photoUrl: logoUpload.key,
+        letterUrl: letterUpload.key,
         status: ORGANIZATION_STATUS.PENDING,
       },
       include: { 
@@ -351,10 +419,13 @@ async function createOrganization(request: NextRequest) {
       message: `Created organization with files for admin ${user.id}`,
     });
 
+    // Transform organization data to include dynamic URLs
+    const transformedOrg = await transformOrganizationWithUrls(organization);
+
     return apiResponse({ 
       success: true, 
       message: "Organization created successfully with files", 
-      data: { organization, audit }, 
+      data: { organization: transformedOrg, audit }, 
       error: null, 
       status: 201 
     });
