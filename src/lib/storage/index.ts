@@ -2,6 +2,7 @@ import { StorageService } from './service';
 import { StorageLogger } from './logger';
 import { storageConfig, logStorageConfig, validateStorageConfig } from './config';
 import { UploadOptions, UploadResult, StorageConfig } from './types';
+import { generateObjectKey } from './utils';
 
 /**
  * Storage abstraction layer - Main entry point
@@ -258,8 +259,7 @@ export function generateStorageKey(
   fileType: string,
   filename: string
 ): string {
-  // Use the new utility function
-  const { generateObjectKey } = require('./utils');
+  // Use the new utility function from utils
   return generateObjectKey(category, entityId, fileType, filename);
 }
 
