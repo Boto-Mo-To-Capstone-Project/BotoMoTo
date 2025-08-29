@@ -1,28 +1,23 @@
 import { StorageProvider, StorageProviderType } from '../types';
+import { LocalStorageProvider } from './local';
+import { S3StorageProvider } from './s3';
 
 /**
  * Provider registry for storage providers
- * This file will import and register all available storage providers
+ * This file imports and registers all available storage providers
  */
-
-// Provider type definitions (providers will be implemented in Phase 2)
-export type S3StorageProvider = StorageProvider;
-export type LocalStorageProvider = StorageProvider;
-export type GCSStorageProvider = StorageProvider;
-export type AzureStorageProvider = StorageProvider;
 
 // Provider constructor types
 export type ProviderConstructor<T = any> = new (config: T) => StorageProvider;
 
 /**
  * Registry of available storage providers
- * Providers will be added as they are implemented
  */
 export const storageProviders: Record<StorageProviderType, ProviderConstructor | null> = {
-  S3: null,       // Will be set in Phase 2.2
-  LOCAL: null,    // Will be set in Phase 2.1
-  GCS: null,      // Will be set in Phase 9.1 (future)
-  AZURE: null,    // Will be set in Phase 9.1 (future)
+  S3: S3StorageProvider,
+  LOCAL: LocalStorageProvider,
+  GCS: null,      // Will be implemented in future phases
+  AZURE: null,    // Will be implemented in future phases
 } as const;
 
 /**
@@ -136,8 +131,24 @@ export function validateProviderConfig(type: StorageProviderType, config: any): 
  * Each provider can register their own health check logic
  */
 export const providerHealthChecks: Record<StorageProviderType, ((provider: StorageProvider) => Promise<boolean>) | null> = {
-  S3: null,
-  LOCAL: null,
+  S3: async (provider: StorageProvider) => {
+    // S3-specific health check
+    try {
+      return await provider.healthCheck();
+    } catch (error) {
+      console.warn('S3 health check failed:', error);
+      return false;
+    }
+  },
+  LOCAL: async (provider: StorageProvider) => {
+    // Local storage health check
+    try {
+      return await provider.healthCheck();
+    } catch (error) {
+      console.warn('Local storage health check failed:', error);
+      return false;
+    }
+  },
   GCS: null,
   AZURE: null,
 };

@@ -60,24 +60,19 @@ export interface UploadOptions {
 
 export interface UploadResult {
   /**
-   * The storage key/path where the file was stored
+   * The storage key/path where the file was stored (STORE THIS IN DB)
    */
   key: string;
   
   /**
-   * The URL to access the file (public or signed)
-   */
-  url: string;
-  
-  /**
-   * Public URL if the file is public
-   */
-  publicUrl?: string;
-  
-  /**
-   * The provider that was used for storage
+   * The provider that was used for storage (STORE THIS IN DB)
    */
   provider: string;
+  
+  /**
+   * File size in bytes (STORE THIS IN DB)
+   */
+  size?: number;
   
   /**
    * Whether fallback storage was used
@@ -85,14 +80,22 @@ export interface UploadResult {
   fallbackUsed?: boolean;
   
   /**
-   * File size in bytes
-   */
-  size?: number;
-  
-  /**
    * Additional metadata returned by the provider
    */
   metadata?: Record<string, any>;
+  
+  // THESE SHOULD NOT BE STORED IN DB - Generate dynamically when needed
+  /**
+   * Generated URL to access the file (DO NOT store in DB)
+   * Use generatePublicUrl() or generatePresignedUrl() instead
+   */
+  url?: string;
+  
+  /**
+   * Public URL if the file is public (DO NOT store in DB)
+   * Use generatePublicUrl() instead
+   */
+  publicUrl?: string;
 }
 
 export type StorageProviderType = 'S3' | 'LOCAL' | 'GCS' | 'AZURE';
@@ -267,4 +270,45 @@ export class UploadFailedError extends StorageError {
     super(`Upload failed for: ${key}`, provider, 'UPLOAD_FAILED', cause);
     this.name = 'UploadFailedError';
   }
+}
+
+/**
+ * Reference to a stored file for database storage
+ * Store this in your database instead of full URLs
+ */
+export interface StoredFileReference {
+  /** Object key/path in storage (store this in DB) */
+  key: string;
+  
+  /** Storage provider used */
+  provider: string;
+  
+  /** File size in bytes */
+  size?: number;
+  
+  /** When the file was uploaded */
+  uploadedAt: string;
+  
+  /** Content type of the file */
+  contentType?: string;
+  
+  /** Additional metadata */
+  metadata?: Record<string, string>;
+}
+
+/**
+ * URL generation options for stored files
+ */
+export interface URLGenerationOptions {
+  /** Whether to use CloudFront CDN if available */
+  useCDN?: boolean;
+  
+  /** Custom domain to use for URLs */
+  customDomain?: string;
+  
+  /** For presigned URLs - expiration time in seconds */
+  expiresIn?: number;
+  
+  /** Force HTTPS */
+  secure?: boolean;
 }
