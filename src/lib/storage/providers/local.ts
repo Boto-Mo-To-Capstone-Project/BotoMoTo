@@ -1,6 +1,6 @@
-import { writeFile, mkdir, unlink, access, stat } from 'fs/promises';
+import { writeFile, mkdir, unlink, access, stat, readFile } from 'fs/promises';
 import { join, dirname, extname } from 'path';
-import { StorageProvider, UploadOptions, UploadResult, LocalConfig, StorageError, UploadFailedError, FileNotFoundError } from '../types';
+import { StorageProvider, UploadOptions, UploadResult, LocalConfig, StorageError, UploadFailedError, FileNotFoundError, FileData } from '../types';
 
 /**
  * Local file system storage provider
@@ -72,6 +72,31 @@ export class LocalStorageProvider implements StorageProvider {
         throw error;
       }
       throw new UploadFailedError(key, 'LOCAL', error as Error);
+    }
+  }
+
+  // getting a file
+  async getFile(key: string): Promise<FileData> {
+    const filePath = join(this.config.uploadDir, key);
+    try {
+      // check if file exists
+      await access(filePath);
+
+      const fileBuffer = await readFile(filePath);
+      const contentType = this.guessContentType(extname(key));
+      const filename = key.split('/').pop() || key;
+
+      return {
+        buffer: Buffer.from(fileBuffer).buffer, // convert to ArrayBuffer
+        contentType,
+        filename,
+        size: fileBuffer.byteLength
+      };
+    } catch (error: any) {
+      if (error.code === 'ENOENT') {
+        throw new FileNotFoundError(key, 'LOCAL', error);
+      }
+      throw new StorageError(`Failed to read file: ${key}`, 'LOCAL', 'READ_FAILED', error);
     }
   }
 

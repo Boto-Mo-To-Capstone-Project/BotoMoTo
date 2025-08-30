@@ -8,7 +8,12 @@ export interface StorageProvider {
    * Upload a file to storage
    */
   upload(file: Buffer, key: string, options: UploadOptions): Promise<UploadResult>;
-  
+
+  /**
+   * Get a file from storage
+   */
+  getFile(key: string): Promise<FileData>;
+
   /**
    * Delete a file from storage
    */
@@ -28,6 +33,13 @@ export interface StorageProvider {
    * Check if the storage provider is healthy/accessible
    */
   healthCheck(): Promise<boolean>;
+}
+
+export interface FileData {
+  buffer: ArrayBuffer
+  contentType: string;
+  filename: string;
+  size: number;
 }
 
 export interface UploadOptions {
