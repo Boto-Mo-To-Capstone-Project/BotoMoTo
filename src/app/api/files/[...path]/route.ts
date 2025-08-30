@@ -63,7 +63,7 @@ export async function GET(
         status: 200,
         headers: {
           'Content-Type': fileData.contentType,
-          'Cache-Control': 'public, max-age=3600', // Same for all providers
+          'Cache-Control': 'private, max-age=3600', // Same for all providers
           'Content-Disposition': `inline; filename="${fileData.filename}"`,
         },
       });
