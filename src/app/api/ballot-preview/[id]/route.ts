@@ -1,12 +1,19 @@
 // app/api/ballot-preview/[id]/route.ts
 import { NextResponse } from "next/server";
 import db from "@/lib/db/db";
+import { requireAuth } from "@/lib/helpers/requireAuth"; // <-- make sure this path is correct
+import { ROLES } from "@/lib/constants";   // <-- where you define roles
 
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const electionId = Number(params.id);
+  const authResult = await requireAuth([ROLES.ADMIN]);
+  if (!authResult.authorized) return authResult.response;
+  const user = authResult.user;
+
+  const {id} = await params;
+  const electionId = parseInt(id);
 
   const election = await db.election.findUnique({
     where: { id: electionId },
