@@ -353,6 +353,9 @@ model VoteResponse {
   candidateId Int
   positionId  Int
   voteHash    String    // For vote integrity
+  prevHash    String    // For vote integrity
+  chainOrder  Int       // Order in the chain
+  signature   String    // hmac signature of the vote using a server secret
   timestamp   DateTime  @default(now())
 
   election   Election   @relation(fields: [electionId], references: [id])
