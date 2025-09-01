@@ -22,6 +22,7 @@ interface BallotData {
     candidates: Candidate[];
   }[];
   parties?: string[];
+  scopes?: { id: string; name: string }[]; // 👈 add available scopes
 }
 
 interface BallotComponentProps {
@@ -99,6 +100,27 @@ const BallotComponent = ({
     )
   ];
 
+  // state management for selected voting scope dropdown
+  const [selectedScopeId, setSelectedScopeId] = useState<"all" | number>("all");
+
+  // state management for selected voting scope dropdown
+  const filteredPositions = selectedScopeId === "all"
+  ? ballotData.positions
+  : ballotData.positions
+      .map(position => {
+        // Filter candidates of this position by selected scope
+        const filteredCandidates = position.candidates.filter(
+          (candidate) => Number(candidate.scopeId) === selectedScopeId
+        );
+
+        return {
+          ...position,
+          candidates: filteredCandidates
+        };
+      })
+      // remove empty positions (no candidates after filter)
+      .filter(position => position.candidates.length > 0);
+
   return (
     <main className="flex flex-col items-center gap-10 px-10 pb-20 pt-40 text-justify">
       <div className="text-center space-y-2">
@@ -169,19 +191,39 @@ const BallotComponent = ({
             <p className="voter-election-desc">{availableParties.join(', ')}</p>
           </div>
         )}
+        
+        {/* dropdown for voting scope in preview mode */}
+        {mode === 'preview' && (
+          <div className="mb-5 p-4 border rounded-md bg-gray-50">
+            <p className="voter-election-desc font-semibold">Available Voting Scope:</p>
+            <Dropdown
+              label="Select Voting Scope"
+              options={["All Voting Scope", ...(ballotData.scopes || []).map(s => s.name)]}
+              onSelect={(scope) => {
+                if (scope === "All Voting Scope") {
+                  setSelectedScopeId("all");
+                } else {
+                  const id = ballotData.scopes?.find((s) => s.name === scope)?.id;
+                  if (id) setSelectedScopeId(Number(id)); 
+                }
+              }}
+            />
+          </div>
+        )}
 
+        {/* some changes here, suggested ni ai,, d nmn naka affect sa voter mode */}
         <div className="mt-5">
-          {Object.entries(candidatesByPosition).map(([position, list]) => (
+          {filteredPositions.map((pos) => (
             <CandidateCategory
-              key={position}
-              position={position}
-              selectCount={selectionLimits[position] || 1}
-              candidateList={list}
+              key={pos.name}
+              position={pos.name}
+              selectCount={pos.maxSelections}
+              candidateList={pos.candidates}
               onSelectCandidate={(candidate) =>
-                handleSelectCandidate(position, candidate)
+                handleSelectCandidate(pos.name, candidate)
               }
               onDeselectCandidate={(candidate) =>
-                handleDeselectCandidate(position, candidate.id)
+                handleDeselectCandidate(pos.name, candidate.id)
               }
               disabled={mode === 'preview'}
             />

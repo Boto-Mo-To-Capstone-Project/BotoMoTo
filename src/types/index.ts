@@ -14,4 +14,5 @@ export type Candidate = {
   credentialsUrl?: string; // URL to credentials file (PDF, etc.)
   img: string;
   position: string;
+  scopeId?: string | null; // 👈 for filtering
 };

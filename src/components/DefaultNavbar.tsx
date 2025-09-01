@@ -57,10 +57,10 @@ const DefaultNavbar = () => {
               <NavLink href="/">Home</NavLink>
             </li>
             <li>
-              <NavLink href="/about">About Us</NavLink>
+              <NavLink href="/public/about-us">About Us</NavLink>
             </li>
             <li>
-              <NavLink href="/contact">Contact</NavLink>
+              <NavLink href="/public/contact">Contact</NavLink>
             </li>
           </ul>
         </div>
