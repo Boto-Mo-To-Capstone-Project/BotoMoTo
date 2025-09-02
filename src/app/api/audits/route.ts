@@ -12,15 +12,73 @@ async function getAudits(request: NextRequest) {
     if (!authResult.authorized) return authResult.response;
     const user = authResult.user;
 
-    // Fetch latest audits (no relations defined; actorId is a string)
-    const audits = await db.audits.findMany({
-      orderBy: { timestamp: "desc" },
-    });
+    // Parse query parameters
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = parseInt(url.searchParams.get('limit') || '50');
+    const action = url.searchParams.get('action');
+    const resource = url.searchParams.get('resource');
+    const actorRole = url.searchParams.get('actorRole');
+
+    // Build query filters
+    const where: any = {};
+
+    // Add filter by action
+    if (action && action !== 'all') {
+      where.action = action;
+    }
+
+    // Add filter by resource
+    if (resource && resource !== 'all') {
+      where.resource = resource;
+    }
+
+    // Add filter by actor role
+    if (actorRole && actorRole !== 'all') {
+      where.actorRole = actorRole;
+    }
+
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+
+    // Default sorting by timestamp (newest first)
+    const orderBy = { timestamp: 'desc' as const };
+
+    // Fetch audits with pagination and search
+    const [audits, totalCount] = await Promise.all([
+      db.audits.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+        include: {
+          affectedTables: {
+            select: {
+              tableAffected: true,
+              recordId: true
+            }
+          }
+        }
+      }),
+      db.audits.count({ where })
+    ]);
+
+    const totalPages = Math.ceil(totalCount / limit);
 
     return apiResponse({
       success: true,
       message: "Audits fetched successfully",
-      data: { audits, totalCount: audits.length },
+      data: {
+        audits,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalCount,
+          limit,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1
+        }
+      },
       status: 200,
     });
   } catch (error) {
