@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getStorageService } from '@/lib/storage';
+import { FileNotFoundError, getStorageService } from '@/lib/storage';
 import { requireAuth } from '@/lib/helpers/requireAuth';
 import { ROLES } from '@/lib/constants';
+import { apiResponse } from '@/lib/apiResponse';
 
 /**
  * Private file serving API endpoint for local storage provider
@@ -39,13 +40,7 @@ export async function GET(
     // All files served through this route are considered private
     // Public files should be served directly by Vercel from /public or S3
     const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
-    if (!authResult.authorized) {
-      return NextResponse.json(
-        { error: 'Authentication required for file access' },
-        { status: 401 }
-      );
-    }
-
+    if (!authResult.authorized) return authResult.response;
     const user = authResult.user;
     
     // Check if user can access this file
@@ -59,97 +54,29 @@ export async function GET(
         { status: 403 }
       );
     }
-
+    
     // Try to get the file through the storage service
     try {
-      // For local storage, we'll need to read the file directly
-      if (process.env.STORAGE_PROVIDER === 'LOCAL' || !process.env.AWS_S3_BUCKET) {
-        const fs = await import('fs/promises');
-        const path = await import('path');
-        
-        const localPath = process.env.LOCAL_STORAGE_PATH || './uploads';
-        const filePath = path.join(process.cwd(), localPath, objectKey);
-        
-        // Check if file exists
-        try {
-          await fs.access(filePath);
-        } catch {
-          return NextResponse.json(
-            { error: 'File not found' },
-            { status: 404 }
-          );
-        }
+      const fileData = await storage.getFile(objectKey);
 
-        // Read file
-        const fileBuffer = await fs.readFile(filePath);
-        
-        // Determine content type from file extension
-        const ext = path.extname(objectKey).toLowerCase();
-        const contentTypeMap: Record<string, string> = {
-          '.jpg': 'image/jpeg',
-          '.jpeg': 'image/jpeg',
-          '.png': 'image/png',
-          '.gif': 'image/gif',
-          '.webp': 'image/webp',
-          '.pdf': 'application/pdf',
-          '.doc': 'application/msword',
-          '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          '.txt': 'text/plain',
-        };
-        
-        const contentType = contentTypeMap[ext] || 'application/octet-stream';
-
-        // Return file with appropriate headers
-        return new NextResponse(new Uint8Array(fileBuffer), {
-          status: 200,
-          headers: {
-            'Content-Type': contentType,
-            'Cache-Control': 'public, max-age=31536000, immutable',
-            'Content-Disposition': `inline; filename="${path.basename(objectKey)}"`,
-          },
-        });
-      } else {
-        // For S3, fetch the file through signed URL and proxy it
-        const signedUrl = await storage.getSignedUrl(objectKey, 3600); // 1 hour expiry
-        
-        // Fetch the file from S3
-        const response = await fetch(signedUrl);
-        if (!response.ok) {
-          return NextResponse.json(
-            { error: 'File not found in storage' },
-            { status: 404 }
-          );
-        }
-        
-        // Get the file content
-        const fileBuffer = await response.arrayBuffer();
-        
-        // Determine content type from file extension or S3 response
-        const contentType = response.headers.get('content-type') || 'application/octet-stream';
-        
-        // Return file with appropriate headers
-        return new NextResponse(fileBuffer, {
-          status: 200,
-          headers: {
-            'Content-Type': contentType,
-            'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
-            'Content-Disposition': `inline; filename="${objectKey.split('/').pop()}"`,
-          },
-        });
-      }
+      return new NextResponse(fileData.buffer, {
+        status: 200,
+        headers: {
+          'Content-Type': fileData.contentType,
+          'Cache-Control': 'private, max-age=3600', // Same for all providers
+          'Content-Disposition': `inline; filename="${fileData.filename}"`,
+        },
+      });
     } catch (error) {
       console.error('Error serving file:', error);
-      return NextResponse.json(
-        { error: 'Error serving file' },
-        { status: 500 }
-      );
+      if (error instanceof FileNotFoundError) {
+        return apiResponse({ success: false, message: 'File not found', data: null, status: 404 });
+      }
+      return apiResponse({ success: false, message: 'Error serving file', data: null, status: 500 });
     }
   } catch (error) {
     console.error('File serving error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return apiResponse({ success: false, message: 'Internal server error', data: null, status: 500 });
   }
 }
 
@@ -191,25 +118,16 @@ export async function DELETE(
       (fileOwnerUserId && user.id === fileOwnerUserId); // User can only delete their own files
     
     if (!canDelete) {
-      return NextResponse.json(
-        { error: 'Access denied. You can only delete your own files.' },
-        { status: 403 }
-      );
+      return apiResponse({ success: false, message: 'Access denied. You can only delete your own files.', data: null, status: 403 });
     }
 
     // Delete file through storage service
     const storage = getStorageService();
     await storage.delete(objectKey);
 
-    return NextResponse.json(
-      { success: true, message: 'File deleted successfully' },
-      { status: 200 }
-    );
+    return apiResponse({ success: true, message: 'File deleted successfully', data: null, status: 200 });
   } catch (error) {
     console.error('File deletion error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete file' },
-      { status: 500 }
-    );
+    return apiResponse({ success: false, message: 'Failed to delete file', data: null, status: 500 });
   }
 }

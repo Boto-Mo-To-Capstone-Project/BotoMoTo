@@ -1,7 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 
 const db = new PrismaClient();
+
+// Secret key for HMAC (use environment variable or generate one)
+const VOTE_SECRET = process.env.VOTE_SECRET;
 
 // Generate a unique voter code
 async function generateUniqueVoterCode() {
@@ -176,6 +180,9 @@ async function quickSeed() {
 
     // Create some votes
     const votedVoters = voters.slice(0, 10);
+    let electionChainOrder = 1; // Chain order starts from 1 for this election
+    let lastVoteHash = '0'; // Genesis hash for this election
+    
     for (const voter of votedVoters) {
       for (const position of createdPositions) {
         const candidates = await db.candidate.findMany({
@@ -184,16 +191,35 @@ async function quickSeed() {
         
         if (candidates.length > 0) {
           const randomCandidate = candidates[Math.floor(Math.random() * candidates.length)];
+          
+          // Generate chain hash data (per election)
+          const timestamp = new Date();
+          const voteData = `${voter.id}-${randomCandidate.id}-${position.id}-${timestamp.getTime()}-${electionChainOrder}`;
+          const chainData = `${voteData}-${lastVoteHash}`;
+          const voteHash = crypto.createHash('sha256').update(chainData).digest('hex');
+          
+          // Generate HMAC signature
+          const signature = crypto.createHmac('sha256', VOTE_SECRET)
+            .update(chainData)
+            .digest('hex');
+
           await db.voteResponse.create({
             data: {
               electionId: testElection.id,
               voterId: voter.id,
               candidateId: randomCandidate.id,
               positionId: position.id,
-              voteHash: `quick_${voter.id}_${randomCandidate.id}`,
-              timestamp: new Date()
+              voteHash: voteHash,
+              prevHash: lastVoteHash,
+              chainOrder: electionChainOrder,
+              signature: signature,
+              timestamp: timestamp
             }
           });
+
+          // Update for next vote in this election's chain
+          lastVoteHash = voteHash;
+          electionChainOrder++;
         }
       }
     }

@@ -1,4 +1,4 @@
-import { StorageProvider, UploadOptions, UploadResult, S3Config, StorageError, UploadFailedError, FileNotFoundError } from '../types';
+import { StorageProvider, UploadOptions, UploadResult, S3Config, StorageError, UploadFailedError, FileNotFoundError, FileData } from '../types';
 
 /**
   * AWS S3 storage provider using AWS SDK v3
@@ -101,6 +101,43 @@ export class S3StorageProvider implements StorageProvider {
       };
     } catch (error: any) {
       throw new UploadFailedError(key, 'S3', error);
+    }
+  }
+
+  // get file from S3
+  async getFile(key: string): Promise<FileData> {
+    await this.ensureInitialized();
+
+    try {
+      const signedUrl = await this.getSignedUrl(key, 3600); // 1 hour expiry
+
+      const response = await fetch(signedUrl);
+      if (!response.ok) {
+        throw new FileNotFoundError(key, 'S3', new Error('File not found in S3'));
+      }
+
+      const fileBuffer = await response.arrayBuffer();
+      const contentType = response.headers.get('content-type') || 'application/octet-stream';
+      const filename = key.split('/').pop() || 'file';
+
+      return {
+        buffer: fileBuffer,
+        contentType,
+        filename,
+        size: fileBuffer.byteLength,
+      };
+    } catch (error: any) {
+      if (error instanceof FileNotFoundError) {
+        throw error; // Re-throw if already FileNotFoundError
+      }
+      
+      // Check for specific S3 error types
+      if (error.name === 'NoSuchKey' || error.name === 'NotFound') {
+        throw new FileNotFoundError(key, 'S3', error);
+      }
+      
+      // For other errors, throw generic StorageError
+      throw new StorageError(`Failed to get file from S3: ${key}`, 'S3', 'GET_FAILED', error);
     }
   }
 

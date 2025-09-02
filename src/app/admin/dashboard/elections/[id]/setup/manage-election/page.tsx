@@ -55,12 +55,11 @@ const setupCards = [
 
 ];
 
-function ManageElectionPage() {
+export default function ManageElectionPage() {
   const params = useParams<{ id: string }>();
   const electionId = Number(params?.id);
   const router = useRouter();
   const { data: session } = useSession();
-
   const [showSteps, setShowSteps] = useState(false);
   const [showMFAModal, setShowMFAModal] = useState(false);
   const [showOpenElectionModal, setShowOpenElectionModal] = useState(false);
@@ -180,5 +179,3 @@ function ManageElectionPage() {
     </div>
   );
 }
-
-export default ManageElectionPage;

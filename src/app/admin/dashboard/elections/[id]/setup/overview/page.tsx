@@ -9,6 +9,8 @@ import  Setup from "@/app/assets/Setup.png";
 import { useState } from "react";
 import { FiMoreHorizontal } from "react-icons/fi";
 import { MdFileUpload } from 'react-icons/md';
+import { useSession } from 'next-auth/react';
+import { useRouter, useParams } from 'next/navigation';
 
 const setupCards = [
   {
@@ -42,6 +44,10 @@ const setupCards = [
 ];
 
 export default function ElectionSetupOverview() {
+  const params = useParams<{ id: string }>();
+  const electionId = Number(params?.id);
+  const router = useRouter();
+  const { data: session } = useSession();
   const [showSteps, setShowSteps] = useState(false);
 
   return (
@@ -50,7 +56,7 @@ export default function ElectionSetupOverview() {
         {/* Red Header Card */}
         <div className="flex items-center rounded-2xl bg-red-800 mb-6 px-6 py-6 relative overflow-hidden mt-8">
           <div>
-            <h2 className="text-white text-xl font-semibold mb-2">Hi, Brian King!</h2>
+            <h2 className="text-white text-xl font-semibold mb-2">Hi, {session?.user?.name || 'User'}!</h2>
             <p className="text-white text-base">
               Follow the steps below to complete election setup.
             </p>
@@ -107,7 +113,18 @@ export default function ElectionSetupOverview() {
               flex flex-col items-center text-center h-full
             `}
                     onClick={() => {
-                      // Add navigation logic here
+                      if (card.title === 'Add Voter') {
+                        router.push(`/admin/dashboard/elections/${electionId}/setup/voters`);
+                      }
+                      if (card.title === 'Add Position') {
+                        router.push(`/admin/dashboard/elections/${electionId}/setup/positions`);
+                      }
+                      if (card.title === 'Add Candidate') {
+                        router.push(`/admin/dashboard/elections/${electionId}/setup/candidates`);
+                      }
+                      if (card.title === 'Manage Election') {
+                        router.push(`/admin/dashboard/elections/${electionId}/setup/manage-election`);
+                      }
                     }}
                   >
                     <div className="w-full mb-2">
