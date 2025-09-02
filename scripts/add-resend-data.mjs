@@ -1,7 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 
 const db = new PrismaClient();
+
+// Secret key for HMAC (use environment variable or generate one)
+const VOTE_SECRET = process.env.VOTE_SECRET;
 
 // Generate a unique voter code
 async function generateUniqueVoterCode() {
@@ -312,6 +316,8 @@ async function addResendData() {
     // Create some vote responses for a random subset of voters
     const votedVoters = createdVoters.filter(() => Math.random() > 0.6); // 40% of voters have voted
     let voteCount = 0;
+    let electionChainOrder = 1; // Chain order starts from 1 for this election
+    let lastVoteHash = '0'; // Genesis hash for this election
     
     for (const voter of votedVoters) {
       const voterPositions = createdPositions.filter(
@@ -330,16 +336,34 @@ async function addResendData() {
             .slice(0, Math.floor(Math.random() * numVotes) + 1);
 
           for (const candidate of selectedCandidates) {
+            // Generate chain hash data (per election)
+            const timestamp = new Date();
+            const voteData = `${voter.id}-${candidate.id}-${position.id}-${timestamp.getTime()}-${electionChainOrder}`;
+            const chainData = `${voteData}-${lastVoteHash}`;
+            const voteHash = crypto.createHash('sha256').update(chainData).digest('hex');
+            
+            // Generate HMAC signature
+            const signature = crypto.createHmac('sha256', VOTE_SECRET)
+              .update(chainData)
+              .digest('hex');
+
             await db.voteResponse.create({
               data: {
                 electionId: election.id,
                 voterId: voter.id,
                 candidateId: candidate.id,
                 positionId: position.id,
-                voteHash: `hash_${voter.id}_${candidate.id}_${Date.now()}`,
-                timestamp: new Date(),
+                voteHash: voteHash,
+                prevHash: lastVoteHash,
+                chainOrder: electionChainOrder,
+                signature: signature,
+                timestamp: timestamp,
               },
             });
+
+            // Update for next vote in this election's chain
+            lastVoteHash = voteHash;
+            electionChainOrder++;
             voteCount++;
           }
         }

@@ -1,7 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 
 const db = new PrismaClient();
+
+// Secret key for HMAC (use environment variable or generate one)
+const VOTE_SECRET = process.env.VOTE_SECRET;
 
 // Generate a unique voter code
 async function generateUniqueVoterCode() {
@@ -520,38 +524,75 @@ async function seedDatabase() {
     console.log("🗳️ Creating vote responses...");
     
     // Create some vote responses for a random subset of voters, restricted to their scope (or global for NO SCOPE)
+    // Process votes PER ELECTION to maintain separate chains
     const votedVoters = createdVoters.filter(() => Math.random() > 0.7);
+    
+    // Group voters by election for per-election chain ordering
+    const votersByElection = new Map();
     for (const voter of votedVoters) {
-      const electionPositions = createdPositions.filter(
-        (p) => p.electionId === voter.electionId && p.votingScopeId === voter.votingScopeId
-      );
+      if (!votersByElection.has(voter.electionId)) {
+        votersByElection.set(voter.electionId, []);
+      }
+      votersByElection.get(voter.electionId).push(voter);
+    }
+    
+    // Process each election's votes separately
+    for (const [electionId, electionVoters] of votersByElection) {
+      let electionChainOrder = 1; // Chain order starts from 1 for each election
+      let lastVoteHash = '0'; // Genesis hash for this election
       
-      for (const position of electionPositions) {
-        const candidates = await db.candidate.findMany({
-          where: {
-            electionId: voter.electionId,
-            positionId: position.id,
-            isDeleted: false,
-          },
-        });
+      console.log(`   Processing votes for election ${electionId}...`);
+      
+      for (const voter of electionVoters) {
+        const electionPositions = createdPositions.filter(
+          (p) => p.electionId === voter.electionId && p.votingScopeId === voter.votingScopeId
+        );
+        
+        for (const position of electionPositions) {
+          const candidates = await db.candidate.findMany({
+            where: {
+              electionId: voter.electionId,
+              positionId: position.id,
+              isDeleted: false,
+            },
+          });
 
-        if (candidates.length > 0) {
-          const numVotes = Math.min(position.voteLimit, candidates.length);
-          const selectedCandidates = candidates
-            .sort(() => 0.5 - Math.random())
-            .slice(0, Math.floor(Math.random() * numVotes) + 1);
+          if (candidates.length > 0) {
+            const numVotes = Math.min(position.voteLimit, candidates.length);
+            const selectedCandidates = candidates
+              .sort(() => 0.5 - Math.random())
+              .slice(0, Math.floor(Math.random() * numVotes) + 1);
 
-          for (const candidate of selectedCandidates) {
-            await db.voteResponse.create({
-              data: {
-                electionId: voter.electionId,
-                voterId: voter.id,
-                candidateId: candidate.id,
-                positionId: position.id,
-                voteHash: `hash_${voter.id}_${candidate.id}_${Date.now()}`,
-                timestamp: new Date(),
-              },
-            });
+            for (const candidate of selectedCandidates) {
+              // Generate chain hash data (per election)
+              const timestamp = new Date();
+              const voteData = `${voter.id}-${candidate.id}-${position.id}-${timestamp.getTime()}-${electionChainOrder}`;
+              const chainData = `${voteData}-${lastVoteHash}`;
+              const voteHash = crypto.createHash('sha256').update(chainData).digest('hex');
+              
+              // Generate HMAC signature
+              const signature = crypto.createHmac('sha256', VOTE_SECRET)
+                .update(chainData)
+                .digest('hex');
+
+              await db.voteResponse.create({
+                data: {
+                  electionId: voter.electionId,
+                  voterId: voter.id,
+                  candidateId: candidate.id,
+                  positionId: position.id,
+                  voteHash: voteHash,
+                  prevHash: lastVoteHash,
+                  chainOrder: electionChainOrder,
+                  signature: signature,
+                  timestamp: timestamp,
+                },
+              });
+
+              // Update for next vote in this election's chain
+              lastVoteHash = voteHash;
+              electionChainOrder++;
+            }
           }
         }
       }
