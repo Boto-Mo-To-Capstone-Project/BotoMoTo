@@ -548,6 +548,7 @@ export default function SendEmailPage() {
                   setSearch(e.target.value);
                   setPage(1);
                 }}
+                placeholder="Search for Voter"
               />
             </div>
             
