@@ -1,13 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 
 import Table from "@/components/TableComponent";
 import AuditDetailsModal from "@/components/AuditDetailsModal";
 
+// Wrapper component that provides the Suspense boundary required by Next.js
 export default function SuperAdminAuditsPage() {
+  return (
+    <Suspense fallback={<div className="w-full p-4 text-center text-gray-500">Loading…</div>}>
+      <AuditsPageContent />
+    </Suspense>
+  );
+}
+
+function AuditsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
