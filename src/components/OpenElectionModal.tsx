@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { SubmitButton } from "@/components/SubmitButton";
+import { toast } from "react-hot-toast";
 
 export type OpenElectionModalProps = {
   open: boolean;
@@ -7,7 +8,7 @@ export type OpenElectionModalProps = {
   onSave: (data: {
     electionId: number;
     isOpen: boolean;
-  }) => void;
+  }) => Promise<void> | void;
   initialData?: {
     electionId?: number;
     isOpen?: boolean;
@@ -26,12 +27,13 @@ function formatDateTime(dt?: string) {
   const d = new Date(dt);
   if (isNaN(d.getTime())) return dt;
   return d.toLocaleString(undefined, {
+    weekday: "short",
     year: "numeric",
-    month: "short",
+    month: "long", 
     day: "numeric",
-    hour: "2-digit",
+    hour: "numeric",
     minute: "2-digit",
-    hour12: false,
+    hour12: true,
   });
 }
 
@@ -53,6 +55,7 @@ export function OpenElectionModal({
   const [electionId, setElectionId] = useState(initialData.electionId ?? 0);
   const [dateStart, setDateStart] = useState(initialData.dateStart ?? "");
   const [dateEnd, setDateEnd] = useState(initialData.dateEnd ?? "");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -60,7 +63,32 @@ export function OpenElectionModal({
     setElectionId(initialData.electionId ?? 0);
     setDateStart(initialData.dateStart ?? "");
     setDateEnd(initialData.dateEnd ?? "");
+    setIsLoading(false);
   }, [open, initialData]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!electionId) {
+      toast.error("Election ID is required");
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      // Call the onSave callback with the data
+      await onSave({
+        electionId,
+        isOpen,
+      });
+    } catch (error) {
+      // Error handling is done in the parent component
+      console.error("Error in modal:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (!open) return null;
   // Use initialData.electionName if provided, else fallback to title
@@ -113,14 +141,7 @@ export function OpenElectionModal({
               </div>
             </div>
             <form
-              onSubmit={e => {
-                e.preventDefault();
-                onSave({
-                  electionId,
-                  isOpen,
-                });
-                onClose();
-              }}
+              onSubmit={handleSubmit}
               className="grid gap-4 mb-4"
             >
               <div className="col-span-2">
@@ -147,7 +168,8 @@ export function OpenElectionModal({
                 <SubmitButton
                   type="submit"
                   variant="small"
-                  label="Submit"
+                  label={isLoading ? "Saving" : "Submit"}
+                  isLoading={isLoading}
                   className="px-5 py-2.5 text-sm font-medium rounded-lg"
                 />
               </div>
