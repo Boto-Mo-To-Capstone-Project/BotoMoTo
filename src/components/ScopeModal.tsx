@@ -26,7 +26,7 @@ export function ScopeModal({ open, onClose, onSave, initialData }: ScopeModalPro
       setEditIndex(null);
       setScopes([]);
     }
-  }, [open, initialData]);
+  }, [open]);
 
   if (!open) return null;
   return (
