@@ -1,5 +1,6 @@
 "use client";
 
+import { useSession, } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -28,6 +29,8 @@ const SuperAdminSidebar = ({
   open = false,
   onClose,
 }: SuperAdminSidebarProps) => {
+  const { data: session } = useSession();
+
   const pathname = usePathname();
   const handleLogout = useLogout();
   const links = [
@@ -63,8 +66,9 @@ const SuperAdminSidebar = ({
     },
   ];
 
-  const displayName = "Super Admin!!";
-  const displayEmail = "superadminmoto@gmail.com";
+  const displayName = session?.user?.name || "Username";
+  const displayEmail = session?.user?.email || "Email";
+  
   return (
     <>
       {/* Overlay */}
