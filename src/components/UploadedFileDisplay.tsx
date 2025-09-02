@@ -28,7 +28,7 @@ export function UploadedFileDisplay({ file, onRemove, className = "", isExisting
   if (isSample) {
     if (file.name === "Sample_Letter.pdf") {
       displayName = "Sample Organization Letter (Template)";
-      viewUrl = "/api/organizations/sample-letter";
+      viewUrl = "/assets/sample/letter.pdf";
     } else if (file.name === "Sample_Email_Template.html") {
       displayName = "Sample Email Template";
       viewUrl = "/assets/sample/email-template.html";

@@ -75,8 +75,8 @@ const AdminSidebar = ({
   );
 
 
-  const displayName = session?.user?.name || "Hardcoded name";
-  const displayEmail = session?.user?.email || "Hardcoded@gmail.com";
+  const displayName = session?.user?.name || "Username";
+  const displayEmail = session?.user?.email || "Email";
 
   return (
     <>
