@@ -127,13 +127,16 @@ export default function ElectionTable({ title = 'All Elections', selectedIds = [
                 <td className="py-2 px-3 align-middle truncate max-w-[180px]">{election.name}</td>
                 <td className="py-2 px-3 align-middle text-center">
                   <span className={`px-3 py-1 rounded-full text-sm font-medium w-full block text-center
-    ${election.status === "Finished" ? "bg-green-100 text-green-700" : election.status === "Ongoing" ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-700"}
+    ${election.status === "Draft" ? "bg-gray-100 text-gray-700" : 
+      election.status === "Active" ? "bg-green-100 text-green-700" : 
+      election.status === "Closed" ? "bg-red-100 text-red-700" : 
+      "bg-gray-100 text-gray-700"}
   `}>
-    {election.status === "Finished" ? "Ended" : election.status}
-  </span>
+                    {election.status}
+                  </span>
                 </td>
-                <td className="py-2 px-3 align-middle truncate max-w-[140px]">{election.votingDate}</td>
-                <td className="py-2 px-3 align-middle truncate max-w-[120px]">{election.time}</td>
+                <td className="py-2 px-3 align-middle max-w-[180px] truncate whitespace-nowrap">{election.votingDate}</td>
+                <td className="py-2 px-3 align-middle truncate max-w-[140px]">{election.time}</td>
               </tr>
             ))}
           </tbody>
