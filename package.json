@@ -2,6 +2,9 @@
   "name": "next-rbac",
   "version": "0.1.0",
   "private": true,
+  "prisma": {
+    "schema": "src/lib/db/schema.prisma"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "worker": "tsx src/lib/queue/worker.ts",
@@ -50,7 +53,6 @@
     "bcryptjs": "^3.0.2",
     "chart.js": "^4.5.0",
     "cookie": "^1.0.2",
-    "dotenv": "^17.2.1",
     "graphile-worker": "^0.16.6",
     "handlebars": "^4.7.8",
     "html-to-text": "^9.0.5",
