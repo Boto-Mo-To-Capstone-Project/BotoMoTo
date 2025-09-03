@@ -23,17 +23,27 @@ export async function POST(request: NextRequest) {
     const { operation, voterIds, electionId, data: operationData, templateId } = body;
 
     // Validate required fields
-    if (!operation || !voterIds || !Array.isArray(voterIds) || voterIds.length === 0) {
+    if (!operation) {
       return apiResponse({
         success: false,
-        message: "Operation type and voter IDs are required",
+        message: "Operation type is required",
         data: null,
         error: "Bad Request",
         status: 400
       });
     }
 
-    // Validate voter IDs
+    // Validate voterIds for all bulk operations
+    if (!voterIds || !Array.isArray(voterIds) || voterIds.length === 0) {
+      return apiResponse({
+        success: false,
+        message: "Voter IDs are required for bulk operations",
+        data: null,
+        error: "Bad Request",
+        status: 400
+      });
+    }
+    
     const validVoterIds = voterIds.filter((id: any) => Number.isInteger(id) && id > 0);
     if (validVoterIds.length === 0) {
       return apiResponse({
@@ -45,7 +55,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Verify all voters exist and belong to user's organization (for admins)
+    // Verify existing voters and authorization
     const voters = await db.voter.findMany({
       where: {
         id: { in: validVoterIds },
@@ -545,7 +555,6 @@ export async function POST(request: NextRequest) {
         });
         auditMessage = `Bulk soft deleted ${result.count} voters`;
         break;
-
       default:
         return apiResponse({
           success: false,
