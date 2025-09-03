@@ -438,6 +438,7 @@ export default function VoterDashboardPage() {
                   setSearch(e.target.value);
                   setPage(1);
                 }}
+                placeholder="Search for Voters"
               />
             </div>
             {/* Action Buttons */}
