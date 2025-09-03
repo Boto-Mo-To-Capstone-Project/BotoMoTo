@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import Table from "@/components/TableComponent";
 import TicketChatModal from "@/components/TicketChatModal";
@@ -16,6 +16,8 @@ export default function SuperAdminTicketsPage() {
 
   const TICKET_STATUSES = ["PENDING", "IN_PROGRESS", "RESOLVED"];
 
+  const hasShownToast = useRef(false); // to prevent duplicate toast
+
   useEffect(() => {
     const fetchTickets = async () => {
       try {
@@ -26,13 +28,9 @@ export default function SuperAdminTicketsPage() {
 
         let ticketsArr: any[] = [];
         // Extract tickets from the specific API response structure
-        if (data && data.data && data.data.tickets) {
-          ticketsArr = data.data.tickets;
-        } else if (Array.isArray(data)) {
-          ticketsArr = data;
-        } else if (Array.isArray(data.tickets)) {
-          ticketsArr = data.tickets;
-        }
+        if (data?.data?.tickets) ticketsArr = data.data.tickets;
+        else if (Array.isArray(data)) ticketsArr = data;
+        else if (Array.isArray(data.tickets)) ticketsArr = data.tickets;
 
         console.log("Extracted tickets array:", ticketsArr);
 
@@ -45,12 +43,17 @@ export default function SuperAdminTicketsPage() {
         }));
 
         setTickets(mappedTickets);
-        if (mappedTickets.length === 0) {
+
+        if (mappedTickets.length === 0 && !hasShownToast.current) {
           toast.error("No tickets found");
+          hasShownToast.current = true;
         }
       } catch (error) {
         console.error("Fetch error:", error);
-        toast.error("Error fetching tickets");
+        if (!hasShownToast.current) {
+          toast.error("Error fetching tickets");
+          hasShownToast.current = true;
+        }
         setTickets([]);
       } finally {
         setLoading(false);
@@ -207,7 +210,7 @@ export default function SuperAdminTicketsPage() {
 
   return (
     <>
-      <Toaster position="top-center" />
+    {/*<Toaster position="top-center" />*/}
       <div
         id="main-window-template-component"
         className="app h-full flex flex-col min-h-[calc(100vh-4rem)] bg-gray-50"

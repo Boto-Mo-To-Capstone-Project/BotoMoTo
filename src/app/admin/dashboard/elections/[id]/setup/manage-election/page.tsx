@@ -257,7 +257,7 @@ export default function ManageElectionPage() {
       />
           </>
         )}
-        <Toaster position="top-center" />
+        {/*<Toaster position="top-center" />*/}
       </div>
   );
 }

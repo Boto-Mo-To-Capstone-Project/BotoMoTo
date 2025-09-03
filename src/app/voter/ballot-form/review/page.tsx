@@ -133,7 +133,7 @@ const ReviewPage = () => {
 
   return (
     <main className="flex flex-col items-center gap-10 px-10 pb-20 pt-40 text-justify">
-      <Toaster position="top-center" /> 
+      {/*<Toaster position="top-center" />*/} 
       <div className="text-center space-y-2">
         <p className="voter-election-heading">Ballot Form Review</p>
         <p className="voter-election-subheading">

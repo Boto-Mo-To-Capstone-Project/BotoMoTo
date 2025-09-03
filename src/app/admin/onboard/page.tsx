@@ -408,7 +408,7 @@ export default function OnboardProcessingPage() {
 
   return (
     <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40">
-      <Toaster position="top-center" />
+      {/*<Toaster position="top-center" />*/}
       <AuthContainer>
         <h1 className="text-2xl font-bold text-gray-800 mb-1">Hi, {session?.user?.name || "there"}!</h1>
         
