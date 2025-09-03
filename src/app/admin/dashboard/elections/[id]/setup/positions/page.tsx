@@ -461,7 +461,7 @@ export default function PositionsDashboardPage() {
                   setSearch(e.target.value);
                   setPage(1);
                 }}
-                placeholder="Search for Position"
+                placeholder="Search for Positions"
               />
             </div>
             {/* Action Buttons */}
