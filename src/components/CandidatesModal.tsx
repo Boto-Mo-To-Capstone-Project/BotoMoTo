@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { SubmitButton } from "@/components/SubmitButton";
 
 // Define lightweight types used internally for fetched options
 type VoterOpt = { id: number; firstName: string; lastName: string; email?: string };
-type PositionOpt = { id: number; name: string };
+// Extend PositionOpt to optionally carry scope data coming from API (various possible keys)
+type PositionOpt = { id: number; name: string; votingScopeId?: number | null; votingScope?: { id: number; name: string } | null; votingScopeName?: string; scopeName?: string };
 type PartyOpt = { id: number; name: string };
 
 type CandidatesModalProps = {
@@ -96,6 +97,21 @@ export function CandidatesModal({
   const [positions, setPositions] = useState<PositionOpt[]>(positionsProp || []);
   const [parties, setParties] = useState<PartyOpt[]>(partiesProp || []);
   const [loadingOptions, setLoadingOptions] = useState(false);
+
+  // NEW: Build a map of name -> count to detect duplicates & provide scope context
+  const duplicateNameCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    positions.forEach(p => { counts[p.name] = (counts[p.name] || 0) + 1; });
+    return counts;
+  }, [positions]);
+
+  // NEW: Helper to derive a human-friendly scope label (fallbacks for different API shapes)
+  const getScopeLabel = (p: PositionOpt) => {
+    const scopeName = p.votingScope?.name || p.votingScopeName || p.scopeName;
+    if (scopeName) return scopeName;
+    if (p.votingScopeId) return `Scope #${p.votingScopeId}`;
+    return "All voters"; // no scope restriction
+  };
 
   // When modal opens, fetch options if not provided
   useEffect(() => {
@@ -262,7 +278,7 @@ export function CandidatesModal({
 
               <div className="sm:col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Position*
+                  Position* <span className="text-xs text-gray-500 font-normal">(scope shown if duplicated)</span>
                 </label>
                 <select
                   value={positionId ?? ''}
@@ -271,9 +287,13 @@ export function CandidatesModal({
                   required
                 >
                   <option value="">Select a position for the candidate</option>
-                  {positions.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
+                  {positions.map(p => {
+                    const needsScope = duplicateNameCounts[p.name] > 1;
+                    const label = needsScope ? `${p.name} (${getScopeLabel(p)})` : p.name;
+                    return (
+                      <option key={p.id} value={p.id}>{label}</option>
+                    );
+                  })}
                 </select>
               </div>
 
