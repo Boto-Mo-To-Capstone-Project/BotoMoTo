@@ -5,6 +5,9 @@ import { validateWithZod } from "@/lib/validateWithZod";
 import { z } from "zod";
 import crypto from "crypto";
 
+// HMAC secret key from environment variables
+const VOTE_SECRET = process.env.VOTE_SECRET;
+
 // Vote submission schema
 const voteSubmissionSchema = z.object({
   voterCode: z.string().min(1, "Voter code is required"),
@@ -17,6 +20,16 @@ const voteSubmissionSchema = z.object({
 // Handle POST request to submit votes
 export async function POST(request: NextRequest) {
   try {
+    if (!VOTE_SECRET) {
+      return apiResponse({
+        success: false,
+        message: "Voting service is not properly configured",
+        data: null,
+        error: "Server Misconfiguration",
+        status: 500
+      });
+    }
+    
     // Parse and validate input
     const body = await request.json();
     const validation = validateWithZod(voteSubmissionSchema, body);
@@ -213,10 +226,30 @@ export async function POST(request: NextRequest) {
     const voteResponses = await db.$transaction(async (tx) => {
       const responses: any[] = [];
       
+      // Get the current chain state for this election
+      const lastVote = await tx.voteResponse.findFirst({
+        where: { electionId: voter.election.id },
+        orderBy: { chainOrder: 'desc' },
+        select: { voteHash: true, chainOrder: true }
+      });
+      
+      let lastVoteHash = lastVote?.voteHash || '0'; // Genesis hash if no previous votes
+      let electionChainOrder = (lastVote?.chainOrder || 0) + 1; // Next chain order
+      
       for (const vote of votes) {
-        // Generate vote hash for integrity
-        const voteData = `${voter.id}-${vote.candidateId}-${vote.positionId}-${Date.now()}`;
-        const voteHash = crypto.createHash('sha256').update(voteData).digest('hex');
+        // Generate chain hash data (matching seeder logic)
+        // This creates a tamper-evident chain where each vote depends on the previous vote's hash
+        // Format: voterId-candidateId-positionId-timestamp-chainOrder
+        const timestamp = new Date();
+        const voteData = `${voter.id}-${vote.candidateId}-${vote.positionId}-${timestamp.getTime()}-${electionChainOrder}`;
+        const chainData = `${voteData}-${lastVoteHash}`;
+        const voteHash = crypto.createHash('sha256').update(chainData).digest('hex');
+        
+        // Generate HMAC signature (matching seeder logic)
+        // This provides authentication using the secret key to prevent tampering
+        const signature = crypto.createHmac('sha256', VOTE_SECRET)
+          .update(chainData)
+          .digest('hex');
 
         const voteResponse = await tx.voteResponse.create({
           data: {
@@ -224,8 +257,11 @@ export async function POST(request: NextRequest) {
             voterId: voter.id,
             candidateId: vote.candidateId,
             positionId: vote.positionId,
-            voteHash,
-            timestamp: new Date()
+            voteHash: voteHash,
+            prevHash: lastVoteHash,
+            chainOrder: electionChainOrder,
+            signature: signature,
+            timestamp: timestamp
           },
           include: {
             candidate: {
@@ -260,6 +296,10 @@ export async function POST(request: NextRequest) {
         });
 
         responses.push(voteResponse);
+        
+        // Update for next vote in this election's chain
+        lastVoteHash = voteHash;
+        electionChainOrder++;
       }
 
       return responses;

@@ -1,4 +1,4 @@
-import { StorageProvider, UploadOptions, UploadResult, StorageConfig, StorageError, ProviderNotAvailableError } from './types';
+import { StorageProvider, UploadOptions, UploadResult, StorageConfig, StorageError, ProviderNotAvailableError, FileData } from './types';
 import { createStorageProvider, isProviderRegistered, runProviderHealthCheck } from './providers';
 import { storageConfig } from './config';
 
@@ -148,6 +148,40 @@ export class StorageService {
       this.config.provider,
       'UPLOAD_FAILED',
       lastError || undefined
+    );
+  }
+
+  // getting a file
+  async getFile(key: string): Promise<FileData> {
+    await this.ensureInitialized();
+
+    const errors: Error[] = [];
+
+    // Try primary provider first
+    if (this.primaryProvider) {
+      try {
+        return await this.primaryProvider.getFile(key);
+      } catch (error) {
+        console.warn(`❌ Failed to get file from ${this.config.provider}:`, error);
+        errors.push(error as Error);
+      }
+    }
+
+    // Try fallback provider
+    if (this.fallbackProvider && this.config.fallback) {
+      try {
+        return await this.fallbackProvider.getFile(key);
+      } catch (error) {
+        console.warn(`❌ Failed to get file from ${this.config.fallback}:`, error);
+        errors.push(error as Error);
+      }
+    }
+    
+    throw new StorageError(
+      `Failed to retrieve file from all available providers`,
+      'STORAGE_SERVICE',
+      'GET_FAILED',
+      errors[0]
     );
   }
 

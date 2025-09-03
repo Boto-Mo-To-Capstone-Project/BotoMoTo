@@ -403,7 +403,6 @@ export default function CandidatesDashboardPage() {
               <SearchBar
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search for Candidates"
               />
             </div>
 

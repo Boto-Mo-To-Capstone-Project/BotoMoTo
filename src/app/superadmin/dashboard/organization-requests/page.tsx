@@ -4,15 +4,7 @@ import { useEffect, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 
 import Table from "@/components/TableComponent";
-
-
-interface UiElection {
-  id: number;
-  name: string;
-  status: "Ongoing" | "Finished";
-  votingDate: string;
-  time: string;
-}
+import FileViewer from "@/components/FileViewer";
 
 export default function SuperAdminOrgRequestPage() {
   // Local state for requests (pending) and all organizations
@@ -20,38 +12,39 @@ export default function SuperAdminOrgRequestPage() {
   const [allOrgs, setAllOrgs] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-
   
-    const [search, setSearch] = useState("");
-    const [tab, setTab] = useState<"All" | "Ongoing" | "Ended">("All");
-    const [electionsList, setElectionsList] = useState<UiElection[]>([]);
-    const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+  // File viewer state
+  const [showFileViewer, setShowFileViewer] = useState(false);
+  const [fileViewerData, setFileViewerData] = useState<{
+    fileUrl: string;
+    fileName: string;
+    title: string;
+    fileType?: "pdf" | "image" | "video" | "audio" | "text" | "unknown";
+  } | null>(null);
   
-    const [sortCol, setSortCol] = useState<
-      "name" | "status" | "votingDate" | "time" | null
-    >(null);
-  
-  const totalPages = Math.ceil(Math.max(1, electionsList.length) / pageSize);
+  // Pagination state
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const handleFirst = () => setPage(1);
   const handlePrev = () => setPage((p) => Math.max(1, p - 1));
-  const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
-  const handleLast = () => setPage(totalPages);
+  const handleNext = () => setPage((p) => p + 1); // Table component will handle max bounds
+  const handleLast = () => setPage(1); // Will be overridden by individual table's totalPages
   const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setPageSize(Number(e.target.value));
     setPage(1); // reset to first page when page size changes
   };
   
-  // Filter by search and tab
-  let filteredElections = electionsList.filter((e) =>
-    e.name.toLowerCase().includes(search.toLowerCase())
+  // Calculate pagination for organizations instead of elections
+  const filteredOrgRequests = orgRequests.filter((org) =>
+    org.Name?.toLowerCase().includes(search.toLowerCase()) || ""
   );
-
-  if (tab === 'Ongoing') {
-    filteredElections = filteredElections.filter(e => e.status === 'Ongoing');
-  } else if (tab === 'Ended') {
-    filteredElections = filteredElections.filter(e => e.status === 'Finished');
-  }
+  const filteredAllOrgs = allOrgs.filter((org) =>
+    org.Name?.toLowerCase().includes(search.toLowerCase()) || ""
+  );
+  
+  const requestsTotalPages = Math.ceil(Math.max(1, filteredOrgRequests.length) / pageSize);
+  const allOrgsTotalPages = Math.ceil(Math.max(1, filteredAllOrgs.length) / pageSize);
 
   // Helper to extract filename from a stored path or URL
   const extractFilename = (path: string) => {
@@ -64,33 +57,50 @@ export default function SuperAdminOrgRequestPage() {
     }
   };
 
+  // File viewer handlers
+  const handleViewFile = (fileUrl: string, fileName: string, title: string, fileType?: "pdf" | "image" | "video" | "audio" | "text" | "unknown") => {
+    setFileViewerData({ fileUrl, fileName, title, fileType });
+    setShowFileViewer(true);
+  };
+
+  const handleCloseFileViewer = () => {
+    setShowFileViewer(false);
+    setFileViewerData(null);
+  };
+
   // Map API org to table row (keep id for actions but don't show it as a column)
   const toTableRow = (org: any) => ({
     id: org.id,
     Name: org.name,
     Email: org.email,
     Members: org.membersCount,
-    Photo: org.photoUrl ? (
-      <a
-        href={`/api/organizations/${org.id}/files/logo/${extractFilename(org.photoUrl)}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-blue-600 underline"
+    Photo: org.logoObjectKey ? (
+      <button
+        onClick={() => {
+          const fileUrl = `/api/files/${org.logoObjectKey}`;
+          const fileName = extractFilename(org.logoObjectKey) || `${org.name}_logo`;
+          handleViewFile(fileUrl, fileName, `${org.name} - Logo`, "image");
+        }}
+        className="text-blue-600 underline hover:text-blue-800 cursor-pointer bg-transparent border-none"
+        type="button"
       >
         View Photo
-      </a>
+      </button>
     ) : (
       "N/A"
     ),
-    Letter: org.letterUrl ? (
-      <a
-        href={`/api/organizations/${org.id}/files/letter/${extractFilename(org.letterUrl)}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-blue-600 underline"
+    Letter: org.letterObjectKey ? (
+      <button
+        onClick={() => {
+          const fileUrl = `/api/files/${org.letterObjectKey}`;
+          const fileName = extractFilename(org.letterObjectKey) || `${org.name}_letter.pdf`;
+          handleViewFile(fileUrl, fileName, `${org.name} - Organization Letter`, "pdf");
+        }}
+        className="text-blue-600 underline hover:text-blue-800 cursor-pointer bg-transparent border-none"
+        type="button"
       >
         View Letter
-      </a>
+      </button>
     ) : (
       "N/A"
     ),
@@ -196,7 +206,7 @@ export default function SuperAdminOrgRequestPage() {
                   onApprove={handleApprove}
                   onReject={handleReject}
                   page={page}
-                  totalPages={Math.max(1, Math.ceil(filteredElections.length / pageSize))}
+                  totalPages={requestsTotalPages}
                   onFirst={handleFirst}
                   onPrev={handlePrev}
                   onNext={handleNext}
@@ -210,7 +220,7 @@ export default function SuperAdminOrgRequestPage() {
                   columns={columns}
                   data={allOrgs}
                   page={page}
-                  totalPages={Math.max(1, Math.ceil(filteredElections.length / pageSize))}
+                  totalPages={allOrgsTotalPages}
                   onFirst={handleFirst}
                   onPrev={handlePrev}
                   onNext={handleNext}
@@ -223,6 +233,17 @@ export default function SuperAdminOrgRequestPage() {
           </div>
         </div>
       </div>
+
+      {/* File Viewer Modal */}
+      {showFileViewer && fileViewerData && (
+        <FileViewer
+          fileUrl={fileViewerData.fileUrl}
+          fileName={fileViewerData.fileName}
+          onClose={handleCloseFileViewer}
+          title={fileViewerData.title}
+          fileType={fileViewerData.fileType}
+        />
+      )}
     </>
   );
 }

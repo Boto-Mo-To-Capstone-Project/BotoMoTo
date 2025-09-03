@@ -24,12 +24,14 @@ export function PartyModal({
   const [selectedColor, setSelectedColor] = useState(initialData.selectedColor);
   const [showColorPicker, setShowColorPicker] = useState(false);
 
-  // When editing, ensure fields are pre-filled when modal opens or initialData changes
+  // Reset fields whenever modal opens (so create/edit always starts fresh)
   useEffect(() => {
-    setPartyName(initialData.partyName || "");
-    setSelectedColor(initialData.selectedColor || "#85d336");
-    setShowColorPicker(false);
-  }, [initialData, open]);
+    if (open) {
+      setPartyName(initialData.partyName || "");
+      setSelectedColor(initialData.selectedColor || "#85d336");
+      setShowColorPicker(false);
+    }
+  }, [open]);
 
   // Determine edit mode: if initialData has a non-empty partyName, treat as edit
   const isEdit = Boolean(initialData?.partyName?.trim());

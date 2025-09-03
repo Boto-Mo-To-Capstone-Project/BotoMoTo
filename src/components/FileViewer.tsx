@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Download, ZoomIn, ZoomOut, RotateCw, Play, Pause, Volume2, VolumeX, ExternalLink, Smartphone, Monitor } from "lucide-react";
+import { X, Download, ZoomIn, ZoomOut, RotateCw, Play, Pause, Volume2, VolumeX, ExternalLink, Smartphone, Monitor, Menu } from "lucide-react";
 
 type SupportedFileType = "pdf" | "image" | "video" | "audio" | "text" | "unknown";
 
@@ -226,7 +226,8 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
     }
   };
 
-  // Render controls based on file type
+  // Render controls based on file 
+  // added type="button" para hindi nag coclose ang modals dahil ang default daw is type="submit" which resets the page (nareremove lahat ng modals) 
   const renderControls = () => {
     const controls = [];
     
@@ -237,6 +238,7 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
           onClick={handleZoomOut}
           className="p-2 text-gray-600 hover:bg-gray-200 rounded"
           title="Zoom Out"
+          type="button"
         >
           <ZoomOut size={18} />
         </button>,
@@ -248,6 +250,7 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
           onClick={handleZoomIn}
           className="p-2 text-gray-600 hover:bg-gray-200 rounded"
           title="Zoom In"
+          type="button"
         >
           <ZoomIn size={18} />
         </button>
@@ -261,6 +264,7 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
           onClick={handleRotate}
           className="p-2 text-gray-600 hover:bg-gray-200 rounded"
           title="Rotate"
+          type="button"
         >
           <RotateCw size={18} />
         </button>
@@ -277,6 +281,7 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
           onClick={() => setViewMode('mobile')}
           className={`p-2 rounded ${viewMode === 'mobile' ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-200'}`}
           title="Mobile View"
+          type="button"
         >
           <Smartphone size={18} />
         </button>,
@@ -285,6 +290,7 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
           onClick={() => setViewMode('desktop')}
           className={`p-2 rounded ${viewMode === 'desktop' ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-200'}`}
           title="Desktop View"
+          type="button"
         >
           <Monitor size={18} />
         </button>
@@ -298,6 +304,7 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
         onClick={handleDownload}
         className="p-2 text-gray-600 hover:bg-gray-200 rounded"
         title="Download"
+        type="button"
       >
         <Download size={18} />
       </button>
@@ -321,6 +328,8 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
     
     return controls;
   };
+  // hamburger open close state 
+  const [menuOpen, setMenuOpen] = useState(false); 
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black bg-opacity-75 flex items-center justify-center">
@@ -336,18 +345,52 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
             </span>
           </div>
           
+          {/* Controls + Close */}
           <div className="flex items-center space-x-2">
-            {/* Dynamic Controls */}
-            {renderControls()}
             
-            {/* Close Button */}
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-600 hover:bg-gray-200 rounded"
-              title="Close"
-            >
-              <X size={18} />
-            </button>
+            {/* On large screens, show inline controls */}
+            <div className="hidden sm:flex items-center space-x-2">
+              {renderControls()}
+              <button
+                onClick={onClose}
+                className="p-2 text-gray-600 hover:bg-gray-200 rounded"
+                title="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* On small screens, show hamburger */}
+            <div className="sm:hidden relative">
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="p-2 text-gray-600 hover:bg-gray-200 rounded"
+                title="Menu"
+                type="button"
+              >
+                <Menu size={18} />
+              </button>
+
+              {/* Dropdown */}
+              {menuOpen && (
+                <div
+                  className="absolute right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50"
+                  onClick={(e) => e.stopPropagation()} // ⛔ prevent closing modal
+                >
+                  <div className="flex items-center gap-2 px-3 py-2">
+                    {renderControls()}
+                    <button
+                    onClick={onClose}
+                    className="p-2 text-gray-600 hover:bg-gray-200 rounded"
+                    title="Close"
+                  >
+                      <X size={18} />
+                    </button>
+                  </div>
+                  
+                </div>
+              )}
+            </div>     
           </div>
         </div>
 

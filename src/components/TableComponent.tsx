@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { MdAdd, MdCheckCircleOutline, MdChevronLeft, MdChevronRight, MdFirstPage, MdLastPage, MdOutlineCancel, MdFileUpload, MdEdit, MdFilterList, MdDelete } from "react-icons/md";
+import { MdAdd, MdCheckCircleOutline, MdChevronLeft, MdChevronRight, MdFirstPage, MdLastPage, MdOutlineCancel, MdFileUpload, MdEdit, MdFilterList, MdDelete, MdFileDownload } from "react-icons/md";
 import SearchBar from "./SearchBar";
 import { FaSort, FaSortDown, FaSortUp } from "react-icons/fa";
 import { SubmitButton } from "./SubmitButton";
@@ -13,7 +13,7 @@ type TableProps = {
   columns: string[];
   data: Record<string, any>[];
   showActions?: boolean; // if table has actions
-  actions?: string[]; // array of action types: "add", "import", "edit", "filter", "delete", "approve", "reject"
+  actions?: string[]; // array of action types: "add", "import", "edit", "filter", "delete", "approve", "reject", "export"
   selectedIds?: string[]; // selected row IDs for action buttons
   onSelectionChange?: (selectedIds: string[]) => void; // callback for selection changes
   onApprove?: (row: Record<string, any>) => void;
@@ -25,6 +25,16 @@ type TableProps = {
   onEdit?: () => void;
   onFilter?: () => void;
   onDelete?: () => void;
+  onExport?: () => void;
+  // Filter props
+  showFilters?: boolean;
+  filters?: Array<{
+    key: string;
+    label: string;
+    options: Array<{ value: string; label: string }>;
+    value: string;
+    onChange: (value: string) => void;
+  }>;
   pageSize: number;
   page: number;
   totalPages: number;
@@ -53,6 +63,9 @@ export default function Table({
   onEdit,
   onFilter,
   onDelete,
+  onExport,
+  showFilters,
+  filters = [],
   
   ...props
 }: TableProps) {
@@ -64,6 +77,27 @@ export default function Table({
     column: string | null;
     direction: SortDirection;
   }>({ column: null, direction: "asc" });
+
+  // Export CSV functionality
+  const handleExportCSV = () => {
+    if (onExport) {
+      onExport();
+    } else {
+      // Default export implementation
+      const headers = columns.join(',');
+      const csvData = filteredData.map(row => 
+        columns.map(col => `"${row[col] || ''}"`).join(',')
+      ).join('\n');
+      const csv = `${headers}\n${csvData}`;
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title.toLowerCase().replace(/\s+/g, '_')}-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    }
+  };
 
   const handleSort = (col: string) => {
     setSortConfig((prev) => {
@@ -252,6 +286,38 @@ export default function Table({
                 />
               )}
 
+              {actions?.includes("export") && (
+                <SubmitButton
+                  label=""
+                  variant="action"
+                  icon={<MdFileDownload size={20} />}
+                  title="Export CSV"
+                  onClick={filteredData.length === 0 ? undefined : handleExportCSV}
+                  className={
+                    filteredData.length === 0
+                      ? "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
+                      : ""
+                  }
+                />
+              )}
+              {showFilters && filters && filters.length > 0 && (
+                  <div className="flex gap-2 flex-wrap">
+                    {filters.map((filter) => (
+                      <select
+                        key={filter.key}
+                        value={filter.value}
+                        onChange={(e) => filter.onChange(e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      >
+                        {filter.options.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    ))}
+                  </div>
+                )}
               {actions?.includes("approve") && (
                 <SubmitButton
                   label="Approve"

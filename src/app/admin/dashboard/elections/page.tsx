@@ -13,7 +13,7 @@ import toast, { Toaster } from 'react-hot-toast';
 interface UiElection {
   id: number;
   name: string;
-  status: "Ongoing" | "Finished";
+  status: "Draft" | "Active" | "Closed";
   votingDate: string;
   time: string;
 }
@@ -31,7 +31,7 @@ function ElectionDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const eidParam = searchParams.get('eid');
-  const [tab, setTab] = useState<"All" | "Ongoing" | "Ended">("All");
+  const [tab, setTab] = useState<"All" | "Draft" | "Active" | "Closed">("All");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState("");
@@ -67,13 +67,29 @@ function ElectionDashboardContent() {
           throw new Error(json?.error || json?.message || 'Failed to fetch elections');
         }
         const elections = (json?.data?.elections ?? []) as any[];
-        // Map API elections to UI shape
+        // Map API elections to UI shape with proper status mapping
         const mapped: UiElection[] = elections.map((e) => {
           const start = e?.schedule?.dateStart ? new Date(e.schedule.dateStart) : null;
           const finish = e?.schedule?.dateFinish ? new Date(e.schedule.dateFinish) : null;
           const fmtDate = (d: Date | null) => d?.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) ?? '—';
           const fmtTime = (d: Date | null) => d?.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) ?? '—';
-          const status: UiElection['status'] = e?.status === 'ACTIVE' ? 'Ongoing' : 'Finished';
+          
+          // Direct mapping from backend to frontend
+          let status: UiElection['status'];
+          switch (e?.status) {
+            case 'ACTIVE':
+              status = 'Active';
+              break;
+            case 'CLOSED':
+              status = 'Closed';
+              break;
+            case 'DRAFT':
+              status = 'Draft';
+              break;
+            default:
+              status = 'Draft'; // fallback
+          }
+          
           return {
             id: e.id,
             name: e.name,
@@ -140,11 +156,15 @@ function ElectionDashboardContent() {
     e.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  if (tab === 'Ongoing') {
-    filteredElections = filteredElections.filter(e => e.status === 'Ongoing');
-  } else if (tab === 'Ended') {
-    filteredElections = filteredElections.filter(e => e.status === 'Finished');
+  // Updated filtering logic for new tabs
+  if (tab === 'Draft') {
+    filteredElections = filteredElections.filter(e => e.status === 'Draft');
+  } else if (tab === 'Active') {
+    filteredElections = filteredElections.filter(e => e.status === 'Active');
+  } else if (tab === 'Closed') {
+    filteredElections = filteredElections.filter(e => e.status === 'Closed');
   }
+  // 'All' tab shows everything, no additional filtering needed
 
   if (sortCol) {
     filteredElections = [...filteredElections].sort((a, b) => {
@@ -186,10 +206,10 @@ function ElectionDashboardContent() {
         <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
           {/* Search and actions */}
           <div className="main-toolbar sticky top-16 z-30 bg-white flex flex-col md:flex-row md:items-center md:gap-4 gap-2 mb-6 py-3 px-2 sm:px-5">
-            {/* Tabs */}
+            {/* Updated tabs */}
             <div className="flex-shrink-0">
-              <div className="inline-flex w-full max-w-[380px] md:w-auto rounded-md border border-gray-300 overflow-hidden bg-white">
-                {["All", "Ongoing", "Ended"].map((t, i) => (
+              <div className="inline-flex w-full max-w-[500px] md:w-auto rounded-md border border-gray-300 overflow-hidden bg-white">
+                {["All", "Draft", "Active", "Closed"].map((t, i) => (
                   <SubmitButton
                     key={t}
                     label={t}
