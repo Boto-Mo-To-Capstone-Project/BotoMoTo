@@ -2,7 +2,7 @@
 
 import { useSession, } from "next-auth/react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -77,6 +77,20 @@ const AdminSidebar = ({
 
   const displayName = session?.user?.name || "Username";
   const displayEmail = session?.user?.email || "Email";
+
+  // Disable scroll when sidebar is open
+    useEffect(() => {
+      if (open) {
+        document.body.classList.add("overflow-hidden");
+      } else {
+        document.body.classList.remove("overflow-hidden");
+      }
+  
+      // Cleanup when component unmounts
+      return () => {
+        document.body.classList.remove("overflow-hidden");
+      };
+    }, [open]);
 
   return (
     <>

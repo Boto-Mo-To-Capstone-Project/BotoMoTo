@@ -17,6 +17,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { useLogout } from "@/hooks/useLogout";
+import { useEffect } from "react";
 
 type SuperAdminSidebarProps = {
   variant?: "default";
@@ -68,6 +69,20 @@ const SuperAdminSidebar = ({
 
   const displayName = session?.user?.name || "Username";
   const displayEmail = session?.user?.email || "Email";
+  
+  // Disable scroll when sidebar is open
+  useEffect(() => {
+    if (open) {
+      document.body.classList.add("overflow-hidden");
+    } else {
+      document.body.classList.remove("overflow-hidden");
+    }
+
+    // Cleanup when component unmounts
+    return () => {
+      document.body.classList.remove("overflow-hidden");
+    };
+  }, [open]);
   
   return (
     <>
