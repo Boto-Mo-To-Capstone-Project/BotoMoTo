@@ -196,7 +196,7 @@ function ElectionDashboardContent() {
 
   return (
     <>
-      <Toaster position="top-center" />
+      {/*<Toaster position="top-center" />*/}
       <div
         id="main-window-template-component"
         className="app h-full flex flex-col min-h-[calc-100vh-4rem] bg-gray-50"

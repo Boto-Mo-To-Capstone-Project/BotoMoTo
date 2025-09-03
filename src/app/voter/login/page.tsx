@@ -61,7 +61,7 @@ const VoterLoginPage = () => {
 
   return (
     <main className=" flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
-      <Toaster position="top-center" />
+      {/*<Toaster position="top-center" />*/} 
       <div className="text-center space-y-2">
         <p className="voterlogin-heading">Enter Voter Code</p>
         <p className="voterlogin-subheading">

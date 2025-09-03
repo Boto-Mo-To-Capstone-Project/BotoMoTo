@@ -89,7 +89,7 @@ export default function SuperAdminCreateSurveyPage() {
 
   return (
     <>
-      <Toaster position="top-center" />
+      {/*<Toaster position="top-center" />*/}
       <div className="app h-full flex flex-col min-h-[calc-100vh-4rem] bg-gray-50">
         <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
           <SurveyBuilder onSave={saveDraft} onPublish={publish} onPreview={preview} />
