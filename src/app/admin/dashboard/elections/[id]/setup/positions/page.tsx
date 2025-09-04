@@ -5,7 +5,8 @@ import { SubmitButton } from '@/components/SubmitButton';
 import SearchBar from '@/components/SearchBar';
 import PositionsTable from '@/components/PositionsTable';
 import { PositionsModal } from '@/components/PositionsModal';
-import { DragandDropdown } from '@/components/PositionsDragandDrop';
+import { PositionsDragandDropdown } from '@/components/PositionsDragandDrop';
+import FileViewer from '@/components/FileViewer';
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Toaster, toast } from 'react-hot-toast';
 
@@ -34,6 +35,9 @@ export default function PositionsDashboardPage() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  // Add file viewer state for template preview parity with voters page
+  const [showFileViewer, setShowFileViewer] = useState(false);
+  const [fileViewerData, setFileViewerData] = useState<{ fileUrl: string; fileName: string; title: string; fileType?: 'pdf' | 'image' | 'video' | 'audio' | 'text' | 'unknown'; } | null>(null);
 
   // Edit state
   const [isEditMode, setIsEditMode] = useState(false);
@@ -273,49 +277,24 @@ export default function PositionsDashboardPage() {
   };
 
   // Import positions: POST /api/positions with positions[] array
-  const handleImportPositions = async (file: File) => {
+  const handleImportPositions = async (parsed: Array<{ position: string; voteLimit: number; numberOfWinners: number; order: number; votingScopeId?: number }>) => {
     try {
+      if (!electionId || Number.isNaN(electionId)) return;
       setModalLoading(true);
-      
-      // Parse CSV file
-      const text = await file.text();
-      const lines = text.split('\n').filter(line => line.trim());
-      
-      if (lines.length < 2) {
-        toast.error('CSV file must have header and at least one data row');
+      if (!parsed.length) {
+        toast.error('No positions to import');
         return;
       }
-
-      // Assume CSV format: position,voteLimit,numberOfWinners
-      const header = lines[0].toLowerCase();
-      const expectedFields = ['position', 'voteLimit', 'numberOfWinners'];
-      const hasExpectedFields = expectedFields.every(field => 
-        header.includes(field.toLowerCase())
-      );
-
-      if (!hasExpectedFields) {
-        toast.error('CSV must have columns: position, voteLimit, numberOfWinners');
-        return;
-      }
-
-      const positions = [];
-      for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map(v => v.trim());
-        if (values.length >= 3) {
-          positions.push({
-            name: values[0],
-            voteLimit: parseInt(values[1]) || 1,
-            numOfWinners: parseInt(values[2]) || 1,
-            electionId,
-            isActive: true,
-          });
-        }
-      }
-
-      if (positions.length === 0) {
-        toast.error('No valid positions found in CSV file');
-        return;
-      }
+      // Transform to API payload expected by /api/positions bulk path (positions[])
+      const positions = parsed.map(p => ({
+        electionId,
+        name: p.position.trim(),
+        voteLimit: p.voteLimit || 1,
+        numOfWinners: p.numberOfWinners || 1,
+        order: typeof p.order === 'number' ? p.order : 0,
+        votingScopeId: p.votingScopeId,
+        isActive: true,
+      }));
 
       const res = await fetch('/api/positions', {
         method: 'POST',
@@ -323,15 +302,14 @@ export default function PositionsDashboardPage() {
         body: JSON.stringify({ positions }),
       });
       const json = await res.json().catch(() => ({}));
-
       if (!res.ok || json?.success === false) {
         toast.error(json?.message || 'Failed to import positions');
         return;
       }
-
-      toast.success(`Successfully imported ${positions.length} position${positions.length === 1 ? '' : 's'}`);
+      const count = json?.data?.positions?.length || positions.length;
+      toast.success(`Successfully imported ${count} position${count === 1 ? '' : 's'}`);
       setShowImportModal(false);
-      setReloadKey((k) => k + 1);
+      setReloadKey(k => k + 1);
       setPage(1);
     } catch (e) {
       console.error('Import positions error:', e);
@@ -427,19 +405,25 @@ export default function PositionsDashboardPage() {
         votingScopes={votingScopes}
       />
       {/* Import Positions Modal */}
-      <DragandDropdown
+      <PositionsDragandDropdown
         open={showImportModal}
         onClose={() => setShowImportModal(false)}
         label="Import Positions"
-        description="Drag and drop your positions CSV file here, or click to select."
         accept=".csv"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleImportPositions(file);
-        }}
-        fileTypeText="Accepted file type: .csv"
         id="import-positions-file"
         maxSizeMB={5}
+        onUpload={async (positions) => { await handleImportPositions(positions); }}
+        votingScopes={votingScopes}
+        loading={modalLoading}
+        onShowTemplatePreview={() => {
+          setFileViewerData({
+            fileUrl: '/assets/sample/positions.csv',
+            fileName: 'positions.csv',
+            title: 'Position CSV Template',
+            fileType: 'text'
+          });
+          setShowFileViewer(true);
+        }}
       />
       <div
         id="main-window-template-component"
@@ -560,6 +544,15 @@ export default function PositionsDashboardPage() {
           </div>
         </div>
       </div>
+      {showFileViewer && fileViewerData && (
+        <FileViewer
+          fileUrl={fileViewerData.fileUrl}
+          fileName={fileViewerData.fileName}
+          onClose={() => { setShowFileViewer(false); setFileViewerData(null); }}
+          title={fileViewerData.title}
+          fileType={fileViewerData.fileType}
+        />
+      )}
     </>
   );
 }

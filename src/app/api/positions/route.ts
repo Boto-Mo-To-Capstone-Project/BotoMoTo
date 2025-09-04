@@ -258,9 +258,25 @@ export async function POST(request: NextRequest) {
       // Validate each position in the array
       for (const pos of positions) {
         const validation = validateWithZod(positionSchema, pos);
-        if (!('data' in validation)) {
+        if (!("data" in validation)) {
           return validation; // Return the validation error response directly
         }
+      }
+
+      // Detect duplicates within the incoming batch for same name + same scope
+      const seen = new Set<string>();
+      for (const pos of positions) {
+        const key = `${pos.electionId}-${pos.name.trim().toLowerCase()}-${pos.votingScopeId ?? 'null'}`;
+        if (seen.has(key)) {
+          return apiResponse({
+            success: false,
+            message: `Duplicate position in upload: name "${pos.name}" with the same scope appears more than once`,
+            data: null,
+            error: "Conflict",
+            status: 409
+          });
+        }
+        seen.add(key);
       }
 
       // For bulk creation, we'll use the electionId from the first position
@@ -320,18 +336,19 @@ export async function POST(request: NextRequest) {
       const createdPositions = await db.$transaction(async (tx) => {
         const results = [];
         for (const posData of positions) {
-          // Check if position name already exists in this election
+          // Check if position with same name AND same scope already exists in this election
           const existingPosition = await tx.position.findFirst({
             where: {
               electionId: posData.electionId || electionId,
               name: posData.name,
+              votingScopeId: posData.votingScopeId ?? null,
               isDeleted: false
             }
           });
 
-          if (existingPosition) {
-            throw new Error(`A position with name "${posData.name}" already exists in this election`);
-          }
+            if (existingPosition) {
+              throw new Error(`A position with name "${posData.name}" and this scope already exists in this election`);
+            }
 
           const position = await tx.position.create({
             data: {
@@ -397,7 +414,7 @@ export async function POST(request: NextRequest) {
     // Handle single position creation
     // Validate position data using helper
     const validation = validateWithZod(positionSchema, body);
-    if (!('data' in validation)) return validation;
+    if (!("data" in validation)) return validation;
 
     const { electionId, name, voteLimit, numOfWinners, votingScopeId, order } = validation.data;
 
@@ -484,11 +501,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check if position name already exists in this election (exclude soft-deleted)
+    // Check if position name already exists for the SAME scope (allow same name across different scopes)
     const existingPosition = await db.position.findFirst({
       where: {
         electionId: electionId,
         name,
+        votingScopeId: votingScopeId ?? null,
         isDeleted: false
       }
     });
@@ -496,7 +514,7 @@ export async function POST(request: NextRequest) {
     if (existingPosition) {
       return apiResponse({
         success: false,
-        message: "A position with this name already exists in this election",
+        message: "A position with this name and scope already exists in this election",
         data: null,
         error: "Conflict",
         status: 409
