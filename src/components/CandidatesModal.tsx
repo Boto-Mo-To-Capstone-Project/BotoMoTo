@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { SubmitButton } from "@/components/SubmitButton";
 
 // Define lightweight types used internally for fetched options
 type VoterOpt = { id: number; firstName: string; lastName: string; email?: string };
-type PositionOpt = { id: number; name: string };
+// Extend PositionOpt to optionally carry scope data coming from API (various possible keys)
+type PositionOpt = { id: number; name: string; votingScopeId?: number | null; votingScope?: { id: number; name: string } | null; votingScopeName?: string; scopeName?: string };
 type PartyOpt = { id: number; name: string };
 
 type CandidatesModalProps = {
@@ -14,7 +15,6 @@ type CandidatesModalProps = {
   onSave: (payload: FormData | {
     positionId?: number;
     partyId?: number | null;
-    isNew?: boolean;
     imageUrl?: string | null;
     credentialUrl?: string | null;
   }) => void;
@@ -27,7 +27,6 @@ type CandidatesModalProps = {
     voterId?: number;
     positionId?: number;
     partyId?: number | null;
-    isNew?: boolean;
     imageUrl?: string | null;
     credentialUrl?: string | null;
   };
@@ -47,7 +46,6 @@ export function CandidatesModal({
     voterId: undefined,
     positionId: undefined,
     partyId: undefined,
-    isNew: false,
     imageUrl: undefined,
     credentialUrl: undefined,
   },
@@ -57,7 +55,6 @@ export function CandidatesModal({
   const [voterId, setVoterId] = useState<number | undefined>(initialData.voterId);
   const [positionId, setPositionId] = useState<number | undefined>(initialData.positionId);
   const [partyId, setPartyId] = useState<number | null>(initialData.partyId ?? null);
-  const [isNew, setIsNew] = useState<boolean>(!!initialData.isNew);
   const [image, setImage] = useState<File | null>(null);
   const [credentials, setCredentials] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null | undefined>(initialData.imageUrl);
@@ -72,7 +69,6 @@ export function CandidatesModal({
       setVoterId(initialData.voterId);
       setPositionId(initialData.positionId);
       setPartyId(initialData.partyId ?? null);
-      setIsNew(!!initialData.isNew);
       setImageUrl(initialData.imageUrl);
       setCredentialUrl(initialData.credentialUrl);
     } else if (!initialData || !initialData.voterId) {
@@ -80,7 +76,6 @@ export function CandidatesModal({
       setVoterId(undefined);
       setPositionId(undefined);
       setPartyId(null);
-      setIsNew(false);
       setImageUrl(undefined);
       setCredentialUrl(undefined);
     }
@@ -96,6 +91,21 @@ export function CandidatesModal({
   const [positions, setPositions] = useState<PositionOpt[]>(positionsProp || []);
   const [parties, setParties] = useState<PartyOpt[]>(partiesProp || []);
   const [loadingOptions, setLoadingOptions] = useState(false);
+
+  // NEW: Build a map of name -> count to detect duplicates & provide scope context
+  const duplicateNameCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    positions.forEach(p => { counts[p.name] = (counts[p.name] || 0) + 1; });
+    return counts;
+  }, [positions]);
+
+  // NEW: Helper to derive a human-friendly scope label (fallbacks for different API shapes)
+  const getScopeLabel = (p: PositionOpt) => {
+    const scopeName = p.votingScope?.name || p.votingScopeName || p.scopeName;
+    if (scopeName) return scopeName;
+    if (p.votingScopeId) return `Scope #${p.votingScopeId}`;
+    return "All voters"; // no scope restriction
+  };
 
   // When modal opens, fetch options if not provided
   useEffect(() => {
@@ -165,9 +175,8 @@ export function CandidatesModal({
 
     if (isEditMode) {
       // For edit, send a JSON payload compatible with PUT /api/candidates/[id]
-      const payload: { positionId: number; partyId?: number | null; isNew: boolean } = {
+      const payload: { positionId: number; partyId?: number | null } = {
         positionId,
-        isNew,
       };
       // Always include partyId, even if null
       payload.partyId = partyId;
@@ -181,7 +190,6 @@ export function CandidatesModal({
     formData.append('electionId', electionId.toString());
     formData.append('voterId', voterId.toString());
     formData.append('positionId', positionId.toString());
-    formData.append('isNew', isNew ? 'true' : 'false');
 
     // Handle party ID - if null, append 'null' string, otherwise append the ID
     if (partyId !== null) {
@@ -262,7 +270,7 @@ export function CandidatesModal({
 
               <div className="sm:col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Position*
+                  Position* <span className="text-xs text-gray-500 font-normal">(scope shown if duplicated)</span>
                 </label>
                 <select
                   value={positionId ?? ''}
@@ -271,9 +279,13 @@ export function CandidatesModal({
                   required
                 >
                   <option value="">Select a position for the candidate</option>
-                  {positions.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
+                  {positions.map(p => {
+                    const needsScope = duplicateNameCounts[p.name] > 1;
+                    const label = needsScope ? `${p.name} (${getScopeLabel(p)})` : p.name;
+                    return (
+                      <option key={p.id} value={p.id}>{label}</option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -291,18 +303,6 @@ export function CandidatesModal({
                     <option key={pt.id} value={pt.id}>{pt.name}</option>
                   ))}
                 </select>
-              </div>
-
-              <div className="col-span-2">
-                <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
-                  <input
-                    type="checkbox"
-                    checked={isNew}
-                    onChange={e => setIsNew(e.target.checked)}
-                    className="mr-2"
-                  />
-                  Mark as new candidate
-                </label>
               </div>
 
               {/* Files section */}

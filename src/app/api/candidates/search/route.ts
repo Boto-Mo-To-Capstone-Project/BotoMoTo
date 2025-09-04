@@ -19,7 +19,6 @@ export async function GET(request: NextRequest) {
     const query = url.searchParams.get('query');
     const positionId = url.searchParams.get('positionId');
     const partyId = url.searchParams.get('partyId');
-    const isNew = url.searchParams.get('isNew');
     const hasImage = url.searchParams.get('hasImage');
     const hasBio = url.searchParams.get('hasBio');
     const hasExperience = url.searchParams.get('hasExperience');
@@ -148,13 +147,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Add isNew filter
-    if (isNew === 'true') {
-      whereClause.isNew = true;
-    } else if (isNew === 'false') {
-      whereClause.isNew = false;
-    }
-
     // Add image filter
     if (hasImage === 'true') {
       whereClause.imageUrl = { not: null };
@@ -205,7 +197,6 @@ export async function GET(request: NextRequest) {
       where: whereClause,
       select: {
         id: true,
-        isNew: true,
         imageUrl: true,
         createdAt: true,
         updatedAt: true,
@@ -339,7 +330,6 @@ export async function GET(request: NextRequest) {
           appliedFilters: {
             positionId: positionId ? parseInt(positionId) : null,
             partyId: partyId === 'independent' ? 'independent' : (partyId ? parseInt(partyId) : null),
-            isNew: isNew ? isNew === 'true' : null,
             hasImage: hasImage ? hasImage === 'true' : null,
             hasBio: hasBio ? hasBio === 'true' : null,
             hasExperience: hasExperience ? hasExperience === 'true' : null

@@ -5,7 +5,8 @@ import { SubmitButton } from '@/components/SubmitButton';
 import SearchBar from '@/components/SearchBar';
 import VoterTable from '@/components/VoterTable';
 import { VotersModal } from '@/components/VotersModal'; 
-import { DragandDropdown } from '@/components/VotersDragandDropdown';
+import { VotersDragandDropdown } from '@/components/VotersDragandDropdown';
+import FileViewer from '@/components/FileViewer';
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Toaster, toast } from 'react-hot-toast';
 
@@ -50,6 +51,15 @@ export default function VoterDashboardPage() {
   const [editingVoterId, setEditingVoterId] = useState<number | null>(null);
   const [editIsActive, setEditIsActive] = useState<boolean>(true);
 
+  // FileViewer state for template preview
+  const [showFileViewer, setShowFileViewer] = useState(false);
+  const [fileViewerData, setFileViewerData] = useState<{
+    fileUrl: string;
+    fileName: string;
+    title: string;
+    fileType?: 'pdf' | 'image' | 'video' | 'audio' | 'text' | 'unknown';
+  } | null>(null);
+
   // Data state from API
   const [rows, setRows] = useState<Array<{
     id: number;
@@ -82,6 +92,22 @@ export default function VoterDashboardPage() {
     if (!Number.isNaN(l) && l > 0) setPageSize(l);
     setSearch(s);
   }, [searchParams]);
+
+  // FileViewer handlers
+  const handleShowTemplatePreview = () => {
+    setFileViewerData({
+      fileUrl: "/assets/sample/voters.csv",
+      fileName: "voters.csv",
+      title: "Voter CSV Template",
+      fileType: "text"
+    });
+    setShowFileViewer(true);
+  };
+
+  const handleCloseFileViewer = () => {
+    setShowFileViewer(false);
+    setFileViewerData(null);
+  };
 
   // Keep URL in sync with state
   useEffect(() => {
@@ -415,6 +441,61 @@ export default function VoterDashboardPage() {
     return () => ctrl.abort();
   }, [electionId]);
 
+  // Batch import voters from CSV
+  const handleBatchImport = async (parsedVoters: Array<{
+    firstName: string;
+    middleName?: string;
+    lastName: string;
+    email: string;
+    contactNum?: string;
+    votingScopeId?: number;
+    isActive: boolean;
+    rowNumber: number;
+  }>) => {
+    try {
+      if (!electionId || Number.isNaN(electionId)) return;
+      setLoading(true);
+
+      // Transform parsed voters to API format (no redundant parsing needed)
+      const votersToImport = parsedVoters.map(voter => ({
+        firstName: voter.firstName,
+        middleName: voter.middleName || undefined,
+        lastName: voter.lastName,
+        email: voter.email.trim(),
+        contactNum: voter.contactNum?.trim() || undefined,
+        votingScopeId: voter.votingScopeId || undefined,
+        isActive: voter.isActive,
+      }));
+
+      const res = await fetch('/api/voters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          electionId,
+          voters: votersToImport
+        }),
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json?.success === false) {
+        toast.error(json?.message || 'Failed to import voters');
+        return;
+      }
+
+      const importedCount = json?.data?.voters?.length || votersToImport.length;
+      toast.success(`Successfully imported ${importedCount} voter${importedCount === 1 ? '' : 's'}`);
+      
+      setShowImportModal(false);
+      setReloadKey((k) => k + 1);
+    } catch (e) {
+      console.error('Batch import error:', e);
+      toast.error('Failed to import voters');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       {/*<Toaster position="top-center" />*/}
@@ -553,18 +634,27 @@ export default function VoterDashboardPage() {
         votingScopes={votingScopes}
       />
 
-      {/* DragandDropdown Modal */}
-      <DragandDropdown
+      {/* VotersDragandDropdown Modal */}
+      <VotersDragandDropdown
+        label="Import Voters"
         open={showImportModal}
         onClose={() => setShowImportModal(false)}
-        label="Import Voters"
-        description="Drag and drop your voter CSV file here, or click to select."
-        accept=".csv"
-        onChange={() => { /* handle file import here */ }}
-        fileTypeText="Accepted file type: .csv"
-        id="import-voters-file"
-        maxSizeMB={5}
+        onUpload={handleBatchImport}
+        onShowTemplatePreview={handleShowTemplatePreview}
+        votingScopes={votingScopes}
+        loading={loading}
       />
+
+      {/* FileViewer Modal (for template preview) */}
+      {showFileViewer && fileViewerData && (
+        <FileViewer
+          fileUrl={fileViewerData.fileUrl}
+          fileName={fileViewerData.fileName}
+          onClose={handleCloseFileViewer}
+          title={fileViewerData.title}
+          fileType={fileViewerData.fileType}
+        />
+      )}
     </>
   );
 }

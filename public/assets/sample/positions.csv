@@ -1,8 +1,17 @@
-﻿Position,VoteLimit,NoOfWinners
-President,1,1
-Vice President,1,1
-Secretary,1,1
-Treasurer,1,1
-Auditor,1,1
-Public Relations,1,1
-Board Member,5,5
+﻿Position,VoteLimit,NumberOfWinners,Order,VotingScope
+President,1,1,1,Engineering
+Vice President,1,1,2,Engineering
+Secretary,1,1,3,Engineering
+Treasurer,1,1,4,Engineering
+Auditor,1,1,5,Engineering
+Board Member,3,3,6,Engineering
+President,1,1,1,Graduate
+Vice President,1,1,2,Graduate
+Representative,2,2,3,Graduate
+President,1,1,1,Undergraduate
+Vice President,1,1,2,Undergraduate
+Secretary,1,1,3,Undergraduate
+Treasurer,1,1,4,Undergraduate
+Auditor,1,1,5,Undergraduate
+Public Relations,1,1,6,Undergraduate
+Representative,4,4,7,Undergraduate

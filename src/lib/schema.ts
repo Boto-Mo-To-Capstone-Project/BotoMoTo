@@ -251,7 +251,6 @@ const candidateSchema = z.object({
   partyId: z.number().int().positive("Party ID must be a positive integer").nullable().optional(),
   imageUrl: field.string("Image URL", { required: false }),
   credentialUrl: field.string("Credentials URL", { required: false }),
-  isNew: z.boolean().default(false)
 });
 
 // Candidate Update Schema
@@ -260,7 +259,6 @@ const candidateUpdateSchema = z.object({
   partyId: z.number().int().positive("Party ID must be a positive integer").nullable().optional(),
   imageUrl: field.url("Image URL", { required: false }),
   bio: field.string("Biography", { required: false, max: 1000 }),
-  isNew: z.boolean().optional(),
 });
 
 // Survey Form Creation Schema

@@ -1,13 +1,14 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
-import { MdAdd, MdFilterList, MdDelete, MdEdit, MdSave, MdFileUpload } from "react-icons/md";
+import { MdAdd, MdFilterList, MdDelete, MdEdit, MdFileUpload } from "react-icons/md";
 import { SubmitButton } from '@/components/SubmitButton';
 import SearchBar from '@/components/SearchBar';
 import CandidatesTable from '@/components/CandidatesTable';
 import { CandidatesModal } from "@/components/CandidatesModal";
-import { DragandDropdown } from "@/components/CandidatesDragandDrop";
+import { CandidatesDragandDropdown } from "@/components/CandidatesDragandDrop";
+import FileViewer from "@/components/FileViewer";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Toaster, toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 
 // Debounce hook
 function useDebouncedValue<T>(value: T, delay = 400) {
@@ -51,6 +52,12 @@ export default function CandidatesDashboardPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [modalLoading, setModalLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  // NEW: positions and parties for the candidates import modal
+  const [positions, setPositions] = useState<Array<{ id: number; name: string }>>([]);
+  const [parties, setParties] = useState<Array<{ id: number; name: string }>>([]);
+  // NEW: file viewer state for template preview parity with voters page
+  const [showFileViewer, setShowFileViewer] = useState(false);
+  const [fileViewerData, setFileViewerData] = useState<{ fileUrl: string; fileName: string; title: string; fileType?: 'pdf' | 'image' | 'video' | 'audio' | 'text' | 'unknown'; } | null>(null);
 
   // Initialize state from URL once
   const initializedFromURL = useRef(false);
@@ -92,16 +99,6 @@ export default function CandidatesDashboardPage() {
     setPage(1);
   };
   const handleSort = (col: "name" | "position" | "partylist" | "email") => {
-    // Map frontend column names to API column names
-    const colMapping: { [key: string]: string } = {
-      name: "lastName",
-      position: "position",
-      partylist: "party", 
-      email: "email"
-    };
-    
-    const apiCol = colMapping[col] || col;
-    
     if (sortCol === col) {
       setSortDir(sortDir === "asc" ? "desc" : "asc");
     } else {
@@ -207,7 +204,6 @@ export default function CandidatesDashboardPage() {
         voterId: c.voter?.id,
         positionId: c.position?.id,
         partyId: c.party?.id ?? null,
-        isNew: c.isNew,
         imageUrl: c.imageUrl ?? null,
         credentialUrl: c.credentialUrl ?? null,
       };
@@ -231,7 +227,6 @@ export default function CandidatesDashboardPage() {
       // Whitelist only updatable fields
       const payload: any = {
         positionId: data.positionId,
-        isNew: data.isNew,
       };
       if (data.partyId !== undefined) payload.partyId = data.partyId;
       if (data.imageUrl !== undefined) payload.imageUrl = data.imageUrl;
@@ -263,51 +258,17 @@ export default function CandidatesDashboardPage() {
     }
   };
 
-  // Import candidates: POST /api/candidates/bulk with operation: "bulk_create"
-  const handleImportCandidates = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  // Import candidates: POST /api/candidates with candidates[] array
+  const handleImportCandidates = async (parsedCandidates: Array<{ email: string; position: string; partylist?: string; positionId?: number; partyId?: number; rowNumber: number }>) => {
     try {
       setModalLoading(true);
-      
-      // Parse CSV file
-      const text = await file.text();
-      const lines = text.split('\n').filter(line => line.trim());
-      
-      if (lines.length < 2) {
-        toast.error('CSV file must have header and at least one data row');
-        return;
-      }
 
-      // Parse CSV and create candidates array
-      const candidatesData = [] as any[];
-      for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map(v => v.trim());
-        if (values.length >= 3) {
-          candidatesData.push({
-            voterId: parseInt(values[0]) || null,
-            positionId: parseInt(values[1]) || null,
-            partyId: parseInt(values[2]) || null,
-            isNew: values[3] === 'true' || false,
-            imageUrl: values[4] || null,
-            bio: values[5] || null,
-          });
-        }
-      }
-
-      if (candidatesData.length === 0) {
-        toast.error('No valid candidates found in CSV file');
-        return;
-      }
-
-      const res = await fetch('/api/candidates/bulk', {
+      const res = await fetch('/api/candidates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          operation: 'bulk_create',
+          candidates: parsedCandidates,
           electionId,
-          candidates: candidatesData,
         }),
       });
       const json = await res.json().catch(() => ({}));
@@ -317,7 +278,7 @@ export default function CandidatesDashboardPage() {
         return;
       }
 
-      toast.success(`Successfully imported ${candidatesData.length} candidate${candidatesData.length === 1 ? '' : 's'}`);
+      toast.success(`Successfully imported ${parsedCandidates.length} candidate${parsedCandidates.length === 1 ? '' : 's'}`);
       setShowImportModal(false);
       setReloadKey((k) => k + 1);
       setPage(1);
@@ -386,6 +347,49 @@ export default function CandidatesDashboardPage() {
     run();
     return () => ctrl.abort();
   }, [electionId, page, pageSize, debouncedSearch, sortCol, sortDir, reloadKey]);
+
+  // NEW: Fetch positions and parties for this election (for the import modal)
+  useEffect(() => {
+    if (!electionId || Number.isNaN(electionId)) return;
+    const ctrl = new AbortController();
+    const loadPositionsAndParties = async () => {
+      try {
+        // Fetch positions
+        const positionsRes = await fetch(`/api/positions?electionId=${electionId}&limit=100`, {
+          signal: ctrl.signal
+        });
+        if (positionsRes.ok) {
+          const positionsData = await positionsRes.json();
+          if (positionsData.success && positionsData.data?.positions) {
+            setPositions(positionsData.data.positions.map((p: any) => ({
+              id: p.id,
+              name: p.name
+            })));
+          }
+        }
+
+        // Fetch parties
+        const partiesRes = await fetch(`/api/parties?electionId=${electionId}&limit=100`, {
+          signal: ctrl.signal
+        });
+        if (partiesRes.ok) {
+          const partiesData = await partiesRes.json();
+          if (partiesData.success && partiesData.data?.parties) {
+            setParties(partiesData.data.parties.map((p: any) => ({
+              id: p.id,
+              name: p.name
+            })));
+          }
+        }
+      } catch (error) {
+        if (!ctrl.signal.aborted) {
+          console.error('Failed to load positions/parties:', error);
+        }
+      }
+    };
+    loadPositionsAndParties();
+    return () => ctrl.abort();
+  }, [electionId]);
 
   return (
     <>
@@ -509,17 +513,42 @@ export default function CandidatesDashboardPage() {
         initialData={isEditMode ? editInitialData : undefined}
       />
       {/* Import Candidates Modal */}
-      <DragandDropdown
+      <CandidatesDragandDropdown
         open={showImportModal}
         onClose={() => setShowImportModal(false)}
         label="Import Candidates"
-        description="Drag and drop your candidates CSV file here, or click to select."
+        description="Download the template, fill it out with your candidates, and use the Import button below to upload your CSV file."
         accept=".csv"
-        onChange={handleImportCandidates}
-        fileTypeText="Accepted file type: .csv"
+        fileTypeText="CSV files only (max 5MB)"
         id="import-candidates-file"
         maxSizeMB={5}
+        onUpload={handleImportCandidates}
+        positions={positions}
+        parties={parties}
+        loading={modalLoading}
+        onShowTemplatePreview={() => {
+          setFileViewerData({
+            fileUrl: '/assets/sample/candidates.csv',
+            fileName: 'candidates.csv',
+            title: 'Candidate List Template',
+            fileType: 'text'
+          });
+          setShowFileViewer(true);
+        }}
       />
+      {/* File Viewer Modal for template preview */}
+      {showFileViewer && fileViewerData && (
+        <FileViewer
+          fileUrl={fileViewerData.fileUrl}
+          fileName={fileViewerData.fileName}
+          title={fileViewerData.title}
+          fileType={fileViewerData.fileType}
+          onClose={() => {
+            setShowFileViewer(false);
+            setFileViewerData(null);
+          }}
+        />
+      )}
     </>
   );
 }

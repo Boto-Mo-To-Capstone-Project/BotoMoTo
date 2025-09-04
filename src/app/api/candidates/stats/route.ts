@@ -87,14 +87,6 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    const newCandidates = await db.candidate.count({
-      where: {
-        electionId: electionIdInt,
-        isDeleted: false,
-        isNew: true
-      }
-    });
-
     const candidatesWithImage = await db.candidate.count({
       where: {
         electionId: electionIdInt,
@@ -127,7 +119,6 @@ export async function GET(request: NextRequest) {
       },
       select: {
         id: true,
-        isNew: true,
         imageUrl: true,
         credentialUrl: true,
         voter: {
@@ -251,7 +242,6 @@ export async function GET(request: NextRequest) {
       position: candidate.position.name,
       party: candidate.party?.name || 'Independent',
       voteCount: candidate._count.voteResponses,
-      isNew: candidate.isNew
     }));
 
     // Find candidates that need attention
@@ -282,7 +272,6 @@ export async function GET(request: NextRequest) {
 
     const summary = {
       totalCandidates,
-      newCandidates,
       candidatesWithImage,
       candidatesWithVotes,
       candidatesWithoutImage: totalCandidates - candidatesWithImage,
@@ -293,8 +282,6 @@ export async function GET(request: NextRequest) {
       profileCompletionRate: totalCandidates > 0 ? 
         Math.round(((candidatesWithCredentials + candidatesWithImage) / (totalCandidates * 2)) * 100) : 0,
       totalPositions: positionDetails.length,
-      totalParties: partyDetails.length,
-      independentCandidates: candidatesByParty.find(p => p.partyId === null)?._count.id || 0
     };
 
     const audit = await createAuditLog({

@@ -264,7 +264,7 @@ model Voter {
   id              Int       @id @default(autoincrement())
   electionId      Int
   code            String    @unique // Globally unique voter code (also serves as voting code)
-  email           String?
+  email           String
   contactNum      String?
   firstName       String
   middleName      String?
@@ -284,6 +284,9 @@ model Voter {
   candidate      Candidate?
   voteResponses  VoteResponse[]
   surveyResponses SurveyResponse[]
+
+  // Add composite unique constraint instead
+  @@unique([electionId, email]) // ← Same email can't be used twice in the SAME election
 }
 
 model Position {
@@ -311,7 +314,6 @@ model Candidate {
   electionId  Int
   voterId     Int       @unique
   positionId  Int
-  isNew       Boolean   @default(false)
   partyId     Int?
   imageUrl    String?
   credentialUrl String? // path to credentials file

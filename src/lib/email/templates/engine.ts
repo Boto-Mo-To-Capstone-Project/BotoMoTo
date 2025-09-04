@@ -120,11 +120,11 @@ export class EmailTemplateEngine implements TemplateEngine {
       // Inline CSS for better email client compatibility
       html = inlineCss(html);
       
-      let text = template.text 
+      const text = template.text 
         ? this.simpleTemplateReplace(template.text, variables) 
         : htmlToText(html);
         
-      let subject = template.defaultSubject 
+      const subject = template.defaultSubject 
         ? this.simpleTemplateReplace(template.defaultSubject, variables) 
         : variables.subject;
 
@@ -149,11 +149,11 @@ export class EmailTemplateEngine implements TemplateEngine {
       // Inline CSS for better email client compatibility
       html = inlineCss(html);
       
-      let text = dbTemplate.textContent 
+      const text = dbTemplate.textContent 
         ? this.simpleTemplateReplace(dbTemplate.textContent, variables) 
         : htmlToText(html);
         
-      let subject = dbTemplate.defaultSubject 
+      const subject = dbTemplate.defaultSubject 
         ? this.simpleTemplateReplace(dbTemplate.defaultSubject, variables) 
         : variables.subject || 'No Subject';
 

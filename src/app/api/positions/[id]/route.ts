@@ -81,7 +81,6 @@ export async function GET(
               }
             },
             imageUrl: true,
-            isNew: true
           }
         },
         _count: {

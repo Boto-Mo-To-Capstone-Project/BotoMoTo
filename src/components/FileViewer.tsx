@@ -20,6 +20,9 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
+  const [textContent, setTextContent] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>('');
   
   // Detect file type based on extension if not explicitly provided
   useEffect(() => {
@@ -67,6 +70,30 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
       setFileType("unknown");
     }
   }, [fileUrl, explicitFileType]);
+
+  // Fetch text content for CSV and other text files
+  useEffect(() => {
+    if (fileType === "text" && (fileUrl.endsWith('.csv') || fileUrl.endsWith('.txt'))) {
+      setLoading(true);
+      setError('');
+      
+      fetch(fileUrl)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Failed to load file: ${response.status}`);
+          }
+          return response.text();
+        })
+        .then(text => {
+          setTextContent(text);
+          setLoading(false);
+        })
+        .catch(err => {
+          setError(err.message);
+          setLoading(false);
+        });
+    }
+  }, [fileUrl, fileType]);
 
   const getDisplayFileName = () => {
     if (fileName) return fileName;
@@ -194,6 +221,109 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
         );
         
       case "text":
+        // Handle CSV and TXT files with direct content display
+        if (fileUrl.endsWith('.csv') || fileUrl.endsWith('.txt')) {
+          if (loading) {
+            return (
+              <div className="flex items-center justify-center h-[calc(90vh-120px)]">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                  <p className="text-gray-600">Loading file...</p>
+                </div>
+              </div>
+            );
+          }
+          
+          if (error) {
+            return (
+              <div className="flex items-center justify-center h-[calc(90vh-120px)]">
+                <div className="text-center">
+                  <p className="text-red-600 mb-4">Error loading file: {error}</p>
+                  <button
+                    onClick={handleDownload}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    Download File Instead
+                  </button>
+                </div>
+              </div>
+            );
+          }
+          
+          // CSV table rendering
+          if (fileUrl.endsWith('.csv')) {
+            const lines = textContent.split('\n').filter(line => line.trim());
+            if (lines.length === 0) {
+              return (
+                <div className="flex items-center justify-center h-[calc(90vh-120px)]">
+                  <p className="text-gray-600">Empty CSV file</p>
+                </div>
+              );
+            }
+            
+            const headers = lines[0].split(',').map(h => h.trim());
+            const rows = lines.slice(1).map(line => line.split(',').map(cell => cell.trim()));
+            
+            return (
+              <div className="w-full h-[calc(90vh-120px)] bg-white overflow-auto">
+                <div className="p-4" style={{ 
+                  transform: zoom !== 100 ? `scale(${zoom / 100})` : undefined,
+                  transformOrigin: 'top left'
+                }}>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full border border-gray-200">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          {headers.map((header, index) => (
+                            <th 
+                              key={index}
+                              className="px-3 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-b border-r border-gray-200"
+                            >
+                              {header}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.map((row, rowIndex) => (
+                          <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                            {row.map((cell, cellIndex) => (
+                              <td 
+                                key={cellIndex}
+                                className="px-3 py-2 text-sm text-gray-900 border-b border-r border-gray-200"
+                              >
+                                {cell}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+          
+          // Plain text rendering for non-CSV files
+          return (
+            <div className="w-full h-[calc(90vh-120px)] bg-white overflow-auto">
+              <div className="p-4">
+                <pre 
+                  className="text-sm font-mono whitespace-pre-wrap break-words"
+                  style={{ 
+                    transform: zoom !== 100 ? `scale(${zoom / 100})` : undefined,
+                    transformOrigin: 'top left'
+                  }}
+                >
+                  {textContent}
+                </pre>
+              </div>
+            </div>
+          );
+        }
+        
+        // Fallback to iframe for other text files
         return (
           <div className="flex items-center justify-center h-[calc(90vh-120px)] bg-white overflow-auto">
             <iframe
@@ -231,7 +361,7 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
   const renderControls = () => {
     const controls = [];
     
-    if (fileType === "image" || fileType === "pdf" ) {
+    if (fileType === "image" || fileType === "pdf" || fileType === "text") {
       controls.push(
         <button
           key="zoom-out"
@@ -332,7 +462,7 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
   const [menuOpen, setMenuOpen] = useState(false); 
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black bg-opacity-75 flex items-center justify-center">
+    <div className="fixed inset-0 z-[99999] bg-black bg-opacity-75 flex items-center justify-center">
       <div className="bg-white w-full h-full max-w-6xl max-h-[90vh] flex flex-col rounded-lg overflow-hidden">
         {/* Header */}
         <div className="bg-gray-100 px-4 py-3 flex items-center justify-between border-b">
