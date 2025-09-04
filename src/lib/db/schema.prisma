@@ -311,7 +311,6 @@ model Candidate {
   electionId  Int
   voterId     Int       @unique
   positionId  Int
-  isNew       Boolean   @default(false)
   partyId     Int?
   imageUrl    String?
   credentialUrl String? // path to credentials file

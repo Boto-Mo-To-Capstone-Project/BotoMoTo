@@ -299,7 +299,6 @@ async function addResendData() {
             voterId: voter.id,
             positionId: position.id,
             partyId: randomParty?.id || null,
-            isNew: Math.random() > 0.7, // 30% are new
             imageUrl: `/assets/sample/logo.png`,
             credentialUrl: `/assets/sample/credential.pdf`,
           },

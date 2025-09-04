@@ -15,7 +15,6 @@ type CandidatesModalProps = {
   onSave: (payload: FormData | {
     positionId?: number;
     partyId?: number | null;
-    isNew?: boolean;
     imageUrl?: string | null;
     credentialUrl?: string | null;
   }) => void;
@@ -28,7 +27,6 @@ type CandidatesModalProps = {
     voterId?: number;
     positionId?: number;
     partyId?: number | null;
-    isNew?: boolean;
     imageUrl?: string | null;
     credentialUrl?: string | null;
   };
@@ -48,7 +46,6 @@ export function CandidatesModal({
     voterId: undefined,
     positionId: undefined,
     partyId: undefined,
-    isNew: false,
     imageUrl: undefined,
     credentialUrl: undefined,
   },
@@ -58,7 +55,6 @@ export function CandidatesModal({
   const [voterId, setVoterId] = useState<number | undefined>(initialData.voterId);
   const [positionId, setPositionId] = useState<number | undefined>(initialData.positionId);
   const [partyId, setPartyId] = useState<number | null>(initialData.partyId ?? null);
-  const [isNew, setIsNew] = useState<boolean>(!!initialData.isNew);
   const [image, setImage] = useState<File | null>(null);
   const [credentials, setCredentials] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null | undefined>(initialData.imageUrl);
@@ -73,7 +69,6 @@ export function CandidatesModal({
       setVoterId(initialData.voterId);
       setPositionId(initialData.positionId);
       setPartyId(initialData.partyId ?? null);
-      setIsNew(!!initialData.isNew);
       setImageUrl(initialData.imageUrl);
       setCredentialUrl(initialData.credentialUrl);
     } else if (!initialData || !initialData.voterId) {
@@ -81,7 +76,6 @@ export function CandidatesModal({
       setVoterId(undefined);
       setPositionId(undefined);
       setPartyId(null);
-      setIsNew(false);
       setImageUrl(undefined);
       setCredentialUrl(undefined);
     }
@@ -181,9 +175,8 @@ export function CandidatesModal({
 
     if (isEditMode) {
       // For edit, send a JSON payload compatible with PUT /api/candidates/[id]
-      const payload: { positionId: number; partyId?: number | null; isNew: boolean } = {
+      const payload: { positionId: number; partyId?: number | null } = {
         positionId,
-        isNew,
       };
       // Always include partyId, even if null
       payload.partyId = partyId;
@@ -197,7 +190,6 @@ export function CandidatesModal({
     formData.append('electionId', electionId.toString());
     formData.append('voterId', voterId.toString());
     formData.append('positionId', positionId.toString());
-    formData.append('isNew', isNew ? 'true' : 'false');
 
     // Handle party ID - if null, append 'null' string, otherwise append the ID
     if (partyId !== null) {
@@ -311,18 +303,6 @@ export function CandidatesModal({
                     <option key={pt.id} value={pt.id}>{pt.name}</option>
                   ))}
                 </select>
-              </div>
-
-              <div className="col-span-2">
-                <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
-                  <input
-                    type="checkbox"
-                    checked={isNew}
-                    onChange={e => setIsNew(e.target.checked)}
-                    className="mr-2"
-                  />
-                  Mark as new candidate
-                </label>
               </div>
 
               {/* Files section */}

@@ -120,7 +120,6 @@ async function validateSeedData() {
             name: true
           }
         },
-        isNew: true,
         _count: {
           select: {
             voteResponses: true
@@ -129,12 +128,12 @@ async function validateSeedData() {
       }
     });
 
-    console.log(`\n🏃‍♂️ Candidates (${candidates.length}):`);
+    console.log(`\n Candidates (${candidates.length}):`);
     candidates.forEach(candidate => {
       const name = `${candidate.voter.firstName} ${candidate.voter.lastName}`;
       const party = candidate.party ? candidate.party.name : 'Independent';
       console.log(`   ${name} - ${candidate.position.name} (${party})`);
-      console.log(`      New: ${candidate.isNew}, Votes: ${candidate._count.voteResponses}`);
+      console.log(`      Votes: ${candidate._count.voteResponses}`);
     });
 
     // Check voting statistics

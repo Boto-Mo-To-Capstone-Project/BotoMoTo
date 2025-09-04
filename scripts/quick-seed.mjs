@@ -171,7 +171,6 @@ async function quickSeed() {
               partyId: i < 2 ? createdParties[i % 2].id : null,
               imageUrl: `/assets/sample/logo.png`, // Placeholder image
               credentialUrl: `/assets/sample/credential.pdf`,
-              isNew: i === 2
             }
           });
         }

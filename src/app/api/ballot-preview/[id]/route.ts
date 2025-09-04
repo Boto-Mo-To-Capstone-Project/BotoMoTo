@@ -35,7 +35,6 @@ export async function GET(
               electionId: true,
               voterId: true,
               positionId: true,
-              isNew: true,
               imageUrl: true,
               credentialUrl: true,
               party: { select: { id: true, name: true, color: true } }, // make sure "color" exists in DB
@@ -71,7 +70,7 @@ export async function GET(
             .join(" "),
           party: c.party?.name ?? "",
           partyColor: c.party?.color ?? "#999999", // fallback if no color in DB
-          credentials: c.isNew ? "New Candidate" : "Experienced", // placeholder, adjust logic
+          credentials: "Candidate", // Default since isNew field was removed
           credentialsUrl: c.credentialUrl ?? undefined,
           img: c.imageUrl ?? "/placeholder.png",
           position: p.name, // match BallotComponentProps

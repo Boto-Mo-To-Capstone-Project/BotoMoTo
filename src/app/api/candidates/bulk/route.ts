@@ -98,7 +98,6 @@ async function handleBulkCreate(electionId: number, candidatesData: any[], user:
       positionId: Number(c.positionId),
       // Optional fields: if invalid or null, omit so Zod optional passes
       ...(c.partyId != null && !Number.isNaN(Number(c.partyId)) ? { partyId: Number(c.partyId) } : {}),
-      ...(typeof c.isNew === "boolean" ? { isNew: c.isNew } : {}),
       ...(c.imageUrl ? { imageUrl: String(c.imageUrl) } : {}),
       ...(c.credentialUrl ? { credentialUrl: String(c.credentialUrl) } : {}),
       // bio is only in update schema; ignore on create if provided
@@ -183,7 +182,6 @@ async function handleBulkCreate(electionId: number, candidatesData: any[], user:
     partyId: c.partyId ?? null,
     imageUrl: (c as any).imageUrl ?? null,
     credentialUrl: (c as any).credentialUrl ?? null,
-    isNew: c.isNew ?? false,
   }));
 
   const created = await db.candidate.createMany({ data: toCreate });
@@ -194,7 +192,6 @@ async function handleBulkCreate(electionId: number, candidatesData: any[], user:
     select: {
       id: true,
       electionId: true,
-      isNew: true,
       imageUrl: true,
       credentialUrl: true,
       voter: { select: { id: true, firstName: true, lastName: true, email: true } },
