@@ -8,6 +8,7 @@ import SidebarWrapper from "@/components/sidebars/SidebarWrapper";
 import { useSidebarVisible } from "@/hooks/useSidebarVisible";
 import { useEffect, useState } from "react";
 import { SessionProvider } from "next-auth/react";
+import { Toaster } from "react-hot-toast";
 
 function useIsHydrated() {
   const [hydrated, setHydrated] = useState(false);
@@ -29,6 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body suppressHydrationWarning={true}>
+        <Toaster position="top-center" />
         <SessionProvider>
           <Provider store={store}>
             <NavbarWrapper />

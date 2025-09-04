@@ -5,6 +5,7 @@ import toast, { Toaster } from "react-hot-toast";
 
 import Table from "@/components/TableComponent";
 import SurveyPreview from "@/components/survey/SurveyPreview";
+import { useRouter } from "next/navigation";
 
 export default function SuperAdminSurveyPage() {
   const [surveys, setSurveys] = useState<any[]>([]);
@@ -14,6 +15,7 @@ export default function SuperAdminSurveyPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedSurvey, setSelectedSurvey] = useState<any | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const router = useRouter(); // ✅ init router
 
   useEffect(() => {
     const load = async () => {
@@ -72,7 +74,8 @@ export default function SuperAdminSurveyPage() {
   // Action handlers
   const handleAdd = () => {
     // TODO: Implement add functionality
-    toast.success("Add button clicked");
+    toast.success("Add button clicked"); // just remve this toast
+    router.push("/superadmin/dashboard/create-survey");
   };
 
   const handleImport = () => {
@@ -101,7 +104,7 @@ export default function SuperAdminSurveyPage() {
 
   return (
     <>
-      <Toaster position="top-center" />
+      {/*<Toaster position="top-center" />*/}
       <div
         id="main-window-template-component"
         className="app h-full flex flex-col min-h-[calc(100vh-4rem)] bg-gray-50"

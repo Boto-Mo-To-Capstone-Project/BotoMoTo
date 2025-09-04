@@ -506,7 +506,7 @@ function CreateElectionContent() {
 
   return (
     <div className="app h-full flex flex-col min-h-[calc(100vh-4rem)] bg-gray-50">
-      <Toaster position="top-center" />
+      {/*<Toaster position="top-center" />*/}
       <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
         {/* Tabs + Toolbar at the top */}
         <div className="main-toolbar sticky top-16 z-30 bg-white flex flex-col md:flex-row md:items-center md:gap-4 gap-2 mb-6 py-3 px-2 sm:px-5">

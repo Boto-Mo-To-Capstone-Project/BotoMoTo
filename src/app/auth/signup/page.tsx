@@ -148,7 +148,7 @@ export default function SignupPage() {
 
   return (
     <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40">
-      <Toaster position="top-center" />
+      {/*<Toaster position="top-center" />*/}
       <AuthContainer>
         <Logo />
         <AuthHeading

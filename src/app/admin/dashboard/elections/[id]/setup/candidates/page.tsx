@@ -497,7 +497,7 @@ export default function CandidatesDashboardPage() {
         </div>
       </div>
       {/* Toaster for notifications */}
-      <Toaster position="top-center" />
+      {/*<Toaster position="top-center" />*/}
       {/* Candidates Modal */}
       <CandidatesModal
         open={showCandidatesModal}

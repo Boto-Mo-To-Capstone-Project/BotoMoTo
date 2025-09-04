@@ -410,7 +410,7 @@ export default function PositionsDashboardPage() {
 
   return (
     <>
-      <Toaster position="top-center" />
+      {/*<Toaster position="top-center" />*/}
       <PositionsModal
         open={showModal}
         onClose={() => { 
