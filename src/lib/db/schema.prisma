@@ -264,7 +264,7 @@ model Voter {
   id              Int       @id @default(autoincrement())
   electionId      Int
   code            String    @unique // Globally unique voter code (also serves as voting code)
-  email           String?
+  email           String
   contactNum      String?
   firstName       String
   middleName      String?
