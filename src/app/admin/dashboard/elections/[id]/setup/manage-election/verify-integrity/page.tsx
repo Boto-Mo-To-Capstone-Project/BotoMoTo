@@ -109,25 +109,17 @@ export default function VerifyIntegrityPage() {
             </p>
           </div>
         </div>
-        {/* kpi section */}
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 w-full mt-10">
-          <KpiCard name="Integrity:" value={`${verification.integrityPercentage}%`} icon={ShieldCheck} />
-          <KpiCard name="Total Votes" value={`${verification.summary.totalVotes}`} icon={CheckSquare} />
-          <KpiCard name="Total Voters" value={`${verification.summary.totalVoters}`} icon={Users} />
-          <KpiCard name="Verified Votes" value={`${verification.summary.verifiedVotes}`} icon={BadgeCheck} />                   
-          <KpiCard name="Candidates" value={`${verification.summary.totalCandidates}`} icon={UserSquare} />
-          <KpiCard name="Invalid Votes" value={`${verification.summary.invalidVotes}`} icon={XCircle} />
-        </div>
 
-      {verification.errors && (
-        <div className="border rounded-xl shadow">
-          <div className="p-4">
-            <h2 className="text-lg font-semibold mb-2">Integrity Issues</h2>
+        {verification.errors && (
+        <div className="rounded-xl shadow border border-gray-200 ">
+          <h2 className="text-lg font-semibold mb-2 text-primary pt-4 pl-4">Integrity Issues!!</h2>
+          <div className="p-4 overflow-y-auto h-70">
+            
             <div className="space-y-4">
               {verification.errors.map((err, idx) => (
                 <div
                   key={idx}
-                  className="border p-3 rounded-md bg-red-50 border-red-200"
+                  className="border p-3 rounded-md bg-red-50 border-red-200 text-wrap overflow-hidden"
                 >
                   <p className="font-medium">
                     Vote ID: {err.voteId} | Chain Order: {err.chainOrder}
@@ -143,6 +135,18 @@ export default function VerifyIntegrityPage() {
           </div>
         </div>
       )}
+
+        {/* kpi section */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 w-full mt-10">
+          <KpiCard name="Integrity:" value={`${verification.integrityPercentage}%`} icon={ShieldCheck} />
+          <KpiCard name="Total Votes" value={`${verification.summary.totalVotes}`} icon={CheckSquare} />
+          <KpiCard name="Total Voters" value={`${verification.summary.totalVoters}`} icon={Users} />
+          <KpiCard name="Verified Votes" value={`${verification.summary.verifiedVotes}`} icon={BadgeCheck} />                   
+          <KpiCard name="Candidates" value={`${verification.summary.totalCandidates}`} icon={UserSquare} />
+          <KpiCard name="Invalid Votes" value={`${verification.summary.invalidVotes}`} icon={XCircle} />
+        </div>
+
+      
       <div className="flex w-full justify-end mt-10">
         <Button
           variant="long_secondary"
