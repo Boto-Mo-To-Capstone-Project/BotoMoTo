@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useCallback } from "react";
-import { FiDownload, FiX, FiAlertCircle, FiCheckCircle, FiEye } from "react-icons/fi";
+import { FiDownload, FiAlertCircle, FiCheckCircle, FiEye, FiAlertTriangle } from "react-icons/fi";
 import { MdDocumentScanner, MdRemove } from "react-icons/md";
 import { SubmitButton } from "./SubmitButton";
 
@@ -20,16 +20,21 @@ interface ParseIssue {
   field: string;
   message: string;
   severity: 'error' | 'warning';
+  voterName?: string; // Voter name for better context
 }
 
 interface VotersDragandDropdownProps {
   open: boolean;
   onClose: () => void;
-  label?: string;
+  label: string;
   description?: string;
+  accept?: string; // typically .csv
+  fileTypeText?: string;
+  id?: string;
+  maxSizeMB?: number;
   onUpload: (voters: ParsedVoter[]) => Promise<void>;
-  onShowTemplatePreview: () => void;
-  votingScopes: Array<{ id: number; name: string }>;
+  onShowTemplatePreview?: () => void;
+  votingScopes?: Array<{ id: number; name: string }>;
   loading?: boolean;
 }
 
@@ -37,9 +42,14 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
   open,
   onClose,
   label,
+  description,
+  accept = ".csv",
+  fileTypeText = "CSV files only (max 5MB)",
+  id = "voters-file-upload",
+  maxSizeMB = 5,
   onUpload,
   onShowTemplatePreview,
-  votingScopes,
+  votingScopes = [],
   loading = false,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
@@ -129,13 +139,17 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
   };
 
   const validateRowData = (rowData: any, rowNumber: number, votingScopes: any[], issues: ParseIssue[]) => {
+    // Create voter name for context (firstName + lastName)
+    const voterName = `${rowData.firstname || '?'} ${rowData.lastname || '?'}`.trim();
+    
     // Required field validations
     if (!rowData.firstname) {
       issues.push({
         rowNumber,
         field: 'firstname',
         message: 'First name is required',
-        severity: 'error'
+        severity: 'error',
+        voterName: voterName || undefined
       });
     }
 
@@ -144,7 +158,8 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
         rowNumber,
         field: 'lastname',
         message: 'Last name is required',
-        severity: 'error'
+        severity: 'error',
+        voterName: voterName || undefined
       });
     }
 
@@ -154,25 +169,28 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
         rowNumber,
         field: 'email',
         message: 'Email is required',
-        severity: 'error'
+        severity: 'error',
+        voterName: voterName || undefined
       });
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rowData.email)) {
       issues.push({
         rowNumber,
         field: 'email',
         message: 'Invalid email format',
-        severity: 'error'
+        severity: 'error',
+        voterName: voterName || undefined
       });
     }
 
-    // Voting scope validation (optional field)
+    // Voting scope validation (optional field) - use future tense
     if (rowData.votingscope && !votingScopes.find(scope => 
       scope.name.toLowerCase() === rowData.votingscope.toLowerCase())) {
       issues.push({
         rowNumber,
         field: 'votingscope',
-        message: `Voting scope "${rowData.votingscope}" not found`,
-        severity: 'warning'
+        message: `Voting scope "${rowData.votingscope}" will be set to "No Scope" - scope not found in election`,
+        severity: 'warning',
+        voterName
       });
     }
   };
@@ -212,10 +230,10 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
     if (files && files.length > 0) {
       const file = files[0];
 
-      // File size validation (5MB max)
-      const maxSizeBytes = 5 * 1024 * 1024;
+      // File size validation
+      const maxSizeBytes = maxSizeMB * 1024 * 1024;
       if (file.size > maxSizeBytes) {
-        alert(`File too large: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)}MB). Max: 5MB`);
+        alert(`File too large: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)}MB). Max: ${maxSizeMB}MB`);
         return;
       }
 
@@ -228,7 +246,7 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
       setSelectedFile(file);
       parseCSV(file);
     }
-  }, [parseCSV]);
+  }, [parseCSV, maxSizeMB]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -239,7 +257,7 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
   };
 
   const handleClick = () => {
-    const input = document.getElementById('voter-csv-upload') as HTMLInputElement | null;
+    const input = document.getElementById(id) as HTMLInputElement | null;
     if (input) input.click();
   };
 
@@ -287,89 +305,71 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex justify-center items-center bg-black/30 backdrop-blur-sm lg:ml-68"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <div className="fixed inset-0 z-[100] flex justify-center items-center bg-black/30 backdrop-blur-sm lg:ml-68" onClick={(e) => { if (e.target === e.currentTarget) { onClose(); } }}>
       <div className="relative max-w-md w-full p-6 flex flex-col justify-center">
         <div className="bg-white rounded-lg shadow-sm overflow-y-auto max-h-[80vh]">
-          {/* Modal header */}
+          {/* Header */}
           <div className="flex items-center justify-between p-4 border-b rounded-t border-gray-200">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">{label}</h3>
-            </div>
-            <button
-              type="button"
-              className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center"
-              onClick={onClose}
-            >
+            <h3 className="text-lg font-semibold text-gray-900">{label}</h3>
+            <button type="button" className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center" onClick={() => { onClose(); }}>
               <svg className="w-3 h-3" aria-hidden="true" fill="none" viewBox="0 0 14 14">
-                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
               </svg>
-              <span className="sr-only">Close modal</span>
+              <span className="sr-only">Close</span>
             </button>
           </div>
-          {/* Modal body */}
-          <div className="p-4">
-            {/* Instructions */}
-            <div className="mb-4 text-sm text-gray-700">
-              <p>
-                <b>Instructions:</b> Download the template, fill it out with your voters, and use the Import button below to upload your CSV file.
-              </p>
+          {/* Body */}
+          <div className="p-4 text-sm">
+            <div className="mb-4 text-gray-700">
+              {description ? <p>{description}</p> : (
+                <p><b>Instructions:</b> Download the template, fill it out with your voters, and use the Import button below to upload your CSV file.</p>
+              )}
             </div>
-            {/* Drag and Drop UI */}
+
+            {/* Drag + Drop */}
             <div
-              className={`w-full border-2 border-dashed rounded-md flex flex-col items-center justify-center py-8 text-sm text-[var(--color-gray)] transition cursor-pointer ${
-                isDragOver 
-                  ? 'border-[var(--color-primary)] bg-blue-50' 
-                  : 'border-gray-300 hover:bg-gray-50'
-              }`}
+              className={`w-full border-2 border-dashed rounded-md flex flex-col items-center justify-center py-8 px-3 text-sm text-[var(--color-gray)] transition cursor-pointer ${isDragOver ? 'border-[var(--color-primary)] bg-blue-50' : 'border-gray-300 hover:bg-gray-50'}`}
               onClick={handleClick}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               tabIndex={0}
               role="button"
-              aria-label="Upload CSV file"
+              aria-label={label}
             >
               <div className="flex flex-col items-center justify-center w-full">
                 <MdDocumentScanner size={40} className="mb-2 text-gray-400" />
                 <div>Click to upload or drag and drop</div>
-                <div className="text-xs text-gray-400 mt-1">CSV files only (max 5MB)</div>
+                <div className="text-xs text-gray-400 mt-1">{fileTypeText}</div>
               </div>
-              <input
-                type="file"
-                accept=".csv"
-                onChange={handleInputChange}
-                className="hidden"
-                id="voter-csv-upload"
-              />
+              <input id={id} type="file" accept={accept} onChange={handleInputChange} className="hidden" />
             </div>
-            {/* Sample File UI */}
+
+            {/* Template (when no file) with preview & download */}
             {!selectedFile ? (
-              <div className="border-2 border-[var(--color-primary)] rounded-lg p-3 flex items-center gap-3 mb-6 mt-6">
+              <div className="border-2 border-[var(--color-primary)] rounded-lg p-3 flex items-center gap-3 mt-6 mb-6">
                 <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)]">
                   <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-[var(--color-primary)] leading-tight">
-                    Voter List Template (CSV)
-                  </div>
+                  <div className="font-semibold text-[var(--color-primary)] leading-tight">Voter List Template (CSV)</div>
                   <div className="text-xs text-gray-500">CSV template with required columns</div>
                 </div>
                 <div className="flex gap-1">
-                  <button
-                    onClick={onShowTemplatePreview}
-                    className="text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] p-2 rounded transition cursor-pointer"
-                    title="Preview template"
-                  >
-                    <FiEye size={20} />
-                  </button>
+                  {onShowTemplatePreview && (
+                    <button
+                      onClick={onShowTemplatePreview}
+                      className="text-[var(--color-primary)] hover:text-[var(--color-primary-dark)] p-2 rounded transition"
+                      title="Preview template"
+                      type="button"
+                    >
+                      <FiEye size={20} />
+                    </button>
+                  )}
                   <a
                     href="/assets/sample/voters.csv"
                     download
@@ -399,8 +399,7 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
                 </button>
               </div>
             )}
-
-            {/* Parse issues */}
+            {/* Parse issue summary blocks */}
             {parseIssues.length > 0 && (
               <div className="space-y-2 mt-4">
                 {errorCount > 0 && (
@@ -413,24 +412,21 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
                 )}
                 {warningCount > 0 && (
                   <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <FiAlertCircle className="text-yellow-500" size={18} />
+                    <FiAlertTriangle className="text-yellow-500" size={18} />
                     <div className="text-sm text-yellow-800">
                       <span className="font-medium">{warningCount} warning{warningCount > 1 ? 's' : ''}</span> found.
                     </div>
                   </div>
                 )}
-                
                 <div className="max-h-32 overflow-y-auto space-y-1">
                   {parseIssues.map((issue, index) => (
-                    <div
-                      key={index}
-                      className={`text-xs p-2 rounded ${
-                        issue.severity === 'error'
-                          ? 'bg-red-50 text-red-700 border border-red-200'
-                          : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
-                      }`}
-                    >
-                      <span className="font-medium">Row {issue.rowNumber}:</span> {issue.message}
+                    <div key={index} className={`text-xs p-2 rounded ${issue.severity === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-yellow-50 text-yellow-700 border border-yellow-200'}`}> 
+                      <span className="font-medium">
+                        Row {issue.rowNumber}
+                        {issue.voterName && (
+                          <span className="text-gray-600 font-normal"> ({issue.voterName})</span>
+                        )}:
+                      </span> {issue.message}
                     </div>
                   ))}
                 </div>
