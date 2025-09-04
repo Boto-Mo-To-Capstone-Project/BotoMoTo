@@ -44,6 +44,8 @@ export default function VerifyIntegrityPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const router = useRouter();
+
   useEffect(() => {
     if (!id) return;
 
@@ -84,9 +86,7 @@ export default function VerifyIntegrityPage() {
   }
 
   const { election, verification } = data;
-  const router = useRouter();
   
-
   return (
     <div className="p-6 space-y-6">
         {/* page head and details*/}
