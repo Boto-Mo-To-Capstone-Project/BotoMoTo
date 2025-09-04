@@ -362,24 +362,76 @@ async function createVoter(request: NextRequest) {
         }))
       );
 
+      // Check for existing voters (both active and soft-deleted) by email
+      const emails = votersWithCodes.map(v => v.email).filter(Boolean);
+      const existingVoters = emails.length > 0 ? await db.voter.findMany({
+        where: {
+          electionId,
+          email: { in: emails }
+        },
+        select: { email: true, isDeleted: true, id: true }
+      }) : [];
+
+      // Create lookup for existing voters
+      const existingVotersByEmail = new Map(existingVoters.map(v => [v.email!, v]));
+
       // Create all voters in a transaction
       const createdVoters = await db.$transaction(async (tx) => {
         const voters: any[] = [];
+        let createdCount = 0;
+        let restoredCount = 0;
+
         for (const voterData of votersWithCodes) {
-          const voter = await tx.voter.create({
-            data: voterData,
-            include: {
-              votingScope: {
-                select: {
-                  id: true,
-                  name: true
+          const existingVoter = voterData.email ? existingVotersByEmail.get(voterData.email) : null;
+
+          if (existingVoter) {
+            if (existingVoter.isDeleted) {
+              // Restore soft-deleted voter
+              const restoredVoter = await tx.voter.update({
+                where: { id: existingVoter.id },
+                data: {
+                  isDeleted: false,
+                  deletedAt: null,
+                  firstName: voterData.firstName,
+                  middleName: voterData.middleName,
+                  lastName: voterData.lastName,
+                  contactNum: voterData.contactNum,
+                  votingScopeId: voterData.votingScopeId,
+                  isActive: voterData.isActive,
+                  updatedAt: new Date()
+                },
+                include: {
+                  votingScope: {
+                    select: {
+                      id: true,
+                      name: true
+                    }
+                  }
+                }
+              });
+              voters.push({ ...restoredVoter, voted: false });
+              restoredCount++;
+            } else {
+              throw new Error(`A voter with email "${voterData.email}" already exists in this election`);
+            }
+          } else {
+            // Create new voter
+            const voter = await tx.voter.create({
+              data: voterData,
+              include: {
+                votingScope: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
                 }
               }
-            }
-          });
-          voters.push({ ...voter, voted: false });
+            });
+            voters.push({ ...voter, voted: false });
+            createdCount++;
+          }
         }
-        return voters;
+        return { voters, createdCount, restoredCount, totalCount: createdCount + restoredCount };
       });
 
       const audit = await createAuditLog({
@@ -388,14 +440,19 @@ async function createVoter(request: NextRequest) {
         request,
         resource: "VOTER",
         resourceId: electionId,
-        message: `Bulk created ${createdVoters.length} voters for election: ${election.name}`,
+        message: `Batch imported ${createdVoters.totalCount} voters for election: ${election.name} (${createdVoters.createdCount} new, ${createdVoters.restoredCount} restored)`,
       });
 
       return apiResponse({
         success: true,
-        message: `${createdVoters.length} voters created successfully`,
+        message: `Successfully imported ${createdVoters.totalCount} voters (${createdVoters.createdCount} new, ${createdVoters.restoredCount} restored)`,
         data: {
-          voters: createdVoters,
+          voters: createdVoters.voters,
+          summary: {
+            total: createdVoters.totalCount,
+            created: createdVoters.createdCount,
+            restored: createdVoters.restoredCount
+          },
           audit
         },
         error: null,
@@ -466,24 +523,69 @@ async function createVoter(request: NextRequest) {
         }
       }
 
-      // Check for duplicate email in the same election (if email is provided)
+      // Check for duplicate email in the same election (including soft-deleted)
       if (email) {
         const existingVoterByEmail = await db.voter.findFirst({
           where: {
             electionId,
             email,
-            isDeleted: false
           }
         });
 
         if (existingVoterByEmail) {
-          return apiResponse({
-            success: false,
-            message: "A voter with this email already exists in this election",
-            data: null,
-            error: "Already exists",
-            status: 400
-          });
+          if (existingVoterByEmail.isDeleted) {
+            // Restore soft-deleted voter
+            const restoredVoter = await db.voter.update({
+              where: { id: existingVoterByEmail.id },
+              data: {
+                isDeleted: false,
+                deletedAt: null,
+                firstName,
+                middleName,
+                lastName,
+                contactNum,
+                votingScopeId,
+                isActive,
+                updatedAt: new Date()
+              },
+              include: {
+                votingScope: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
+                }
+              }
+            });
+
+            const audit = await createAuditLog({
+              user,
+              action: "RESTORE",
+              request,
+              resource: "VOTER",
+              resourceId: restoredVoter.id,
+              message: `Restored voter: ${firstName} ${lastName} for election: ${election.name}`,
+            });
+
+            return apiResponse({
+              success: true,
+              message: "Voter restored successfully",
+              data: {
+                voter: { ...restoredVoter, voted: false },
+                audit
+              },
+              error: null,
+              status: 200
+            });
+          } else {
+            return apiResponse({
+              success: false,
+              message: "A voter with this email already exists in this election",
+              data: null,
+              error: "Already exists",
+              status: 400
+            });
+          }
         }
       }
 
