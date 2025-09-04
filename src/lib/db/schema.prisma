@@ -284,6 +284,9 @@ model Voter {
   candidate      Candidate?
   voteResponses  VoteResponse[]
   surveyResponses SurveyResponse[]
+
+  // Add composite unique constraint instead
+  @@unique([electionId, email]) // ← Same email can't be used twice in the SAME election
 }
 
 model Position {
