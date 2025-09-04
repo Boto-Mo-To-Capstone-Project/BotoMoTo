@@ -322,7 +322,7 @@ async function handleBulkDelete(electionIds: number[], user: any, request: NextR
   }
 
   // Check if elections exist and user has access
-  let whereClause: any = {
+  const whereClause: any = {
     id: { in: electionIds },
     isDeleted: false
   };

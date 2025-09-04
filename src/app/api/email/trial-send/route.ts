@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Enrich template data with real data from database
-    let enrichedTemplateData = { ...templateData };
+    const enrichedTemplateData = { ...templateData };
     
     // Always use organization name from user's database record
     enrichedTemplateData.organizationName = user.organization.name;
