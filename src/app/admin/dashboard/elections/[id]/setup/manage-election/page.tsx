@@ -53,6 +53,13 @@ const setupCards = [
       bg: "bg-green-100",
       text: "text-green-900",
     },
+    {
+      title: "Election Integrity",
+      desc: "election integrity mo to",
+      img: LiveDashboard,
+      bg: "bg-red-100",
+      text: "text-red-900",
+    },
 
 ];
 
@@ -223,6 +230,10 @@ export default function ManageElectionPage() {
                     if (card.title === 'Live Dashboard') {
                       // Navigate to Live Dashboard page
                       router.push(`/admin/dashboard/elections/${electionId}/setup/manage-election/live-dashboard`);
+                    }
+                    if (card.title === 'Election Integrity') {
+                      // Navigate to Live Dashboard page
+                      router.push(`/admin/dashboard/elections/${electionId}/setup/manage-election/verify-integrity`);
                     }
                     // Add navigation logic for other cards here
                   }}

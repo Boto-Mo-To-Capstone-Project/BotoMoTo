@@ -70,6 +70,24 @@ export default function SidebarWrapper({
     if (pathname === "/admin/dashboard/elections/manage")
       return `Election ${sidebarElectionId} - Manage`;
     // matches: /admin/dashboard/elections/[id]/setup/[section]
+
+    // === ADMIN: ELECTION VERIFY INTEGRITY ===
+    // matches: /admin/dashboard/elections/[id]/setup/manage-election/verify-integrity
+    if (
+      parts[0] === "" &&
+      parts[1] === "admin" &&
+      parts[2] === "dashboard" &&
+      parts[3] === "elections" &&
+      parts[5] === "setup" &&
+      parts[6] === "manage-election" &&
+      parts[7] === "verify-integrity"
+    ) {
+      const electionId = parts[4];
+      return `Election ${electionId} - Verify Integrity`;
+    }
+
+    // === ADMIN: ELECTION SETUP ===
+    // matches: /admin/dashboard/elections/[id]/setup/[section]
     if (
       parts[0] === "" &&
       parts[1] === "admin" &&
