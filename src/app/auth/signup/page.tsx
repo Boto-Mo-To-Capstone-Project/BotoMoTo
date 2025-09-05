@@ -8,6 +8,7 @@ import CustomToast from "@/components/CustomToast";
 import Logo from "@/components/Logo";
 import { AuthHeading } from "@/components/AuthHeading";
 import { InputField } from "@/components/InputField";
+import { PasswordField } from "@/components/PasswordField";
 import { SubmitButton } from "@/components/SubmitButton";
 import { OAuthButtons } from "@/components/OAuthButtons";
 import { AuthFooter } from "@/components/AuthFooter";
@@ -179,22 +180,18 @@ export default function SignupPage() {
             error={fieldErrors.email?.[0]}
           />
           
-          <InputField
+          <PasswordField
             label="Password"
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
             autoComplete="new-password"
             error={fieldErrors.password?.[0]}
           />
           
-          <InputField
+          <PasswordField
             label="Confirm Password"
-            type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="••••••••"
             autoComplete="new-password"
             error={fieldErrors.confirmPassword?.[0]}
           />
