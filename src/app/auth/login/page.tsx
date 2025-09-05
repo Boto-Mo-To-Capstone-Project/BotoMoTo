@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
 import { AuthHeading } from "@/components/AuthHeading";
 import { InputField } from "@/components/InputField";
+import { PasswordField } from "@/components/PasswordField";
 import { SubmitButton } from "@/components/SubmitButton";
 import { OAuthButtons } from "@/components/OAuthButtons";
 import { AuthFooter } from "@/components/AuthFooter";
@@ -102,12 +103,10 @@ export default function LoginPage() {
             placeholder="Enter your email"
             autoComplete="email"
           />
-          <InputField
+          <PasswordField
             label="Password"
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
             autoComplete="current-password"
           />
           <div className="w-full max-w-[380px]">
