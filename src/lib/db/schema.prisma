@@ -70,13 +70,6 @@ enum ElectionStatus {
   CLOSED
 }
 
-// MFA method enum
-enum MfaMethod {
-  EMAIL
-  TOTP
-  SMS
-}
-
 // Ticket status enum
 enum TicketStatus {
   PENDING
@@ -238,8 +231,7 @@ model MfaSettings {
   id          Int       @id @default(autoincrement())
   electionId  Int       @unique
   mfaEnabled  Boolean   @default(false)
-  mfaMethod   MfaMethod @default(EMAIL)
-  totpSecret  String?   // For TOTP setup
+  mfaMethods  String[]  @default([]) // Array of MFA methods: ["email-confirmation", "otp-email", "passphrase-email"]
 
   election Election @relation(fields: [electionId], references: [id])
 }

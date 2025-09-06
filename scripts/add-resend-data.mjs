@@ -176,7 +176,7 @@ async function addResendData() {
       data: { 
         electionId: election.id, 
         mfaEnabled: true, 
-        mfaMethod: "EMAIL" 
+        mfaMethods: ["email-confirmation", "otp-email", "passphrase-email"] // Test all methods 
       },
     });
 

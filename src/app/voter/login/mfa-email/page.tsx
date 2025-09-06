@@ -6,8 +6,6 @@ import Image from "next/image";
 import EnterEmail from "@/app/assets/EnterEmail.png";
 import { InputField } from "@/components/InputField";
 import { useState } from "react";
-import { signIn } from "next-auth/react";
-import GoogleIcon from "@/app/assets/google-icon.png";
 
 const Email2fa = () => {
   const [email, setEmail] = useState("");
@@ -17,8 +15,7 @@ const Email2fa = () => {
       <div className="text-center space-y-2">
         <p className="voterlogin-heading">Enter your email</p>
         <p className="voterlogin-subheading">
-          Enter your email address or log in with Google to verify that the
-          email we sent belongs to you.
+          Enter your email address that is registered on BotoMoTo.
         </p>
       </div>
 
@@ -36,15 +33,6 @@ const Email2fa = () => {
       <div className="flex flex-col gap-4 w-4/5 xs:w-auto">
         <Button variant="long_primary">Submit</Button>
         <Button variant="long_secondary">Cancel</Button>
-      </div>
-      <div className="flex flex-col gap-4 w-4/5 xs:w-auto mt-2">
-        <Button
-          variant="oauth"
-          icon={GoogleIcon}
-          onClick={() => signIn("google")}
-        >
-          Google
-        </Button>
       </div>
     </main>
   );

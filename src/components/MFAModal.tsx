@@ -8,7 +8,7 @@ type MFAModalProps = {
   open: boolean;
   onClose: () => void;
   onSave: (data: {
-    mfa: string;
+    mfaMethods: string[];
     voterName: string;
     scope: string;
     email: string;
@@ -17,7 +17,7 @@ type MFAModalProps = {
     numberOfWinners: number;
   }) => void;
   initialData?: {
-    mfa: string;
+    mfaMethods?: string[];
     voterName?: string;
     scope?: string;
     email?: string;
@@ -34,7 +34,7 @@ export function MFAModal({
   onSave,
   initialData = {
     voterName: "",
-    mfa: "Department 1",
+    mfaMethods: [],
     email: "",
     contactNumber: "",
     voterLimit: 1,
@@ -43,7 +43,33 @@ export function MFAModal({
   disableSave,
 }: MFAModalProps) {
 
-  const [mfa, setMFA] = useState(initialData.mfa || "unique-code-email");
+  const [selectedMethods, setSelectedMethods] = useState<string[]>(initialData.mfaMethods || []);
+
+  const handleMethodToggle = (method: string) => {
+    setSelectedMethods(prev => 
+      prev.includes(method) 
+        ? prev.filter(m => m !== method)
+        : [...prev, method]
+    );
+  };
+
+  const mfaOptions = [
+    {
+      id: "email-confirmation",
+      title: "Email Confirmation",
+      description: "Voter must enter their registered email address"
+    },
+    {
+      id: "otp-email", 
+      title: "One-Time Password (OTP)",
+      description: "4-digit code sent to voter's email"
+    },
+    {
+      id: "passphrase-email",
+      title: "Secure Passphrase", 
+      description: "Random phrase sent to voter's email"
+    }
+  ];
 
   if (!open) return null;
   return (
@@ -74,13 +100,13 @@ export function MFAModal({
           {/* Modal body */}
           <div className="p-4">
             <p className="text-sm text-gray-500 mb-4">
-              This can help the election more securely verify voter identities.
+              This can help the election more securely verify voter identities. You can select multiple authentication methods for enhanced security.
             </p>
             <form
               onSubmit={e => {
                 e.preventDefault();
                 onSave({
-                    mfa,
+                    mfaMethods: selectedMethods,
                     voterName: "",
                     scope: "",
                     email: "",
@@ -90,26 +116,57 @@ export function MFAModal({
                 });
                 onClose();
               }}
-              className="grid gap-4 mb-4 grid-cols-2"
+              className="grid gap-4 mb-4 grid-cols-1"
             >
               
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Choose Multi-Factor Authentication Method*
+              <div className="col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Choose Authentication Methods (You can select multiple)
                 </label>
-                <select
-                  value={mfa}
-                  onChange={e => setMFA(e.target.value)}
-                  className="w-full border border-[var(--color-secondary)] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-[var(--color-secondary)] bg-white text-gray-900"
-                  required
-                >
-                  <option value="unique-code-email">Unique Code via Email</option>
-                  <option value="otp-email">One-Time Password (OTP) via Email</option>
-                  <option value="otp-sms">One-Time Password (OTP) via SMS</option>
-                  <option value="passphrase-email">Passphrase via Email</option>
-                </select>
+                <div className="space-y-3">
+                  {mfaOptions.map((option) => (
+                    <label 
+                      key={option.id}
+                      className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedMethods.includes(option.id)}
+                        onChange={() => handleMethodToggle(option.id)}
+                        className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary accent-primary"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">{option.title}</div>
+                        <div className="text-sm text-gray-500">{option.description}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                
+                {selectedMethods.length > 0 && (
+                  <div className="mt-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                    <p className="text-sm text-orange-800">
+                      <strong>Selected methods:</strong> Voters will need to complete {selectedMethods.length} authentication step{selectedMethods.length > 1 ? 's' : ''}
+                    </p>
+                    <ul className="mt-2 text-sm text-orange-700">
+                      {selectedMethods.map((methodId) => {
+                        const method = mfaOptions.find(opt => opt.id === methodId);
+                        return method ? <li key={methodId}>• {method.title}</li> : null;
+                      })}
+                    </ul>
+                  </div>
+                )}
+
+                {selectedMethods.length === 0 && (
+                  <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <p className="text-sm text-yellow-800">
+                      No authentication methods selected. Voters will only need their voter code to login.
+                    </p>
+                  </div>
+                )}
               </div>
-              <div className="col-span-2 flex justify-end gap-2 mt-2">
+              
+              <div className="col-span-1 flex justify-end gap-2 mt-2">
                 <SubmitButton
                   type="button"
                   variant="action"
@@ -119,7 +176,7 @@ export function MFAModal({
                 <SubmitButton
                   type="submit"
                   variant="small"
-                  label="Send"
+                  label="Save"
                   className="px-5 py-2.5 text-sm font-medium rounded-lg"
                 />
               </div>
@@ -130,3 +187,8 @@ export function MFAModal({
     </div>
   );
 }
+
+// to do: 
+// put a button to turn on mfa in election setup page
+// when button is clicked, the options will appear in this component
+// after selecting an option, save it to the mfa table in the database

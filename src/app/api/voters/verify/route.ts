@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
             mfaSettings: {
               select: {
                 mfaEnabled: true,
-                mfaMethod: true
+                mfaMethods: true
               }
             }
           }
