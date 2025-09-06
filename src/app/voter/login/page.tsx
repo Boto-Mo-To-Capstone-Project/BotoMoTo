@@ -38,14 +38,46 @@ const VoterLoginPage = () => {
 
       if (response.ok && data.success) {
         toast.success("Voter code verified successfully!"); // 👈 show in toast
+        
         // Store voter, election, and ballot information in localStorage
         localStorage.setItem("voterData", JSON.stringify({
           voter: data.data.voter,
           election: data.data.election,
           ballotData: data.data.ballotData
         }));
-        // Navigate to election status page
-        router.push("/voter/election-status");
+
+        // Check if MFA is enabled and has methods
+        const mfaSettings = data.data.election.mfaSettings;
+        if (mfaSettings?.mfaEnabled && mfaSettings.mfaMethods?.length > 0) {
+          // Store MFA state in localStorage for the MFA flow
+          localStorage.setItem("mfaFlow", JSON.stringify({
+            requiredMethods: mfaSettings.mfaMethods,
+            completedMethods: [],
+            currentStep: 0,
+            voterCode: voterCode,
+            electionId: data.data.election.id
+          }));
+
+          // Redirect to the first MFA method
+          const firstMethod = mfaSettings.mfaMethods[0];
+          switch (firstMethod) {
+            case 'email-confirmation':
+              router.push("/voter/login/mfa-email");
+              break;
+            case 'otp-email':
+              router.push("/voter/login/mfa-otp");
+              break;
+            case 'passphrase-email':
+              router.push("/voter/login/mfa-passphrase");
+              break;
+            default:
+              console.error("Unknown MFA method:", firstMethod);
+              router.push("/voter/election-status");
+          }
+        } else {
+          // No MFA required, go directly to election status
+          router.push("/voter/election-status");
+        }
       } else {
         const errorMessage = data.message || "Failed to verify voter code";
         toast.error(errorMessage); // 👈 show in toast
