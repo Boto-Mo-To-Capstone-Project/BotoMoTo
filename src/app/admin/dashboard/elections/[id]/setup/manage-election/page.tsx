@@ -167,7 +167,7 @@ export default function ManageElectionPage() {
               <div>
                 <h2 className="text-white text-xl font-semibold mb-2">Hi, {session?.user?.name || 'User'}!</h2>
                 <p className="text-white text-base">
-                  Follow the steps below to complete election setup for "{electionData?.name || 'your election'}".
+                  Follow the steps below to complete election setup for {electionData?.name || 'your election'}.
                 </p>
               </div>
             </div>
@@ -257,7 +257,7 @@ export default function ManageElectionPage() {
       <MFAModal
         open={showMFAModal}
         onClose={() => setShowMFAModal(false)}
-        onSave={() => setShowMFAModal(false)}
+        electionId={electionId}
       />
       {/* Open Election Modal */}
       <OpenElectionModal

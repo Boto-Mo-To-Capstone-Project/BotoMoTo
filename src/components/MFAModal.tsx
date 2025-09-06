@@ -1,29 +1,19 @@
-import { useState } from "react";
+"use client";
 
-import { InputField } from "@/components/InputField";
+import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
+
 import { SubmitButton } from "@/components/SubmitButton";
-
 
 type MFAModalProps = {
   open: boolean;
   onClose: () => void;
-  onSave: (data: {
+  electionId: number;
+  onSave?: (data: {
     mfaMethods: string[];
-    voterName: string;
-    scope: string;
-    email: string;
-    contactNumber: string;
-    voterLimit: number;
-    numberOfWinners: number;
   }) => void;
   initialData?: {
     mfaMethods?: string[];
-    voterName?: string;
-    scope?: string;
-    email?: string;
-    contactNumber?: string;
-    voterLimit?: number;
-    numberOfWinners?: number;
   };
   disableSave?: boolean;
 };
@@ -31,19 +21,73 @@ type MFAModalProps = {
 export function MFAModal({
   open,
   onClose,
+  electionId,
   onSave,
   initialData = {
-    voterName: "",
     mfaMethods: [],
-    email: "",
-    contactNumber: "",
-    voterLimit: 1,
-    numberOfWinners: 1,
   },
   disableSave,
 }: MFAModalProps) {
 
   const [selectedMethods, setSelectedMethods] = useState<string[]>(initialData.mfaMethods || []);
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(false);
+
+  // Fetch current MFA settings when modal opens
+  useEffect(() => {
+    if (open && electionId) {
+      fetchMfaSettings();
+    }
+  }, [open, electionId]);
+
+  const fetchMfaSettings = async () => {
+    setFetching(true);
+    try {
+      const response = await fetch(`/api/elections/${electionId}/mfa`);
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setSelectedMethods(data.data.mfaMethods || []);
+      } else {
+        toast.error(data.message || "Failed to fetch MFA settings");
+      }
+    } catch (error) {
+      toast.error("Failed to fetch MFA settings");
+      console.error("Error fetching MFA settings:", error);
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  const saveMfaSettings = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/elections/${electionId}/mfa`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mfaMethods: selectedMethods,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        toast.success(data.message || "MFA settings saved successfully");
+        if (onSave) {
+          onSave({ mfaMethods: selectedMethods });
+        }
+        onClose();
+      } else {
+        toast.error(data.message || "Failed to save MFA settings");
+      }
+    } catch (error) {
+      toast.error("Failed to save MFA settings");
+      console.error("Error saving MFA settings:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleMethodToggle = (method: string) => {
     setSelectedMethods(prev => 
@@ -102,22 +146,20 @@ export function MFAModal({
             <p className="text-sm text-gray-500 mb-4">
               This can help the election more securely verify voter identities. You can select multiple authentication methods for enhanced security.
             </p>
-            <form
-              onSubmit={e => {
-                e.preventDefault();
-                onSave({
-                    mfaMethods: selectedMethods,
-                    voterName: "",
-                    scope: "",
-                    email: "",
-                    contactNumber: "",
-                    voterLimit: 0,
-                    numberOfWinners: 0
-                });
-                onClose();
-              }}
-              className="grid gap-4 mb-4 grid-cols-1"
-            >
+            
+            {fetching ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                <span className="ml-2 text-gray-600">Loading current settings...</span>
+              </div>
+            ) : (
+              <form
+                onSubmit={e => {
+                  e.preventDefault();
+                  saveMfaSettings();
+                }}
+                className="grid gap-4 mb-4 grid-cols-1"
+              >
               
               <div className="col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -176,19 +218,16 @@ export function MFAModal({
                 <SubmitButton
                   type="submit"
                   variant="small"
-                  label="Save"
+                  label={loading ? "Saving" : "Save"}
+                  isLoading={loading || fetching}
                   className="px-5 py-2.5 text-sm font-medium rounded-lg"
                 />
               </div>
             </form>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
 }
-
-// to do: 
-// put a button to turn on mfa in election setup page
-// when button is clicked, the options will appear in this component
-// after selecting an option, save it to the mfa table in the database

@@ -58,7 +58,7 @@ export async function POST(
   try {
     const { id } = await params;
     const electionId = parseInt(id);
-    
+
     const body = await request.json();
     const { mfaMethods } = body;
 
@@ -128,7 +128,7 @@ export async function POST(
 
     return apiResponse({
       success: true,
-      message: `MFA settings updated successfully for "${election.name}"`,
+      message: `MFA settings updated successfully for ${election.name}`,
       data: {
         mfaEnabled: mfaSettings.mfaEnabled,
         mfaMethods: mfaSettings.mfaMethods
