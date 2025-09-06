@@ -6,7 +6,7 @@ import EnterPassphrase from "@/app/assets/EnterPassphrase.png";
 import { InputField } from "@/components/InputField";
 import { useState } from "react";
 
-const Passphrase2fa = () => {
+const Passphrasemfa = () => {
   const [passphrase, setPassphrase] = useState("");
 
   return (
@@ -39,4 +39,4 @@ const Passphrase2fa = () => {
   );
 };
 
-export default Passphrase2fa;
+export default Passphrasemfa;

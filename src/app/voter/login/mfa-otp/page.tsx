@@ -1,10 +1,13 @@
+"use client";
+
 import Button from "@/components/Button";
 import Image from "next/image";
 
 import EnterOTP from "@/app/assets/EnterOTP.png";
 import OtpInput from "@/components/OtpInput";
+import { use } from "react";
 
-const OTP2fa = () => {
+const OTPmfa = () => {
   return (
     <main className=" flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
       <div className="text-center space-y-2">
@@ -32,4 +35,4 @@ const OTP2fa = () => {
   );
 };
 
-export default OTP2fa;
+export default OTPmfa;

@@ -7,7 +7,7 @@ import EnterEmail from "@/app/assets/EnterEmail.png";
 import { InputField } from "@/components/InputField";
 import { useState } from "react";
 
-const Email2fa = () => {
+const Emailmfa = () => {
   const [email, setEmail] = useState("");
 
   return (
@@ -38,4 +38,4 @@ const Email2fa = () => {
   );
 };
 
-export default Email2fa;
+export default Emailmfa;
