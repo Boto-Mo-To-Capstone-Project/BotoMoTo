@@ -250,7 +250,7 @@ async function seedDatabase() {
 
       // MFA settings
       await db.mfaSettings.create({
-        data: { electionId: election.id, mfaEnabled: idx === 0, mfaMethod: "EMAIL" },
+        data: { electionId: election.id, mfaEnabled: idx === 0, mfaMethods: idx === 0 ? ["email-confirmation", "otp-email"] : [] },
       });
 
       createdElections.push(election);

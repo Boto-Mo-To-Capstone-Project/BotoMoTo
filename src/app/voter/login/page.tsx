@@ -38,14 +38,72 @@ const VoterLoginPage = () => {
 
       if (response.ok && data.success) {
         toast.success("Voter code verified successfully!"); // 👈 show in toast
-        // Store voter, election, and ballot information in localStorage
+        
+        // Store voter, election, and ballot information in localStorage (without sensitive email)
         localStorage.setItem("voterData", JSON.stringify({
-          voter: data.data.voter,
+          voter: {
+            id: data.data.voter.id,
+            code: data.data.voter.code,
+            firstName: data.data.voter.firstName,
+            middleName: data.data.voter.middleName,
+            lastName: data.data.voter.lastName,
+            isVerified: data.data.voter.isVerified,
+            voted: data.data.voter.voted,
+            votingScope: data.data.voter.votingScope
+            // Removed email for security
+          },
           election: data.data.election,
           ballotData: data.data.ballotData
         }));
-        // Navigate to election status page
-        router.push("/voter/election-status");
+
+        // Check if MFA is enabled and has methods
+        const mfaSettings = data.data.election.mfaSettings;
+        if (mfaSettings?.mfaEnabled && mfaSettings.mfaMethods?.length > 0) {
+          // Initialize secure MFA session on the server
+          const mfaResponse = await fetch('/api/mfa/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              electionId: data.data.election.id,
+              voterEmail: data.data.voter.email,
+              voterCode: voterCode,
+            })
+          });
+
+          const mfaData = await mfaResponse.json();
+
+          if (!mfaResponse.ok || mfaData.error) {
+            toast.error(mfaData.error || "Failed to initialize MFA session");
+            return;
+          }
+
+          // Store ONLY the session token and non-sensitive info for MFA flow
+          localStorage.setItem("mfaFlow", JSON.stringify({
+            sessionToken: mfaData.sessionToken,
+            totalSteps: mfaData.totalSteps,
+            // No sensitive data like email/code stored here anymore
+          }));
+
+          // Redirect to the first MFA method
+          const firstMethod = mfaData.requiredMethods[0];
+          switch (firstMethod) {
+            case 'email-confirmation':
+              router.push("/voter/login/mfa-email");
+              break;
+            case 'otp-email':
+              router.push("/voter/login/mfa-otp");
+              break;
+            case 'passphrase-email':
+              router.push("/voter/login/mfa-passphrase");
+              break;
+            default:
+              console.error("Unknown MFA method:", firstMethod);
+              router.push("/voter/election-status");
+          }
+        } else {
+          // No MFA required, go directly to election status
+          router.push("/voter/election-status");
+        }
       } else {
         const errorMessage = data.message || "Failed to verify voter code";
         toast.error(errorMessage); // 👈 show in toast
