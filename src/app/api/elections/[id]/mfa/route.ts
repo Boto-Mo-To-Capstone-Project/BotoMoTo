@@ -96,6 +96,11 @@ export async function POST(
       });
     }
 
+    // Sort methods to maintain consistent order: email-confirmation, otp-email, passphrase-email
+    const sortedMfaMethods = mfaMethods.sort((a, b) => {
+      return validMethods.indexOf(a) - validMethods.indexOf(b);
+    });
+
     // Check if election exists
     const election = await db.election.findUnique({
       where: { id: electionId },
@@ -116,13 +121,13 @@ export async function POST(
     const mfaSettings = await db.mfaSettings.upsert({
       where: { electionId },
       update: {
-        mfaEnabled: mfaMethods.length > 0,
-        mfaMethods: mfaMethods
+        mfaEnabled: sortedMfaMethods.length > 0,
+        mfaMethods: sortedMfaMethods
       },
       create: {
         electionId,
-        mfaEnabled: mfaMethods.length > 0,
-        mfaMethods: mfaMethods
+        mfaEnabled: sortedMfaMethods.length > 0,
+        mfaMethods: sortedMfaMethods
       }
     });
 
