@@ -208,6 +208,7 @@ model Election {
   organization Organization @relation(fields: [orgId], references: [id])
   schedule     ElectionSched?
   mfaSettings  MfaSettings?
+  mfaSessions  MfaSession[]
   votingScopes VotingScope[]
   voters       Voter[]
   positions    Position[]
@@ -234,6 +235,37 @@ model MfaSettings {
   mfaMethods  String[]  @default([]) // Array of MFA methods: ["email-confirmation", "otp-email", "passphrase-email"]
 
   election Election @relation(fields: [electionId], references: [id])
+}
+
+// Server-side MFA session tracking - prevents localStorage manipulation
+model MfaSession {
+  id                String    @id @default(cuid())
+  electionId        Int
+  voterEmail        String
+  voterCode         String
+  
+  // MFA flow state (server-side source of truth)
+  requiredMethods   String[]  // Methods required for this election
+  completedMethods  String[]  @default([]) // Methods user has actually completed
+  currentStep       Int       @default(0)
+  isCompleted       Boolean   @default(false)
+  
+  // Security and expiry
+  sessionToken      String    @unique // Random token to identify session
+  expiresAt         DateTime  // Session expiry (e.g., 30 minutes)
+  
+  // Audit trail
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  lastActiveAt      DateTime  @default(now())
+  
+  election Election @relation(fields: [electionId], references: [id])
+  
+  // Indexes for performance and security
+  @@index([sessionToken])
+  @@index([electionId, voterEmail])
+  @@index([expiresAt])
+  @@unique([electionId, voterEmail]) // One active session per voter per election
 }
 
 model VotingScope {
