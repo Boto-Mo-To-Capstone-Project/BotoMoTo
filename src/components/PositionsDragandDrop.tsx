@@ -269,7 +269,12 @@ export const PositionsDragandDropdown: React.FC<DragandDropdownProps> = ({
     if (input) input.click();
   };
 
-  const handleRemove = () => { resetState(); };
+  const handleRemove = () => { 
+    resetState();
+    // Clear the file input value to allow re-uploading the same file (Chrome fix)
+    const input = document.getElementById(id) as HTMLInputElement | null;
+    if (input) input.value = '';
+  };
 
   const errorCount = parseIssues.filter(i => i.severity === 'error').length;
   const warningCount = parseIssues.filter(i => i.severity === 'warning').length;
@@ -474,7 +479,7 @@ export const PositionsDragandDropdown: React.FC<DragandDropdownProps> = ({
                 type="button"
                 variant="small"
                 onClick={parsedPositions.length === 0 || errorCount > 0 ? undefined : handleImport}
-                label={loading ? 'Importing…' : 'Import'}
+                label={loading ? 'Import' : 'Import'}
                 isLoading={loading}
                 className={`px-5 py-2.5 text-sm font-medium rounded-lg ${(parsedPositions.length === 0 || errorCount > 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
               />

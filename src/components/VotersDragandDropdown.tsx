@@ -265,6 +265,9 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
     setSelectedFile(null);
     setParsedVoters([]);
     setParseIssues([]);
+    // Clear the file input value to allow re-uploading the same file (Chrome fix)
+    const input = document.getElementById(id) as HTMLInputElement | null;
+    if (input) input.value = '';
   };
 
   const handleImport = async () => {
