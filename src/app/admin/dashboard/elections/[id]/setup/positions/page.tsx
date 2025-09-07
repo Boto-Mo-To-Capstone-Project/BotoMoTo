@@ -58,6 +58,12 @@ export default function PositionsDashboardPage() {
   const [reloadKey, setReloadKey] = useState(0);
   // NEW: voting scopes for the election
   const [votingScopes, setVotingScopes] = useState<Array<{ id: number; name: string }>>([]);
+  // NEW: All positions for duplicate detection (not paginated)
+  const [allPositions, setAllPositions] = useState<Array<{
+    id: number;
+    name: string;
+    votingScopeId: number | null;
+  }>>([]);
 
   // Initialize state from URL once
   const initializedFromURL = useRef(false);
@@ -387,6 +393,31 @@ export default function PositionsDashboardPage() {
     return () => ctrl.abort();
   }, [electionId]);
 
+  // NEW: Fetch ALL positions for duplicate detection (not paginated)
+  useEffect(() => {
+    if (!electionId || Number.isNaN(electionId)) return;
+    const ctrl = new AbortController();
+    const loadAllPositions = async () => {
+      try {
+        // Fetch ALL positions using the "all" parameter for duplicate checking
+        const res = await fetch(`/api/positions?electionId=${electionId}&all=true`, { signal: ctrl.signal });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || json?.success === false) return;
+        
+        const allPositionsData = (json?.data?.positions || []).map((p: any) => ({
+          id: p.id,
+          name: p.name || '',
+          votingScopeId: p.votingScopeId || null
+        }));
+        setAllPositions(allPositionsData);
+      } catch (e: any) {
+        if (e?.name !== 'AbortError') console.error('All positions fetch error:', e);
+      }
+    };
+    loadAllPositions();
+    return () => ctrl.abort();
+  }, [electionId, reloadKey]);
+
   return (
     <>
       {/*<Toaster position="top-center" />*/}
@@ -416,6 +447,7 @@ export default function PositionsDashboardPage() {
         onUpload={async (positions) => { await handleImportPositions(positions); }}
         votingScopes={votingScopes}
         loading={modalLoading}
+        existingPositions={allPositions}
         onShowTemplatePreview={() => {
           setFileViewerData({
             fileUrl: '/assets/sample/positions.csv',
