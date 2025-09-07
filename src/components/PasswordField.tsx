@@ -46,9 +46,9 @@ export const PasswordField = ({
         aria-label={showPassword ? "Hide password" : "Show password"}
       >
         {showPassword ? (
-          <EyeOffIcon className="h-5 w-5" />
-        ) : (
           <EyeIcon className="h-5 w-5" />
+        ) : (
+          <EyeOffIcon className="h-5 w-5" />
         )}
       </button>
     </div>
