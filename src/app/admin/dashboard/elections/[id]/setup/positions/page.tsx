@@ -61,6 +61,12 @@ export default function PositionsDashboardPage() {
   const [reloadKey, setReloadKey] = useState(0);
   // NEW: voting scopes for the election
   const [votingScopes, setVotingScopes] = useState<Array<{ id: number; name: string }>>([]);
+  // NEW: All positions for duplicate detection (not paginated)
+  const [allPositions, setAllPositions] = useState<Array<{
+    id: number;
+    name: string;
+    votingScopeId: number | null;
+  }>>([]);
 
   // Initialize state from URL once
   const initializedFromURL = useRef(false);
@@ -126,10 +132,9 @@ export default function PositionsDashboardPage() {
         numOfWinners: data.numberOfWinners,
         order: data.order,
         isActive: true,
+        // Always include votingScopeId, even when null for "All voters"
+        votingScopeId: data.votingScopeId,
       };
-      if (typeof data.votingScopeId === 'number') {
-        payload.votingScopeId = data.votingScopeId;
-      }
 
       const res = await fetch('/api/positions', {
         method: 'POST',
@@ -224,6 +229,9 @@ export default function PositionsDashboardPage() {
         numberOfWinners: p.numOfWinners || 1,
         order: p.order || 0,
         votingScopeId: p.votingScope?.id ?? null,
+        // Provide electionId and positionId so modal can compute next order and validate duplicates
+        electionId: Number(electionId),
+        positionId: id,
       };
       setEditInitialData(initial);
       setShowModal(true);
@@ -248,10 +256,9 @@ export default function PositionsDashboardPage() {
         numOfWinners: data.numberOfWinners,
         order: data.order,
         isActive: true,
+        // Always include votingScopeId, even when null for "All voters"
+        votingScopeId: data.votingScopeId,
       };
-      if (typeof data.votingScopeId === 'number') {
-        payload.votingScopeId = data.votingScopeId;
-      }
 
       const res = await fetch(`/api/positions/${editingPositionId}`, {
         method: 'PUT',
@@ -402,6 +409,31 @@ export default function PositionsDashboardPage() {
     return () => ctrl.abort();
   }, [electionId]);
 
+  // NEW: Fetch ALL positions for duplicate detection (not paginated)
+  useEffect(() => {
+    if (!electionId || Number.isNaN(electionId)) return;
+    const ctrl = new AbortController();
+    const loadAllPositions = async () => {
+      try {
+        // Fetch ALL positions using the "all" parameter for duplicate checking
+        const res = await fetch(`/api/positions?electionId=${electionId}&all=true`, { signal: ctrl.signal });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || json?.success === false) return;
+        
+        const allPositionsData = (json?.data?.positions || []).map((p: any) => ({
+          id: p.id,
+          name: p.name || '',
+          votingScopeId: p.votingScopeId || null
+        }));
+        setAllPositions(allPositionsData);
+      } catch (e: any) {
+        if (e?.name !== 'AbortError') console.error('All positions fetch error:', e);
+      }
+    };
+    loadAllPositions();
+    return () => ctrl.abort();
+  }, [electionId, reloadKey]);
+
   return (
     <>
       {/*<Toaster position="top-center" />*/}
@@ -431,6 +463,7 @@ export default function PositionsDashboardPage() {
         onUpload={async (positions) => { await handleImportPositions(positions); }}
         votingScopes={votingScopes}
         loading={modalLoading}
+        existingPositions={allPositions}
         onShowTemplatePreview={() => {
           setFileViewerData({
             fileUrl: '/assets/sample/positions.csv',
@@ -474,7 +507,8 @@ export default function PositionsDashboardPage() {
                 onClick={() => { 
                   setIsEditMode(false); 
                   setEditingPositionId(null);
-                  setEditInitialData(undefined); 
+                  // Provide electionId so the modal can fetch suggested/used orders per scope
+                  setEditInitialData({ electionId: Number(electionId) }); 
                   setShowModal(true); 
                 }}
               />

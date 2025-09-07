@@ -77,6 +77,13 @@ export default function VoterDashboardPage() {
   const [reloadKey, setReloadKey] = useState(0);
   // NEW: voting scopes for the election
   const [votingScopes, setVotingScopes] = useState<Array<{ id: number; name: string }>>([]);
+  // NEW: All voters for duplicate detection (not paginated)
+  const [allVoters, setAllVoters] = useState<Array<{
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+  }>>([]);
 
   // Initialize state from URL once
   const initializedFromURL = useRef(false);
@@ -452,6 +459,32 @@ export default function VoterDashboardPage() {
     return () => ctrl.abort();
   }, [electionId]);
 
+  // NEW: Fetch ALL voters for duplicate detection (not paginated)
+  useEffect(() => {
+    if (!electionId || Number.isNaN(electionId)) return;
+    const ctrl = new AbortController();
+    const loadAllVoters = async () => {
+      try {
+        // Fetch ALL voters using the new "all" parameter for duplicate checking
+        const res = await fetch(`/api/voters?electionId=${electionId}&all=true`, { signal: ctrl.signal });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || json?.success === false) return;
+        
+        const allVotersData = (json?.data?.voters || []).map((v: any) => ({
+          id: v.id,
+          firstName: v.firstName || '',
+          lastName: v.lastName || '',
+          email: v.email || ''
+        }));
+        setAllVoters(allVotersData);
+      } catch (e: any) {
+        if (e?.name !== 'AbortError') console.error('All voters fetch error:', e);
+      }
+    };
+    loadAllVoters();
+    return () => ctrl.abort();
+  }, [electionId, reloadKey]);
+
   // Batch import voters from CSV
   const handleBatchImport = async (parsedVoters: Array<{
     firstName: string;
@@ -656,6 +689,7 @@ export default function VoterDashboardPage() {
         onShowTemplatePreview={handleShowTemplatePreview}
         votingScopes={votingScopes}
         loading={loading}
+        existingVoters={allVoters}
       />
 
       {/* FileViewer Modal (for template preview) */}

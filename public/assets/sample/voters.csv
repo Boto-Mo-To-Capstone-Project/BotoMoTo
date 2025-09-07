@@ -1,4 +1,4 @@
-﻿firstName,middleName,lastName,email,contactnNumber,votingScope
+﻿firstName,middleName,lastName,email,contactNumber,votingScope
 Venti,A,Barbatos,venti@gmail.com,09111111111,Undergraduate
 Zhongli,B,Morax,zhongli@gmail.com,0922222222,Graduate
 Raiden,C,Shogun,raiden@gmail.com,09333333333,Engineering
@@ -19,3 +19,4 @@ Barbara,Q,Pegg,barbara@gmail.com,09143217888,Undergraduate
 Beidou,R,Crux,beidou@gmail.com,09222365774,Engineering
 Bennett,S,Bouken,bennet@gmail.com,09636345452,Undergraduate
 Candace,T,Al-Ahmar,candace@gmail.com,0909522754,Graduate
+Brian,E,Sebastian,brianmay@gmail.com,09982479012,Graduate

@@ -36,6 +36,8 @@ interface DragandDropdownProps {
   loading?: boolean;
   // NEW: template preview handler (parity with voters import)
   onShowTemplatePreview?: () => void;
+  // NEW: existing positions for duplicate detection
+  existingPositions?: Array<{ id: number; name: string; votingScopeId: number | null }>;
 }
 
 export const PositionsDragandDropdown: React.FC<DragandDropdownProps> = ({
@@ -51,6 +53,7 @@ export const PositionsDragandDropdown: React.FC<DragandDropdownProps> = ({
   votingScopes = [],
   loading = false,
   onShowTemplatePreview,
+  existingPositions = [],
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -83,7 +86,7 @@ export const PositionsDragandDropdown: React.FC<DragandDropdownProps> = ({
     return idx;
   };
 
-  const parseCSV = (file: File) => {
+  const parseCSV = useCallback((file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = (e.target?.result as string) || '';
@@ -177,6 +180,25 @@ export const PositionsDragandDropdown: React.FC<DragandDropdownProps> = ({
         }
 
         if (positionName) {
+          // Check for duplicate positions (same name + same scope)
+          const positionExists = existingPositions.some(p => 
+            p.name.toLowerCase() === positionName.toLowerCase() && 
+            p.votingScopeId === votingScopeId
+          );
+          
+          if (positionExists) {
+            const scopeText = votingScopeId 
+              ? votingScopes.find(s => s.id === votingScopeId)?.name || `Scope ID ${votingScopeId}`
+              : 'No Scope';
+            issues.push({
+              rowNumber,
+              field: 'position',
+              message: `Position "${positionName}" in scope "${scopeText}" already exists in this election. Please use a different name or scope.`,
+              severity: 'warning',
+              positionName
+            });
+          }
+
           results.push({
             position: positionName,
             voteLimit,
@@ -216,11 +238,22 @@ export const PositionsDragandDropdown: React.FC<DragandDropdownProps> = ({
       // Add merged no-scope positions
       mergedResults.push(...Array.from(noScopePositions.values()));
       
-      setParsedPositions(mergedResults);
+      // Filter out positions that have blocking duplicate warnings
+      const validResults = mergedResults.filter(position => {
+        const hasBlockingDuplicateWarning = issues.some(issue => 
+          issue.rowNumber === position.rowNumber &&
+          issue.field === 'position' &&
+          issue.severity === 'warning' &&
+          issue.message.includes('already exists in this election')
+        );
+        return !hasBlockingDuplicateWarning;
+      });
+      
+      setParsedPositions(validResults);
       setParseIssues(issues);
     };
     reader.readAsText(file);
-  };
+  }, [votingScopes, existingPositions]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -256,7 +289,7 @@ export const PositionsDragandDropdown: React.FC<DragandDropdownProps> = ({
     if (files && files.length > 0) {
       validateFileAndParse(files[0]);
     }
-  }, [maxSizeMB]);
+  }, [parseCSV, maxSizeMB]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -269,17 +302,25 @@ export const PositionsDragandDropdown: React.FC<DragandDropdownProps> = ({
     if (input) input.click();
   };
 
-  const handleRemove = () => { resetState(); };
+  const handleRemove = () => { 
+    resetState();
+    // Clear the file input value to allow re-uploading the same file (Chrome fix)
+    const input = document.getElementById(id) as HTMLInputElement | null;
+    if (input) input.value = '';
+  };
 
   const errorCount = parseIssues.filter(i => i.severity === 'error').length;
   const warningCount = parseIssues.filter(i => i.severity === 'warning').length;
 
   const handleImport = async () => {
     if (parsedPositions.length === 0) return;
-    if (errorCount > 0) {
-      alert('Please resolve all errors before importing.');
+    
+    const hasErrors = parseIssues.some(issue => issue.severity === 'error');
+    if (hasErrors) {
+      alert('Please fix all errors before importing');
       return;
     }
+    
     try {
       await onUpload(parsedPositions);
       resetState();
@@ -474,7 +515,7 @@ export const PositionsDragandDropdown: React.FC<DragandDropdownProps> = ({
                 type="button"
                 variant="small"
                 onClick={parsedPositions.length === 0 || errorCount > 0 ? undefined : handleImport}
-                label={loading ? 'Importing…' : 'Import'}
+                label={loading ? 'Import' : 'Import'}
                 isLoading={loading}
                 className={`px-5 py-2.5 text-sm font-medium rounded-lg ${(parsedPositions.length === 0 || errorCount > 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
               />

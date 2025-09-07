@@ -301,6 +301,52 @@ export async function PUT(
       }
     }
 
+    // New validations: vote limit and order constraints
+    if (voteLimit > numOfWinners) {
+      return apiResponse({
+        success: false,
+        message: "Vote limit cannot be greater than number of winners",
+        data: null,
+        error: "Bad Request",
+        status: 400
+      });
+    }
+
+    if (order <= 0) {
+      return apiResponse({
+        success: false,
+        message: "Order must be greater than 0",
+        data: null,
+        error: "Bad Request",
+        status: 400
+      });
+    }
+
+    // Enforce unique order within the same scope (per election), excluding soft-deleted and current record
+    // Use the new votingScopeId from the update (could be null, undefined, or a number)
+    const newScopeId = votingScopeId === undefined ? existingPosition.votingScopeId : votingScopeId;
+    
+    const duplicateOrder = await db.position.findFirst({
+      where: {
+        electionId: existingPosition.electionId,
+        votingScopeId: newScopeId,
+        order: order,
+        isDeleted: false,
+        NOT: { id: positionId }
+      },
+      select: { id: true, name: true }
+    });
+
+    if (duplicateOrder) {
+      return apiResponse({
+        success: false,
+        message: `Another position ("${duplicateOrder.name}") already uses order ${order} in this scope. Please choose a different order.`,
+        data: null,
+        error: "Conflict",
+        status: 409
+      });
+    }
+
     // Store old data for comparison
     const oldData = {
       name: existingPosition.name,

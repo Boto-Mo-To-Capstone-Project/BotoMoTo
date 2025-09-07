@@ -35,6 +35,7 @@ interface VotersDragandDropdownProps {
   onUpload: (voters: ParsedVoter[]) => Promise<void>;
   onShowTemplatePreview?: () => void;
   votingScopes?: Array<{ id: number; name: string }>;
+  existingVoters?: Array<{ id: number; firstName: string; lastName: string; email?: string }>;
   loading?: boolean;
 }
 
@@ -50,6 +51,7 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
   onUpload,
   onShowTemplatePreview,
   votingScopes = [],
+  existingVoters = [],
   loading = false,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
@@ -101,7 +103,7 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
         const rowData = createRowDataObject(header, values);
 
         // Validate and collect issues for this row
-        validateRowData(rowData, rowNumber, votingScopes, issues);
+        validateRowData(rowData, rowNumber, votingScopes, existingVoters, issues);
 
         // Add valid voter to collection
         if (isValidVoter(rowData)) {
@@ -109,12 +111,23 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
         }
       }
 
-      setParsedVoters(voters);
+      // Filter out voters that have blocking email warnings (duplicate emails)
+      const validResults = voters.filter(voter => {
+        const hasBlockingEmailWarning = issues.some(issue => 
+          issue.rowNumber === voter.rowNumber && 
+          issue.field === 'email' && 
+          issue.severity === 'warning' &&
+          issue.message.includes('already exists in this election')
+        );
+        return !hasBlockingEmailWarning;
+      });
+
+      setParsedVoters(validResults);
       setParseIssues(issues);
     };
     
     reader.readAsText(file);
-  }, [votingScopes]);
+  }, [votingScopes, existingVoters]);
 
   // Helper functions for CSV parsing
   const validateRequiredColumns = (header: string[], requiredFields: string[], issues: ParseIssue[]) => {
@@ -138,7 +151,7 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
     return rowData;
   };
 
-  const validateRowData = (rowData: any, rowNumber: number, votingScopes: any[], issues: ParseIssue[]) => {
+  const validateRowData = (rowData: any, rowNumber: number, votingScopes: any[], existingVoters: any[], issues: ParseIssue[]) => {
     // Create voter name for context (firstName + lastName)
     const voterName = `${rowData.firstname || '?'} ${rowData.lastname || '?'}`.trim();
     
@@ -180,6 +193,20 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
         severity: 'error',
         voterName: voterName || undefined
       });
+    } else {
+      // Check if voter email already exists in the election (only if email format is valid)
+      const emailExists = existingVoters.some(v => 
+        v.email && v.email.toLowerCase() === rowData.email.toLowerCase()
+      );
+      if (emailExists) {
+        issues.push({
+          rowNumber,
+          field: 'email',
+          message: `Voter with email "${rowData.email}" already exists in this election. Please use a different email address.`,
+          severity: 'warning',
+          voterName
+        });
+      }
     }
 
     // Voting scope validation (optional field) - use future tense
@@ -265,6 +292,9 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
     setSelectedFile(null);
     setParsedVoters([]);
     setParseIssues([]);
+    // Clear the file input value to allow re-uploading the same file (Chrome fix)
+    const input = document.getElementById(id) as HTMLInputElement | null;
+    if (input) input.value = '';
   };
 
   const handleImport = async () => {

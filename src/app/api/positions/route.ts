@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(url.searchParams.get('limit') || '50');
     const sortCol = url.searchParams.get('sortCol');
     const sortDir = url.searchParams.get('sortDir') || 'asc';
+    const all = url.searchParams.get('all') === 'true';
 
     if (!electionId) {
       return apiResponse({
@@ -112,7 +113,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate pagination
-    const skip = (page - 1) * limit;
+    const skip = all ? 0 : (page - 1) * limit;
+    const take = all ? undefined : limit;
 
     // Build dynamic orderBy clause
     let orderBy: any[] = [];
@@ -184,7 +186,7 @@ export async function GET(request: NextRequest) {
       },
       orderBy,
       skip,
-      take: limit,
+      ...(take !== undefined && { take })
     });
 
     const audit = await createAuditLog({
@@ -193,27 +195,34 @@ export async function GET(request: NextRequest) {
       request,
       resource: "POSITION",
       resourceId: electionIdInt,
-      message: `Viewed positions for election: ${election.name}`,
+      message: `Viewed positions for election: ${election.name}${all ? ' (all positions)' : ''}`,
     });
 
     // Calculate pagination info
-    const totalPages = Math.ceil(totalCount / limit);
+    const totalPages = all ? 1 : Math.ceil(totalCount / limit);
+
+    // Prepare response data
+    const responseData: any = {
+      positions,
+      audit
+    };
+
+    // Only include pagination when not fetching all
+    if (!all) {
+      responseData.pagination = {
+        page,
+        limit,
+        totalCount,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      };
+    }
 
     return apiResponse({
       success: true,
       message: "Positions fetched successfully",
-      data: {
-        positions,
-        pagination: {
-          page,
-          limit,
-          totalCount,
-          totalPages,
-          hasNext: page < totalPages,
-          hasPrev: page > 1
-        },
-        audit
-      },
+      data: responseData,
       error: null,
       status: 200
     });
@@ -468,6 +477,28 @@ export async function POST(request: NextRequest) {
     if (!("data" in validation)) return validation;
 
     const { electionId, name, voteLimit, numOfWinners, votingScopeId, order } = validation.data;
+
+    // Simple validation: Vote limit cannot be greater than number of winners
+    if (voteLimit > numOfWinners) {
+      return apiResponse({
+        success: false,
+        message: "Vote limit cannot be greater than number of winners",
+        data: null,
+        error: "Bad Request",
+        status: 400
+      });
+    }
+
+    // Simple validation: Order must be greater than 0
+    if (order <= 0) {
+      return apiResponse({
+        success: false,
+        message: "Order must be greater than 0",
+        data: null,
+        error: "Bad Request",
+        status: 400
+      });
+    }
 
     // Check if election exists and user has permission
     const election = await db.election.findUnique({
