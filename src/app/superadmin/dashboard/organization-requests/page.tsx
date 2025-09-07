@@ -190,46 +190,44 @@ export default function SuperAdminOrgRequestPage() {
         <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
           {/* Table */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-3">
-            {loading && orgRequests.length === 0 && allOrgs.length === 0 ? (
-              <div className="w-full p-4 text-center text-gray-500">Loading organizations…</div>
-            ) : (
-              <>
-                {/* Organization Requests (Pending) */}
-                <Table
-                  title="Organization Requests"
-                  columns={columns}
-                  data={orgRequests}
-                  showActions={true}
-                  actions={["approve", "reject"]}
-                  selectedIds={selectedIds}
-                  onSelectionChange={handleSelectionChange}
-                  onApprove={handleApprove}
-                  onReject={handleReject}
-                  page={page}
-                  totalPages={requestsTotalPages}
-                  onFirst={handleFirst}
-                  onPrev={handlePrev}
-                  onNext={handleNext}
-                  onLast={handleLast}
-                  pageSize={pageSize}
-                  onPageSizeChange={handlePageSizeChange} 
-                />
-                {/* All Organizations */}
-                <Table
-                  title="All Organizations"
-                  columns={columns}
-                  data={allOrgs}
-                  page={page}
-                  totalPages={allOrgsTotalPages}
-                  onFirst={handleFirst}
-                  onPrev={handlePrev}
-                  onNext={handleNext}
-                  onLast={handleLast}
-                  pageSize={pageSize}
-                  onPageSizeChange={handlePageSizeChange} 
-                />
-              </>
-            )}
+            <>
+              {/* Organization Requests (Pending) */}
+              <Table
+                loading={loading}
+                title="Organization Requests"
+                columns={columns}
+                data={orgRequests}
+                showActions={true}
+                actions={["approve", "reject"]}
+                selectedIds={selectedIds}
+                onSelectionChange={handleSelectionChange}
+                onApprove={handleApprove}
+                onReject={handleReject}
+                page={page}
+                totalPages={requestsTotalPages}
+                onFirst={handleFirst}
+                onPrev={handlePrev}
+                onNext={handleNext}
+                onLast={handleLast}
+                pageSize={pageSize}
+                onPageSizeChange={handlePageSizeChange} 
+              />
+              {/* All Organizations */}
+              <Table
+                loading={loading}
+                title="All Organizations"
+                columns={columns}
+                data={allOrgs}
+                page={page}
+                totalPages={allOrgsTotalPages}
+                onFirst={handleFirst}
+                onPrev={handlePrev}
+                onNext={handleNext}
+                onLast={handleLast}
+                pageSize={pageSize}
+                onPageSizeChange={handlePageSizeChange} 
+              />
+            </>
           </div>
         </div>
       </div>
