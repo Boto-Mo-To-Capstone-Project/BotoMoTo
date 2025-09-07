@@ -145,7 +145,7 @@ const ReviewPage = () => {
           </p>
         )}
       </div>
-      <div className="w-full lg:w-3/5 flex flex-col">
+      <div className="w-full lg:w-2/5 flex flex-col">
         <div className="mt-5 space-y-3 w-full">
           {Object.entries(selections).map(([position, candidates]) => (
             <div key={position} className="">
@@ -165,9 +165,6 @@ const ReviewPage = () => {
                       <th className="px-4 py-2 candidate-category-desc w-1/5">
                         Party
                       </th>
-                      <th className="px-4 py-2 text-center candidate-category-desc w-1/5">
-                        View Credentials
-                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -176,12 +173,13 @@ const ReviewPage = () => {
                         <CandidateRow
                           key={candidate.name}
                           candidate={candidate}
+                          showCredentials={false}
                         />
                       ))
                     ) : (
                       <tr>
                         <td
-                          colSpan={3}
+                          colSpan={2}
                           className="text-center text-red-600 py-3"
                         >
                           No candidate selected.
