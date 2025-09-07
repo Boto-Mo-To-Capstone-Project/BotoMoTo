@@ -55,6 +55,7 @@ export default function CandidatesDashboardPage() {
   // NEW: positions and parties for the candidates import modal
   const [positions, setPositions] = useState<Array<{ id: number; name: string }>>([]);
   const [parties, setParties] = useState<Array<{ id: number; name: string }>>([]);
+  const [voters, setVoters] = useState<Array<{ id: number; firstName: string; lastName: string; email?: string }>>([]);
   // NEW: file viewer state for template preview parity with voters page
   const [showFileViewer, setShowFileViewer] = useState(false);
   const [fileViewerData, setFileViewerData] = useState<{ fileUrl: string; fileName: string; title: string; fileType?: 'pdf' | 'image' | 'video' | 'audio' | 'text' | 'unknown'; } | null>(null);
@@ -352,7 +353,7 @@ export default function CandidatesDashboardPage() {
   useEffect(() => {
     if (!electionId || Number.isNaN(electionId)) return;
     const ctrl = new AbortController();
-    const loadPositionsAndParties = async () => {
+    const loadPositionsPartiesAndVoters = async () => {
       try {
         // Fetch positions
         const positionsRes = await fetch(`/api/positions?electionId=${electionId}&limit=100`, {
@@ -381,13 +382,29 @@ export default function CandidatesDashboardPage() {
             })));
           }
         }
+
+        // Fetch voters
+        const votersRes = await fetch(`/api/voters?electionId=${electionId}&limit=1000`, {
+          signal: ctrl.signal
+        });
+        if (votersRes.ok) {
+          const votersData = await votersRes.json();
+          if (votersData.success && votersData.data?.voters) {
+            setVoters(votersData.data.voters.map((v: any) => ({
+              id: v.id,
+              firstName: v.firstName,
+              lastName: v.lastName,
+              email: v.email
+            })));
+          }
+        }
       } catch (error) {
         if (!ctrl.signal.aborted) {
-          console.error('Failed to load positions/parties:', error);
+          console.error('Failed to load positions/parties/voters:', error);
         }
       }
     };
-    loadPositionsAndParties();
+    loadPositionsPartiesAndVoters();
     return () => ctrl.abort();
   }, [electionId]);
 
@@ -508,6 +525,9 @@ export default function CandidatesDashboardPage() {
         onClose={() => { setShowCandidatesModal(false); setIsEditMode(false); setEditingCandidateId(null); setEditInitialData(undefined); }}
         onSave={isEditMode ? handleEditCandidateSave as any : handleSaveCandidate}
         electionId={electionId}
+        voters={voters}
+        positions={positions}
+        parties={parties}
         disableSave={modalLoading}
         isEditMode={isEditMode}
         initialData={isEditMode ? editInitialData : undefined}
@@ -525,6 +545,7 @@ export default function CandidatesDashboardPage() {
         onUpload={handleImportCandidates}
         positions={positions}
         parties={parties}
+        voters={voters}
         loading={modalLoading}
         onShowTemplatePreview={() => {
           setFileViewerData({

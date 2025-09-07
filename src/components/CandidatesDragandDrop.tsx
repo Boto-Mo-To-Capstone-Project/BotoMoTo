@@ -33,6 +33,7 @@ interface CandidatesDragandDropdownProps {
   onUpload: (candidates: ParsedCandidate[]) => Promise<void> | void;
   positions?: Array<{ id: number; name: string }>;
   parties?: Array<{ id: number; name: string }>;
+  voters?: Array<{ id: number; firstName: string; lastName: string; email?: string }>;
   loading?: boolean;
   // Template preview handler (parity with voters import)
   onShowTemplatePreview?: () => void;
@@ -50,6 +51,7 @@ export const CandidatesDragandDropdown: React.FC<CandidatesDragandDropdownProps>
   onUpload,
   positions = [],
   parties = [],
+  voters = [],
   loading = false,
   onShowTemplatePreview,
 }) => {
@@ -145,6 +147,20 @@ export const CandidatesDragandDropdown: React.FC<CandidatesDragandDropdownProps>
             severity: 'error',
             candidateEmail
           });
+        } else {
+          // Check if voter exists in the election (only if email format is valid)
+          const voterExists = voters.some(v => 
+            v.email && v.email.toLowerCase() === candidate.email.toLowerCase()
+          );
+          if (!voterExists) {
+            issues.push({
+              rowNumber,
+              field: 'email',
+              message: `Voter with email "${candidate.email}" not found in this election. Please add this voter first before making them a candidate.`,
+              severity: 'warning',
+              candidateEmail
+            });
+          }
         }
 
         if (!candidate.position) {
@@ -199,7 +215,18 @@ export const CandidatesDragandDropdown: React.FC<CandidatesDragandDropdownProps>
         }
       }
 
-      setParsedCandidates(results);
+      // Filter out candidates that have voter email warnings (not found in election)
+      const validResults = results.filter(candidate => {
+        const hasVoterWarning = issues.some(issue => 
+          issue.rowNumber === candidate.rowNumber && 
+          issue.field === 'email' && 
+          issue.severity === 'warning' &&
+          issue.message.includes('not found in this election')
+        );
+        return !hasVoterWarning;
+      });
+
+      setParsedCandidates(validResults);
       setParseIssues(issues);
     };
     reader.readAsText(file);
