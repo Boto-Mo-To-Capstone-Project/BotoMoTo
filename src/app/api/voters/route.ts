@@ -33,6 +33,7 @@ async function getVoters(request: NextRequest) {
     const isActive = url.searchParams.get('isActive');
     const sortCol = url.searchParams.get('sortCol');
     const sortDir = url.searchParams.get('sortDir') || 'asc';
+    const all = url.searchParams.get('all') === 'true';
 
     if (!electionId) {
       return apiResponse({
@@ -165,8 +166,9 @@ async function getVoters(request: NextRequest) {
       ];
     }
 
-    // Calculate pagination
-    const skip = (page - 1) * limit;
+    // Calculate pagination (skip if fetching all)
+    const skip = all ? 0 : (page - 1) * limit;
+    const take = all ? undefined : limit;
 
     // Build dynamic orderBy clause
     let orderBy: any[] = [];
@@ -210,7 +212,7 @@ async function getVoters(request: NextRequest) {
       ];
     }
 
-    // Fetch voters with pagination and search
+    // Fetch voters with conditional pagination
     const [voters, totalCount] = await Promise.all([
       db.voter.findMany({
         where,
@@ -241,12 +243,12 @@ async function getVoters(request: NextRequest) {
         },
         orderBy,
         skip,
-        take: limit
+        ...(take !== undefined && { take })
       }),
       db.voter.count({ where })
     ]);
 
-    const totalPages = Math.ceil(totalCount / limit);
+    const totalPages = all ? 1 : Math.ceil(totalCount / limit);
 
     const audit = await createAuditLog({
       user,
@@ -254,7 +256,7 @@ async function getVoters(request: NextRequest) {
       request,
       resource: "VOTER",
       resourceId: electionIdInt,
-      message: `Viewed voters for election: ${election.name}`,
+      message: `Viewed voters for election: ${election.name}${all ? ' (all voters)' : ''}`,
     });
 
     // Compute hasVoted boolean based on presence of voteResponses
@@ -263,21 +265,30 @@ async function getVoters(request: NextRequest) {
       voted: (v as any).voteResponses?.length > 0
     }));
 
+    // Prepare response data
+    const responseData: any = {
+      voters: votersWithComputed,
+      audit
+    };
+
+    // Only include pagination when not fetching all
+    if (!all) {
+      responseData.pagination = {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      };
+    } else {
+      responseData.totalCount = totalCount;
+    }
+
     return apiResponse({
       success: true,
       message: "Voters fetched successfully",
-      data: {
-        voters: votersWithComputed,
-        pagination: {
-          currentPage: page,
-          totalPages,
-          totalCount,
-          limit,
-          hasNextPage: page < totalPages,
-          hasPrevPage: page > 1
-        },
-        audit
-      },
+      data: responseData,
       error: null,
       status: 200
     });
