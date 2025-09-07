@@ -145,7 +145,7 @@ const ReviewPage = () => {
           </p>
         )}
       </div>
-      <div className="w-full lg:w-2/5 flex flex-col">
+      <div className="w-full lg:w-3/5 flex flex-col">
         <div className="mt-5 space-y-3 w-full">
           {Object.entries(selections).map(([position, candidates]) => (
             <div key={position} className="">
