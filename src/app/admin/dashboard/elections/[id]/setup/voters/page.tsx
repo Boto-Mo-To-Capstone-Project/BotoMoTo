@@ -73,6 +73,7 @@ export default function VoterDashboardPage() {
   }>>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false); // added for lazy loading
   const [reloadKey, setReloadKey] = useState(0);
   // NEW: voting scopes for the election
   const [votingScopes, setVotingScopes] = useState<Array<{ id: number; name: string }>>([]);
@@ -372,6 +373,7 @@ export default function VoterDashboardPage() {
     if (!electionId || Number.isNaN(electionId)) return;
 
     const ctrl = new AbortController();
+    let alive = true;                // guard: only latest run updates state
     const run = async () => {
       setLoading(true);
       try {
@@ -389,7 +391,9 @@ export default function VoterDashboardPage() {
         const json = await res.json();
 
         if (!res.ok || json?.success === false) {
+          if (!alive) return;
           console.error("Failed to load voters:", json?.message || res.statusText);
+          setHasLoaded(true);
           return;
         }
 
@@ -407,19 +411,26 @@ export default function VoterDashboardPage() {
           voted: !!v.voted,
         }));
 
+        if (!alive) return;
         setRows(mapped);
         setTotalPages(json.data?.pagination?.totalPages || 1);
+        setHasLoaded(true);          // ✅ only after a successful (non-aborted) fetch
       } catch (e: any) {
-        if (e?.name !== "AbortError") {
-          console.error("Voters fetch error:", e);
-        }
+        if (e?.name === "AbortError") return; // do nothing on abort
+        if (!alive) return;
+        console.error("Voters fetch error:", e);
+        setHasLoaded(true);          // treat as loaded so empty/error UI can show
       } finally {
+        if (!alive) return;
         setLoading(false);
       }
     };
 
     run();
-    return () => ctrl.abort();
+    return () => {
+      alive = false;
+      ctrl.abort();
+    };
   }, [electionId, page, pageSize, debouncedSearch, sortCol, sortDir, reloadKey]);
 
   // NEW: Fetch voting scopes for this election (for the modal select)
@@ -599,6 +610,8 @@ export default function VoterDashboardPage() {
           {/* Table */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-5">
             <VoterTable
+              hasLoaded={hasLoaded}
+              loading={loading}
               voters={rows}
               sortCol={sortCol}
               sortDir={sortDir}
