@@ -179,24 +179,21 @@ export default function AdminTicketsPage() {
 
           {/* Ticket History (resolved) */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-3">
-            {loading ? (
-              <div>Loading...</div>
-            ) : (
-              <Table
-                title="Ticket History"
-                columns={["Organization_Name", "Ticket", "Status", "Actions"]}
-                data={Array.isArray(historyTableData) ? historyTableData : []}
-                // required pagination props
-                page={historyPage}
-                totalPages={historyTotalPages}
-                onFirst={historyFirst}
-                onPrev={historyPrev}
-                onNext={historyNext}
-                onLast={historyLast}
-                pageSize={historyPageSize}
-                onPageSizeChange={historyPageSizeChange}
-              />
-            )}
+            <Table
+              loading={loading}
+              title="Ticket History"
+              columns={["Organization_Name", "Ticket", "Status", "Actions"]}
+              data={Array.isArray(historyTableData) ? historyTableData : []}
+              // required pagination props
+              page={historyPage}
+              totalPages={historyTotalPages}
+              onFirst={historyFirst}
+              onPrev={historyPrev}
+              onNext={historyNext}
+              onLast={historyLast}
+              pageSize={historyPageSize}
+              onPageSizeChange={historyPageSizeChange}
+            />
           </div>
         </div>
       </div>

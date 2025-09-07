@@ -169,31 +169,28 @@ export default function SuperAdminElectionsPage() {
         <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
           {/* Table */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-3">
-            {loading && rows.length === 0 ? (
-              <div className="w-full p-4 text-center text-gray-500">Loading elections…</div>
-            ) : (
-              <Table
-                title="All Elections"
-                columns={[
-                  "Election_ID",
-                  "Election_Name",
-                  "Status",
-                  "Organization_Name",
-                  "Voting_Date",
-                  "Time",
-                ]}
-                data={rows}
-                // pass required pagination props
-                page={page}
-                totalPages={totalPages}
-                onFirst={handleFirst}
-                onPrev={handlePrev}
-                onNext={handleNext}
-                onLast={handleLast}
-                pageSize={pageSize}
-                onPageSizeChange={handlePageSizeChange}
-              />
-            )}
+            <Table
+              loading={loading}
+              title="All Elections"
+              columns={[
+                "Election_ID",
+                "Election_Name",
+                "Status",
+                "Organization_Name",
+                "Voting_Date",
+                "Time",
+              ]}
+              data={rows}
+              // pass required pagination props
+              page={page}
+              totalPages={totalPages}
+              onFirst={handleFirst}
+              onPrev={handlePrev}
+              onNext={handleNext}
+              onLast={handleLast}
+              pageSize={pageSize}
+              onPageSizeChange={handlePageSizeChange}
+            />
           </div>
 
           {/* integrity div */}

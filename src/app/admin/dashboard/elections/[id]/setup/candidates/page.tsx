@@ -36,6 +36,10 @@ export default function CandidatesDashboardPage() {
   const [showCandidatesModal, setShowCandidatesModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
 
+  const [loading, setLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false); // added for lazy loading
+
+
   // Edit state
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingCandidateId, setEditingCandidateId] = useState<number | null>(null);
@@ -295,7 +299,9 @@ export default function CandidatesDashboardPage() {
     if (!electionId || Number.isNaN(electionId)) return;
 
     const ctrl = new AbortController();
+    let alive = true;
     const run = async () => {
+      setLoading(true);
       try {
         // Map frontend column names to API column names
         const colMapping: { [key: string]: string } = {
@@ -321,7 +327,9 @@ export default function CandidatesDashboardPage() {
         const json = await res.json();
 
         if (!res.ok || (json as any)?.success === false) {
+          if (!alive) return;
           console.error("Failed to load candidates:", (json as any)?.message || res.statusText);
+          setHasLoaded(true);
           return;
         }
 
@@ -335,17 +343,26 @@ export default function CandidatesDashboardPage() {
           email: c.voter?.email || "—",
         }));
 
+        if (!alive) return;
         setCandidates(mapped);
         setTotalPages((json as any).data?.pagination?.totalPages || 1);
+        setHasLoaded(true)
       } catch (e: any) {
-        if (e?.name !== "AbortError") {
-          console.error("Candidates fetch error:", e);
-        }
+        if (e?.name === "AbortError") return; // do nothing on abort
+        if (!alive) return;
+        console.error("Candidates fetch error:", e);
+        setHasLoaded(true);          // treat as loaded so empty/error UI can show
+      } finally {
+        if (!alive) return;
+        setLoading(false);
       }
     };
 
     run();
-    return () => ctrl.abort();
+    return () => {
+      alive = false;
+      ctrl.abort()
+    };
   }, [electionId, page, pageSize, debouncedSearch, sortCol, sortDir, reloadKey]);
 
   // NEW: Fetch positions and parties for this election (for the import modal)
@@ -481,6 +498,8 @@ export default function CandidatesDashboardPage() {
           {/* Table */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-5">
             <CandidatesTable
+              hasLoaded={hasLoaded}
+              loading={loading}
               candidates={candidates}
               sortCol={sortCol}
               sortDir={sortDir}

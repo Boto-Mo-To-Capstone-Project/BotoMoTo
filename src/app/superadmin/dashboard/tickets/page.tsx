@@ -218,46 +218,40 @@ export default function SuperAdminTicketsPage() {
         <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
           {/* Ongoing Tickets - placed above */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-3 mb-6">
-            {loading ? (
-              <div>Loading...</div>
-            ) : (
-              <Table
-                title="Ongoing Tickets"
-                columns={["Organization_Name", "Ticket", "Status", "Actions"]}
-                data={Array.isArray(ongoingTableData) ? ongoingTableData : []}
-                // required pagination props
-                page={ongoingPage}
-                totalPages={ongoingTotalPages}
-                onFirst={ongoingFirst}
-                onPrev={ongoingPrev}
-                onNext={ongoingNext}
-                onLast={ongoingLast}
-                pageSize={ongoingPageSize}
-                onPageSizeChange={ongoingPageSizeChange}
-              />
-            )}
+            <Table
+              loading={loading}
+              title="Ongoing Tickets"
+              columns={["Organization_Name", "Ticket", "Status", "Actions"]}
+              data={Array.isArray(ongoingTableData) ? ongoingTableData : []}
+              // required pagination props
+              page={ongoingPage}
+              totalPages={ongoingTotalPages}
+              onFirst={ongoingFirst}
+              onPrev={ongoingPrev}
+              onNext={ongoingNext}
+              onLast={ongoingLast}
+              pageSize={ongoingPageSize}
+              onPageSizeChange={ongoingPageSizeChange}
+            />
           </div>
 
           {/* Resolved Tickets - below */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-3">
-            {loading ? (
-              <div>Loading...</div>
-            ) : (
-              <Table
-                title="Resolved Tickets"
-                columns={["Organization_Name", "Ticket", "Status", "Actions"]}
-                data={Array.isArray(resolvedTableData) ? resolvedTableData : []}
-                // required pagination props
-                page={resolvedPage}
-                totalPages={resolvedTotalPages}
-                onFirst={resolvedFirst}
-                onPrev={resolvedPrev}
-                onNext={resolvedNext}
-                onLast={resolvedLast}
-                pageSize={resolvedPageSize}
-                onPageSizeChange={resolvedPageSizeChange}
-              />
-            )}
+            <Table
+              loading={loading}
+              title="Resolved Tickets"
+              columns={["Organization_Name", "Ticket", "Status", "Actions"]}
+              data={Array.isArray(resolvedTableData) ? resolvedTableData : []}
+              // required pagination props
+              page={resolvedPage}
+              totalPages={resolvedTotalPages}
+              onFirst={resolvedFirst}
+              onPrev={resolvedPrev}
+              onNext={resolvedNext}
+              onLast={resolvedLast}
+              pageSize={resolvedPageSize}
+              onPageSizeChange={resolvedPageSizeChange}
+            />
           </div>
         </div>
       </div>

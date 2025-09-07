@@ -33,6 +33,7 @@ interface BallotComponentProps {
   onCancel?: () => void;
   onReview?: () => void;
   onBack?: () => void;
+  isLoading: boolean
 }
 
 const BallotComponent = ({ 
@@ -42,7 +43,8 @@ const BallotComponent = ({
   voterScope,
   onCancel, 
   onReview,
-  onBack 
+  onBack,
+  isLoading
 }: BallotComponentProps) => {
   const dispatch = useDispatch<AppDispatch>();
   
@@ -122,13 +124,13 @@ const BallotComponent = ({
       .filter(position => position.candidates.length > 0);
 
   return (
-    <main className="flex flex-col items-center gap-10 px-10 pb-20 pt-40 text-justify">
+    <main className="flex flex-col items-center gap-10 px-10 pb-20 pt-20 text-justify">
       <div className="text-center space-y-2">
         <p className="voter-election-heading">
           {mode === 'preview' ? 'Ballot Preview' : 'Official Ballot Form'}
         </p>
         <p className="voter-election-subheading">
-          {mode === 'preview' ? 'Preview for' : "You're voting in the"} {electionName}
+          {mode === 'preview' ? 'Preview for your' : "You're voting in the"} {isLoading ? "election" : electionName}
         </p>
       </div>
       
@@ -175,7 +177,7 @@ const BallotComponent = ({
         )}
 
         {/* Party dropdown - only show in voter mode */}
-        {mode === 'voter' && availableParties.length > 0 && (
+        {!isLoading && mode === 'voter' && availableParties.length > 0 && (
           <Dropdown
             label="Vote Straight (Party)"
             options={availableParties}
@@ -185,7 +187,7 @@ const BallotComponent = ({
         )}
 
         {/* Preview mode party info */}
-        {mode === 'preview' && availableParties.length > 0 && (
+        {!isLoading && mode === 'preview' && availableParties.length > 0 && (
           <div className="mb-5 p-4 border rounded-md bg-gray-50">
             <p className="voter-election-desc font-semibold">Available Parties:</p>
             <p className="voter-election-desc">{availableParties.join(', ')}</p>
@@ -193,7 +195,7 @@ const BallotComponent = ({
         )}
         
         {/* dropdown for voting scope in preview mode */}
-        {mode === 'preview' && (
+        {!isLoading && mode === 'preview' && (
           <div className="mb-5 p-4 border rounded-md bg-gray-50">
             <p className="voter-election-desc font-semibold">Available Voting Scope:</p>
             <Dropdown

@@ -30,12 +30,16 @@ interface VoterTableProps {
   title?: string;
   selectedIds?: number[];
   onCheckboxChange?: (id: number) => void;
+  loading: boolean;
+  hasLoaded: boolean;
 }
 
 export default function VoterTable({
   title = 'All Voters',
   selectedIds = [],
   onCheckboxChange,
+  loading,
+  hasLoaded,
   ...props
 }: VoterTableProps) {
   // Helper for header checkbox
@@ -138,13 +142,42 @@ export default function VoterTable({
             </tr>
           </thead>
           <tbody>
-            {props.voters.length === 0 ? (
+            {(!hasLoaded && loading)  ? (
+              // Loading skeleton
+              [...Array(5)].map((_, idx) => (
+                <tr key={idx} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="w-4 h-4 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-6 w-24 bg-gray-200 rounded-full animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-4 w-36 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle text-center">
+                    <div className="h-6 w-12 bg-gray-200 rounded-full mx-auto animate-pulse" />
+                  </td>
+                </tr>
+              ))
+            ) : (!loading && hasLoaded && props.voters.length === 0) ? (
+              // Empty state
               <tr>
                 <td colSpan={7} className="px-4 py-4 text-center text-gray-400">
                   No voters found.
                 </td>
               </tr>
             ) : (
+              // Actual data
               props.voters.map((voter, idx) => (
                 <tr
                   key={voter.id + '-' + idx}

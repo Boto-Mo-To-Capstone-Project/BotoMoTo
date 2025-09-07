@@ -68,53 +68,37 @@ export default function VerifyIntegrityPage() {
     fetchData();
   }, [id]);
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[50vh]">
-        <Loader2 className="w-6 h-6 animate-spin text-gray-600" />
-        <span className="ml-2 text-gray-700">Verifying election integrity...</span>
-      </div>
-    );
-  }
+  const election = data?.election;
+  const verification = data?.verification;
 
-  if (error || !data) {
-    return (
-      <div className="flex justify-center items-center min-h-[50vh] text-red-600">
-        {error || "Failed to load verification data"}
-      </div>
-    );
-  }
-
-  const { election, verification } = data;
-  
   return (
     <div className="p-6 space-y-6">
-        {/* page head and details*/}
-        <div className="flex flex-col items-start gap-10 justify-between xl:flex-row w-full">
-          <div className="text-center xl:text-start space-y-2 ">
-            <p className="voter-election-heading">
-              {election.name}{" "}
-            </p>
-            <p className="voter-election-desc">
-              Organization: {election.organization}
-            </p>
-            <p className="voter-election-desc">
-              Status: {election.status}
-            </p>
-            
-          </div>
-          <div className="flex justify-center w-full xs:w-auto">
-            <p className="voter-election-desc">
-              Verified at: {new Date(verification.timestamp).toLocaleString()}
-            </p>
-          </div>
+      {/* page head and details */}
+      <div className="flex flex-col items-start gap-10 justify-between xl:flex-row w-full">
+        <div className="text-center xl:text-start space-y-2">
+          <p className="voter-election-heading">
+            {election ? election.name : "Election name"}
+          </p>
+          <p className="voter-election-desc">
+            Organization: {election ? election.organization : "Your organization"}
+          </p>
+          <p className="voter-election-desc">
+            Status: {election ? election.status : "Election status"}
+          </p>
         </div>
+        <div className="flex justify-center w-full xs:w-auto">
+          <p className="voter-election-desc">
+            Verified at: {verification ? new Date(verification.timestamp).toLocaleString() : "Verified date"}
+          </p>
+        </div>
+      </div>
 
-        {verification.errors && (
-        <div className="rounded-xl shadow border border-gray-200 ">
-          <h2 className="text-lg font-semibold mb-2 text-primary pt-4 pl-4">Integrity Issues!!</h2>
+      {verification?.errors && (
+        <div className="rounded-xl shadow border border-gray-200">
+          <h2 className="text-lg font-semibold mb-2 text-primary pt-4 pl-4">
+            Integrity Issues!!
+          </h2>
           <div className="p-4 overflow-y-auto h-70">
-            
             <div className="space-y-4">
               {verification.errors.map((err, idx) => (
                 <div
@@ -136,26 +120,26 @@ export default function VerifyIntegrityPage() {
         </div>
       )}
 
-        {/* kpi section */}
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 w-full mt-10">
-          <KpiCard name="Integrity:" value={`${verification.integrityPercentage}%`} icon={ShieldCheck} />
-          <KpiCard name="Total Votes" value={`${verification.summary.totalVotes}`} icon={CheckSquare} />
-          <KpiCard name="Total Voters" value={`${verification.summary.totalVoters}`} icon={Users} />
-          <KpiCard name="Verified Votes" value={`${verification.summary.verifiedVotes}`} icon={BadgeCheck} />                   
-          <KpiCard name="Candidates" value={`${verification.summary.totalCandidates}`} icon={UserSquare} />
-          <KpiCard name="Invalid Votes" value={`${verification.summary.invalidVotes}`} icon={XCircle} />
-        </div>
+      {/* KPI section */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 w-full mt-10">
+        <KpiCard name="Integrity:" value={verification ? `${verification.integrityPercentage}%` : "..."} icon={ShieldCheck} />
+        <KpiCard name="Total Votes" value={verification ? `${verification.summary.totalVotes}` : "..."} icon={CheckSquare} />
+        <KpiCard name="Total Voters" value={verification ? `${verification.summary.totalVoters}` : "..."} icon={Users} />
+        <KpiCard name="Verified Votes" value={verification ? `${verification.summary.verifiedVotes}` : "..."} icon={BadgeCheck} />
+        <KpiCard name="Candidates" value={verification ? `${verification.summary.totalCandidates}` : "..."} icon={UserSquare} />
+        <KpiCard name="Invalid Votes" value={verification ? `${verification.summary.invalidVotes}` : "..."} icon={XCircle} />
+      </div>
 
-      
       <div className="flex w-full justify-end mt-10">
         <Button
           variant="long_secondary"
-          onClick={() => router.push(`/admin/dashboard/elections/${id}/setup/manage-election`)}
+          onClick={() =>
+            router.push(`/admin/dashboard/elections/${id}/setup/manage-election`)
+          }
         >
           Go Back
         </Button>
       </div>
-      
     </div>
   );
 }
