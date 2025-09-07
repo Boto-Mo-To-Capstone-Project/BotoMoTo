@@ -11,16 +11,18 @@ type PositionsModalProps = {
     voteLimit: number;
     numberOfWinners: number;
     order: number;
-    votingScopeId?: number | null; // NEW: optional voting scope id
+    votingScopeId?: number | null;
   }) => void;
   initialData?: {
     position?: string;
     voteLimit?: number;
     numberOfWinners?: number;
     order?: number;
-    votingScopeId?: number | null; // NEW: optional voting scope id for edit mode
+    votingScopeId?: number | null;
+    electionId?: number; // For order suggestions
+    positionId?: number; // For edit mode
   };
-  votingScopes?: { id: number; name: string }[]; // NEW: available scopes to choose from
+  votingScopes?: { id: number; name: string }[];
   disableSave?: boolean;
   title?: string;
   submitLabel?: string;
@@ -30,7 +32,7 @@ export function PositionsModal({
   open,
   onClose,
   onSave,
-  initialData = { position: "", voteLimit: 1, numberOfWinners: 1, order: 0 },
+  initialData = { position: "", voteLimit: 1, numberOfWinners: 1, order: 1 },
   votingScopes,
   disableSave,
   title = "Position Form",
@@ -39,31 +41,84 @@ export function PositionsModal({
   const [position, setPosition] = useState(initialData.position || "");
   const [voteLimit, setVoteLimit] = useState(initialData.voteLimit || 1);
   const [numberOfWinners, setNumberOfWinners] = useState(initialData.numberOfWinners || 1);
-  const [order, setOrder] = useState(initialData.order || 0);
+  const [order, setOrder] = useState(initialData.order || 1);
   const [votingScopeId, setVotingScopeId] = useState<number | null | undefined>(
-    initialData?.votingScopeId ?? undefined
+    initialData?.votingScopeId === undefined ? undefined : initialData?.votingScopeId
   );
+
+  // Simple state for suggested order and existing orders
+  const [suggestedOrder, setSuggestedOrder] = useState(1);
+  const [existingOrders, setExistingOrders] = useState<number[]>([]);
+  const [orderDirty, setOrderDirty] = useState(false); // track manual edits to order so we don't auto-reset it
+  const [submitting, setSubmitting] = useState(false); // real submitting state for the Save button
+
+  // Fetch suggested order and existing orders when scope changes or modal opens
+  useEffect(() => {
+    if (!open || !initialData?.electionId) return;
+
+    // Clear existing orders immediately when scope changes to avoid showing stale data
+    setExistingOrders([]);
+
+    const controller = new AbortController();
+    const t = setTimeout(async () => {
+      try {
+        const scopeParam = votingScopeId ? `&votingScopeId=${votingScopeId}` : '';
+        const excludeParam = initialData?.positionId ? `&excludePositionId=${initialData.positionId}` : '';
+
+        const res = await fetch(`/api/positions/next-order?electionId=${initialData.electionId}${scopeParam}${excludeParam}`, { signal: controller.signal });
+        const json = await res.json();
+
+        if (res.ok && json.success) {
+          setSuggestedOrder(json.data.nextOrder);
+          setExistingOrders(json.data.usedOrders || []);
+
+          // Auto-set order only for new positions (not edit mode) and only if user hasn't changed it yet
+          if (!initialData?.positionId && !orderDirty) {
+            setOrder(json.data.nextOrder);
+          }
+        }
+      } catch (e: any) {
+        if (e?.name !== 'AbortError') console.error('Failed to fetch order info:', e);
+      }
+    }, 150); // small debounce to avoid rapid refetching
+
+    return () => {
+      controller.abort();
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, votingScopeId, initialData?.electionId, initialData?.positionId, orderDirty]);
 
   useEffect(() => {
     if (!open) return;
 
-    // Only update if we have actual initialData (edit mode)
-    if (initialData && initialData.position) {
+    // Only update if we have actual initialData (edit mode) using positionId
+    if (initialData && initialData.positionId) {
       setPosition(initialData.position || "");
       setVoteLimit(initialData.voteLimit || 1);
       setNumberOfWinners(initialData.numberOfWinners || 1);
-      setOrder(initialData.order || 0);
-      setVotingScopeId(initialData.votingScopeId ?? undefined);
-    } else if (!initialData || !initialData.position) {
+      setOrder(initialData.order || 1);
+      // Preserve null when there is no scope (do not convert to undefined)
+      setVotingScopeId(initialData.votingScopeId === undefined ? undefined : initialData.votingScopeId);
+      setOrderDirty(false);
+    } else {
       // Clear form for new entry mode
       setPosition("");
       setVoteLimit(1);
       setNumberOfWinners(1);
-      setOrder(0);
-      setVotingScopeId(undefined);
+      setOrder(suggestedOrder || 1);
+      // In create mode, treat empty as null (no scope)
+      setVotingScopeId(null);
+      setOrderDirty(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initialData?.position]);
+  }, [open, initialData?.positionId]);
+
+  // Simple validation
+  const voteError = voteLimit > numberOfWinners ? "Vote limit cannot exceed number of winners" : "";
+  const orderError = order <= 0 ? "Order must be greater than 0" : "";
+  const duplicateOrderError = existingOrders.includes(order) ? "This order is already taken for this scope" : "";
+  const hasErrors = voteError || orderError || duplicateOrderError;
 
   if (!open) return null;
   return (
@@ -97,10 +152,40 @@ export function PositionsModal({
               Create and manage positions for the election that candidates will run for.
             </p>
             <form
-              onSubmit={e => {
+              onSubmit={async e => {
                 e.preventDefault();
-                onSave({ position, voteLimit, numberOfWinners, order, votingScopeId: votingScopeId ?? null });
-                onClose();
+
+                // Simple validation
+                if (voteLimit > numberOfWinners) {
+                  alert("Vote limit cannot be greater than number of winners");
+                  return;
+                }
+
+                if (order <= 0) {
+                  alert("Order must be greater than 0");
+                  return;
+                }
+
+                if (existingOrders.includes(order)) {
+                  alert("This order is already taken for this scope. Please choose a different order.");
+                  return;
+                }
+
+                try {
+                  setSubmitting(true);
+                  // Explicitly include votingScopeId in the payload, even when null
+                  const payload = { 
+                    position, 
+                    voteLimit, 
+                    numberOfWinners, 
+                    order, 
+                    votingScopeId: votingScopeId === undefined ? null : votingScopeId 
+                  };
+                  await onSave(payload);
+                  onClose();
+                } finally {
+                  setSubmitting(false);
+                }
               }}
               className="grid gap-4 mb-4 grid-cols-2"
             >
@@ -121,15 +206,26 @@ export function PositionsModal({
                   value={voteLimit}
                   onChange={e => setVoteLimit(Math.max(1, Number(e.target.value)))}
                   min={1}
+                  max={numberOfWinners}
                   required
                 />
+                {voteError && (
+                  <p className="mt-1 text-xs text-red-600">{voteError}</p>
+                )}
               </div>
               <div className="sm:col-span-1">
                 <InputField
                   label="Number of Winners*"
                   type="number"
                   value={numberOfWinners}
-                  onChange={e => setNumberOfWinners(Math.max(1, Number(e.target.value)))}
+                  onChange={e => {
+                    const val = Math.max(1, Number(e.target.value));
+                    setNumberOfWinners(val);
+                    // Auto-adjust vote limit if it exceeds number of winners
+                    if (voteLimit > val) {
+                      setVoteLimit(val);
+                    }
+                  }}
                   min={1}
                   required
                 />
@@ -159,11 +255,26 @@ export function PositionsModal({
                   label="Order*"
                   type="number"
                   value={order}
-                  onChange={e => setOrder(Math.max(0, Number(e.target.value)))}
-                  min={0}
-                  placeholder="Display order (0 = first)"
+                  onChange={e => {
+                    setOrderDirty(true);
+                    setOrder(Math.max(1, Number(e.target.value)));
+                  }}
+                  min={1}
+                  placeholder={`Suggested: ${suggestedOrder}`}
                   required
                 />
+                {orderError && (
+                  <p className="mt-1 text-xs text-red-600">{orderError}</p>
+                )}
+                {duplicateOrderError && (
+                  <p className="mt-1 text-xs text-red-600">{duplicateOrderError}</p>
+                )}
+                <p className="mt-1 text-xs text-gray-500">
+                  Order within the selected scope. Suggested: {suggestedOrder}
+                  {existingOrders.length > 0 && (
+                    <span className="block">Used orders: {existingOrders.join(', ')}</span>
+                  )}
+                </p>
               </div>
               <div className="col-span-2 flex justify-end gap-2 mt-2">
                 <SubmitButton
@@ -176,8 +287,8 @@ export function PositionsModal({
                   type="submit"
                   variant="small"
                   label={submitLabel}
-                  className="px-5 py-2.5 text-sm font-medium rounded-lg"
-                  isLoading={disableSave}
+                  className={`px-5 py-2.5 text-sm font-medium rounded-lg ${disableSave || hasErrors ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  isLoading={submitting}
                 />
               </div>
             </form>

@@ -469,6 +469,28 @@ export async function POST(request: NextRequest) {
 
     const { electionId, name, voteLimit, numOfWinners, votingScopeId, order } = validation.data;
 
+    // Simple validation: Vote limit cannot be greater than number of winners
+    if (voteLimit > numOfWinners) {
+      return apiResponse({
+        success: false,
+        message: "Vote limit cannot be greater than number of winners",
+        data: null,
+        error: "Bad Request",
+        status: 400
+      });
+    }
+
+    // Simple validation: Order must be greater than 0
+    if (order <= 0) {
+      return apiResponse({
+        success: false,
+        message: "Order must be greater than 0",
+        data: null,
+        error: "Bad Request",
+        status: 400
+      });
+    }
+
     // Check if election exists and user has permission
     const election = await db.election.findUnique({
       where: {

@@ -123,10 +123,9 @@ export default function PositionsDashboardPage() {
         numOfWinners: data.numberOfWinners,
         order: data.order,
         isActive: true,
+        // Always include votingScopeId, even when null for "All voters"
+        votingScopeId: data.votingScopeId,
       };
-      if (typeof data.votingScopeId === 'number') {
-        payload.votingScopeId = data.votingScopeId;
-      }
 
       const res = await fetch('/api/positions', {
         method: 'POST',
@@ -221,6 +220,9 @@ export default function PositionsDashboardPage() {
         numberOfWinners: p.numOfWinners || 1,
         order: p.order || 0,
         votingScopeId: p.votingScope?.id ?? null,
+        // Provide electionId and positionId so modal can compute next order and validate duplicates
+        electionId: Number(electionId),
+        positionId: id,
       };
       setEditInitialData(initial);
       setShowModal(true);
@@ -245,10 +247,9 @@ export default function PositionsDashboardPage() {
         numOfWinners: data.numberOfWinners,
         order: data.order,
         isActive: true,
+        // Always include votingScopeId, even when null for "All voters"
+        votingScopeId: data.votingScopeId,
       };
-      if (typeof data.votingScopeId === 'number') {
-        payload.votingScopeId = data.votingScopeId;
-      }
 
       const res = await fetch(`/api/positions/${editingPositionId}`, {
         method: 'PUT',
@@ -458,7 +459,8 @@ export default function PositionsDashboardPage() {
                 onClick={() => { 
                   setIsEditMode(false); 
                   setEditingPositionId(null);
-                  setEditInitialData(undefined); 
+                  // Provide electionId so the modal can fetch suggested/used orders per scope
+                  setEditInitialData({ electionId: Number(electionId) }); 
                   setShowModal(true); 
                 }}
               />
