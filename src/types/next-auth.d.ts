@@ -13,8 +13,10 @@ declare module "next-auth" {
       name: string;
       email: string;
       status: OrganizationStatus;
-      photoUrl?: string | null;
-      letterUrl?: string | null;
+      logoObjectKey?: string | null;
+      logoProvider?: string | null;
+      letterObjectKey?: string | null;
+      letterProvider?: string | null;
     } | null;
   }
 
@@ -29,8 +31,10 @@ declare module "next-auth" {
         name: string;
         email: string;
         status: OrganizationStatus;
-        photoUrl?: string | null;
-        letterUrl?: string | null;
+        logoObjectKey?: string | null;
+        logoProvider?: string | null;
+        letterObjectKey?: string | null;
+        letterProvider?: string | null;
       } | null;
     } & DefaultSession["user"];
   }
@@ -47,8 +51,10 @@ declare module "@auth/core/jwt" {
       name: string;
       email: string;
       status: OrganizationStatus;
-      photoUrl?: string | null;
-      letterUrl?: string | null;
+      logoObjectKey?: string | null;
+      logoProvider?: string | null;
+      letterObjectKey?: string | null;
+      letterProvider?: string | null;
     } | null;
   }
 }

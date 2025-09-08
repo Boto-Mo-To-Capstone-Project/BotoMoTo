@@ -34,8 +34,10 @@ const resendOrganization = {
   name: "Resend Testing Institute",
   email: "org@resend.com",
   membersCount: 2000,
-  photoUrl: "/assets/sample/logo.png",
-  letterUrl: "/assets/sample/letter.pdf"
+  logoObjectKey: "/assets/sample/logo.png",
+  logoProvider: "local",
+  letterObjectKey: "/assets/sample/letter.pdf",
+  letterProvider: "local"
 };
 
 const resendAdmin = {
@@ -299,8 +301,10 @@ async function addResendData() {
             voterId: voter.id,
             positionId: position.id,
             partyId: randomParty?.id || null,
-            imageUrl: `/assets/sample/logo.png`,
-            credentialUrl: `/assets/sample/credential.pdf`,
+            imageObjectKey: '/assets/sample/photo.jpg',
+            imageProvider: 'local',
+            credentialObjectKey: '/assets/sample/credential.pdf',
+            credentialProvider: 'local',
           },
         });
 

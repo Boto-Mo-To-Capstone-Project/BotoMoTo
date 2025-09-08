@@ -58,8 +58,10 @@ async function quickSeed() {
         email: "admin@testuniversity.edu",
         membersCount: 1000,
         status: "APPROVED",
-        photoUrl: "/assets/sample/logo.png",
-        letterUrl: "/assets/sample/letter.pdf"
+        logoObjectKey: "assets/sample/logo.png",
+        logoProvider: "local",
+        letterObjectKey: "assets/sample/letter.pdf",
+        letterProvider: "local"
       }
     });
 
@@ -169,8 +171,10 @@ async function quickSeed() {
               voterId: voters[voterIndex].id,
               positionId: position.id,
               partyId: i < 2 ? createdParties[i % 2].id : null,
-              imageUrl: `/assets/sample/logo.png`, // Placeholder image
-              credentialUrl: `/assets/sample/credential.pdf`,
+              imageObjectKey: `assets/sample/logo.png`, 
+              imageProvider: "local",
+              credentialObjectKey: `assets/sample/credential.pdf`,
+              credentialProvider: "local",
             }
           });
         }

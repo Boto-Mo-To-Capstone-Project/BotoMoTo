@@ -252,7 +252,7 @@ export function PositionsModal({
               </div>
               <div className="sm:col-span-1">
                 <InputField
-                  label="Order*"
+                  label="Display Order*"
                   type="number"
                   value={order}
                   onChange={e => {

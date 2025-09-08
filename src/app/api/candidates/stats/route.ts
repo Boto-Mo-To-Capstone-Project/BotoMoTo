@@ -4,6 +4,7 @@ import db from "@/lib/db/db";
 import { ROLES } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
 import { createAuditLog } from "@/lib/audit";
+import { generatePublicUrl, generatePresignedUrl } from '@/lib/storage/utils';
 
 // Handle GET request to fetch candidate statistics
 export async function GET(request: NextRequest) {
@@ -87,22 +88,6 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    const candidatesWithImage = await db.candidate.count({
-      where: {
-        electionId: electionIdInt,
-        isDeleted: false,
-        imageUrl: { not: null }
-      }
-    });
-
-    const candidatesWithCredentials = await db.candidate.count({
-      where: {
-        electionId: electionIdInt,
-        isDeleted: false,
-        credentialUrl: { not: null }
-      }
-    });
-
     const candidatesWithVotes = await db.candidate.count({
       where: {
         electionId: electionIdInt,
@@ -111,16 +96,13 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Get candidates with detailed counts
-    const candidatesWithCounts = await db.candidate.findMany({
+    // Get candidates with detailed counts and related data. Don't select file-specific fields to avoid Prisma client typing mismatches; cast to any below.
+    const candidatesRawAny = (await db.candidate.findMany({
       where: {
         electionId: electionIdInt,
         isDeleted: false
       },
-      select: {
-        id: true,
-        imageUrl: true,
-        credentialUrl: true,
+      include: {
         voter: {
           select: {
             id: true,
@@ -153,7 +135,40 @@ export async function GET(request: NextRequest) {
         { position: { order: 'asc' } },
         { voter: { lastName: 'asc' } }
       ]
-    });
+    })) as any[];
+
+    // Generate dynamic URLs from object keys/providers
+    const candidatesWithCounts = await Promise.all(candidatesRawAny.map(async (c: any) => {
+      const transformed: any = { ...c };
+
+      // Generate image URL from object key/provider
+      if (c.imageObjectKey) {
+        try {
+          transformed.imageUrl = generatePublicUrl(c.imageObjectKey, c.imageProvider);
+        } catch (err) {
+          transformed.imageUrl = null;
+        }
+      } else {
+        transformed.imageUrl = null;
+      }
+
+      // Generate credential URL from object key/provider
+      if (c.credentialObjectKey) {
+        try {
+          transformed.credentialUrl = await generatePresignedUrl(c.credentialObjectKey, 3600, c.credentialProvider);
+        } catch (err) {
+          transformed.credentialUrl = null;
+        }
+      } else {
+        transformed.credentialUrl = null;
+      }
+
+      return transformed;
+    }));
+
+    // Compute image/credential counts from transformed results
+    const candidatesWithImage = candidatesWithCounts.filter(c => !!c.imageUrl).length;
+    const candidatesWithCredentials = candidatesWithCounts.filter(c => !!c.credentialUrl).length;
 
     // Calculate total votes
     const totalVotes = candidatesWithCounts.reduce((sum, c) => sum + c._count.voteResponses, 0);

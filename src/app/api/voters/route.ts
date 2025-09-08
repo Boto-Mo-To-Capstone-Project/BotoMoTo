@@ -31,8 +31,6 @@ async function getVoters(request: NextRequest) {
     const hasVoted = url.searchParams.get('hasVoted');
     const votedParam = url.searchParams.get('voted');
     const isActive = url.searchParams.get('isActive');
-    const sortCol = url.searchParams.get('sortCol');
-    const sortDir = url.searchParams.get('sortDir') || 'asc';
     const all = url.searchParams.get('all') === 'true';
 
     if (!electionId) {
@@ -170,47 +168,11 @@ async function getVoters(request: NextRequest) {
     const skip = all ? 0 : (page - 1) * limit;
     const take = all ? undefined : limit;
 
-    // Build dynamic orderBy clause
-    let orderBy: any[] = [];
-    
-    if (sortCol && ['name', 'status', 'scope', 'email', 'contactNumber', 'hasVoted', 'voted'].includes(sortCol)) {
-      switch (sortCol) {
-        case 'name':
-          orderBy = [
-            { lastName: sortDir },
-            { firstName: sortDir }
-          ];
-          break;
-        case 'status':
-          orderBy = [{ isActive: sortDir }];
-          break;
-        case 'scope':
-          orderBy = [{ votingScope: { name: sortDir } }];
-          break;
-        case 'email':
-          orderBy = [{ email: sortDir }];
-          break;
-        case 'contactNumber':
-          orderBy = [{ contactNum: sortDir }];
-          break;
-        case 'hasVoted':
-        case 'voted':
-          // Sort by whether voter has any voteResponses (treat count > 0 as true)
-          orderBy = [{ voteResponses: { _count: sortDir as any } }];
-          break;
-        default:
-          orderBy = [
-            { lastName: 'asc' },
-            { firstName: 'asc' }
-          ];
-      }
-    } else {
-      // Default sorting
-      orderBy = [
-        { lastName: 'asc' },
-        { firstName: 'asc' }
-      ];
-    }
+    // Default sorting (no frontend sorting parameters needed)
+    const orderBy = [
+      { lastName: 'asc' as const },
+      { firstName: 'asc' as const }
+    ];
 
     // Fetch voters with conditional pagination
     const [voters, totalCount] = await Promise.all([

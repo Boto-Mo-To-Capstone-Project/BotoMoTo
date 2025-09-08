@@ -145,8 +145,10 @@ const organizationSchema = z.object({
   name: field.string("Organization name", { min: 5 }),
   email: field.email("Organization email"),
   membersCount: field.number("Members count", { min: 1 }),
-  photoUrl: field.string("Photo"),
-  letterUrl: field.string("Letter"),
+  logoObjectKey: field.string("Logo object key", { required: false }),
+  logoProvider: field.string("Logo provider", { required: false }),
+  letterObjectKey: field.string("Letter object key", { required: false }),
+  letterProvider: field.string("Letter provider", { required: false }),
   adminId: field.string("Admin ID", { required: false }) // Optional for superadmin use
 });
 
@@ -212,7 +214,7 @@ const positionUpdateSchema = z.object({
 
 const voterSchema = z.object({
   electionId: z.number().int().positive("Election ID must be a positive integer"),
-  email: field.email("Email", { required: false }),
+  email: field.email("Email", { required: true }),
   contactNum: field.string("Contact number", { required: false, min: 10, max: 15 }),
   firstName: field.string("First name", { min: 2, max: 50 }),
   middleName: field.string("Middle name", { required: false, min: 1, max: 50 }),
@@ -222,7 +224,7 @@ const voterSchema = z.object({
 });
 
 const voterUpdateSchema = z.object({
-  email: field.email("Email", { required: false }),
+  email: field.email("Email", { required: true }),
   contactNum: field.string("Contact number", { required: false, min: 10, max: 15 }),
   firstName: field.string("First name", { min: 2, max: 50 }),
   middleName: field.string("Middle name", { required: false, min: 1, max: 50 }),
@@ -234,7 +236,7 @@ const voterUpdateSchema = z.object({
 const voterBulkUploadSchema = z.object({
   electionId: z.number().int().positive("Election ID must be a positive integer"),
   voters: z.array(z.object({
-    email: field.email("Email", { required: false }),
+    email: field.email("Email", { required: true }),
     contactNum: field.string("Contact number", { required: false, min: 10, max: 15 }),
     firstName: field.string("First name", { min: 2, max: 50 }),
     middleName: field.string("Middle name", { required: false, min: 1, max: 50 }),
@@ -249,15 +251,22 @@ const candidateSchema = z.object({
   voterId: z.number().int().positive("Voter ID must be a positive integer"),
   positionId: z.number().int().positive("Position ID must be a positive integer"),
   partyId: z.number().int().positive("Party ID must be a positive integer").nullable().optional(),
-  imageUrl: field.string("Image URL", { required: false }),
-  credentialUrl: field.string("Credentials URL", { required: false }),
+  // Storage-agnostic fields replacing direct URLs
+  imageObjectKey: field.string("Image object key", { required: false }),
+  imageProvider: field.string("Image provider", { required: false }),
+  credentialObjectKey: field.string("Credential object key", { required: false }),
+  credentialProvider: field.string("Credential provider", { required: false }),
 });
 
 // Candidate Update Schema
 const candidateUpdateSchema = z.object({
   positionId: z.number().int().positive("Position ID must be a positive integer").optional(),
   partyId: z.number().int().positive("Party ID must be a positive integer").nullable().optional(),
-  imageUrl: field.url("Image URL", { required: false }),
+  // Allow updates to object keys / provider when replacing files
+  imageObjectKey: field.string("Image object key", { required: false }),
+  imageProvider: field.string("Image provider", { required: false }),
+  credentialObjectKey: field.string("Credential object key", { required: false }),
+  credentialProvider: field.string("Credential provider", { required: false }),
   bio: field.string("Biography", { required: false, max: 1000 }),
 });
 

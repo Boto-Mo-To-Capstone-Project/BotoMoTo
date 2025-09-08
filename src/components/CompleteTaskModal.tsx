@@ -16,8 +16,6 @@ interface CompleteTaskModalProps {
     membersCount: number;
     organizationLetter: File | null;
     logo: File | null;
-    existingLogoUrl?: string;
-    existingLetterUrl?: string;
     existingLogoObjectKey?: string;
     existingLetterObjectKey?: string;
   } | null;
@@ -33,10 +31,7 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
   // Add sample letter state
   const [sampleLetter, setSampleLetter] = useState<File | null>(null);
   const [logo, setLogo] = useState<File | null>(null);
-  // Add states for existing file URLs
-  const [existingLogoUrl, setExistingLogoUrl] = useState<string>("");
-  const [existingLetterUrl, setExistingLetterUrl] = useState<string>("");
-  // Add states for existing file object keys  
+  // Use storage-agnostic object keys for existing files
   const [existingLogoObjectKey, setExistingLogoObjectKey] = useState<string>("");
   const [existingLetterObjectKey, setExistingLetterObjectKey] = useState<string>("");
 
@@ -49,12 +44,8 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
       setMembersCount(initialData.membersCount.toString());
       setOrganizationLetter(initialData.organizationLetter);
       setLogo(initialData.logo);
-      setExistingLogoUrl(initialData.existingLogoUrl || '');
-      setExistingLetterUrl(initialData.existingLetterUrl || '');
       setExistingLogoObjectKey(initialData.existingLogoObjectKey || '');
       setExistingLetterObjectKey(initialData.existingLetterObjectKey || '');
-      console.log('Existing logo URL:', initialData.existingLogoUrl);
-      console.log('Existing letter URL:', initialData.existingLetterUrl);
       console.log('Existing logo object key:', initialData.existingLogoObjectKey);
       console.log('Existing letter object key:', initialData.existingLetterObjectKey);
     } else if (open && !initialData) {
@@ -65,8 +56,6 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
       setMembersCount("");
       setOrganizationLetter(null);
       setLogo(null);
-      setExistingLogoUrl('');
-      setExistingLetterUrl('');
       setExistingLogoObjectKey('');
       setExistingLetterObjectKey('');
     }
@@ -77,8 +66,7 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
     setSampleLetter(new File([""], "Sample_Letter.pdf", { type: "application/pdf", lastModified: new Date().getTime() }));
   }, []);
 
-  // Helper function to create a File object from URL for display purposes
-  const createFileFromUrl = (url: string, filename: string, type: string): File => {
+  const createExistingFile = (filename: string, type: string) => {
     return new File([""], filename, { type, lastModified: new Date().getTime() });
   };
 
@@ -170,15 +158,19 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
           {/* Logo display - show new upload or existing logo */}
           {logo && (
             <div className="w-full">
-              <UploadedFileDisplay file={logo} onRemove={() => setLogo(null)} />
+              <UploadedFileDisplay file={logo} onRemove={() => {
+                setLogo(null);
+                // Clear the file input value to allow re-uploading the same file (Chrome fix)
+                const input = document.getElementById("logo-upload") as HTMLInputElement | null;
+                if (input) input.value = '';
+              }} />
             </div>
           )}
-          {!logo && existingLogoUrl && (
+          {!logo && existingLogoObjectKey && (
             <div className="w-full">
               <UploadedFileDisplay 
-                file={createFileFromUrl(existingLogoUrl, "Current_Logo.png", "image/png")} 
+                file={createExistingFile("Current_Logo.png", "image/png")} 
                 isExistingFile={true}
-                fileUrl={existingLogoUrl}
                 organizationId={organizationId || undefined}
                 fileType="logo"
                 objectKey={existingLogoObjectKey}
@@ -198,15 +190,19 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
           {/* Letter display - show new upload, existing letter, or sample letter */}
           {organizationLetter && (
             <div className="w-full">
-              <UploadedFileDisplay file={organizationLetter} onRemove={() => setOrganizationLetter(null)} />
+              <UploadedFileDisplay file={organizationLetter} onRemove={() => {
+                setOrganizationLetter(null);
+                // Clear the file input value to allow re-uploading the same file (Chrome fix)
+                const input = document.getElementById("file-upload") as HTMLInputElement | null;
+                if (input) input.value = '';
+              }} />
             </div>
           )}
-          {!organizationLetter && existingLetterUrl && (
+          {!organizationLetter && existingLetterObjectKey && (
             <div className="w-full">
               <UploadedFileDisplay 
-                file={createFileFromUrl(existingLetterUrl, "Current_Letter.pdf", "application/pdf")} 
+                file={createExistingFile("Current_Letter.pdf", "application/pdf")} 
                 isExistingFile={true}
-                fileUrl={existingLetterUrl}
                 organizationId={organizationId || undefined}
                 fileType="letter"
                 objectKey={existingLetterObjectKey}
@@ -214,7 +210,7 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
               <p className="text-sm text-gray-500 mt-1">Current letter (upload a new one to replace)</p>
             </div>
           )}
-          {!organizationLetter && !existingLetterUrl && sampleLetter && (
+          {!organizationLetter && !existingLetterObjectKey && sampleLetter && (
             <div className="w-full">
               <UploadedFileDisplay file={sampleLetter} />
             </div>

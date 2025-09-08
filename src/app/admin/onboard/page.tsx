@@ -140,8 +140,6 @@ export default function OnboardProcessingPage() {
     membersCount: number;
     organizationLetter: File | null;
     logo: File | null;
-    existingLogoUrl?: string;
-    existingLetterUrl?: string;
     existingLogoObjectKey?: string;
     existingLetterObjectKey?: string;
   } | null>(null);
@@ -380,15 +378,11 @@ export default function OnboardProcessingPage() {
           membersCount: org.membersCount || 0,
           organizationLetter: null, // Files must be re-uploaded
           logo: null, // Files must be re-uploaded
-          existingLogoUrl: org.logoUrl || '', // Dynamic URL from API
-          existingLetterUrl: org.letterUrl || '', // Dynamic URL from API
           existingLogoObjectKey: org.logoObjectKey || '', // Object key for secure access
           existingLetterObjectKey: org.letterObjectKey || '' // Object key for secure access
         });
 
         console.log('Organization data received:', org);
-        console.log('logoUrl:', org.logoUrl);
-        console.log('letterUrl:', org.letterUrl);
         console.log('logoObjectKey:', org.logoObjectKey);
         console.log('letterObjectKey:', org.letterObjectKey);
       } else {

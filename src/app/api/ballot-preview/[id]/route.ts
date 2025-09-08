@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import db from "@/lib/db/db";
 import { requireAuth } from "@/lib/helpers/requireAuth"; // <-- make sure this path is correct
 import { ROLES } from "@/lib/constants";   // <-- where you define roles
+import { generatePublicUrl, generatePresignedUrl } from "@/lib/storage/utils";
 
 export async function GET(
   _req: Request,
@@ -35,8 +36,10 @@ export async function GET(
               electionId: true,
               voterId: true,
               positionId: true,
-              imageUrl: true,
-              credentialUrl: true,
+              imageObjectKey: true,
+              imageProvider: true,
+              credentialObjectKey: true,
+              credentialProvider: true,
               party: { select: { id: true, name: true, color: true } }, // make sure "color" exists in DB
               voter: {
                 select: { firstName: true, middleName: true, lastName: true, votingScopeId: true },
@@ -71,8 +74,8 @@ export async function GET(
           party: c.party?.name ?? "",
           partyColor: c.party?.color ?? "#999999", // fallback if no color in DB
           credentials: "Candidate", // Default since isNew field was removed
-          credentialsUrl: c.credentialUrl ?? undefined,
-          img: c.imageUrl ?? "/placeholder.png",
+          img: c.imageObjectKey ? `/api/files/${c.imageObjectKey}` : 'assets/sample/logo.png',
+          credentialsUrl: c.credentialObjectKey ? `/api/files/${c.credentialObjectKey}` : undefined,
           position: p.name, // match BallotComponentProps
           scopeId: c.voter?.votingScopeId ?? null,
         })),

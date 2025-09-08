@@ -163,12 +163,11 @@ export function VotersModal({
                 </div>
                 <div className="sm:col-span-1">
                   <InputField
-                    label="Middle Initial*"
+                    label="Middle Initial"
                     type="text"
                     value={voterMiddleInitial}
                     onChange={e => setVoterMiddleInitial(e.target.value)}
                     placeholder="Enter Middle Initial"
-                    required
                   />
                 </div>
                 <div className="col-span-1">
@@ -183,12 +182,24 @@ export function VotersModal({
                 </div>
                 <div className="col-span-1">
                   <InputField
-                    label="Contact Number*"
+                    label="Contact Number"
                     type="text"
+                    maxLength={11}
                     value={contactNumber}
-                    onChange={e => setContactNumber(e.target.value)}
+                    onChange={e => {
+                      // Accept only numbers and maximum 11 digits
+                      const val = e.target.value.replace(/\D/g, "").slice(0, 11);
+                      setContactNumber(val);
+                    }}
+                    onKeyDown={e => {
+                      // Prevent typing non-numeric characters
+                      if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
                     placeholder="Enter Contact Number"
-                    required
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                   />
                 </div>
                 {/* NEW: Voting Scope selector (optional) */}
