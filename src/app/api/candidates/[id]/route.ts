@@ -4,8 +4,9 @@ import { validateWithZod } from "@/lib/validateWithZod";
 import { createAuditLog } from "@/lib/audit";
 import { candidateUpdateSchema } from "@/lib/schema";
 import db from "@/lib/db/db";
-import { ROLES, ORGANIZATION_STATUS } from "@/lib/constants";
+import { ROLES, ORGANIZATION_STATUS, ALLOWED_FILE_TYPES, FILE_LIMITS } from "@/lib/constants";
 import { requireAuth } from "@/lib/helpers/requireAuth";
+import { uploadFile, generateObjectKey } from "@/lib/storage";
 
 // Handle GET request to fetch a specific candidate
 export async function GET(
@@ -178,13 +179,60 @@ export async function PUT(
       });
     }
 
-    const body = await request.json();
+    // Check content type to determine if this is JSON or FormData
+    const contentType = request.headers.get('content-type') || '';
+    const isFormData = contentType.includes('multipart/form-data');
 
-    // Validate request body
-    const validation = validateWithZod(candidateUpdateSchema, body);
-    if (!('data' in validation)) return validation;
+    let data: any;
+    let imageFile: File | null = null;
+    let credentialsFile: File | null = null;
 
-    const data = validation.data;
+    if (isFormData) {
+      // Handle FormData (with file uploads)
+      const formData = await request.formData();
+      
+      // Extract form fields
+      const positionId = formData.get('positionId') as string;
+      const partyId = formData.get('partyId') as string;
+      imageFile = formData.get('image') as File | null;
+      credentialsFile = formData.get('credentials') as File | null;
+
+      // Build data object
+      data = {
+        positionId: positionId ? parseInt(positionId) : undefined,
+        partyId: partyId && partyId !== 'null' ? parseInt(partyId) : null,
+      };
+
+      // Validate FormData fields
+      if (data.positionId && isNaN(data.positionId)) {
+        return apiResponse({
+          success: false,
+          message: "Invalid position ID format",
+          data: null,
+          error: "Bad Request",
+          status: 400
+        });
+      }
+
+      if (data.partyId && isNaN(data.partyId)) {
+        return apiResponse({
+          success: false,
+          message: "Invalid party ID format",
+          data: null,
+          error: "Bad Request",
+          status: 400
+        });
+      }
+    } else {
+      // Handle JSON (no file uploads)
+      const body = await request.json();
+
+      // Validate request body
+      const validation = validateWithZod(candidateUpdateSchema, body);
+      if (!('data' in validation)) return validation;
+
+      data = validation.data;
+    }
 
     // Check if candidate exists
     const existingCandidate = await db.candidate.findUnique({
@@ -294,6 +342,93 @@ export async function PUT(
       }
     }
 
+    // Handle file uploads if present (FormData only)
+    let imageObjectKey: string | null | undefined = data.imageObjectKey;
+    let imageProvider: string | null | undefined = data.imageProvider;
+    let credentialObjectKey: string | null | undefined = data.credentialObjectKey;
+    let credentialProvider: string | null | undefined = data.credentialProvider;
+
+    if (imageFile && imageFile.size > 0) {
+      // Validate image file
+      if (!(ALLOWED_FILE_TYPES.IMAGES as readonly string[]).includes(imageFile.type)) {
+        return apiResponse({
+          success: false,
+          message: "Invalid image file type. Only images are allowed.",
+          data: null,
+          error: "Bad Request",
+          status: 400
+        });
+      }
+
+      if (imageFile.size > FILE_LIMITS.IMAGE_MAX_SIZE) {
+        return apiResponse({
+          success: false,
+          message: `Image file too large. Maximum size: ${FILE_LIMITS.IMAGE_MAX_SIZE / (1024 * 1024)}MB`,
+          data: null,
+          error: "Bad Request",
+          status: 400
+        });
+      }
+
+      // Generate standardized object key for image using organization owner's user ID
+      const imageKey = generateObjectKey('candidates', user.id, 'image', imageFile.name);
+      
+      // Convert file to buffer
+      const imageBuffer = await imageFile.arrayBuffer();
+      
+      // Upload image with automatic S3 + local fallback
+      const imageUpload = await uploadFile(Buffer.from(imageBuffer), imageKey, {
+        contentType: imageFile.type,
+        isPublic: true // Candidate images are public
+      });
+
+      imageObjectKey = imageUpload.key;
+      imageProvider = imageUpload.provider;
+    }
+
+    if (credentialsFile && credentialsFile.size > 0) {
+      // Validate credentials file
+      if (credentialsFile.type !== ALLOWED_FILE_TYPES.PDF[0]) {
+        return apiResponse({
+          success: false,
+          message: "Invalid credentials file type. Only PDF files are allowed.",
+          data: null,
+          error: "Bad Request",
+          status: 400
+        });
+      }
+
+      if (credentialsFile.size > FILE_LIMITS.PDF_MAX_SIZE) {
+        return apiResponse({
+          success: false,
+          message: `Credentials file too large. Maximum size: ${FILE_LIMITS.PDF_MAX_SIZE / (1024 * 1024)}MB`,
+          data: null,
+          error: "Bad Request",
+          status: 400
+        });
+      }
+
+      // Generate standardized object key for credentials
+      const credentialKey = generateObjectKey('candidates', user.id, 'credentials', credentialsFile.name);
+      
+      // Convert file to buffer
+      const credentialBuffer = await credentialsFile.arrayBuffer();
+      
+      // Upload credentials with automatic S3 + local fallback
+      const credentialUpload = await uploadFile(Buffer.from(credentialBuffer), credentialKey, {
+        contentType: credentialsFile.type,
+        isPublic: false // Credentials are private
+      });
+
+      credentialObjectKey = credentialUpload.key;
+      credentialProvider = credentialUpload.provider;
+    }
+
+    // Log which provider was used (for monitoring)
+    if (imageFile || credentialsFile) {
+      console.log(`📤 Candidate files updated - Image: ${imageProvider || 'none'}, Credentials: ${credentialProvider || 'none'}`);
+    }
+
     // Update candidate with experiences
     const updatedCandidate = await db.$transaction(async (tx) => {
       // Update main candidate record
@@ -302,10 +437,10 @@ export async function PUT(
         data: {
           positionId: data.positionId || existingCandidate.positionId,
           partyId: data.partyId !== undefined ? data.partyId : undefined,
-          imageObjectKey: data.imageObjectKey !== undefined ? data.imageObjectKey : undefined,
-          imageProvider: data.imageProvider !== undefined ? data.imageProvider : undefined,
-          credentialObjectKey: data.credentialObjectKey !== undefined ? data.credentialObjectKey : undefined,
-          credentialProvider: data.credentialProvider !== undefined ? data.credentialProvider : undefined,
+          imageObjectKey: imageObjectKey !== undefined ? imageObjectKey : undefined,
+          imageProvider: imageProvider !== undefined ? imageProvider : undefined,
+          credentialObjectKey: credentialObjectKey !== undefined ? credentialObjectKey : undefined,
+          credentialProvider: credentialProvider !== undefined ? credentialProvider : undefined,
           updatedAt: new Date()
         }
       });

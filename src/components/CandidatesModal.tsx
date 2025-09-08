@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { SubmitButton } from "@/components/SubmitButton";
+import { FileDropzone } from "@/components/FileDropzone";
+import { UploadedFileDisplay } from "@/components/UploadedFileDisplay";
 
 // Define lightweight types used internally for fetched options
 type VoterOpt = { id: number; firstName: string; lastName: string; email?: string };
@@ -10,16 +12,8 @@ type PartyOpt = { id: number; name: string };
 type CandidatesModalProps = {
   open: boolean;
   onClose: () => void;
-  // Will receive a FormData already prepared for /api/candidates on create,
-  // and a plain object payload on edit
-  onSave: (payload: FormData | {
-    positionId?: number;
-    partyId?: number | null;
-    imageObjectKey?: string | null;
-    imageProvider?: string | null;
-    credentialObjectKey?: string | null;
-    credentialProvider?: string | null;
-  }) => void;
+  // Will receive FormData for both create and edit operations (to support file uploads)
+  onSave: (payload: FormData) => void;
   electionId: number;
   // Optional pre-provided options; if not provided, the modal will fetch them
   voters?: VoterOpt[];
@@ -36,6 +30,7 @@ type CandidatesModalProps = {
   };
   disableSave?: boolean;
   isEditMode?: boolean;
+  candidateId?: number | null;
 };
 
 export function CandidatesModal({
@@ -57,6 +52,7 @@ export function CandidatesModal({
   },
   disableSave,
   isEditMode = false,
+  candidateId,
 }: CandidatesModalProps) {
   const [voterId, setVoterId] = useState<number | undefined>(initialData.voterId);
   const [positionId, setPositionId] = useState<number | undefined>(initialData.positionId);
@@ -71,6 +67,9 @@ export function CandidatesModal({
   // Sync state when modal opens or initialData changes (for edit prefill)
   useEffect(() => {
     if (!open) return;
+
+    // Reset submitting state when modal opens
+    setSubmitting(false);
 
     // Only update if we have actual initialData (edit mode)
     if (initialData && initialData.voterId) {
@@ -113,6 +112,7 @@ export function CandidatesModal({
   const [positions, setPositions] = useState<PositionOpt[]>([]);
   const [parties, setParties] = useState<PartyOpt[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
+  const [submitting, setSubmitting] = useState(false); // Separate state for form submission
 
   // Seed from props when modal opens
   useEffect(() => {
@@ -142,6 +142,26 @@ export function CandidatesModal({
     if (scopeName) return scopeName;
     if (p.votingScopeId) return `Scope #${p.votingScopeId}`;
     return "All voters"; // no scope restriction
+  };
+
+  // Helper function to create existing file objects
+  const createExistingFile = (filename: string, type: string) => {
+    return new File([""], filename, { type, lastModified: new Date().getTime() });
+  };
+
+  // File upload handlers
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImage(file);
+    }
+  };
+
+  const handleCredentialsUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCredentials(file);
+    }
   };
 
   // When modal opens, fetch options if not provided
@@ -231,42 +251,54 @@ export function CandidatesModal({
       return;
     }
 
-    if (isEditMode) {
-      // For edit, send a JSON payload compatible with PUT /api/candidates/[id]
-      const payload: { positionId: number; partyId?: number | null } = {
-        positionId,
-      };
-      // Always include partyId, even if null
-      payload.partyId = partyId;
-      // Include storage object keys/providers if present (no legacy URLs)
-      if (imageObjectKey !== undefined) (payload as any).imageObjectKey = imageObjectKey;
-      if (imageProvider !== undefined) (payload as any).imageProvider = imageProvider;
-      if (credentialObjectKey !== undefined) (payload as any).credentialObjectKey = credentialObjectKey;
-      if (credentialProvider !== undefined) (payload as any).credentialProvider = credentialProvider;
-      onSave(payload);
+    if (submitting || disableSave || loadingOptions) return; // Prevent submission when disabled or loading
+
+    setSubmitting(true);
+
+    try {
+      if (isEditMode) {
+        // For edit, send FormData (like organization modal does) to support file uploads
+        const formData = new FormData();
+        formData.append('positionId', positionId!.toString());
+        
+        // Handle party ID - if null, append 'null' string, otherwise append the ID
+        if (partyId !== null) {
+          formData.append('partyId', partyId.toString());
+        } else {
+          formData.append('partyId', 'null');
+        }
+        
+        // Append files if present
+        if (image) formData.append('image', image);
+        if (credentials) formData.append('credentials', credentials);
+        
+        onSave(formData);
+        onClose();
+        return;
+      }
+
+      // Create FormData object matching API expectations for create
+      const formData = new FormData();
+      formData.append('electionId', electionId.toString());
+      formData.append('voterId', voterId.toString());
+      formData.append('positionId', positionId.toString());
+
+      // Handle party ID - if null, append 'null' string, otherwise append the ID
+      if (partyId !== null) {
+        formData.append('partyId', partyId.toString());
+      } else {
+        // Explicitly append 'null' string if no party is selected
+        formData.append('partyId', 'null');
+      }
+      
+      if (image) formData.append('image', image);
+      if (credentials) formData.append('credentials', credentials);
+
+      onSave(formData);
       onClose();
-      return;
+    } finally {
+      setSubmitting(false);
     }
-
-    // Create FormData object matching API expectations for create
-    const formData = new FormData();
-    formData.append('electionId', electionId.toString());
-    formData.append('voterId', voterId.toString());
-    formData.append('positionId', positionId.toString());
-
-    // Handle party ID - if null, append 'null' string, otherwise append the ID
-    if (partyId !== null) {
-      formData.append('partyId', partyId.toString());
-    } else {
-      // Explicitly append 'null' string if no party is selected
-      formData.append('partyId', 'null');
-    }
-    
-    if (image) formData.append('image', image);
-    if (credentials) formData.append('credentials', credentials);
-
-    onSave(formData);
-    onClose();
   };
 
   if (!open) return null;
@@ -369,52 +401,73 @@ export function CandidatesModal({
               </div>
 
               {/* Files section */}
-              {isEditMode ? (
-                <div className="col-span-2 grid grid-cols-2 gap-4">
-                  <div className="sm:col-span-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Current Photo</label>
-                    {imageObjectKey ? (
-                      <p className="text-sm text-gray-700 break-all">{imageObjectKey}{imageProvider ? ` (${imageProvider})` : ''}</p>
-                    ) : (
-                      <p className="text-sm text-gray-500">None</p>
-                    )}
+              <div className="col-span-2">
+                {/* Candidate Photo */}
+                <FileDropzone
+                  label="Candidate Photo"
+                  description="Upload candidate's photo (PNG, JPG, JPEG, GIF, WebP)."
+                  accept="image/png,image/jpg,image/jpeg,image/gif,image/webp,image/*"
+                  onChange={handleImageUpload}
+                  fileTypeText="PNG, JPG, JPEG, GIF, WebP (max. 5MB)"
+                  id="image-upload"
+                />
+                {/* Photo display - show new upload or existing photo */}
+                {image && (
+                  <div className="w-full mt-2">
+                    <UploadedFileDisplay file={image} onRemove={() => {
+                      setImage(null);
+                      // Clear the file input value to allow re-uploading the same file (Chrome fix)
+                      const input = document.getElementById("image-upload") as HTMLInputElement | null;
+                      if (input) input.value = '';
+                    }} />
                   </div>
-                  <div className="sm:col-span-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Current Credentials</label>
-                    {credentialObjectKey ? (
-                      <p className="text-sm text-gray-700 break-all">{credentialObjectKey}{credentialProvider ? ` (${credentialProvider})` : ''}</p>
-                    ) : (
-                      <p className="text-sm text-gray-500">None</p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="sm:col-span-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Candidate Photo
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={e => setImage(e.target.files?.[0] || null)}
-                      className="w-full border border-[var(--color-secondary)] rounded-md px-3 py-2 text-sm bg-white text-gray-900"
+                )}
+                {!image && imageObjectKey && (
+                  <div className="w-full mt-2">
+                    <UploadedFileDisplay 
+                      file={createExistingFile("Current_Photo.jpg", "image/jpeg")} 
+                      isExistingFile={true}
+                      organizationId={candidateId || undefined}
+                      objectKey={imageObjectKey}
                     />
+                    <p className="text-sm text-gray-500 mt-1">Current photo (upload a new one to replace)</p>
                   </div>
+                )}
+              </div>
 
-                  <div className="sm:col-span-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Candidate Credentials (PDF)
-                    </label>
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      onChange={e => setCredentials(e.target.files?.[0] || null)}
-                      className="w-full border border-[var(--color-secondary)] rounded-md px-3 py-2 text-sm bg-white text-gray-900"
-                    />
+              <div className="col-span-2">
+                {/* Candidate Credentials */}
+                <FileDropzone
+                  label="Candidate Credentials (PDF)"
+                  description="Upload candidate's credentials/resume in PDF format."
+                  accept=".pdf"
+                  onChange={handleCredentialsUpload}
+                  fileTypeText="PDF (max. 5MB)"
+                  id="credentials-upload"
+                />
+                {/* Credentials display - show new upload or existing credentials */}
+                {credentials && (
+                  <div className="w-full mt-2">
+                    <UploadedFileDisplay file={credentials} onRemove={() => {
+                      setCredentials(null);
+                      // Clear the file input value to allow re-uploading the same file (Chrome fix)
+                      const input = document.getElementById("credentials-upload") as HTMLInputElement | null;
+                      if (input) input.value = '';
+                    }} />
                   </div>
-                </>
-              )}
+                )}
+                {!credentials && credentialObjectKey && (
+                  <div className="w-full mt-2">
+                    <UploadedFileDisplay 
+                      file={createExistingFile("Current_Credentials.pdf", "application/pdf")} 
+                      isExistingFile={true}
+                      organizationId={candidateId || undefined}
+                      objectKey={credentialObjectKey}
+                    />
+                    <p className="text-sm text-gray-500 mt-1">Current credentials (upload new ones to replace)</p>
+                  </div>
+                )}
+              </div>
 
               <div className="col-span-2 flex justify-end gap-2 mt-2">
                 <SubmitButton
@@ -427,8 +480,8 @@ export function CandidatesModal({
                   type="submit"
                   variant="small"
                   label={isEditMode ? 'Save' : 'Add'}
-                  isLoading={disableSave || loadingOptions}
-                  className="px-5 py-2.5 text-sm font-medium rounded-lg"
+                  isLoading={submitting}
+                  className={`px-5 py-2.5 text-sm font-medium rounded-lg ${disableSave || loadingOptions ? 'opacity-60 cursor-not-allowed' : ''}`}
                 />
               </div>
             </form>

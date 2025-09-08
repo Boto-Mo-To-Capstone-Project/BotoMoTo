@@ -226,25 +226,15 @@ export default function CandidatesDashboardPage() {
     }
   };
 
-  const handleEditCandidateSave = async (data: any) => {
+  const handleEditCandidateSave = async (formData: FormData) => {
     if (!isEditMode || !editingCandidateId) return;
     try {
       setModalLoading(true);
 
-      // Whitelist only updatable fields
-      const payload: any = {
-        positionId: data.positionId,
-      };
-      if (data.partyId !== undefined) payload.partyId = data.partyId;
-      if (data.imageObjectKey !== undefined) payload.imageObjectKey = data.imageObjectKey;
-      if (data.imageProvider !== undefined) payload.imageProvider = data.imageProvider;
-      if (data.credentialObjectKey !== undefined) payload.credentialObjectKey = data.credentialObjectKey;
-      if (data.credentialProvider !== undefined) payload.credentialProvider = data.credentialProvider;
-
+      // Send FormData directly to support file uploads (like organization edit)
       const res = await fetch(`/api/candidates/${editingCandidateId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: formData, // No Content-Type header - let browser set it for FormData
       });
       const json = await res.json().catch(() => ({}));
 

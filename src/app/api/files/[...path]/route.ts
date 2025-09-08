@@ -29,11 +29,13 @@ export async function GET(
     // Get the storage service
     const storage = getStorageService();
     
-    // Extract user ID from path (format: organizations/USER_ID/fileType/filename)
+    // Extract user ID from path based on the file category
+    // Format: organizations/USER_ID/fileType/filename
+    // Format: candidates/USER_ID/fileType/filename
     const pathParts = path;
     let fileOwnerUserId: string | null = null;
     
-    if (pathParts.length >= 2 && pathParts[0] === 'organizations') {
+    if (pathParts.length >= 2 && (pathParts[0] === 'organizations' || pathParts[0] === 'candidates')) {
       fileOwnerUserId = pathParts[1]; // User ID from URL
     }
     
@@ -103,10 +105,12 @@ export async function DELETE(
     }
 
     // Extract user ID from path for ownership verification
+    // Format: organizations/USER_ID/fileType/filename  
+    // Format: candidates/USER_ID/fileType/filename
     const pathParts = path;
     let fileOwnerUserId: string | null = null;
     
-    if (pathParts.length >= 2 && pathParts[0] === 'organizations') {
+    if (pathParts.length >= 2 && (pathParts[0] === 'organizations' || pathParts[0] === 'candidates')) {
       fileOwnerUserId = pathParts[1]; // User ID from URL
     }
 

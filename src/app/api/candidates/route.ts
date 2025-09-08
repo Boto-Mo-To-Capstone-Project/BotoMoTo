@@ -368,8 +368,8 @@ async function handleSingleCandidateCreation(request: NextRequest, user: any) {
       });
     }
 
-    // Generate standardized object key for image
-    const imageKey = generateObjectKey('candidates', candidateData.voterId, 'image', imageFile.name);
+    // Generate standardized object key for image using organization owner's user ID
+    const imageKey = generateObjectKey('candidates', user.id, 'image', imageFile.name);
     
     // Convert file to buffer
     const imageBuffer = await imageFile.arrayBuffer();
@@ -404,8 +404,8 @@ async function handleSingleCandidateCreation(request: NextRequest, user: any) {
       });
     }
 
-    // Generate standardized object key for credentials
-    const credentialKey = generateObjectKey('candidates', candidateData.voterId, 'credentials', credentialsFile.name);
+    // Generate standardized object key for credentials using organization owner's user ID
+    const credentialKey = generateObjectKey('candidates', user.id, 'credentials', credentialsFile.name);
     
     // Convert file to buffer
     const credentialBuffer = await credentialsFile.arrayBuffer();

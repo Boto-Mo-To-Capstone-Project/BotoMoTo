@@ -158,7 +158,12 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
           {/* Logo display - show new upload or existing logo */}
           {logo && (
             <div className="w-full">
-              <UploadedFileDisplay file={logo} onRemove={() => setLogo(null)} />
+              <UploadedFileDisplay file={logo} onRemove={() => {
+                setLogo(null);
+                // Clear the file input value to allow re-uploading the same file (Chrome fix)
+                const input = document.getElementById("logo-upload") as HTMLInputElement | null;
+                if (input) input.value = '';
+              }} />
             </div>
           )}
           {!logo && existingLogoObjectKey && (
@@ -185,7 +190,12 @@ export function CompleteTaskModal({ open, onClose, onSave, initialData, isLoadin
           {/* Letter display - show new upload, existing letter, or sample letter */}
           {organizationLetter && (
             <div className="w-full">
-              <UploadedFileDisplay file={organizationLetter} onRemove={() => setOrganizationLetter(null)} />
+              <UploadedFileDisplay file={organizationLetter} onRemove={() => {
+                setOrganizationLetter(null);
+                // Clear the file input value to allow re-uploading the same file (Chrome fix)
+                const input = document.getElementById("file-upload") as HTMLInputElement | null;
+                if (input) input.value = '';
+              }} />
             </div>
           )}
           {!organizationLetter && existingLetterObjectKey && (
