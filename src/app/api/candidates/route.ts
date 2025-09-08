@@ -4,10 +4,12 @@ import { validateWithZod } from "@/lib/validateWithZod";
 import { createAuditLog } from "@/lib/audit";
 import { candidateSchema } from "@/lib/schema";
 import db from "@/lib/db/db";
-import { ROLES, ORGANIZATION_STATUS, FILE_LIMITS } from "@/lib/constants";
-import { writeFile, mkdir } from 'fs/promises';
-import { join, extname } from 'path';
+import { ROLES, ORGANIZATION_STATUS, FILE_LIMITS, ALLOWED_FILE_TYPES } from "@/lib/constants";
+import { extname } from 'path';
 import { requireAuth } from "@/lib/helpers/requireAuth";
+
+// Import storage system (replaces fs operations)
+import { uploadFile, generatePublicUrl, generatePresignedUrl, generateObjectKey } from "@/lib/storage";
 
 
 // Handle GET request to fetch candidates
@@ -338,18 +340,18 @@ async function handleSingleCandidateCreation(request: NextRequest, user: any) {
     });
   }
 
-  // File upload handling
-  let imageUrl: string | null = null;
-  let credentialUrl: string | null = null;
+  // File upload handling with new storage system
+  let imageObjectKey: string | null = null;
+  let imageProvider: string | null = null;
+  let credentialObjectKey: string | null = null;
+  let credentialProvider: string | null = null;
 
   if (imageFile && imageFile.size > 0) {
     // Validate image file
-    const imageExt = extname(imageFile.name).toLowerCase();
-    const allowedImageExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
-    if (!allowedImageExtensions.includes(imageExt)) {
+    if (!(ALLOWED_FILE_TYPES.IMAGES as readonly string[]).includes(imageFile.type)) {
       return apiResponse({
         success: false,
-        message: `Invalid image file type. Allowed extensions: ${allowedImageExtensions.join(', ')}`,
+        message: "Invalid image file type. Only images are allowed.",
         error: "Bad Request",
         status: 400
       });
@@ -364,30 +366,35 @@ async function handleSingleCandidateCreation(request: NextRequest, user: any) {
       });
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'candidates', 'images');
-    await mkdir(uploadsDir, { recursive: true });
+    // Generate standardized object key for image
+    const imageKey = generateObjectKey('candidates', candidateData.voterId, 'image', imageFile.name);
+    
+    // Convert file to buffer
+    const imageBuffer = await imageFile.arrayBuffer();
+    
+    // Upload image with automatic S3 + local fallback
+    const imageUpload = await uploadFile(Buffer.from(imageBuffer), imageKey, {
+      contentType: imageFile.type,
+      isPublic: true, // Candidate images are public
+      metadata: { 
+        userId: user.id.toString(),
+        originalName: imageFile.name,
+        uploadType: 'candidate_image',
+        electionId: candidateData.electionId.toString(),
+        voterId: candidateData.voterId.toString()
+      }
+    });
 
-    // Generate unique filename
-    const timestamp = Date.now();
-    const imageFileName = `${timestamp}-${Math.random().toString(36).substring(2)}${imageExt}`;
-    const imagePath = join(uploadsDir, imageFileName);
-
-    // Save image file
-    const imageBytes = await imageFile.arrayBuffer();
-    await writeFile(imagePath, Buffer.from(imageBytes));
-
-    imageUrl = `/uploads/candidates/images/${imageFileName}`;
+    imageObjectKey = imageUpload.key;
+    imageProvider = imageUpload.provider;
   }
 
   if (credentialsFile && credentialsFile.size > 0) {
     // Validate credentials file
-    const credentialsExt = extname(credentialsFile.name).toLowerCase();
-    const allowedDocumentExtensions = ['.pdf'];
-    if (!allowedDocumentExtensions.includes(credentialsExt)) {
+    if (credentialsFile.type !== ALLOWED_FILE_TYPES.PDF[0]) {
       return apiResponse({
         success: false,
-        message: `Invalid credentials file type. Allowed extensions: ${allowedDocumentExtensions.join(', ')}`,
+        message: "Invalid credentials file type. Only PDF files are allowed.",
         error: "Bad Request",
         status: 400
       });
@@ -402,20 +409,32 @@ async function handleSingleCandidateCreation(request: NextRequest, user: any) {
       });
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'candidates', 'credentials');
-    await mkdir(uploadsDir, { recursive: true });
+    // Generate standardized object key for credentials
+    const credentialKey = generateObjectKey('candidates', candidateData.voterId, 'credentials', credentialsFile.name);
+    
+    // Convert file to buffer
+    const credentialBuffer = await credentialsFile.arrayBuffer();
+    
+    // Upload credentials with automatic S3 + local fallback
+    const credentialUpload = await uploadFile(Buffer.from(credentialBuffer), credentialKey, {
+      contentType: credentialsFile.type,
+      isPublic: false, // Credentials are private
+      metadata: { 
+        userId: user.id.toString(),
+        originalName: credentialsFile.name,
+        uploadType: 'candidate_credentials',
+        electionId: candidateData.electionId.toString(),
+        voterId: candidateData.voterId.toString()
+      }
+    });
 
-    // Generate unique filename
-    const timestamp = Date.now();
-    const credentialsFileName = `${timestamp}-${Math.random().toString(36).substring(2)}${credentialsExt}`;
-    const credentialsPath = join(uploadsDir, credentialsFileName);
+    credentialObjectKey = credentialUpload.key;
+    credentialProvider = credentialUpload.provider;
+  }
 
-    // Save credentials file
-    const credentialsBytes = await credentialsFile.arrayBuffer();
-    await writeFile(credentialsPath, Buffer.from(credentialsBytes));
-
-    credentialUrl = `/uploads/candidates/credentials/${credentialsFileName}`;
+  // Log which provider was used (for monitoring)
+  if (imageObjectKey || credentialObjectKey) {
+    console.log(`📤 Candidate files uploaded - Image: ${imageProvider || 'none'}, Credentials: ${credentialProvider || 'none'}`);
   }
   
   // Validate request body
@@ -513,6 +532,19 @@ async function handleSingleCandidateCreation(request: NextRequest, user: any) {
 
   // Create candidate with related experiences
   const candidate = await db.$transaction(async (tx) => {
+    // Generate URLs from object keys for database storage (backward compatibility)
+    let imageUrl: string | null = null;
+    let credentialUrl: string | null = null;
+
+    if (imageObjectKey && imageProvider) {
+      imageUrl = generatePublicUrl(imageObjectKey, imageProvider);
+    }
+
+    if (credentialObjectKey && credentialProvider) {
+      // For credentials, generate a presigned URL that's valid for 1 year for backward compatibility
+      credentialUrl = await generatePresignedUrl(credentialObjectKey, 365 * 24 * 3600, credentialProvider);
+    }
+
     const newCandidate = await tx.candidate.create({
       data: {
         electionId: data.electionId,
