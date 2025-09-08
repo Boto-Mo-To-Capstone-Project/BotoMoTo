@@ -163,12 +163,11 @@ export function TrialSendingModal({
                 </div>
                 <div className="sm:col-span-1">
                   <InputField
-                    label="Middle Initial*"
+                    label="Middle Initial"
                     type="text"
                     value={voterMiddleInitial}
                     onChange={e => setVoterMiddleInitial(e.target.value)}
                     placeholder="Enter Middle Initial"
-                    required
                   />
                 </div>
                 <div className="col-span-1">
@@ -183,12 +182,11 @@ export function TrialSendingModal({
                 </div>
                 <div className="col-span-1">
                   <InputField
-                    label="Contact Number*"
+                    label="Contact Number"
                     type="text"
                     value={contactNumber}
                     onChange={e => setContactNumber(e.target.value)}
                     placeholder="Enter Contact Number"
-                    required
                   />
                 </div>
                 {/* NEW: Voting Scope selector (optional) */}

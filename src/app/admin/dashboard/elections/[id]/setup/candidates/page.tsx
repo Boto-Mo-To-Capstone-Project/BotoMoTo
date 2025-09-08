@@ -384,7 +384,7 @@ export default function CandidatesDashboardPage() {
         }
 
         // Fetch voters
-        const votersRes = await fetch(`/api/voters?electionId=${electionId}&limit=1000`, {
+        const votersRes = await fetch(`/api/voters?electionId=${electionId}&all=true`, {
           signal: ctrl.signal
         });
         if (votersRes.ok) {

@@ -291,7 +291,7 @@ export function CandidatesModal({
 
               <div className="sm:col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Party (Optional)
+                  Party
                 </label>
                 <select
                   value={partyId ?? ''}
