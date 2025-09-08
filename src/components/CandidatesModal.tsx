@@ -83,14 +83,39 @@ export function CandidatesModal({
     // Always reset file inputs when modal opens
     setImage(null);
     setCredentials(null);
+
+    // Reset options if we need to fetch them fresh
+    const needVoters = !votersProp || votersProp.length === 0;
+    const needPositions = !positionsProp || positionsProp.length === 0;
+    const needParties = !partiesProp || partiesProp.length === 0;
+
+    if (needVoters) setVoters([]);
+    if (needPositions) setPositions([]);
+    if (needParties) setParties([]);
+    
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialData?.voterId]);
 
   // Local option state; seed from props when present
-  const [voters, setVoters] = useState<VoterOpt[]>(votersProp || []);
-  const [positions, setPositions] = useState<PositionOpt[]>(positionsProp || []);
-  const [parties, setParties] = useState<PartyOpt[]>(partiesProp || []);
+  const [voters, setVoters] = useState<VoterOpt[]>([]);
+  const [positions, setPositions] = useState<PositionOpt[]>([]);
+  const [parties, setParties] = useState<PartyOpt[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
+
+  // Seed from props when modal opens
+  useEffect(() => {
+    if (!open) return;
+    
+    if (votersProp && votersProp.length > 0) {
+      setVoters(votersProp);
+    }
+    if (positionsProp && positionsProp.length > 0) {
+      setPositions(positionsProp);
+    }
+    if (partiesProp && partiesProp.length > 0) {
+      setParties(partiesProp);
+    }
+  }, [open, votersProp, positionsProp, partiesProp]);
 
   // NEW: Build a map of name -> count to detect duplicates & provide scope context
   const duplicateNameCounts = useMemo(() => {
@@ -121,39 +146,60 @@ export function CandidatesModal({
     const fetchOptions = async () => {
       try {
         setLoadingOptions(true);
-        const reqs: Array<Promise<Response>> = [];
-        if (needVoters) reqs.push(fetch(`/api/voters?electionId=${electionId}`));
-        if (needPositions) reqs.push(fetch(`/api/positions?electionId=${electionId}`));
-        if (needParties) reqs.push(fetch(`/api/parties?electionId=${electionId}`));
+        
+        // Fetch each endpoint individually for better error handling
+        if (needVoters && !cancelled) {
+          try {
+            const res = await fetch(`/api/voters?electionId=${electionId}&all=true`);
+            if (res.ok) {
+              const json = await res.json();
+              const items = json?.data?.voters;
+              if (!cancelled && Array.isArray(items)) {
+                setVoters(items);
+              }
+            } else {
+              console.warn('Failed to fetch voters:', res.status, res.statusText);
+            }
+          } catch (e) {
+            console.warn('Error fetching voters:', e);
+          }
+        }
 
-        const resps = await Promise.all(reqs);
-        let vi = 0;
-        if (needVoters) {
-          const res = resps[vi++];
-          if (res.ok) {
-            const json = await res.json().catch(() => ({}));
-            const items = (json?.data?.voters || json?.data || json) as VoterOpt[] | undefined;
-            if (!cancelled && Array.isArray(items)) setVoters(items);
+        if (needPositions && !cancelled) {
+          try {
+            const res = await fetch(`/api/positions?electionId=${electionId}&all=true`);
+            if (res.ok) {
+              const json = await res.json();
+              const items = json?.data?.positions;
+              if (!cancelled && Array.isArray(items)) {
+                setPositions(items);
+              }
+            } else {
+              console.warn('Failed to fetch positions:', res.status, res.statusText);
+            }
+          } catch (e) {
+            console.warn('Error fetching positions:', e);
           }
         }
-        if (needPositions) {
-          const res = resps[vi++];
-          if (res?.ok) {
-            const json = await res.json().catch(() => ({}));
-            const items = (json?.data?.positions || json?.data || json) as PositionOpt[] | undefined;
-            if (!cancelled && Array.isArray(items)) setPositions(items);
-          }
-        }
-        if (needParties) {
-          const res = resps[vi++];
-          if (res?.ok) {
-            const json = await res.json().catch(() => ({}));
-            const items = (json?.data?.parties || json?.data || json) as PartyOpt[] | undefined;
-            if (!cancelled && Array.isArray(items)) setParties(items);
+
+        if (needParties && !cancelled) {
+          try {
+            const res = await fetch(`/api/parties?electionId=${electionId}&all=true`);
+            if (res.ok) {
+              const json = await res.json();
+              const items = json?.data?.parties;
+              if (!cancelled && Array.isArray(items)) {
+                setParties(items);
+              }
+            } else {
+              console.warn('Failed to fetch parties:', res.status, res.statusText);
+            }
+          } catch (e) {
+            console.warn('Error fetching parties:', e);
           }
         }
       } catch (e) {
-        // swallow; UI will still allow manual entry of IDs if needed
+        console.error('Error in fetchOptions:', e);
       } finally {
         if (!cancelled) setLoadingOptions(false);
       }
