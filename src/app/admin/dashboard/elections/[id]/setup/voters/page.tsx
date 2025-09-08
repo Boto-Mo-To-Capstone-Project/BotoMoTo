@@ -61,7 +61,7 @@ export default function VoterDashboardPage() {
   } | null>(null);
 
   // Data state from API
-  const [rows, setRows] = useState<Array<{
+  const [rawRows, setRawRows] = useState<Array<{
     id: number;
     name: string;
     status: string;
@@ -71,6 +71,36 @@ export default function VoterDashboardPage() {
     birthdate: string;
     voted: boolean;
   }>>([]);
+
+  // Frontend sorting function
+  const getSortedRows = () => {
+    if (!sortCol) return rawRows;
+    
+    const sorted = [...rawRows].sort((a, b) => {
+      let aVal: any = a[sortCol];
+      let bVal: any = b[sortCol];
+      
+      // Handle different data types
+      if (sortCol === "voted") {
+        aVal = aVal ? 1 : 0;
+        bVal = bVal ? 1 : 0;
+      } else if (typeof aVal === "string" && typeof bVal === "string") {
+        aVal = aVal.toLowerCase();
+        bVal = bVal.toLowerCase();
+      }
+      
+      if (sortDir === "asc") {
+        return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+      } else {
+        return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+      }
+    });
+    
+    return sorted;
+  };
+
+  // Get the final sorted rows for display
+  const rows = getSortedRows();
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false); // added for lazy loading
@@ -210,7 +240,7 @@ export default function VoterDashboardPage() {
       toast.success(message);
 
       // Optimistic update + refresh
-      setRows((prev) => prev.filter((r) => !voterIdsToDelete.includes(r.id)));
+      setRawRows((prev) => prev.filter((r) => !voterIdsToDelete.includes(r.id)));
       setSelectedIds([]);
       setReloadKey((k) => k + 1);
     } catch (e) {
@@ -389,7 +419,7 @@ export default function VoterDashboardPage() {
           page: String(page),
           limit: String(pageSize),
           ...(debouncedSearch ? { search: debouncedSearch } : {}),
-          ...(sortCol ? { sortCol: sortCol, sortDir: sortDir } : {}),
+          // Removed sortCol and sortDir - frontend sorting only
         });
         const res = await fetch(`/api/voters?${qs.toString()}`, {
           method: "GET",
@@ -419,7 +449,7 @@ export default function VoterDashboardPage() {
         }));
 
         if (!alive) return;
-        setRows(mapped);
+        setRawRows(mapped);
         setTotalPages(json.data?.pagination?.totalPages || 1);
         setHasLoaded(true);          // ✅ only after a successful (non-aborted) fetch
       } catch (e: any) {
@@ -438,7 +468,7 @@ export default function VoterDashboardPage() {
       alive = false;
       ctrl.abort();
     };
-  }, [electionId, page, pageSize, debouncedSearch, sortCol, sortDir, reloadKey]);
+  }, [electionId, page, pageSize, debouncedSearch, reloadKey]); // Removed sortCol, sortDir
 
   // NEW: Fetch voting scopes for this election (for the modal select)
   useEffect(() => {
