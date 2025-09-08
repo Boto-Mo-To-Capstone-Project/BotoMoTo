@@ -125,9 +125,6 @@ const CandidatesTable: React.FC<CandidatesTableProps> = ({
                   <FaSort className="inline opacity-50" />
                 )}
               </th>
-              <th className="py-2 px-3 border-b border-gray-200">
-                Credentials
-              </th>
             </tr>
           </thead>
           <tbody>
@@ -150,15 +147,12 @@ const CandidatesTable: React.FC<CandidatesTableProps> = ({
                   <td className="py-2 px-3 align-middle">
                     <div className="h-4 w-36 bg-gray-200 rounded animate-pulse" />
                   </td>
-                  <td className="py-2 px-3 align-middle text-center">
-                    <div className="h-6 w-20 bg-gray-200 rounded-full mx-auto animate-pulse" />
-                  </td>
                 </tr>
               ))
             ) : (!loading && hasLoaded && candidates.length === 0) ? (
               // Empty state
               <tr>
-                <td colSpan={7} className="px-4 py-4 text-center text-gray-400">
+                <td colSpan={5} className="px-4 py-4 text-center text-gray-400">
                   No candidates found.
                 </td>
               </tr>
@@ -184,9 +178,6 @@ const CandidatesTable: React.FC<CandidatesTableProps> = ({
                   <td className="py-2 px-3 align-middle">{candidate.position}</td>
                   <td className="py-2 px-3 align-middle">{candidate.partylist}</td>
                   <td className="py-2 px-3 align-middle">{candidate.email}</td>
-                  <td className="py-2 px-3 align-middle">
-                    {/* Download credentials button/logic here */}
-                  </td>
                 </tr>
               ))
             )}
