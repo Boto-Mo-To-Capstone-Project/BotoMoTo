@@ -112,44 +112,37 @@ export default function SuperAdminSurveyPage() {
         <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
           {/* Table */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-3">
-            {loading ? (
-              <div className="w-full p-4 bg-white shadow rounded-xl text-center text-gray-500">
-                Loading surveys...
-              </div>
-            ) : (
-              
-
-              <Table
-                title="All Surveys"
-                columns={[
-                  "Survey_ID",
-                  "Survey_Title",
-                  "Description",
-                  "Form_Schema",
-                  "Created_At",
-                  "Deleted_At",
-                  "Is_Deleted",
-                  "Is_Active",
-                ]}
-                data={rows}
-                showActions={true}
-                actions={["add", "edit", "delete"]}
-                selectedIds={selectedIds}
-                onSelectionChange={handleSelectionChange}
-                onAdd={handleAdd}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                // required pagination props
-                page={page}
-                totalPages={totalPages}
-                onFirst={handleFirst}
-                onPrev={handlePrev} 
-                onNext={handleNext}
-                onLast={handleLast}
-                pageSize={pageSize}
-                onPageSizeChange={handlePageSizeChange}
-              />
-            )}
+            <Table
+              loading={loading}
+              title="All Surveys"
+              columns={[
+                "Survey_ID",
+                "Survey_Title",
+                "Description",
+                "Form_Schema",
+                "Created_At",
+                "Deleted_At",
+                "Is_Deleted",
+                "Is_Active",
+              ]}
+              data={rows}
+              showActions={true}
+              actions={["add", "edit", "delete"]}
+              selectedIds={selectedIds}
+              onSelectionChange={handleSelectionChange}
+              onAdd={handleAdd}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              // required pagination props
+              page={page}
+              totalPages={totalPages}
+              onFirst={handleFirst}
+              onPrev={handlePrev} 
+              onNext={handleNext}
+              onLast={handleLast}
+              pageSize={pageSize}
+              onPageSizeChange={handlePageSizeChange}
+            />
           </div>
         </div>
       </div>

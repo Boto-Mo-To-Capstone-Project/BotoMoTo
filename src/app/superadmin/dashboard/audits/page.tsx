@@ -228,36 +228,28 @@ function AuditsPageContent() {
         className="app h-full flex flex-col min-h-[calc(100vh-4rem)] bg-gray-50"
       >
         <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
-          {loading ? (
-            <div className="w-full p-8 text-center">
-              <div className="inline-flex items-center gap-2 text-gray-500">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                Loading audits...
-              </div>
-            </div>
-          ) : (
-            <Table
-              title="All Audits"
-              columns={columns}
-              data={rows}
-              showActions={true}
-              actions={["export"]}
-              showFilters={true}
-              filters={filters}
-              onRowClick={(row) => {
-                const idx = rows.findIndex((r) => r.Audit_ID === row.Audit_ID);
-                if (idx >= 0) openDetails(idx);
-              }}
-              page={page}
-              totalPages={totalPages}
-              onFirst={handleFirst}
-              onPrev={handlePrev}
-              onNext={handleNext}
-              onLast={handleLast}
-              pageSize={pageSize}
-              onPageSizeChange={handlePageSizeChange}
-            />
-          )}
+          <Table
+            loading={loading}
+            title="All Audits"
+            columns={columns}
+            data={rows}
+            showActions={true}
+            actions={["export"]}
+            showFilters={true}
+            filters={filters}
+            onRowClick={(row) => {
+              const idx = rows.findIndex((r) => r.Audit_ID === row.Audit_ID);
+              if (idx >= 0) openDetails(idx);
+            }}
+            page={page}
+            totalPages={totalPages}
+            onFirst={handleFirst}
+            onPrev={handlePrev}
+            onNext={handleNext}
+            onLast={handleLast}
+            pageSize={pageSize}
+            onPageSizeChange={handlePageSizeChange}
+          />
         </div>
       </div>
 

@@ -317,27 +317,24 @@ function ElectionDashboardContent() {
 
           {/* Table */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-3">
-            {loading && electionsList.length === 0 ? (
-              <div className="w-full p-4 text-center text-gray-500">Loading elections…</div>
-            ) : (
-              <ElectionTable
-                elections={paginatedElections}
-                sortCol={sortCol}
-                sortDir={sortDir}
-                onSort={handleSort}
-                page={page}
-                totalPages={Math.max(1, Math.ceil(filteredElections.length / pageSize))}
-                onFirst={handleFirst}
-                onPrev={handlePrev}
-                onNext={handleNext}
-                onLast={handleLast}
-                pageSize={pageSize}
-                onPageSizeChange={handlePageSizeChange}
-                onRowClick={(election) => handleCheckboxChange(election.id)}
-                selectedIds={selectedIds}
-                onCheckboxChange={handleCheckboxChange}
-              />
-            )}
+            <ElectionTable
+              loading={loading}
+              elections={paginatedElections}
+              sortCol={sortCol}
+              sortDir={sortDir}
+              onSort={handleSort}
+              page={page}
+              totalPages={Math.max(1, Math.ceil(filteredElections.length / pageSize))}
+              onFirst={handleFirst}
+              onPrev={handlePrev}
+              onNext={handleNext}
+              onLast={handleLast}
+              pageSize={pageSize}
+              onPageSizeChange={handlePageSizeChange}
+              onRowClick={(election) => handleCheckboxChange(election.id)}
+              selectedIds={selectedIds}
+              onCheckboxChange={handleCheckboxChange}
+            />
           </div>
         </div>
         {/* Modal kept for future use but not rendered here */}

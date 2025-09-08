@@ -33,12 +33,16 @@ interface PositionsTableProps {
   title?: string;
   selectedIds?: number[];
   onCheckboxChange?: (id: number) => void;
+  loading: boolean;
+  hasLoaded: boolean;
 }
 
 export default function PositionsTable({
   title = 'All Positions',
   selectedIds = [],
   onCheckboxChange,
+  loading,
+  hasLoaded,
   ...props
 }: PositionsTableProps) {
   const allChecked = props.positions.length > 0 && props.positions.every(p => selectedIds.includes(p.id));
@@ -131,13 +135,39 @@ export default function PositionsTable({
             </tr>
           </thead>
           <tbody>
-            {props.positions.length === 0 ? (
+            {(!hasLoaded && loading) ? (
+              // Loading skeleton
+              [...Array(5)].map((_, idx) => (
+                <tr key={idx} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="w-4 h-4 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                </tr>
+              ))
+            ) : (!loading && hasLoaded && props.positions.length === 0) ? (
+              // Empty state
               <tr>
                 <td colSpan={6} className="px-4 py-4 text-center text-gray-400">
                   No positions found.
                 </td>
               </tr>
             ) : (
+              // Actual data
               props.positions.map((position, idx) => (
                 <tr
                   key={position.id + '-' + idx}

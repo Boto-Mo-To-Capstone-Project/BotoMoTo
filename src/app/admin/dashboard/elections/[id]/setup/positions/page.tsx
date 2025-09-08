@@ -44,6 +44,9 @@ export default function PositionsDashboardPage() {
   const [editingPositionId, setEditingPositionId] = useState<number | null>(null);
   const [editInitialData, setEditInitialData] = useState<any>(undefined);
 
+  const [loading, setLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false); // added for lazy loading
+
   // Data state from API
   const [rows, setRows] = useState<Array<{
     id: number;
@@ -331,7 +334,9 @@ export default function PositionsDashboardPage() {
     if (!electionId || Number.isNaN(electionId)) return;
 
     const ctrl = new AbortController();
+    let alive = true;
     const run = async () => {
+      setLoading(true);
       try {
         const qs = new URLSearchParams({
           electionId: String(electionId),
@@ -347,7 +352,9 @@ export default function PositionsDashboardPage() {
         const json = await res.json();
 
         if (!res.ok || json?.success === false) {
+          if (!alive) return;
           console.error("Failed to load positions:", json?.message || res.statusText);
+          setHasLoaded(true);
           return;
         }
 
@@ -361,17 +368,26 @@ export default function PositionsDashboardPage() {
           order: p.order || 0,
         }));
 
+        if (!alive) return;
         setRows(mapped);
         setTotalPages(json.data?.pagination?.totalPages || 1);
+        setHasLoaded(true)
       } catch (e: any) {
-        if (e?.name !== "AbortError") {
-          console.error("Positions fetch error:", e);
-        }
+        if (e?.name === "AbortError") return; // do nothing on abort
+        if (!alive) return;
+        console.error("Positions fetch error:", e);
+        setHasLoaded(true);          // treat as loaded so empty/error UI can show
+      } finally {
+        if (!alive) return;
+        setLoading(false);
       }
     };
 
     run();
-    return () => ctrl.abort();
+    return () => {
+      alive = false;
+      ctrl.abort()
+    };
   }, [electionId, page, pageSize, debouncedSearch, sortCol, sortDir, reloadKey]);
 
   // NEW: Fetch voting scopes for this election (for the modal select)
@@ -560,6 +576,8 @@ export default function PositionsDashboardPage() {
           {/* Table */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-5">
             <PositionsTable
+              hasLoaded={hasLoaded}
+              loading={loading}
               positions={rows}
               sortCol={sortCol}
               sortDir={sortDir}

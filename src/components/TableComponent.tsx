@@ -43,6 +43,7 @@ type TableProps = {
   onNext: () => void;
   onLast: () => void;
   onPageSizeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  loading: boolean;
 };
 
 type SortDirection = "asc" | "desc";
@@ -66,6 +67,7 @@ export default function Table({
   onExport,
   showFilters,
   filters = [],
+  loading,
   
   ...props
 }: TableProps) {
@@ -401,34 +403,54 @@ export default function Table({
           </tr>
         </thead>
         <tbody>
-          {paginatedData.map((row, idx) => {
-            const globalIndex = (currentPage - 1) *  props.pageSize + idx;
-            return (
+          {loading ? (
+            // Render 5 skeleton rows while loading
+            [...Array(5)].map((_, idx) => (
               <tr
-                key={globalIndex}
-                className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
-                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                key={`skeleton-${idx}`}
+                className={`border-b border-gray-200 ${
+                  idx % 2 === 0 ? "bg-gray-50" : "bg-white"
+                }`}
               >
-                <td
-                  className="py-2 px-3 align-middle"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedRows.has(globalIndex)}
-                    onChange={() => toggleSelectRow(globalIndex)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
+                <td className="py-2 px-3">
+                  <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
                 </td>
-                {columns.map((col) => (
-                  <td key={col} className="py-2 px-3 align-middle truncate max-w-[180px]">
-                    {typeof row[col] === "string" ? toSentenceCase(row[col]) : row[col]}
+                {columns.map((col, colIdx) => (
+                  <td key={colIdx} className="py-2 px-3">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
                   </td>
                 ))}
               </tr>
-            );
-          })}
-          {paginatedData.length === 0 && (
+            ))
+          ) : paginatedData.length > 0 ? (
+            paginatedData.map((row, idx) => {
+              const globalIndex = (currentPage - 1) *  props.pageSize + idx;
+              return (
+                <tr
+                  key={globalIndex}
+                  className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                >
+                  <td
+                    className="py-2 px-3 align-middle"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedRows.has(globalIndex)}
+                      onChange={() => toggleSelectRow(globalIndex)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </td>
+                  {columns.map((col) => (
+                    <td key={col} className="py-2 px-3 align-middle truncate max-w-[180px]">
+                      {typeof row[col] === "string" ? toSentenceCase(row[col]) : row[col]}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })
+          ) : (
             <tr>
               <td
                 colSpan={columns.length + 1}

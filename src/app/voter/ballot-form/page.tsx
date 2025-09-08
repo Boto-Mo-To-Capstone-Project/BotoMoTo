@@ -7,6 +7,7 @@ import BallotComponent from "@/components/BallotComponent";
 const BallotForm = () => {
   const router = useRouter();
   const [voterData, setVoterData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     // Get voter data from localStorage
@@ -79,6 +80,7 @@ const BallotForm = () => {
 
   return (
     <BallotComponent
+      isLoading={loading}
       ballotData={ballotData}
       electionName={voterData.election?.name || 'Election Name'}
       voterScope={voterData.voter?.votingScope?.name}

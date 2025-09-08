@@ -55,12 +55,10 @@ export default function BallotPreviewPage() {
     fetchBallot();
   }, [id]);
 
-  if (loading) return <p className="p-10">Loading ballot preview...</p>;
-  if (!ballotData) return <p className="p-10">Failed to load ballot data.</p>;
-
   return (
     <BallotComponent
-      ballotData={ballotData}
+      isLoading={loading}
+      ballotData={ballotData || { positions: [], scopes: [] }}
       electionName={electionName}
       mode="preview"
       onBack={() => history.back()} // simple back

@@ -26,9 +26,10 @@ interface ElectionTableProps {
   title?: string;
   selectedIds?: number[];
   onCheckboxChange?: (id: number) => void;
+  loading: boolean;
 }
 
-export default function ElectionTable({ title = 'All Elections', selectedIds = [], onCheckboxChange, ...props }: ElectionTableProps) {
+export default function ElectionTable({ title = 'All Elections', selectedIds = [], onCheckboxChange, loading, ...props }: ElectionTableProps) {
   // Helper for header checkbox
   const allChecked = props.elections.length > 0 && props.elections.every(e => selectedIds.includes(e.id));
   const someChecked = props.elections.some(e => selectedIds.includes(e.id));
@@ -107,38 +108,72 @@ export default function ElectionTable({ title = 'All Elections', selectedIds = [
             </tr>
           </thead>
           <tbody>
-            {props.elections.map((election, idx) => (
-              <tr
-                key={election.id + '-' + idx}
-                className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
-                onClick={e => {
-                  // Prevent double toggle if checkbox is clicked
-                  if ((e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
-                  onCheckboxChange?.(election.id);
-                }}
-              >
-                <td className="py-2 px-3 align-middle">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.includes(election.id)}
-                    onChange={() => onCheckboxChange?.(election.id)}
-                  />
+            {loading ? (
+              // Loading skeleton
+              [...Array(5)].map((_, idx) => (
+                <tr key={idx} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="w-4 h-4 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle text-center">
+                    <div className="h-6 w-20 bg-gray-200 rounded-full mx-auto animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                </tr>
+              ))
+            ) : props.elections.length === 0 ? (
+              // Empty state
+              <tr>
+                <td
+                  colSpan={5}
+                  className="p-3 text-center text-gray-500"
+                >
+                  No elections found.
                 </td>
-                <td className="py-2 px-3 align-middle truncate max-w-[180px]">{election.name}</td>
-                <td className="py-2 px-3 align-middle text-center">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium w-full block text-center
-    ${election.status === "Draft" ? "bg-gray-100 text-gray-700" : 
-      election.status === "Active" ? "bg-green-100 text-green-700" : 
-      election.status === "Closed" ? "bg-red-100 text-red-700" : 
-      "bg-gray-100 text-gray-700"}
-  `}>
-                    {election.status}
-                  </span>
-                </td>
-                <td className="py-2 px-3 align-middle max-w-[180px] truncate whitespace-nowrap">{election.votingDate}</td>
-                <td className="py-2 px-3 align-middle truncate max-w-[140px]">{election.time}</td>
               </tr>
-            ))}
+            ) : (
+              // Actual data rows
+              props.elections.map((election, idx) => (
+                <tr
+                  key={election.id + '-' + idx}
+                  className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
+                  onClick={e => {
+                    // Prevent double toggle if checkbox is clicked
+                    if ((e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
+                    onCheckboxChange?.(election.id);
+                  }}
+                >
+                  <td className="py-2 px-3 align-middle">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(election.id)}
+                      onChange={() => onCheckboxChange?.(election.id)}
+                    />
+                  </td>
+                  <td className="py-2 px-3 align-middle truncate max-w-[180px]">{election.name}</td>
+                  <td className="py-2 px-3 align-middle text-center">
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium w-full block text-center
+                        ${election.status === "Draft" ? "bg-gray-100 text-gray-700" :
+                          election.status === "Active" ? "bg-green-100 text-green-700" :
+                          election.status === "Closed" ? "bg-red-100 text-red-700" :
+                          "bg-gray-100 text-gray-700"}
+                          `}>
+                      {election.status}
+                    </span>
+                  </td>
+                  <td className="py-2 px-3 align-middle max-w-[180px] truncate whitespace-nowrap">{election.votingDate}</td>
+                  <td className="py-2 px-3 align-middle truncate max-w-[140px]">{election.time}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
