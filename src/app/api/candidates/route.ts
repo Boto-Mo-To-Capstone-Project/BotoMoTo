@@ -166,8 +166,10 @@ export async function GET(request: NextRequest) {
       where: whereWithSearch,
       select: {
         id: true,
-        imageUrl: true,
-        credentialUrl: true,
+        imageObjectKey: true,
+        imageProvider: true,
+        credentialObjectKey: true,
+        credentialProvider: true,
         createdAt: true,
         updatedAt: true,
         voter: {
@@ -372,17 +374,10 @@ async function handleSingleCandidateCreation(request: NextRequest, user: any) {
     // Convert file to buffer
     const imageBuffer = await imageFile.arrayBuffer();
     
-    // Upload image with automatic S3 + local fallback
+    // Upload image with automatic S3 + local fallback (no metadata stored)
     const imageUpload = await uploadFile(Buffer.from(imageBuffer), imageKey, {
       contentType: imageFile.type,
-      isPublic: true, // Candidate images are public
-      metadata: { 
-        userId: user.id.toString(),
-        originalName: imageFile.name,
-        uploadType: 'candidate_image',
-        electionId: candidateData.electionId.toString(),
-        voterId: candidateData.voterId.toString()
-      }
+      isPublic: true // Candidate images are public
     });
 
     imageObjectKey = imageUpload.key;
@@ -415,17 +410,10 @@ async function handleSingleCandidateCreation(request: NextRequest, user: any) {
     // Convert file to buffer
     const credentialBuffer = await credentialsFile.arrayBuffer();
     
-    // Upload credentials with automatic S3 + local fallback
+    // Upload credentials with automatic S3 + local fallback (no metadata stored)
     const credentialUpload = await uploadFile(Buffer.from(credentialBuffer), credentialKey, {
       contentType: credentialsFile.type,
-      isPublic: false, // Credentials are private
-      metadata: { 
-        userId: user.id.toString(),
-        originalName: credentialsFile.name,
-        uploadType: 'candidate_credentials',
-        electionId: candidateData.electionId.toString(),
-        voterId: candidateData.voterId.toString()
-      }
+      isPublic: false // Credentials are private
     });
 
     credentialObjectKey = credentialUpload.key;
@@ -436,7 +424,7 @@ async function handleSingleCandidateCreation(request: NextRequest, user: any) {
   if (imageObjectKey || credentialObjectKey) {
     console.log(`📤 Candidate files uploaded - Image: ${imageProvider || 'none'}, Credentials: ${credentialProvider || 'none'}`);
   }
-  
+
   // Validate request body
   const validation = validateWithZod(candidateSchema, candidateData);
   if (!('data' in validation)) return validation;
@@ -532,27 +520,17 @@ async function handleSingleCandidateCreation(request: NextRequest, user: any) {
 
   // Create candidate with related experiences
   const candidate = await db.$transaction(async (tx) => {
-    // Generate URLs from object keys for database storage (backward compatibility)
-    let imageUrl: string | null = null;
-    let credentialUrl: string | null = null;
-
-    if (imageObjectKey && imageProvider) {
-      imageUrl = generatePublicUrl(imageObjectKey, imageProvider);
-    }
-
-    if (credentialObjectKey && credentialProvider) {
-      // For credentials, generate a presigned URL that's valid for 1 year for backward compatibility
-      credentialUrl = await generatePresignedUrl(credentialObjectKey, 365 * 24 * 3600, credentialProvider);
-    }
-
+    // Persist storage-agnostic fields (object keys + provider)
     const newCandidate = await tx.candidate.create({
       data: {
         electionId: data.electionId,
         voterId: data.voterId,
         positionId: data.positionId,
         partyId: data.partyId || null,
-        imageUrl: imageUrl,
-        credentialUrl: credentialUrl,
+        imageObjectKey: imageObjectKey,
+        imageProvider: imageProvider,
+        credentialObjectKey: credentialObjectKey,
+        credentialProvider: credentialProvider,
       }
     });
 
@@ -564,8 +542,10 @@ async function handleSingleCandidateCreation(request: NextRequest, user: any) {
     where: { id: candidate.id },
     select: {
       id: true,
-      imageUrl: true,
-      credentialUrl: true,
+      imageObjectKey: true,
+      imageProvider: true,
+      credentialObjectKey: true,
+      credentialProvider: true,
       createdAt: true,
       updatedAt: true,
       voter: {
@@ -890,8 +870,10 @@ async function handleBatchCandidateImport(candidatesData: any[], electionId: num
         voterId: c.voterId,
         positionId: c.positionId,
         partyId: c.partyId,
-        imageUrl: null,
-        credentialUrl: null,
+        imageObjectKey: null,
+        credentialObjectKey: null,
+        imageProvider: null,
+        credentialProvider: null,
       }));
 
       const created = await tx.candidate.createMany({ data: toCreate });

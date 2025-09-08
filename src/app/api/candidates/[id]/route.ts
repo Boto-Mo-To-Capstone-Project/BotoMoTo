@@ -39,8 +39,10 @@ export async function GET(
       select: {
         id: true,
         electionId: true,
-        imageUrl: true,
-        credentialUrl: true,
+        imageObjectKey: true,
+        imageProvider: true,
+        credentialObjectKey: true,
+        credentialProvider: true,
         createdAt: true,
         updatedAt: true,
         voter: {
@@ -300,8 +302,10 @@ export async function PUT(
         data: {
           positionId: data.positionId || existingCandidate.positionId,
           partyId: data.partyId !== undefined ? data.partyId : undefined,
-          imageUrl: data.imageUrl !== undefined ? data.imageUrl : undefined,
-          credentialUrl: data.credentialUrl !== undefined ? data.credentialUrl : undefined,
+          imageObjectKey: data.imageObjectKey !== undefined ? data.imageObjectKey : undefined,
+          imageProvider: data.imageProvider !== undefined ? data.imageProvider : undefined,
+          credentialObjectKey: data.credentialObjectKey !== undefined ? data.credentialObjectKey : undefined,
+          credentialProvider: data.credentialProvider !== undefined ? data.credentialProvider : undefined,
           updatedAt: new Date()
         }
       });
@@ -314,7 +318,10 @@ export async function PUT(
       where: { id: candidateId },
       select: {
         id: true,
-        imageUrl: true,
+        imageObjectKey: true,
+        imageProvider: true,
+        credentialObjectKey: true,
+        credentialProvider: true,
         createdAt: true,
         updatedAt: true,
         voter: {

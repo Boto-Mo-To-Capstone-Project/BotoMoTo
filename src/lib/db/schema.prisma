@@ -166,17 +166,11 @@ model Organization {
   membersCount  Int
   status        OrganizationStatus   @default(PENDING)
   
-  // Legacy URL fields (for backward compatibility during migration)
-  photoUrl      String?
-  letterUrl     String? 
-  
   // New storage system fields - store object keys, generate URLs dynamically
   logoObjectKey     String?  // S3/local object key for logo
   letterObjectKey   String?  // S3/local object key for letter
   logoProvider      String?  // Which provider stored the logo (s3, local)
   letterProvider    String?  // Which provider stored the letter (s3, local)
-  logoMetadata      Json?    // Store upload metadata (contentType, size, etc.)
-  letterMetadata    Json?    // Store upload metadata (contentType, size, etc.)
 
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
@@ -199,7 +193,7 @@ model Election {
   description String
   status      ElectionStatus @default(DRAFT)
   allowSurvey Boolean        @default(false) // Enable post-vote survey
-  
+
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   deletedAt   DateTime?
@@ -339,9 +333,12 @@ model Candidate {
   voterId     Int       @unique
   positionId  Int
   partyId     Int?
-  imageUrl    String?
-  credentialUrl String? // path to credentials file
-  
+  // Storage-agnostic fields for candidate files
+  imageObjectKey     String?
+  imageProvider      String?
+  credentialObjectKey String?
+  credentialProvider  String?
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?

@@ -98,8 +98,10 @@ async function handleBulkCreate(electionId: number, candidatesData: any[], user:
       positionId: Number(c.positionId),
       // Optional fields: if invalid or null, omit so Zod optional passes
       ...(c.partyId != null && !Number.isNaN(Number(c.partyId)) ? { partyId: Number(c.partyId) } : {}),
-      ...(c.imageUrl ? { imageUrl: String(c.imageUrl) } : {}),
-      ...(c.credentialUrl ? { credentialUrl: String(c.credentialUrl) } : {}),
+      ...(c.imageObjectKey ? { imageObjectKey: String(c.imageObjectKey) } : {}),
+      ...(c.imageProvider ? { imageProvider: String(c.imageProvider) } : {}),
+      ...(c.credentialObjectKey ? { credentialObjectKey: String(c.credentialObjectKey) } : {}),
+      ...(c.credentialProvider ? { credentialProvider: String(c.credentialProvider) } : {}),
       // bio is only in update schema; ignore on create if provided
     },
   }));
@@ -180,8 +182,10 @@ async function handleBulkCreate(electionId: number, candidatesData: any[], user:
     voterId: c.voterId,
     positionId: c.positionId,
     partyId: c.partyId ?? null,
-    imageUrl: (c as any).imageUrl ?? null,
-    credentialUrl: (c as any).credentialUrl ?? null,
+    imageObjectKey: (c as any).imageObjectKey ?? null,
+    imageProvider: (c as any).imageProvider ?? null,
+    credentialObjectKey: (c as any).credentialObjectKey ?? null,
+    credentialProvider: (c as any).credentialProvider ?? null,
   }));
 
   const created = await db.candidate.createMany({ data: toCreate });
@@ -192,8 +196,10 @@ async function handleBulkCreate(electionId: number, candidatesData: any[], user:
     select: {
       id: true,
       electionId: true,
-      imageUrl: true,
-      credentialUrl: true,
+      imageObjectKey: true,
+      imageProvider: true,
+      credentialObjectKey: true,
+      credentialProvider: true,
       voter: { select: { id: true, firstName: true, lastName: true, email: true } },
       position: { select: { id: true, name: true } },
       party: { select: { id: true, name: true, color: true } },

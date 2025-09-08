@@ -209,8 +209,10 @@ export default function CandidatesDashboardPage() {
         voterId: c.voter?.id,
         positionId: c.position?.id,
         partyId: c.party?.id ?? null,
-        imageUrl: c.imageUrl ?? null,
-        credentialUrl: c.credentialUrl ?? null,
+        imageObjectKey: c.imageObjectKey ?? null,
+        imageProvider: c.imageProvider ?? null,
+        credentialObjectKey: c.credentialObjectKey ?? null,
+        credentialProvider: c.credentialProvider ?? null,
       };
       setEditInitialData(initial);
       setShowCandidatesModal(true);
@@ -234,8 +236,10 @@ export default function CandidatesDashboardPage() {
         positionId: data.positionId,
       };
       if (data.partyId !== undefined) payload.partyId = data.partyId;
-      if (data.imageUrl !== undefined) payload.imageUrl = data.imageUrl;
-      if (data.credentialUrl !== undefined) payload.credentialUrl = data.credentialUrl;
+      if (data.imageObjectKey !== undefined) payload.imageObjectKey = data.imageObjectKey;
+      if (data.imageProvider !== undefined) payload.imageProvider = data.imageProvider;
+      if (data.credentialObjectKey !== undefined) payload.credentialObjectKey = data.credentialObjectKey;
+      if (data.credentialProvider !== undefined) payload.credentialProvider = data.credentialProvider;
 
       const res = await fetch(`/api/candidates/${editingCandidateId}`, {
         method: 'PUT',

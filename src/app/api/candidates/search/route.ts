@@ -149,9 +149,9 @@ export async function GET(request: NextRequest) {
 
     // Add image filter
     if (hasImage === 'true') {
-      whereClause.imageUrl = { not: null };
+      whereClause.imageObjectKey = { not: null };
     } else if (hasImage === 'false') {
-      whereClause.imageUrl = null;
+      whereClause.imageObjectKey = null;
     }
 
     // Add bio filter
@@ -197,7 +197,10 @@ export async function GET(request: NextRequest) {
       where: whereClause,
       select: {
         id: true,
-        imageUrl: true,
+        imageObjectKey: true,
+        imageProvider: true,
+        credentialObjectKey: true,
+        credentialProvider: true,
         createdAt: true,
         updatedAt: true,
         voter: {

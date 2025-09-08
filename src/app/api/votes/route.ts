@@ -267,8 +267,10 @@ export async function POST(request: NextRequest) {
             candidate: {
               select: {
                 id: true,
-                imageUrl: true,
-                credentialUrl: true,
+                imageObjectKey: true,
+                imageProvider: true,
+                credentialObjectKey: true,
+                credentialProvider: true,
                 voter: {
                   select: {
                     firstName: true,
@@ -328,8 +330,8 @@ export async function POST(request: NextRequest) {
               name: `${vote.candidate.voter.firstName}${vote.candidate.voter.middleName ? ` ${vote.candidate.voter.middleName}` : ''} ${vote.candidate.voter.lastName}`,
               party: vote.candidate.party ? vote.candidate.party.name : 'Independent',
               partyColor: vote.candidate.party ? vote.candidate.party.color : '#6B7280',
-              img: vote.candidate.imageUrl || '/assets/sample/logo.png',
-              credentialsUrl: vote.candidate.credentialUrl || undefined
+              img: vote.candidate.imageObjectKey ? `/api/files/${vote.candidate.imageObjectKey}` : '/assets/sample/logo.png',
+              credentialsUrl: vote.candidate.credentialObjectKey ? `/api/files/${vote.candidate.credentialObjectKey}` : undefined
             };
 
             if (existingPosition) {

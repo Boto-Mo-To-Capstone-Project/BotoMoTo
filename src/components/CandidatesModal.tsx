@@ -15,8 +15,10 @@ type CandidatesModalProps = {
   onSave: (payload: FormData | {
     positionId?: number;
     partyId?: number | null;
-    imageUrl?: string | null;
-    credentialUrl?: string | null;
+    imageObjectKey?: string | null;
+    imageProvider?: string | null;
+    credentialObjectKey?: string | null;
+    credentialProvider?: string | null;
   }) => void;
   electionId: number;
   // Optional pre-provided options; if not provided, the modal will fetch them
@@ -27,8 +29,10 @@ type CandidatesModalProps = {
     voterId?: number;
     positionId?: number;
     partyId?: number | null;
-    imageUrl?: string | null;
-    credentialUrl?: string | null;
+    imageObjectKey?: string | null;
+    imageProvider?: string | null;
+    credentialObjectKey?: string | null;
+    credentialProvider?: string | null;
   };
   disableSave?: boolean;
   isEditMode?: boolean;
@@ -46,8 +50,10 @@ export function CandidatesModal({
     voterId: undefined,
     positionId: undefined,
     partyId: undefined,
-    imageUrl: undefined,
-    credentialUrl: undefined,
+    imageObjectKey: undefined,
+    imageProvider: undefined,
+    credentialObjectKey: undefined,
+    credentialProvider: undefined,
   },
   disableSave,
   isEditMode = false,
@@ -57,8 +63,10 @@ export function CandidatesModal({
   const [partyId, setPartyId] = useState<number | null>(initialData.partyId ?? null);
   const [image, setImage] = useState<File | null>(null);
   const [credentials, setCredentials] = useState<File | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null | undefined>(initialData.imageUrl);
-  const [credentialUrl, setCredentialUrl] = useState<string | null | undefined>(initialData.credentialUrl);
+  const [imageObjectKey, setImageObjectKey] = useState<string | null | undefined>(initialData.imageObjectKey);
+  const [imageProvider, setImageProvider] = useState<string | null | undefined>(initialData.imageProvider);
+  const [credentialObjectKey, setCredentialObjectKey] = useState<string | null | undefined>(initialData.credentialObjectKey);
+  const [credentialProvider, setCredentialProvider] = useState<string | null | undefined>(initialData.credentialProvider);
 
   // Sync state when modal opens or initialData changes (for edit prefill)
   useEffect(() => {
@@ -69,15 +77,19 @@ export function CandidatesModal({
       setVoterId(initialData.voterId);
       setPositionId(initialData.positionId);
       setPartyId(initialData.partyId ?? null);
-      setImageUrl(initialData.imageUrl);
-      setCredentialUrl(initialData.credentialUrl);
+      setImageObjectKey(initialData.imageObjectKey);
+      setImageProvider(initialData.imageProvider);
+      setCredentialObjectKey(initialData.credentialObjectKey);
+      setCredentialProvider(initialData.credentialProvider);
     } else if (!initialData || !initialData.voterId) {
       // Clear form for new entry mode
       setVoterId(undefined);
       setPositionId(undefined);
       setPartyId(null);
-      setImageUrl(undefined);
-      setCredentialUrl(undefined);
+      setImageObjectKey(undefined);
+      setImageProvider(undefined);
+      setCredentialObjectKey(undefined);
+      setCredentialProvider(undefined);
     }
     
     // Always reset file inputs when modal opens
@@ -226,6 +238,11 @@ export function CandidatesModal({
       };
       // Always include partyId, even if null
       payload.partyId = partyId;
+      // Include storage object keys/providers if present (no legacy URLs)
+      if (imageObjectKey !== undefined) (payload as any).imageObjectKey = imageObjectKey;
+      if (imageProvider !== undefined) (payload as any).imageProvider = imageProvider;
+      if (credentialObjectKey !== undefined) (payload as any).credentialObjectKey = credentialObjectKey;
+      if (credentialProvider !== undefined) (payload as any).credentialProvider = credentialProvider;
       onSave(payload);
       onClose();
       return;
@@ -356,20 +373,16 @@ export function CandidatesModal({
                 <div className="col-span-2 grid grid-cols-2 gap-4">
                   <div className="sm:col-span-1">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Current Photo</label>
-                    {imageUrl ? (
-                      <a href={imageUrl} target="_blank" rel="noreferrer" className="text-blue-600 text-sm break-all">
-                        {imageUrl}
-                      </a>
+                    {imageObjectKey ? (
+                      <p className="text-sm text-gray-700 break-all">{imageObjectKey}{imageProvider ? ` (${imageProvider})` : ''}</p>
                     ) : (
                       <p className="text-sm text-gray-500">None</p>
                     )}
                   </div>
                   <div className="sm:col-span-1">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Current Credentials</label>
-                    {credentialUrl ? (
-                      <a href={credentialUrl} target="_blank" rel="noreferrer" className="text-blue-600 text-sm break-all">
-                        {credentialUrl}
-                      </a>
+                    {credentialObjectKey ? (
+                      <p className="text-sm text-gray-700 break-all">{credentialObjectKey}{credentialProvider ? ` (${credentialProvider})` : ''}</p>
                     ) : (
                       <p className="text-sm text-gray-500">None</p>
                     )}

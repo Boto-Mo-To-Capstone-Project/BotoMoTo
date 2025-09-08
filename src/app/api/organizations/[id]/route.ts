@@ -175,8 +175,6 @@ export async function PUT(
     let letterObjectKey = organization.letterObjectKey; // Keep existing if no new file
     let logoProvider = organization.logoProvider; // Keep existing provider
     let letterProvider = organization.letterProvider; // Keep existing provider
-    let logoMetadata = organization.logoMetadata; // Keep existing metadata
-    let letterMetadata = organization.letterMetadata; // Keep existing metadata
 
     // Handle logo file upload if provided
     if (logoFile && logoFile.size > 0) {
@@ -199,24 +197,17 @@ export async function PUT(
         });
       }
 
-      // Upload new logo using storage system
+      // Upload new logo using storage system (no metadata stored)
       const logoKey = generateObjectKey('organizations', user.id, 'logo', logoFile.name);
       const logoBuffer = await logoFile.arrayBuffer();
       
       const logoUpload = await uploadFile(Buffer.from(logoBuffer), logoKey, {
         contentType: logoFile.type,
-        isPublic: true, // Logos are public
-        metadata: { 
-          userId: user.id.toString(),
-          originalName: logoFile.name,
-          uploadType: 'organization_logo',
-          organizationId: organizationId.toString()
-        }
+        isPublic: true // Logos are public
       });
 
       logoObjectKey = logoUpload.key;
       logoProvider = logoUpload.provider;
-      logoMetadata = logoUpload.metadata;
       
       console.log(`📤 Logo updated - Provider: ${logoUpload.provider}, Key: ${logoUpload.key}`);
     }
@@ -242,24 +233,17 @@ export async function PUT(
         });
       }
 
-      // Upload new letter using storage system
+      // Upload new letter using storage system (no metadata stored)
       const letterKey = generateObjectKey('organizations', user.id, 'letter', letterFile.name);
       const letterBuffer = await letterFile.arrayBuffer();
       
       const letterUpload = await uploadFile(Buffer.from(letterBuffer), letterKey, {
         contentType: letterFile.type,
-        isPublic: false, // Letters are private
-        metadata: { 
-          userId: user.id.toString(),
-          originalName: letterFile.name,
-          uploadType: 'organization_letter',
-          organizationId: organizationId.toString()
-        }
+        isPublic: false // Letters are private
       });
 
       letterObjectKey = letterUpload.key;
       letterProvider = letterUpload.provider;
-      letterMetadata = letterUpload.metadata;
       
       console.log(`📤 Letter updated - Provider: ${letterUpload.provider}, Key: ${letterUpload.key}`);
     }
@@ -269,9 +253,11 @@ export async function PUT(
       name,
       email,
       membersCount: Number(membersCount),
-      // Legacy fields for validation compatibility - will be generated dynamically
-      photoUrl: logoObjectKey || organization.photoUrl,  // Use object key as placeholder
-      letterUrl: letterObjectKey || organization.letterUrl // Use object key as placeholder
+      // Storage-agnostic fields for validation
+      logoObjectKey: logoObjectKey || organization.logoObjectKey,
+      logoProvider: logoProvider || organization.logoProvider,
+      letterObjectKey: letterObjectKey || organization.letterObjectKey,
+      letterProvider: letterProvider || organization.letterProvider,
     };
 
     const validation = validateWithZod(organizationSchema, orgData);
@@ -305,9 +291,6 @@ export async function PUT(
       membersCount: organization.membersCount,
       logoObjectKey: organization.logoObjectKey,
       letterObjectKey: organization.letterObjectKey,
-      // Keep legacy fields for compatibility
-      photoUrl: organization.photoUrl,
-      letterUrl: organization.letterUrl
     };
 
     const updatedOrg = await db.organization.update({
@@ -316,16 +299,13 @@ export async function PUT(
         name,
         email,
         membersCount: Number(membersCount),
-        // Store object keys and metadata instead of URLs
+        // Store object keys and providers instead of URLs
         logoObjectKey,
         letterObjectKey,
         logoProvider,
         letterProvider,
-        logoMetadata,
-        letterMetadata,
-        // Keep legacy fields for backward compatibility (temporarily)
-        photoUrl: logoObjectKey || organization.photoUrl,
-        letterUrl: letterObjectKey || organization.letterUrl,
+        // metadata fields removed
+        // NOTE: removed legacy URL fields; only object keys/providers are stored
       },
       include: { 
         admin: {

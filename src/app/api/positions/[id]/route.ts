@@ -80,7 +80,10 @@ export async function GET(
                 color: true,
               }
             },
-            imageUrl: true,
+            imageObjectKey: true,
+            imageProvider: true,
+            credentialObjectKey: true,
+            credentialProvider: true,
           }
         },
         _count: {

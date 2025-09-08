@@ -35,30 +35,38 @@ const organizations = [
     name: "University of Technology",
     email: "admin@university.edu",
     membersCount: 5000,
-    photoUrl: "/assets/sample/logo.png",
-    letterUrl: "/assets/sample/letter.pdf"
+    logoObjectKey: "/assets/sample/logo.png",
+    logoProvider: "local",
+    letterObjectKey: "/assets/sample/letter.pdf",
+    letterProvider: "local"
   },
   {
     name: "City College",
     email: "admin@citycollege.edu", 
     membersCount: 3000,
-    photoUrl: "/assets/sample/logo.png",
-    letterUrl: "/assets/sample/letter.pdf"
+    logoObjectKey: "/assets/sample/logo.png",
+    logoProvider: "local",
+    letterObjectKey: "/assets/sample/letter.pdf",
+    letterProvider: "local"
   },
   {
     name: "Metro High School",
     email: "admin@metrohigh.edu",
     membersCount: 1200,
-    photoUrl: "/assets/sample/logo.png",
-    letterUrl: "/assets/sample/letter.pdf"
+    logoObjectKey: "/assets/sample/logo.png",
+    logoProvider: "local",
+    letterObjectKey: "/assets/sample/letter.pdf",
+    letterProvider: "local"
   },
   // New organization for ibits
   {
     name: "Institute of Bachelors in Information Technology Studies",
     email: "org@ibits.com",
     membersCount: 1500,
-    photoUrl: "/assets/sample/logo.png",
-    letterUrl: "/assets/sample/letter.pdf"
+    logoObjectKey: "/assets/sample/logo.png",
+    logoProvider: "local",
+    letterObjectKey: "/assets/sample/letter.pdf",
+    letterProvider: "local"
   }
 ];
 
@@ -509,8 +517,10 @@ async function seedDatabase() {
               voterId: voter.id,
               positionId: position.id,
               partyId: randomParty?.id || null,
-              imageUrl: `/assets/sample/logo.png`,
-              credentialUrl: `/assets/sample/credential.pdf`,
+              imageObjectKey: `assets/sample/logo.png`,
+              imageProvider: "local",
+              credentialObjectKey: `assets/sample/credential.pdf`,
+              credentialProvider: "local",
             },
           });
 

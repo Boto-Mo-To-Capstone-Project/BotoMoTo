@@ -299,9 +299,11 @@ async function createOrganization(request: NextRequest) {
       name,
       email,
       membersCount: Number(membersCount),
-      // Legacy fields for validation compatibility - will be generated dynamically
-      photoUrl: logoUpload.key,  // Use object key as placeholder
-      letterUrl: letterUpload.key // Use object key as placeholder
+      // Storage-agnostic fields for validation
+      logoObjectKey: logoUpload.key,
+      logoProvider: logoUpload.provider,
+      letterObjectKey: letterUpload.key,
+      letterProvider: letterUpload.provider,
     };
 
     const validation = validateWithZod(organizationSchema, orgData);
@@ -317,16 +319,11 @@ async function createOrganization(request: NextRequest) {
           name,
           email,
           membersCount: Number(membersCount),
-          // Store object keys and metadata instead of URLs
+          // Store object keys and providers only (storage-agnostic)
           logoObjectKey: logoUpload.key,
           letterObjectKey: letterUpload.key,
           logoProvider: logoUpload.provider,
           letterProvider: letterUpload.provider,
-          logoMetadata: logoUpload.metadata,
-          letterMetadata: letterUpload.metadata,
-          // Keep legacy fields for backward compatibility (temporarily)
-          photoUrl: logoUpload.key,
-          letterUrl: letterUpload.key,
           status: ORGANIZATION_STATUS.PENDING,
         },
         include: { 
@@ -385,16 +382,11 @@ async function createOrganization(request: NextRequest) {
         name,
         email,
         membersCount: Number(membersCount),
-        // Store object keys and metadata instead of URLs
+        // Store object keys and providers only (storage-agnostic)
         logoObjectKey: logoUpload.key,
         letterObjectKey: letterUpload.key,
         logoProvider: logoUpload.provider,
         letterProvider: letterUpload.provider,
-        logoMetadata: logoUpload.metadata,
-        letterMetadata: letterUpload.metadata,
-        // Keep legacy fields for backward compatibility (temporarily)
-        photoUrl: logoUpload.key,
-        letterUrl: letterUpload.key,
         status: ORGANIZATION_STATUS.PENDING,
       },
       include: { 
