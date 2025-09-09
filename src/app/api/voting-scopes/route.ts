@@ -19,6 +19,9 @@ export async function GET(request: NextRequest) {
     // Get election ID from query parameters
     const url = new URL(request.url);
     const electionId = url.searchParams.get('electionId');
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = parseInt(url.searchParams.get('limit') || '50');
+    const all = url.searchParams.get('all') === 'true';
 
     if (!electionId) {
       return apiResponse({
@@ -78,13 +81,34 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Get total count for pagination
+    const totalCount = await db.votingScope.count({
+      where: { 
+        electionId: electionIdInt,
+        isDeleted: false
+      }
+    });
+
+    // Calculate pagination (skip if fetching all)
+    const skip = all ? 0 : (page - 1) * limit;
+    const take = all ? undefined : limit;
+
     // Fetch voting scopes for the election (exclude soft-deleted)
     const votingScopes = await db.votingScope.findMany({
       where: { 
         electionId: electionIdInt,
         isDeleted: false
       },
-      include: {
+      include: all ? {
+        // Minimal include for all=true queries to reduce data transfer
+        election: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      } : {
+        // Full include for regular queries
         election: {
           select: {
             id: true,
@@ -105,6 +129,8 @@ export async function GET(request: NextRequest) {
         }
       },
       orderBy: { id: "asc" },
+      skip,
+      ...(take !== undefined && { take })
     });
 
     const audit = await createAuditLog({
@@ -113,16 +139,36 @@ export async function GET(request: NextRequest) {
       request,
       resource: "VOTING_SCOPE",
       resourceId: electionIdInt,
-      message: `Viewed voting scopes for election: ${election.name}`,
+      message: `Viewed voting scopes for election: ${election.name}${all ? ' (all voting scopes)' : ''}`,
     });
+
+    // Calculate pagination info
+    const totalPages = all ? 1 : Math.ceil(totalCount / limit);
+
+    // Prepare response data
+    const responseData: any = {
+      votingScopes,
+      audit
+    };
+
+    // Only include pagination when not fetching all
+    if (!all) {
+      responseData.pagination = {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      };
+    } else {
+      responseData.totalCount = totalCount;
+    }
 
     return apiResponse({
       success: true,
       message: "Voting scopes fetched successfully",
-      data: {
-        votingScopes,
-        audit
-      },
+      data: responseData,
       error: null,
       status: 200
     });

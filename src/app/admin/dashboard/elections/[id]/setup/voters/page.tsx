@@ -476,7 +476,7 @@ export default function VoterDashboardPage() {
     const ctrl = new AbortController();
     const loadScopes = async () => {
       try {
-        const res = await fetch(`/api/voting-scopes?electionId=${electionId}`, { signal: ctrl.signal });
+        const res = await fetch(`/api/voting-scopes?electionId=${electionId}&all=true`, { signal: ctrl.signal });
         const json = await res.json().catch(() => ({}));
         if (!res.ok || json?.success === false) return;
         const items = (json?.data?.votingScopes || []).map((s: any) => ({ id: s.id, name: s.name }));

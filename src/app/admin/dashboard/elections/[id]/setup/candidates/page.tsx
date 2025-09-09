@@ -37,32 +37,56 @@ export default function CandidatesDashboardPage() {
   const [showImportModal, setShowImportModal] = useState(false);
 
   const [loading, setLoading] = useState(false);
-  const [hasLoaded, setHasLoaded] = useState(false); // added for lazy loading
-
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   // Edit state
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingCandidateId, setEditingCandidateId] = useState<number | null>(null);
   const [editInitialData, setEditInitialData] = useState<any>(undefined);
 
+  const [totalPages, setTotalPages] = useState(1);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  
+  // NEW: positions and parties for the candidates import modal
+  const [positions, setPositions] = useState<Array<{ id: number; name: string }>>([]);
+  const [parties, setParties] = useState<Array<{ id: number; name: string }>>([]);
+  const [voters, setVoters] = useState<Array<{ id: number; firstName: string; lastName: string; email?: string }>>([]);
+
+  // FileViewer state for template preview
+  const [showFileViewer, setShowFileViewer] = useState(false);
+  const [fileViewerData, setFileViewerData] = useState<{ fileUrl: string; fileName: string; title: string; fileType?: 'pdf' | 'image' | 'video' | 'audio' | 'text' | 'unknown'; } | null>(null);
+
   // Data state from API
-  const [candidates, setCandidates] = useState<Array<{
+  const [rows, setRows] = useState<Array<{
     id: number;
     name: string;
     position: string;
     partylist: string;
     email: string;
   }>>([]);
-  const [totalPages, setTotalPages] = useState(1);
-  const [modalLoading, setModalLoading] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
-  // NEW: positions and parties for the candidates import modal
-  const [positions, setPositions] = useState<Array<{ id: number; name: string }>>([]);
-  const [parties, setParties] = useState<Array<{ id: number; name: string }>>([]);
-  const [voters, setVoters] = useState<Array<{ id: number; firstName: string; lastName: string; email?: string }>>([]);
-  // NEW: file viewer state for template preview parity with voters page
-  const [showFileViewer, setShowFileViewer] = useState(false);
-  const [fileViewerData, setFileViewerData] = useState<{ fileUrl: string; fileName: string; title: string; fileType?: 'pdf' | 'image' | 'video' | 'audio' | 'text' | 'unknown'; } | null>(null);
+
+  // Frontend sorting function
+  const getSortedCandidates = () => {
+    if (!sortCol) return rows;
+    const sorted = [...rows].sort((a, b) => {
+      let aVal: any = a[sortCol];
+      let bVal: any = b[sortCol];
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        aVal = aVal.toLowerCase();
+        bVal = bVal.toLowerCase();
+      }
+      if (sortDir === "asc") {
+        return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+      } else {
+        return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+      }
+    });
+    return sorted;
+  };
+
+  // Get the final sorted candidates for display
+  const sortedRows = getSortedCandidates();
 
   // Initialize state from URL once
   const initializedFromURL = useRef(false);
@@ -111,20 +135,21 @@ export default function CandidatesDashboardPage() {
       setSortDir("asc");
     }
   };
+  // Selection handlers
   const handleCheckboxChange = (id: number) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
 
-  // Add candidate: POST /api/candidates
+  // Create candidate: POST /api/candidates with single candidate data
   const handleSaveCandidate = async (formData: FormData) => {
     try {
       setModalLoading(true);
       
       const res = await fetch('/api/candidates', {
         method: 'POST',
-        body: formData, // FormData already prepared by modal
+        body: formData,
       });
       const json = await res.json().catch(() => ({}));
 
@@ -136,7 +161,7 @@ export default function CandidatesDashboardPage() {
       toast.success('Candidate created successfully');
       setShowCandidatesModal(false);
       setReloadKey((k) => k + 1);
-      setPage(1); // Go to first page to see new candidate
+      setPage(1);
     } catch (e) {
       console.error('Create candidate error:', e);
       toast.error('Failed to create candidate');
@@ -174,7 +199,7 @@ export default function CandidatesDashboardPage() {
       const deletedCount = selectedIds.length;
       toast.success(`Successfully deleted ${deletedCount} candidate${deletedCount === 1 ? '' : 's'}`);
 
-      setCandidates((prev) => prev.filter((r) => !selectedIds.includes(r.id)));
+      setRows((prev) => prev.filter((r) => !selectedIds.includes(r.id)));
       setSelectedIds([]);
       setReloadKey((k) => k + 1);
     } catch (e) {
@@ -231,10 +256,9 @@ export default function CandidatesDashboardPage() {
     try {
       setModalLoading(true);
 
-      // Send FormData directly to support file uploads (like organization edit)
       const res = await fetch(`/api/candidates/${editingCandidateId}`, {
         method: 'PUT',
-        body: formData, // No Content-Type header - let browser set it for FormData
+        body: formData,
       });
       const json = await res.json().catch(() => ({}));
 
@@ -298,22 +322,11 @@ export default function CandidatesDashboardPage() {
     const run = async () => {
       setLoading(true);
       try {
-        // Map frontend column names to API column names
-        const colMapping: { [key: string]: string } = {
-          name: "lastName",
-          position: "position",
-          partylist: "party", 
-          email: "email"
-        };
-        
-        const apiSortCol = sortCol ? colMapping[sortCol] || sortCol : null;
-        
         const qs = new URLSearchParams({
           electionId: String(electionId),
           page: String(page),
           limit: String(pageSize),
           ...(debouncedSearch ? { search: debouncedSearch } : {}),
-          ...(apiSortCol ? { sortCol: apiSortCol, sortDir: sortDir } : {}),
         });
         const res = await fetch(`/api/candidates?${qs.toString()}`, {
           method: "GET",
@@ -333,13 +346,12 @@ export default function CandidatesDashboardPage() {
           id: c.id,
           name: `${c.voter?.firstName || ""} ${c.voter?.lastName || ""}`.trim() || "—",
           position: c.position?.name || "—",
-          partylist: c.party?.name || "—",
-          department: c.voter?.votingScope?.name || "—",
+          partylist: c.party?.name || "Independent",
           email: c.voter?.email || "—",
         }));
 
         if (!alive) return;
-        setCandidates(mapped);
+        setRows(mapped);
         setTotalPages((json as any).data?.pagination?.totalPages || 1);
         setHasLoaded(true)
       } catch (e: any) {
@@ -356,18 +368,18 @@ export default function CandidatesDashboardPage() {
     run();
     return () => {
       alive = false;
-      ctrl.abort()
+      ctrl.abort();
     };
-  }, [electionId, page, pageSize, debouncedSearch, sortCol, sortDir, reloadKey]);
+  }, [electionId, page, pageSize, debouncedSearch, reloadKey]);
 
-  // NEW: Fetch positions and parties for this election (for the import modal)
+  // Fetch positions, parties, and voters for the modal dropdowns
   useEffect(() => {
     if (!electionId || Number.isNaN(electionId)) return;
     const ctrl = new AbortController();
     const loadPositionsPartiesAndVoters = async () => {
       try {
         // Fetch positions
-        const positionsRes = await fetch(`/api/positions?electionId=${electionId}&limit=100`, {
+        const positionsRes = await fetch(`/api/positions?electionId=${electionId}&all=true`, {
           signal: ctrl.signal
         });
         if (positionsRes.ok) {
@@ -381,7 +393,7 @@ export default function CandidatesDashboardPage() {
         }
 
         // Fetch parties
-        const partiesRes = await fetch(`/api/parties?electionId=${electionId}&limit=100`, {
+        const partiesRes = await fetch(`/api/parties?electionId=${electionId}&all=true`, {
           signal: ctrl.signal
         });
         if (partiesRes.ok) {
@@ -511,7 +523,7 @@ export default function CandidatesDashboardPage() {
             <CandidatesTable
               hasLoaded={hasLoaded}
               loading={loading}
-              candidates={candidates}
+              candidates={sortedRows}
               sortCol={sortCol}
               sortDir={sortDir}
               onSort={handleSort}
@@ -530,8 +542,6 @@ export default function CandidatesDashboardPage() {
           </div>
         </div>
       </div>
-      {/* Toaster for notifications */}
-      {/*<Toaster position="top-center" />*/}
       {/* Candidates Modal */}
       <CandidatesModal
         open={showCandidatesModal}

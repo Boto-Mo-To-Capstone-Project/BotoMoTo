@@ -46,16 +46,6 @@ export default function PositionsDashboardPage() {
 
   const [loading, setLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false); // added for lazy loading
-
-  // Data state from API
-  const [rows, setRows] = useState<Array<{
-    id: number;
-    position: string;
-    voteLimit: number;
-    numberOfWinners: number;
-    scopeName: string;
-    order: number;
-  }>>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [modalLoading, setModalLoading] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -67,6 +57,49 @@ export default function PositionsDashboardPage() {
     name: string;
     votingScopeId: number | null;
   }>>([]);
+
+    // Data state from API
+  const [rows, setRows] = useState<Array<{
+    id: number;
+    position: string;
+    voteLimit: number;
+    numberOfWinners: number;
+    scopeName: string;
+    order: number;
+  }>>([]);
+
+  // Frontend sorting function 
+  const getSortedRows = () => {
+    if (!sortCol) return rows;
+    const sorted = [...rows];
+    sorted.sort((a, b) => {
+      const dir = sortDir === 'asc' ? 1 : -1;
+      switch (sortCol) {
+        case 'position': {
+          const av = (a.position || '').toString().toLowerCase();
+          const bv = (b.position || '').toString().toLowerCase();
+          return av.localeCompare(bv) * dir;
+        }
+        case 'scopeName': {
+          const av = (a.scopeName || '').toString().toLowerCase();
+          const bv = (b.scopeName || '').toString().toLowerCase();
+          return av.localeCompare(bv) * dir;
+        }
+        case 'order':
+          return ((a.order ?? 0) - (b.order ?? 0)) * dir;
+        case 'voteLimit':
+          return ((a.voteLimit ?? 0) - (b.voteLimit ?? 0)) * dir;
+        case 'numberOfWinners':
+          return ((a.numberOfWinners ?? 0) - (b.numberOfWinners ?? 0)) * dir;
+        default:
+          return 0;
+      }
+    });
+    return sorted;
+  };
+
+  // Sorted data for display
+  const sortedRows = getSortedRows();
 
   // Initialize state from URL once
   const initializedFromURL = useRef(false);
@@ -329,7 +362,7 @@ export default function PositionsDashboardPage() {
     }
   };
 
-  // Fetch positions from API
+  // Fetch positions from API (no sorting params; sorting is client-side)
   useEffect(() => {
     if (!electionId || Number.isNaN(electionId)) return;
 
@@ -343,7 +376,6 @@ export default function PositionsDashboardPage() {
           page: String(page),
           limit: String(pageSize),
           ...(debouncedSearch ? { search: debouncedSearch } : {}),
-          ...(sortCol ? { sortCol: sortCol, sortDir: sortDir } : {}),
         });
         const res = await fetch(`/api/positions?${qs.toString()}`, {
           method: "GET",
@@ -386,9 +418,9 @@ export default function PositionsDashboardPage() {
     run();
     return () => {
       alive = false;
-      ctrl.abort()
+      ctrl.abort();
     };
-  }, [electionId, page, pageSize, debouncedSearch, sortCol, sortDir, reloadKey]);
+  }, [electionId, page, pageSize, debouncedSearch, reloadKey]);
 
   // NEW: Fetch voting scopes for this election (for the modal select)
   useEffect(() => {
@@ -396,7 +428,7 @@ export default function PositionsDashboardPage() {
     const ctrl = new AbortController();
     const loadScopes = async () => {
       try {
-        const res = await fetch(`/api/voting-scopes?electionId=${electionId}`, { signal: ctrl.signal });
+        const res = await fetch(`/api/voting-scopes?electionId=${electionId}&all=true`, { signal: ctrl.signal });
         const json = await res.json().catch(() => ({}));
         if (!res.ok || json?.success === false) return;
         const items = (json?.data?.votingScopes || []).map((s: any) => ({ id: s.id, name: s.name }));
@@ -476,7 +508,7 @@ export default function PositionsDashboardPage() {
       />
       <div
         id="main-window-template-component"
-        className="app h-full flex flex-col min-h-[calc-100vh-4rem] bg-gray-50"
+        className="app h-full flex flex-col min-h-[calc(100vh-4rem)] bg-gray-50"
       >
         {/* Universal App Header */}
 
@@ -578,7 +610,7 @@ export default function PositionsDashboardPage() {
             <PositionsTable
               hasLoaded={hasLoaded}
               loading={loading}
-              positions={rows}
+              positions={sortedRows}
               sortCol={sortCol}
               sortDir={sortDir}
               onSort={handleSort}
