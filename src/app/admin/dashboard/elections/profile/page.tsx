@@ -22,6 +22,11 @@ const ProfilePage = () => {
   const [saving, setSaving] = useState(false);
   const [showChangePassModal, setShowChangePassModal] = useState(false);
   const [showAccountModal, setShowAccountModal] = useState(false);
+  const [passwordErrors, setPasswordErrors] = useState<{
+    oldPassword?: string[];
+    newPassword?: string[];
+    confirmPassword?: string[];
+  }>({});
 
   // Fetch user profile on component mount
   useEffect(() => {
@@ -93,6 +98,8 @@ const ProfilePage = () => {
   };
 
   const handleChangePassword = async (data: { oldPassword: string; newPassword: string; confirmPassword: string }) => {
+    setPasswordErrors({}); // Clear previous errors
+    
     try {
       const response = await fetch('/api/users/change-password', {
         method: 'POST',
@@ -103,9 +110,30 @@ const ProfilePage = () => {
       if (response.ok) {
         toast.success("Password changed successfully");
         setShowChangePassModal(false);
+        setPasswordErrors({}); // Clear errors on success
       } else {
         const error = await response.json();
-        toast.error(error.message || "Failed to change password");
+        
+        // Handle field-specific validation errors like signup page
+        if (error.error && typeof error.error === 'object') {
+          const errors: typeof passwordErrors = {};
+          
+          // Extract field-specific errors
+          if (error.error.oldPassword) {
+            errors.oldPassword = error.error.oldPassword;
+          }
+          if (error.error.newPassword) {
+            errors.newPassword = error.error.newPassword;
+          }
+          if (error.error.confirmPassword) {
+            errors.confirmPassword = error.error.confirmPassword;
+          }
+          
+          setPasswordErrors(errors);
+        } else {
+          // Show general error as toast for non-field errors
+          toast.error(error.message || "Failed to change password");
+        }
       }
     } catch (error) {
       console.error("Error changing password:", error);
@@ -262,13 +290,20 @@ const ProfilePage = () => {
                     type="button"
                     label="Change Password"
                     variant="action-primary"
-                    onClick={() => setShowChangePassModal(true)}
+                    onClick={() => {
+                      setPasswordErrors({}); // Clear any previous errors
+                      setShowChangePassModal(true);
+                    }}
                     className="min-w-[140px]"
                   />
                   <ChangePassModal
                     open={showChangePassModal}
-                    onClose={() => setShowChangePassModal(false)}
+                    onClose={() => {
+                      setShowChangePassModal(false);
+                      setPasswordErrors({}); // Clear errors when modal closes
+                    }}
                     onSave={handleChangePassword}
+                    errors={passwordErrors}
                   />
                 </div>
 

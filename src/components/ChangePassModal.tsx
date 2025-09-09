@@ -11,9 +11,14 @@ interface ChangePassModalProps {
     newPassword: string;
     confirmPassword: string;
   }) => void;
+  errors?: {
+    oldPassword?: string[];
+    newPassword?: string[];
+    confirmPassword?: string[];
+  };
 }
 
-export function ChangePassModal({ open, onClose, onSave }: ChangePassModalProps) {
+export function ChangePassModal({ open, onClose, onSave, errors }: ChangePassModalProps) {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -56,13 +61,31 @@ export function ChangePassModal({ open, onClose, onSave }: ChangePassModalProps)
               className="grid gap-4 mb-4 grid-cols-2"
             >
               <div className="col-span-2">
-                <PasswordField label="Old Password" value={oldPassword} onChange={e => setOldPassword(e.target.value)} placeholder="Enter your current password" />
+                <PasswordField 
+                  label="Old Password" 
+                  value={oldPassword} 
+                  onChange={e => setOldPassword(e.target.value)} 
+                  placeholder="Enter your current password"
+                  error={errors?.oldPassword?.[0]}
+                />
               </div>
               <div className="col-span-2">
-                <PasswordField label="New Password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Enter a new password" />
+                <PasswordField 
+                  label="New Password" 
+                  value={newPassword} 
+                  onChange={e => setNewPassword(e.target.value)} 
+                  placeholder="Enter a new password"
+                  error={errors?.newPassword?.[0]}
+                />
               </div>
               <div className="col-span-2">
-                <PasswordField label="Confirm Password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Re-enter new password" />
+                <PasswordField 
+                  label="Confirm Password" 
+                  value={confirmPassword} 
+                  onChange={e => setConfirmPassword(e.target.value)} 
+                  placeholder="Re-enter new password"
+                  error={errors?.confirmPassword?.[0]}
+                />
               </div>
               <div className="col-span-2 flex justify-end gap-2 mt-2">
                 <SubmitButton
