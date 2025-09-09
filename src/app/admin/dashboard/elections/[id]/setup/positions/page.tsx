@@ -9,6 +9,7 @@ import { PositionsDragandDropdown } from '@/components/PositionsDragandDrop';
 import FileViewer from '@/components/FileViewer';
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Toaster, toast } from 'react-hot-toast';
+import ConfirmationModal from '@/components/ConfirmationModal';
 
 // Debounce hook
 function useDebouncedValue<T>(value: T, delay = 400) {
@@ -21,6 +22,10 @@ function useDebouncedValue<T>(value: T, delay = 400) {
 }
 
 export default function PositionsDashboardPage() {
+  // for dynamic confirmation modal
+  const [modalOpen, setModalOpen] = useState(false);      
+  const [modalConfig, setModalConfig] = useState<any>(null);
+
   const params = useParams<{ id: string }>();
   const electionId = Number(params?.id);
   const router = useRouter();
@@ -196,15 +201,28 @@ export default function PositionsDashboardPage() {
   };
 
   // Bulk delete selected positions -> POST /api/positions/bulk { operation: 'soft_delete', positionIds, electionId }
-  const handleDeleteSelected = async () => {
+  const handleDeleteSelected = () => {
     if (selectedIds.length < 1) return;
-    
-    const plural = selectedIds.length > 1 ? 'positions' : 'position';
-    if (!window.confirm(`Delete ${selectedIds.length} ${plural}? This will soft-delete them.`)) return;
 
+    const plural = selectedIds.length > 1 ? 'positions' : 'position';
+
+    setModalConfig({
+      title: "Confirm Delete",
+      description: `Delete ${selectedIds.length} ${plural}? This will soft-delete them.`,
+      confirmLabel: "Delete",
+      variant: "delete",
+      onConfirm: async () => {
+        await doDelete(selectedIds);
+      },
+    });
+
+    setModalOpen(true);
+  };
+
+  const doDelete = async (selectedIds: number[]) => {
     try {
       setModalLoading(true);
-      
+
       const res = await fetch('/api/positions/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -276,6 +294,27 @@ export default function PositionsDashboardPage() {
     } finally {
       setModalLoading(false);
     }
+  };
+
+  // Edit: handles edit confirmation modal
+  const handleEditSubmit = (data: { 
+    position: string; 
+    voteLimit: number; 
+    numberOfWinners: number; 
+    order: number; 
+    votingScopeId?: number | null 
+  }) => {
+    setModalConfig({
+      title: "Confirm Edit",
+      description: "Are you sure you want to save the changes to this position?",
+      confirmLabel: "Save Changes",
+      cancelLabel: "Cancel",
+      variant: "edit",
+      onConfirm: async () => {
+        await handleEditPositionSave(data);
+      },
+    });
+    setModalOpen(true);
   };
 
   const handleEditPositionSave = async (data: { position: string; voteLimit: number; numberOfWinners: number; order: number; votingScopeId?: number | null }) => {
@@ -477,7 +516,7 @@ export default function PositionsDashboardPage() {
           setEditingPositionId(null); 
           setEditInitialData(undefined); 
         }}
-        onSave={isEditMode ? handleEditPositionSave : handleSavePosition}
+        onSave={isEditMode ? handleEditSubmit : handleSavePosition}
         initialData={editInitialData}
         title={isEditMode ? "Edit Position" : "Position Form"}
         submitLabel={isEditMode ? "Save" : "Add"}
@@ -635,6 +674,13 @@ export default function PositionsDashboardPage() {
           onClose={() => { setShowFileViewer(false); setFileViewerData(null); }}
           title={fileViewerData.title}
           fileType={fileViewerData.fileType}
+        />
+      )}
+      {modalConfig && (
+        <ConfirmationModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          {...modalConfig}
         />
       )}
     </>
