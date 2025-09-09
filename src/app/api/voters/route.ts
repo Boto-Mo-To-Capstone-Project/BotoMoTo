@@ -132,35 +132,17 @@ async function getVoters(request: NextRequest) {
       where.isActive = isActive === 'true';
     }
 
-    // Add search filter if provided (remove mode: 'insensitive' to fix Prisma error)
+    // Add search filter if provided
     if (search) {
-      const searchLower = search.toLowerCase();
+      const searchTerm = search.trim();
+      
       where.OR = [
-        {
-          firstName: {
-            contains: searchLower
-          }
-        },
-        {
-          lastName: {
-            contains: searchLower
-          }
-        },
-        {
-          middleName: {
-            contains: searchLower
-          }
-        },
-        {
-          email: {
-            contains: searchLower
-          }
-        },
-        {
-          code: {
-            contains: searchLower
-          }
-        }
+        { firstName: { contains: searchTerm, mode: 'insensitive' } },
+        { lastName: { contains: searchTerm, mode: 'insensitive' } },
+        { middleName: { contains: searchTerm, mode: 'insensitive' } },
+        { email: { contains: searchTerm, mode: 'insensitive' } },
+        { code: { contains: searchTerm, mode: 'insensitive' } },
+        { contactNum: { contains: searchTerm, mode: 'insensitive' } }
       ];
     }
 

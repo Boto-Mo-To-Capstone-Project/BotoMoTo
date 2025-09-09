@@ -71,10 +71,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Normalize search like positions API
-    const searchLower = search ? search.toLowerCase() : undefined;
+    const searchTerm = search ? search.trim() : undefined;
 
-    // Build base where clause for filtering (no search for count)
-    const baseWhere: any = {
+    // Build query filters
+    const where: any = {
       electionId: electionIdInt,
       isDeleted: false,
       ...(positionId && !isNaN(parseInt(positionId)) && { positionId: parseInt(positionId) }),
@@ -84,39 +84,40 @@ export async function GET(request: NextRequest) {
       })
     };
 
-    // Build where clause with search (for findMany)
-    const whereWithSearch: any = {
-      ...baseWhere,
-      ...(searchLower && {
-        voter: {
-          is: {
-            OR: [
-              { firstName: { contains: searchLower } },
-              { lastName: { contains: searchLower } },
-              { email: { contains: searchLower } }
-            ]
-          }
-        }
-      })
-    };
-
-    // Get total count for pagination
-    const totalCount = await db.candidate.count({
-      where: searchLower
-        ? {
-            ...baseWhere,
-            voter: {
-              is: {
-                OR: [
-                  { firstName: { contains: searchLower } },
-                  { lastName: { contains: searchLower } },
-                  { email: { contains: searchLower } }
-                ]
-              }
+    // Add search filter if provided
+    if (searchTerm) {
+      where.OR = [
+        {
+          voter: {
+            is: {
+              OR: [
+                { firstName: { contains: searchTerm, mode: 'insensitive' } },
+                { middleName: { contains: searchTerm, mode: 'insensitive' } },
+                { lastName: { contains: searchTerm, mode: 'insensitive' } },
+                { email: { contains: searchTerm, mode: 'insensitive' } }
+              ]
             }
           }
-        : baseWhere
-    });
+        },
+        {
+          position: {
+            is: {
+              name: { contains: searchTerm, mode: 'insensitive' }
+            }
+          }
+        },
+        {
+          party: {
+            is: {
+              name: { contains: searchTerm, mode: 'insensitive' }
+            }
+          }
+        }
+      ];
+    }
+
+    // Get total count for pagination
+    const totalCount = await db.candidate.count({ where });
 
     // Calculate pagination
     const totalPages = all ? 1 : Math.ceil(totalCount / limit);
@@ -125,7 +126,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch candidates with related data (no backend sorting; frontend handles it)
     const candidates = await db.candidate.findMany({
-      where: whereWithSearch,
+      where,
       select: all ? {
         // Minimal select for all=true queries to reduce data transfer
         id: true,

@@ -100,13 +100,9 @@ export async function GET(request: NextRequest) {
 
     // Add search filter if provided
     if (search) {
-      const searchLower = search.toLowerCase();
+      const searchTerm = search.trim();
       where.OR = [
-        {
-          name: {
-            contains: searchLower
-          }
-        },
+        { name: { contains: searchTerm, mode: 'insensitive' } }
       ];
     }
 
