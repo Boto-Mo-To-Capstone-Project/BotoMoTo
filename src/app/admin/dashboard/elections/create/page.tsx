@@ -123,8 +123,9 @@ function CreateElectionContent() {
         }
         // Fetch scopes and parties in parallel
         const [scopesRes, partiesRes] = await Promise.all([
-          fetch(`/api/voting-scopes?electionId=${editId}`, { cache: 'no-store' }),
-          fetch(`/api/parties?electionId=${editId}`, { cache: 'no-store' }),
+
+          fetch(`/api/voting-scopes?electionId=${editId}&all=true`, { cache: 'no-store' }),
+          fetch(`/api/parties?electionId=${editId}&all=true`, { cache: 'no-store' }),
         ]);
         const [scopesJson, partiesJson] = await Promise.all([scopesRes.json(), partiesRes.json()]);
         if (scopesRes.ok && scopesJson?.success) {
@@ -301,7 +302,7 @@ function CreateElectionContent() {
         toast.success('Scope(s) saved');
       }
       // Refresh
-      const res = await fetch(`/api/voting-scopes?electionId=${editId}`, { cache: 'no-store' });
+      const res = await fetch(`/api/voting-scopes?electionId=${editId}&all=true`, { cache: 'no-store' });
       const json = await res.json();
       if (res.ok && json?.success) {
         const rows: ScopeRow[] = (json?.data?.votingScopes || []).map((s: any) => ({ id: s.id, name: s.name, description: s.description }));
@@ -325,7 +326,7 @@ function CreateElectionContent() {
       }));
       toast.success('Selected scope(s) deleted');
       // Refresh
-      const res = await fetch(`/api/voting-scopes?electionId=${editId}`, { cache: 'no-store' });
+      const res = await fetch(`/api/voting-scopes?electionId=${editId}&all=true`, { cache: 'no-store' });
       const json = await res.json();
       if (res.ok && json?.success) {
         const rows: ScopeRow[] = (json?.data?.votingScopes || []).map((s: any) => ({ id: s.id, name: s.name, description: s.description }));
@@ -376,7 +377,7 @@ function CreateElectionContent() {
         toast.success('Party saved');
       }
       // Refresh
-      const res = await fetch(`/api/parties?electionId=${editId}`, { cache: 'no-store' });
+      const res = await fetch(`/api/parties?electionId=${editId}&all=true`, { cache: 'no-store' });
       const json = await res.json();
       if (res.ok && json?.success) {
         const rows: PartyRow[] = (json?.data?.parties || []).map((p: any) => ({ id: p.id, name: p.name, color: p.color }));
@@ -400,7 +401,7 @@ function CreateElectionContent() {
       }));
       toast.success('Selected party(ies) deleted');
       // Refresh
-      const res = await fetch(`/api/parties?electionId=${editId}`, { cache: 'no-store' });
+      const res = await fetch(`/api/parties?electionId=${editId}&all=true`, { cache: 'no-store' });
       const json = await res.json();
       if (res.ok && json?.success) {
         const rows: PartyRow[] = (json?.data?.parties || []).map((p: any) => ({ id: p.id, name: p.name, color: p.color }));
