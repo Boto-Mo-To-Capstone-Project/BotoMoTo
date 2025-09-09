@@ -219,9 +219,8 @@ const LiveDashboard = () => {
       <main className="flex flex-col items-center gap-10 pb-20 pt-40 text-justify px-10">
         <div className="w-4/5 flex flex-col items-center">
           <div className="text-center space-y-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-            <p className="text-lg text-gray-600">Loading live election results...</p>
-            {isConnected && <p className="text-sm text-green-600">📡 Connected to live updates</p>}
+            <p className="text-lg text-gray">Loading live election results...</p>
+            {isConnected && <p className="text-sm text-secondary">📡 Connected to live updates</p>}
           </div>
         </div>
       </main>
@@ -234,15 +233,9 @@ const LiveDashboard = () => {
       <main className="flex flex-col items-center gap-10 pb-20 pt-40 text-justify px-10">
         <div className="w-4/5 flex flex-col items-center">
           <div className="text-center space-y-4">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-red-800 mb-2">Unable to Load Election Results</h3>
-              <p className="text-red-600">{error}</p>
-              <button 
-                onClick={() => window.location.reload()} 
-                className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-              >
-                Retry
-              </button>
+            <div className="bg-primary/10 border border-primary rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-primary mb-2">Unable to Load Election Results</h3>
+              <p className="text-gray">{error}</p>
             </div>
           </div>
         </div>
@@ -264,7 +257,16 @@ const LiveDashboard = () => {
               {results?.election?.organization || "Loading..."}
             </p>
           </div>
-          <div className="flex justify-center w-full xs:w-auto">
+          <div className="flex justify-center w-full xs:w-auto gap-4 items-center">
+
+            {/* only for dev, will remove later */}
+            {/* Connection Status Indicator */}
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-secondary' : 'bg-primary'}`}></div>
+              <span className="text-sm text-gray">
+                {isConnected ? 'Live' : 'Disconnected'}
+              </span>
+            </div>
             <Button variant="long_primary">Export Results</Button>
           </div>
         </div>
@@ -291,15 +293,22 @@ const LiveDashboard = () => {
             icon={Clock} 
           />
         </div>
+        
         {/* position section */}
-        <PositionSection />
+        <div className="mt-10 w-full">
+          <SectionHeaderContainer>
+            Votes Per Position
+          </SectionHeaderContainer>
+        </div>
+        <PositionSection positions={results?.positions} />
+
         {/* Demographic section */}
         <div className="mt-10 w-full">
           <SectionHeaderContainer>
             Votes Per Demographic (Voter Scope)
           </SectionHeaderContainer>
         </div>
-        <DemographicSection />
+        <DemographicSection demographics={results?.demographics} />
       </div>
     </main>
   );

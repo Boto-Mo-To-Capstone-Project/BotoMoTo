@@ -3,7 +3,28 @@
 import CandidateDashboardCard from "./CandidateDashboardCard";
 import SectionHeaderContainer from "./SectionHeaderContainer";
 
-const positions = [
+// Type definitions for the API data
+interface Position {
+  id: number;
+  name: string;
+  voteLimit: number;
+  numOfWinners: number;
+  votingScope: { id: number; name: string } | null;
+  candidates: {
+    id: number;
+    name: string;
+    party: { id: number; name: string; color: string } | null;
+    voteCount: number;
+    percentage: number;
+  }[];
+}
+
+interface PositionSectionProps {
+  positions?: Position[];
+}
+
+// Fallback hardcoded data for when no positions are provided
+const fallbackPositions = [
   {
     position: "President",
     candidates: [
@@ -56,13 +77,18 @@ const positions = [
   },
 ];
 
-const PositionSection = () => {
-  return (
-    <section className="mt-10 w-full">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 ">
-        {positions.map((pos) => {
-          const maxVotes = Math.max(...pos.candidates.map((c) => c.votes));
+const PositionSection = ({ positions }: PositionSectionProps) => {
+  // Use API data if available, otherwise fallback to hardcoded data
+  const displayPositions = positions || [];
+  const useFallback = !positions || positions.length === 0;
 
+  return (
+    <section className="grid grid-cols-1 md:grid-cols-1 gap-8 w-full">
+      {useFallback ? (
+        // Render fallback data with original structure
+        fallbackPositions.map((pos) => {
+          const maxVotes = Math.max(...pos.candidates.map((c) => c.votes));
+ 
           return (
             <div key={pos.position}>
               <SectionHeaderContainer>{pos.position}</SectionHeaderContainer>
@@ -81,8 +107,32 @@ const PositionSection = () => {
               </div>
             </div>
           );
-        })}
-      </div>
+        })
+      ) : (
+        // Render API data with new structure
+        displayPositions.map((position) => {
+          const maxVotes = Math.max(...position.candidates.map((c) => c.voteCount), 1); // Prevent division by 0
+ 
+          return (
+            <div key={position.id}>
+              <SectionHeaderContainer>{position.name}</SectionHeaderContainer>
+              <div className="flex flex-col gap-4">
+                {position.candidates.map((candidate) => (
+                  <CandidateDashboardCard
+                    id={candidate.id}
+                    key={candidate.id}
+                    imgSrc="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaHfpIhAPZHSbZstaGEgFBIjZZ-Y-K533dag&s" // Default image for now
+                    name={candidate.name}
+                    party={candidate.party?.name || "Independent"}
+                    votes={candidate.voteCount}
+                    maxVotes={maxVotes}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })
+      )}
     </section>
   );
 };
