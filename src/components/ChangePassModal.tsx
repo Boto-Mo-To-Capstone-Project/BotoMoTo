@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
-import { AuthHeading } from "@/components/AuthHeading";
-import { InputField } from "@/components/InputField";
+import { PasswordField } from "@/components/PasswordField";
 import { SubmitButton } from "@/components/SubmitButton";
 
 interface ChangePassModalProps {
@@ -57,13 +56,13 @@ export function ChangePassModal({ open, onClose, onSave }: ChangePassModalProps)
               className="grid gap-4 mb-4 grid-cols-2"
             >
               <div className="col-span-2">
-                <InputField label="Old Password" value={oldPassword} onChange={e => setOldPassword(e.target.value)} type="password" placeholder="Enter your current password" required />
+                <PasswordField label="Old Password" value={oldPassword} onChange={e => setOldPassword(e.target.value)} placeholder="Enter your current password" />
               </div>
               <div className="col-span-2">
-                <InputField label="New Password" value={newPassword} onChange={e => setNewPassword(e.target.value)} type="password" placeholder="Enter a new password" required />
+                <PasswordField label="New Password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Enter a new password" />
               </div>
               <div className="col-span-2">
-                <InputField label="Confirm Password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} type="password" placeholder="Re-enter new password" required />
+                <PasswordField label="Confirm Password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Re-enter new password" />
               </div>
               <div className="col-span-2 flex justify-end gap-2 mt-2">
                 <SubmitButton
