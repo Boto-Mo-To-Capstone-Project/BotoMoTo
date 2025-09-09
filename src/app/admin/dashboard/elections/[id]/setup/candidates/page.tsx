@@ -9,6 +9,7 @@ import { CandidatesDragandDropdown } from "@/components/CandidatesDragandDrop";
 import FileViewer from "@/components/FileViewer";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from 'react-hot-toast';
+import ConfirmationModal from '@/components/ConfirmationModal';
 
 // Debounce hook
 function useDebouncedValue<T>(value: T, delay = 400) {
@@ -21,6 +22,10 @@ function useDebouncedValue<T>(value: T, delay = 400) {
 }
 
 export default function CandidatesDashboardPage() {
+  // for dynamic confirmation modal
+  const [modalOpen, setModalOpen] = useState(false);      
+  const [modalConfig, setModalConfig] = useState<any>(null);
+
   const params = useParams<{ id: string }>();
   const electionId = Number(params?.id);
   const router = useRouter();
@@ -171,44 +176,57 @@ export default function CandidatesDashboardPage() {
   };
 
   // Bulk delete selected candidates -> POST /api/candidates/bulk { operation: 'soft_delete', candidateIds, electionId }
-  const handleDeleteSelected = async () => {
-    if (selectedIds.length < 1) return;
-    
-    const plural = selectedIds.length > 1 ? 'candidates' : 'candidate';
-    if (!window.confirm(`Delete ${selectedIds.length} ${plural}? This will soft-delete them.`)) return;
+    const handleDeleteSelected = () => {
+      if (selectedIds.length < 1) return;
 
-    try {
-      setModalLoading(true);
-      
-      const res = await fetch('/api/candidates/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          operation: 'soft_delete',
-          candidateIds: selectedIds,
-          electionId
-        }),
+      const plural = selectedIds.length > 1 ? 'candidates' : 'candidate';
+
+      setModalConfig({
+        title: 'Confirm Delete',
+        description: `Delete ${selectedIds.length} ${plural}? This will soft-delete them.`,
+        confirmLabel: 'Delete',
+        variant: 'delete',
+        onConfirm: async () => {
+          await doDelete(selectedIds);
+        },
       });
-      const json = await res.json().catch(() => ({}));
 
-      if (!res.ok || (json as any)?.success === false) {
-        toast.error((json as any)?.message || 'Failed to delete candidates');
-        return;
-      }
+      setModalOpen(true);
+    };
 
-      const deletedCount = selectedIds.length;
+    const doDelete = async (selectedIds: number[]) => {
+      try {
+        setModalLoading(true);
+
+        const res = await fetch('/api/candidates/bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            operation: 'soft_delete',
+            candidateIds: selectedIds,
+            electionId
+          }),
+        });
+        const json = await res.json().catch(() => ({}));
+
+        if (!res.ok || (json as any)?.success === false) {
+          toast.error((json as any)?.message || 'Failed to delete candidates');
+          return;
+        }
+
+        const deletedCount = selectedIds.length;
       toast.success(`Successfully deleted ${deletedCount} candidate${deletedCount === 1 ? '' : 's'}`);
 
-      setRows((prev) => prev.filter((r) => !selectedIds.includes(r.id)));
-      setSelectedIds([]);
-      setReloadKey((k) => k + 1);
-    } catch (e) {
-      console.error('Bulk delete candidates error:', e);
-      toast.error('Failed to delete candidates');
-    } finally {
-      setModalLoading(false);
-    }
-  };
+        setRows((prev) => prev.filter((r) => !selectedIds.includes(r.id)));
+        setSelectedIds([]);
+        setReloadKey((k) => k + 1);
+      } catch (e) {
+        console.error('Bulk delete candidates error:', e);
+        toast.error('Failed to delete candidates');
+      } finally {
+        setModalLoading(false);
+      }
+    };
 
   // Edit candidate: prefill modal from GET /api/candidates/[id] and submit via PUT
   const openEditModal = async () => {
@@ -249,6 +267,21 @@ export default function CandidatesDashboardPage() {
     } finally {
       setModalLoading(false);
     }
+  };
+
+  // Edit: handles edit confirmation modal
+  const handleEditSubmit = (formData: FormData) => {
+    setModalConfig({
+      title: "Confirm Edit",
+      description: "Are you sure you want to save the changes to this candidate?",
+      confirmLabel: "Save Changes",
+      cancelLabel: "Cancel",
+      variant: "edit",
+      onConfirm: async () => {
+        await handleEditCandidateSave(formData);
+      },
+    });
+    setModalOpen(true);
   };
 
   const handleEditCandidateSave = async (formData: FormData) => {
@@ -546,7 +579,7 @@ export default function CandidatesDashboardPage() {
       <CandidatesModal
         open={showCandidatesModal}
         onClose={() => { setShowCandidatesModal(false); setIsEditMode(false); setEditingCandidateId(null); setEditInitialData(undefined); }}
-        onSave={isEditMode ? handleEditCandidateSave as any : handleSaveCandidate}
+        onSave={isEditMode ? handleEditSubmit as any : handleSaveCandidate}
         electionId={electionId}
         voters={voters}
         positions={positions}
@@ -591,6 +624,13 @@ export default function CandidatesDashboardPage() {
             setShowFileViewer(false);
             setFileViewerData(null);
           }}
+        />
+      )}
+      {modalConfig && (
+        <ConfirmationModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          {...modalConfig}
         />
       )}
     </>

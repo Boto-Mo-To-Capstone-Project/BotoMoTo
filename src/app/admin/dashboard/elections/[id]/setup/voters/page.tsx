@@ -9,6 +9,7 @@ import { VotersDragandDropdown } from '@/components/VotersDragandDropdown';
 import FileViewer from '@/components/FileViewer';
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Toaster, toast } from 'react-hot-toast';
+import ConfirmationModal from '@/components/ConfirmationModal';
 
 // Debounce hook
 function useDebouncedValue<T>(value: T, delay = 400) {
@@ -21,6 +22,10 @@ function useDebouncedValue<T>(value: T, delay = 400) {
 }
 
 export default function VoterDashboardPage() {
+  // for dynamic confirmation modal
+  const [modalOpen, setModalOpen] = useState(false);      
+  const [modalConfig, setModalConfig] = useState<any>(null);
+
   const params = useParams<{ id: string }>();
   const electionId = Number(params?.id);
   const router = useRouter();
@@ -185,35 +190,48 @@ export default function VoterDashboardPage() {
   };
 
   // Bulk delete selected voters -> POST /api/voters/bulk { operation: 'soft_delete', voterIds, electionId }
-  const handleDeleteSelected = async () => {
+  const handleDeleteSelected = () => {
     if (selectedIds.length < 1) return;
-    
+
     // Check which voters have voted and which haven't
     const selectedVoters = rows.filter(r => selectedIds.includes(r.id));
     const votedVoters = selectedVoters.filter(v => v.voted);
     const nonVotedVoters = selectedVoters.filter(v => !v.voted);
-    
+
     if (votedVoters.length > 0) {
       const votedNames = votedVoters.map(v => v.name).join(', ');
       if (nonVotedVoters.length === 0) {
         toast.error(`Cannot delete voters who have already voted: ${votedNames}`);
         return;
       } else {
-        const proceed = window.confirm(
-          `${votedVoters.length} selected voter(s) have already voted and cannot be deleted: ${votedNames}\n\n` +
-          `Do you want to continue deleting the ${nonVotedVoters.length} voter(s) who haven't voted yet?`
-        );
-        if (!proceed) return;
+        setModalConfig({
+          title: "Confirm Partial Delete",
+          description: `${votedVoters.length} voter(s) already voted: ${votedNames}\n\nDo you want to continue deleting the ${nonVotedVoters.length} voter(s) who haven't voted yet?`,
+          confirmLabel: "Yes, Delete",
+          variant: "delete",
+          onConfirm: async () => {
+            await doDelete(nonVotedVoters.map((v: any) => v.id), votedVoters.length);
+          },
+        });
       }
     } else {
       const plural = nonVotedVoters.length > 1 ? 'voters' : 'voter';
-      if (!window.confirm(`Delete ${nonVotedVoters.length} ${plural}? This will soft-delete them.`)) return;
+      setModalConfig({
+        title: "Confirm Delete",
+        description: `Delete ${nonVotedVoters.length} ${plural}? This will soft-delete them.`,
+        confirmLabel: "Delete",
+        variant: "delete",
+        onConfirm: async () => {
+          await doDelete(nonVotedVoters.map((v: any) => v.id), 0);
+        },
+      });
     }
 
+    setModalOpen(true);
+  };
+
+  const doDelete = async (voterIdsToDelete: string[], skippedCount: number) => {
     try {
-      setLoading(true);
-      const voterIdsToDelete = nonVotedVoters.map(v => v.id);
-      
       const res = await fetch('/api/voters/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -232,7 +250,6 @@ export default function VoterDashboardPage() {
 
       // Success message
       const deletedCount = voterIdsToDelete.length;
-      const skippedCount = votedVoters.length;
       let message = `Successfully deleted ${deletedCount} voter${deletedCount === 1 ? '' : 's'}`;
       if (skippedCount > 0) {
         message += `. ${skippedCount} voter${skippedCount === 1 ? '' : 's'} who already voted were skipped`;
@@ -240,7 +257,7 @@ export default function VoterDashboardPage() {
       toast.success(message);
 
       // Optimistic update + refresh
-      setRawRows((prev) => prev.filter((r) => !voterIdsToDelete.includes(r.id)));
+      setRawRows((prev) => prev.filter((r: any) => !voterIdsToDelete.includes(r.id)));
       setSelectedIds([]);
       setReloadKey((k) => k + 1);
     } catch (e) {
@@ -351,6 +368,22 @@ export default function VoterDashboardPage() {
     }
   };
 
+  // Edit: handles edit confirmation modal
+  const handleEditSubmit = (data: any) => {
+  setModalConfig({
+    title: "Confirm Edit",
+    description: "Are you sure you want to save the changes to this voter?",
+    confirmLabel: "Save Changes",
+    cancelLabel: "Cancel",
+    variant: "edit",
+    onConfirm: async () => {
+      await handleEditVoterSave(data);
+    },
+  });
+  setModalOpen(true);
+};
+
+  // handles Edit Submission 
   const handleEditVoterSave = async (data: any) => {
     if (!isEditMode || !editingVoterId) return;
     try {
@@ -703,7 +736,7 @@ export default function VoterDashboardPage() {
           setEditingVoterId(null); 
           setEditInitialData(undefined); 
         }}
-        onSave={isEditMode ? handleEditVoterSave : handleAddVoter}
+        onSave={isEditMode ? handleEditSubmit : handleAddVoter}
         initialData={editInitialData}
         title={isEditMode ? "Edit Voter" : "Voter Form"}
         submitLabel={isEditMode ? "Save" : "Add"}
@@ -730,6 +763,13 @@ export default function VoterDashboardPage() {
           onClose={handleCloseFileViewer}
           title={fileViewerData.title}
           fileType={fileViewerData.fileType}
+        />
+      )}
+      {modalConfig && (
+        <ConfirmationModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          {...modalConfig}
         />
       )}
     </>
