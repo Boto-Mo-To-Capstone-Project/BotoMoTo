@@ -5,7 +5,6 @@ import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
 import { MdSave } from "react-icons/md";
 import { ChangePassModal } from "@/components/ChangePassModal";
-import { AccountModal } from "@/components/DeactDeleteModal";
 import toast from "react-hot-toast";
 
 const ProfilePage = () => {
@@ -14,9 +13,6 @@ const ProfilePage = () => {
     fullName: "",
     email: "",
     accountCreated: "",
-    organizationName: "",
-    organizationEmail: "",
-    numberOfMembers: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -40,9 +36,6 @@ const ProfilePage = () => {
             fullName: profile.name || "",
             email: profile.email || "",
             accountCreated: profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : "",
-            organizationName: profile.organization?.name || "",
-            organizationEmail: profile.organization?.email || "",
-            numberOfMembers: profile.organization?.membersCount?.toString() || "",
           });
         } else {
           toast.error("Failed to load profile data");
@@ -68,9 +61,7 @@ const ProfilePage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: personalData.fullName,
-          organizationName: personalData.organizationName,
-          organizationEmail: personalData.organizationEmail,
-          numberOfMembers: personalData.numberOfMembers,
+          // Superadmin doesn't have organization data
         }),
       });
       
@@ -241,38 +232,6 @@ const ProfilePage = () => {
               </div>
             </div>
 
-            {/* Organization Section */}
-            <div>
-              <h3 className="text-md font-semibold mb-4">Organization Information</h3>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <InputField
-                  label="Organization Name"
-                  type="text"
-                  value={personalData.organizationName}
-                  onChange={e =>
-                    setPersonalData({ ...personalData, organizationName: e.target.value })
-                  }
-                />
-                <InputField
-                  label="Organization Email"
-                  type="email"
-                  value={personalData.organizationEmail}
-                  onChange={e =>
-                    setPersonalData({ ...personalData, organizationEmail: e.target.value })
-                  }
-                />
-                <InputField
-                  label="Number of Voters/Members"
-                  type="number"
-                  value={personalData.numberOfMembers}
-                  onChange={e =>
-                    setPersonalData({ ...personalData, numberOfMembers: Math.max(0, Number(e.target.value)).toString() })
-                  }
-                  min={1}
-                />
-              </div>
-            </div>
-
             {/* Divider */}
             <hr className="border-gray-200" />
 
@@ -314,26 +273,6 @@ const ProfilePage = () => {
                   value={personalData.accountCreated}
                   disabled
                 />
-
-                {/* Delete Account */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">&nbsp;</label>
-                  <SubmitButton
-                    type="button"
-                    label="Delete / Deactivate Account"
-                    variant="action-primary"
-                    onClick={() => setShowAccountModal(true)}
-                    className="min-w-[180px]"
-                  />
-                  <AccountModal
-                    open={showAccountModal}
-                    onClose={() => setShowAccountModal(false)}
-                    onSave={data => {
-                      // TODO: handle deactivate/delete logic here
-                      setShowAccountModal(false);
-                    }}
-                  />
-                </div>
               </div>
             </div>
 
