@@ -21,8 +21,6 @@ export async function GET(request: NextRequest) {
     const search = url.searchParams.get('search');
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '50');
-    const sortCol = url.searchParams.get('sortCol');
-    const sortDir = url.searchParams.get('sortDir') || 'asc';
     const all = url.searchParams.get('all') === 'true';
 
     if (!electionId) {
@@ -116,47 +114,12 @@ export async function GET(request: NextRequest) {
     const skip = all ? 0 : (page - 1) * limit;
     const take = all ? undefined : limit;
 
-    // Build dynamic orderBy clause
-    let orderBy: any[] = [];
-    
-    if (sortCol && ['position', 'voterLimit', 'numberOfWinners', 'scopeName', 'order'].includes(sortCol)) {
-      switch (sortCol) {
-        case 'position':
-          orderBy = [{ name: sortDir }];
-          break;
-        case 'voterLimit':
-          orderBy = [{ voteLimit: sortDir }];
-          break;
-        case 'numberOfWinners':
-          orderBy = [{ numOfWinners: sortDir }];
-          break;
-        case 'scopeName':
-          orderBy = [{ votingScope: { name: sortDir } }];
-          break;
-        case 'order':
-          orderBy = [{ order: sortDir }];
-          break;
-        default:
-          orderBy = [
-            { order: "asc" },
-            { id: "asc" }
-          ];
-          break;
-      }
-    } else {
-      // Default sorting
-      orderBy = [
-        { order: "asc" },
-        { id: "asc" }
-      ];
-    }
-
     // Get total count for pagination
     const totalCount = await db.position.count({
       where
     });
 
-    // Fetch positions for the election (exclude soft-deleted)
+    // Fetch positions for the election (exclude soft-deleted) - no backend sorting, client handles it
     const positions = await db.position.findMany({
       where,
       include: {
@@ -184,7 +147,6 @@ export async function GET(request: NextRequest) {
           }
         }
       },
-      orderBy,
       skip,
       ...(take !== undefined && { take })
     });

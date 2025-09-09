@@ -29,8 +29,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = Math.min(parseInt(url.searchParams.get('limit') || '10'), 50);
     const search = url.searchParams.get('search');
-    const sortCol = url.searchParams.get('sortCol');
-    const sortDir = url.searchParams.get('sortDir') || 'asc';
+    const all = url.searchParams.get('all') === 'true';
 
     if (!electionId) {
       return apiResponse({ success: false, message: "Election ID is required", error: "Bad Request", status: 400 });
@@ -120,51 +119,39 @@ export async function GET(request: NextRequest) {
     });
 
     // Calculate pagination
-    const totalPages = Math.ceil(totalCount / limit);
-    const offset = (page - 1) * limit;
+    const totalPages = all ? 1 : Math.ceil(totalCount / limit);
+    const offset = all ? 0 : (page - 1) * limit;
+    const take = all ? undefined : limit;
 
-    // Build dynamic orderBy clause
-    let orderBy: any[] = [];
-    if (sortCol && ['firstName', 'lastName', 'email', 'position', 'party', 'scope'].includes(sortCol)) {
-      switch (sortCol) {
-        case 'firstName':
-          orderBy = [{ voter: { firstName: sortDir } }];
-          break;
-        case 'lastName':
-          orderBy = [{ voter: { lastName: sortDir } }];
-          break;
-        case 'email':
-          orderBy = [{ voter: { email: sortDir } }];
-          break;
-        case 'position':
-          orderBy = [{ position: { name: sortDir } }];
-          break;
-        case 'party':
-          orderBy = [{ party: { name: sortDir } }];
-          break;
-        case 'scope':
-          orderBy = [{ voter: { votingScope: { name: sortDir } } }];
-          break;
-        default:
-          orderBy = [
-            { position: { order: 'asc' } },
-            { voter: { lastName: 'asc' } },
-            { voter: { firstName: 'asc' } }
-          ];
-          break;
-      }
-    } else {
-      orderBy = [
-        { position: { order: 'asc' } },
-        { voter: { lastName: 'asc' } },
-        { voter: { firstName: 'asc' } }
-      ];
-    }
-
-    // Fetch candidates with related data
+    // Fetch candidates with related data (no backend sorting; frontend handles it)
     const candidates = await db.candidate.findMany({
       where: whereWithSearch,
-      select: {
+      select: all ? {
+        // Minimal select for all=true queries to reduce data transfer
+        id: true,
+        createdAt: true,
+        voter: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true
+          }
+        },
+        position: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        party: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      } : {
+        // Full select for regular queries
         id: true,
         imageObjectKey: true,
         imageProvider: true,
@@ -210,9 +197,8 @@ export async function GET(request: NextRequest) {
           }
         }
       },
-      orderBy,
       skip: offset,
-      take: limit
+      ...(take !== undefined && { take })
     });
 
     // Create audit log
@@ -222,29 +208,38 @@ export async function GET(request: NextRequest) {
       request,
       resource: "CANDIDATE",
       resourceId: electionIdInt,
-      message: `Viewed candidates for election: ${election.name}`,
+      message: `Viewed candidates for election: ${election.name}${all ? ' (all candidates)' : ''}`,
     });
+
+    // Prepare response data
+    const responseData: any = {
+      candidates,
+      election: {
+        id: election.id,
+        name: election.name,
+        status: election.status
+      },
+      audit
+    };
+
+    // Only include pagination when not fetching all
+    if (!all) {
+      responseData.pagination = {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      };
+    } else {
+      responseData.totalCount = totalCount;
+    }
 
     return apiResponse({
       success: true,
       message: "Candidates fetched successfully",
-      data: {
-        candidates,
-        pagination: {
-          currentPage: page,
-          totalPages,
-          totalCount,
-          limit,
-          hasNextPage: page < totalPages,
-          hasPrevPage: page > 1
-        },
-        election: {
-          id: election.id,
-          name: election.name,
-          status: election.status
-        },
-        audit
-      },
+      data: responseData,
       status: 200
     });
 
