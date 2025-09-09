@@ -15,6 +15,7 @@ import {
   Users,
   BadgeAlert,
   LogOut,
+  Settings,
 } from "lucide-react";
 import { useLogout } from "@/hooks/useLogout";
 import { useEffect } from "react";
@@ -64,6 +65,11 @@ const SuperAdminSidebar = ({
       name: "Survey",
       href: "/superadmin/dashboard/survey",
       icon: ClipboardList,
+    },
+    {
+      name: "Settings",
+      href: "/superadmin/dashboard/settings",
+      icon: Settings,
     },
   ];
 
