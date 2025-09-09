@@ -1,28 +1,131 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
 import { MdSave } from "react-icons/md";
 import { ChangePassModal } from "@/components/ChangePassModal";
 import { AccountModal } from "@/components/DeactDeleteModal";
-
-const initialData = {
-  fullName: "Juan Dela Cruz",
-  email: "juan.delacruz@email.com",
-  accountCreated: "2023-01-15",
-  organizationName: "Sample Org",
-  organizationEmail: "org@email.com",
-  numberOfMembers: "120",
-};
+import toast from "react-hot-toast";
 
 const ProfilePage = () => {
-  const [personalData, setPersonalData] = useState(initialData);
+  const { data: session } = useSession();
+  const [personalData, setPersonalData] = useState({
+    fullName: "",
+    email: "",
+    accountCreated: "",
+    organizationName: "",
+    organizationEmail: "",
+    numberOfMembers: "",
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [showChangePassModal, setShowChangePassModal] = useState(false);
   const [showAccountModal, setShowAccountModal] = useState(false);
-  // Remove passwordData state, handled in modal
 
-  const handleChangePhoto = () => alert("Change avatar clicked");
-  // Remove handleDeleteAccount, handled in modal
+  // Fetch user profile on component mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch('/api/users/profile');
+        if (response.ok) {
+          const result = await response.json();
+          const profile = result.data;
+          setPersonalData({
+            fullName: profile.name || "",
+            email: profile.email || "",
+            accountCreated: profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : "",
+            organizationName: profile.organization?.name || "",
+            organizationEmail: profile.organization?.email || "",
+            numberOfMembers: profile.organization?.membersCount?.toString() || "",
+          });
+        } else {
+          toast.error("Failed to load profile data");
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        toast.error("Failed to load profile data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchProfile();
+    }
+  }, [session]);
+
+  const handleSaveProfile = async () => {
+    setSaving(true);
+    try {
+      const response = await fetch('/api/users/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: personalData.fullName,
+          organizationName: personalData.organizationName,
+          organizationEmail: personalData.organizationEmail,
+          numberOfMembers: personalData.numberOfMembers,
+        }),
+      });
+      
+      if (response.ok) {
+        toast.success("Profile updated successfully");
+      } else {
+        const error = await response.json();
+        if (error.error && typeof error.error === 'object') {
+          // Show specific field errors
+          Object.entries(error.error).forEach(([field, messages]) => {
+            if (Array.isArray(messages)) {
+              toast.error(`${field}: ${messages.join(', ')}`);
+            }
+          });
+        } else {
+          toast.error(error.message || "Failed to update profile");
+        }
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleChangePassword = async (data: { oldPassword: string; newPassword: string; confirmPassword: string }) => {
+    try {
+      const response = await fetch('/api/users/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      
+      if (response.ok) {
+        toast.success("Password changed successfully");
+        setShowChangePassModal(false);
+      } else {
+        const error = await response.json();
+        toast.error(error.message || "Failed to change password");
+      }
+    } catch (error) {
+      console.error("Error changing password:", error);
+      toast.error("Failed to change password");
+    }
+  };
+
+  const handleChangePhoto = () => toast("Change avatar functionality will be implemented soon");
+
+  if (loading) {
+    return (
+      <div className="app h-full flex flex-col min-h-[calc(100vh-4rem)] bg-gray-50">
+        <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-gray-500">Loading profile...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app h-full flex flex-col min-h-[calc(100vh-4rem)] bg-gray-50">
@@ -37,11 +140,12 @@ const ProfilePage = () => {
             />
             
             <SubmitButton
-              label="Save"
+              label={saving ? "Saving" : "Save"}
               variant="action-primary"
               icon={<MdSave size={20} className="fill-current" />}
               title="Save"
               className="min-w-[100px]"
+              onClick={handleSaveProfile}
             />
           </div>
         </div>
@@ -134,8 +238,9 @@ const ProfilePage = () => {
                   type="number"
                   value={personalData.numberOfMembers}
                   onChange={e =>
-                    setPersonalData({ ...personalData, numberOfMembers: e.target.value })
+                    setPersonalData({ ...personalData, numberOfMembers: Math.max(0, Number(e.target.value)).toString() })
                   }
+                  min={1}
                 />
               </div>
             </div>
@@ -163,10 +268,7 @@ const ProfilePage = () => {
                   <ChangePassModal
                     open={showChangePassModal}
                     onClose={() => setShowChangePassModal(false)}
-                    onSave={data => {
-                      // TODO: handle password change logic here
-                      setShowChangePassModal(false);
-                    }}
+                    onSave={handleChangePassword}
                   />
                 </div>
 
