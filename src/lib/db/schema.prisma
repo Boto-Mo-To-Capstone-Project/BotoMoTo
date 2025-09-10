@@ -193,6 +193,12 @@ model Election {
   description String
   status      ElectionStatus @default(DRAFT)
   allowSurvey Boolean        @default(false) // Enable post-vote survey
+  
+  // Repeating election fields
+  isTemplate      Boolean   @default(false)  // Is this a template?
+  templateId      Int?                       // Reference to template
+  instanceYear    Int?                      // Year for this instance
+  instanceName    String?                   // Display name for instance
 
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -211,6 +217,10 @@ model Election {
   voteResponses VoteResponse[]
   broadcasts   Broadcast[]
   emailLogs    EmailLog[]
+  
+  // Template relations
+  template     Election?  @relation("ElectionTemplate", fields: [templateId], references: [id])
+  instances    Election[] @relation("ElectionTemplate")
 }
 
 model ElectionSched {

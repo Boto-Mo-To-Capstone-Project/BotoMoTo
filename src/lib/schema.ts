@@ -160,6 +160,13 @@ const electionSchema = z.object({
     invalid_type_error: "Invalid election status"
   }).default("DRAFT"),
   allowSurvey: z.boolean().default(false),
+  
+  // Template fields
+  isTemplate: z.boolean().default(false),
+  templateId: z.number().int().positive("Template ID must be a positive integer").optional(),
+  instanceYear: z.number().int().min(2020).max(2050).optional(),
+  instanceName: field.string("Instance name", { min: 2, max: 100, required: false }),
+  
   // Optional schedule fields to allow flexible payloads; validated in route handlers
   startDate: z.union([z.string(), z.date()]).optional(),
   endDate: z.union([z.string(), z.date()]).optional(),
