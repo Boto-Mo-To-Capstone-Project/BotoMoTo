@@ -45,13 +45,21 @@ async function getElections(request: NextRequest) {
           },
           schedule: true,
           mfaSettings: true,
+          template: { // Include template info for instances
+            select: {
+              id: true,
+              name: true,
+              isTemplate: true
+            }
+          },
           _count: {
             select: {
               voters: { where: { isDeleted: false } },
               candidates: { where: { isDeleted: false } },
               positions: { where: { isDeleted: false } },
               parties: { where: { isDeleted: false } },
-              voteResponses: true
+              voteResponses: true,
+              instances: true // Count instances for templates
             }
           }
         },
@@ -76,13 +84,21 @@ async function getElections(request: NextRequest) {
           },
           schedule: true,
           mfaSettings: true,
+          template: { // Include template info for instances
+            select: {
+              id: true,
+              name: true,
+              isTemplate: true
+            }
+          },
           _count: {
             select: {
               voters: { where: { isDeleted: false } },
               candidates: { where: { isDeleted: false } },
               positions: { where: { isDeleted: false } },
               parties: { where: { isDeleted: false } },
-              voteResponses: true
+              voteResponses: true,
+              instances: true // Count instances for templates
             }
           }
         },
@@ -163,7 +179,57 @@ async function createElection(request: NextRequest) {
     const validation = validateWithZod(electionSchema, rawBody);
     if (!("data" in validation)) return validation;
 
-    const { name, description, status, allowSurvey } = validation.data;
+    const { 
+      name, 
+      description, 
+      status, 
+      allowSurvey, 
+      isTemplate, 
+      templateId, 
+      instanceYear, 
+      instanceName 
+    } = validation.data;
+
+    // Validate template/instance logic
+    if (isTemplate && templateId) {
+      return apiResponse({
+        success: false,
+        message: 'Templates cannot have a parent template',
+        error: 'Bad Request',
+        status: 400,
+      });
+    }
+
+    if (!isTemplate && templateId) {
+      // This is an instance - require year and name
+      if (!instanceYear || !instanceName) {
+        return apiResponse({
+          success: false,
+          message: 'instanceYear and instanceName are required for election instances',
+          error: 'Bad Request',
+          status: 400,
+        });
+      }
+
+      // Verify template exists and belongs to this organization
+      const template = await db.election.findUnique({
+        where: { 
+          id: templateId,
+          isDeleted: false,
+          isTemplate: true,
+          orgId: organization.id
+        }
+      });
+
+      if (!template) {
+        return apiResponse({
+          success: false,
+          message: 'Template not found or does not belong to your organization',
+          error: 'Not Found',
+          status: 404,
+        });
+      }
+    }
 
     // Extract optional schedule fields (support multiple shapes)
     const rawStart = rawBody?.schedule?.dateStart ?? rawBody?.schedule?.startDate ?? rawBody?.startDate ?? null;
@@ -229,6 +295,10 @@ async function createElection(request: NextRequest) {
         description,
         status: status || ELECTION_STATUS.DRAFT,
         allowSurvey: allowSurvey || false,
+        isTemplate: isTemplate || false,
+        templateId: templateId || null,
+        instanceYear: instanceYear || null,
+        instanceName: instanceName || null,
       },
       include: {
         organization: {
