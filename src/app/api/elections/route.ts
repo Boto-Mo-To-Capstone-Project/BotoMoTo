@@ -200,6 +200,16 @@ async function createElection(request: NextRequest) {
       });
     }
 
+    // For templates (repeating elections), require instance details
+    if (isTemplate && (!instanceYear || !instanceName)) {
+      return apiResponse({
+        success: false,
+        message: 'instanceYear and instanceName are required for repeating elections',
+        error: 'Bad Request',
+        status: 400,
+      });
+    }
+
     if (!isTemplate && templateId) {
       // This is an instance - require year and name
       if (!instanceYear || !instanceName) {

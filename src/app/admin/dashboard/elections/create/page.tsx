@@ -33,6 +33,9 @@ interface ElectionFormData {
   description: string;
   startDate: string;
   endDate: string;
+  isTemplate?: boolean;
+  instanceYear?: string;
+  instanceName?: string;
 }
 
 interface ScopeRow {
@@ -54,6 +57,7 @@ function CreateElectionContent() {
     description: "",
     startDate: "",
     endDate: "",
+    isTemplate: false,
   });
   const [addParty, setAddParty] = useState<"yes" | "no" | "">(""); 
   const [search, setSearch] = useState("");
@@ -116,6 +120,9 @@ function CreateElectionContent() {
           description: e.description || "",
           startDate: toDateTimeLocal(start),
           endDate: toDateTimeLocal(end),
+          isTemplate: e.isTemplate || false,
+          instanceYear: e.instanceYear ? e.instanceYear.toString() : "",
+          instanceName: e.instanceName || "",
         };
         if (!cancelled) {
           setElectionData(nextData);
@@ -189,13 +196,25 @@ function CreateElectionContent() {
       const basePayload = {
         name: electionData.name.trim(),
         description: electionData.description.trim(),
+        isTemplate: electionData.isTemplate || false,
       } as any;
 
-      // Convert datetime-local (local time) to ISO strings for API
+      // For repeating elections (templates), include instance details
+      if (electionData.isTemplate) {
+        if (!electionData.instanceYear || !electionData.instanceName) {
+          toast.error('Instance year and name are required for repeating elections');
+          setSaving(false);
+          return;
+        }
+        basePayload.instanceYear = parseInt(electionData.instanceYear);
+        basePayload.instanceName = electionData.instanceName.trim();
+      }
+
+      // All elections need schedule data now
       const isoStart = electionData.startDate ? new Date(electionData.startDate).toISOString() : null;
       const isoEnd = electionData.endDate ? new Date(electionData.endDate).toISOString() : null;
       if (!isoStart || !isoEnd) {
-        toast.error('Start and End date are required');
+        toast.error('Start and End date are required for all elections');
         setSaving(false);
         return;
       }
@@ -203,12 +222,16 @@ function CreateElectionContent() {
 
       let url = '/api/elections';
       let method: 'POST' | 'PUT' = 'POST';
-      let successMsg = 'Election created successfully';
+      let successMsg = electionData.isTemplate 
+        ? 'Repeating election created successfully' 
+        : 'Election created successfully';
 
       if (isEditing && editId) {
         url = `/api/elections/${editId}`;
         method = 'PUT';
-        successMsg = 'Election updated successfully';
+        successMsg = electionData.isTemplate 
+          ? 'Repeating election updated successfully' 
+          : 'Election updated successfully';
         // keep existing server-side meta fields
         basePayload.status = originalMeta.status ?? 'DRAFT';
         basePayload.allowSurvey = originalMeta.allowSurvey ?? false;
@@ -229,7 +252,11 @@ function CreateElectionContent() {
       if (!isEditing) {
         const newId = json?.data?.election?.id;
         if (newId) {
-          toast.success('Election created. You can now add scopes and parties.');
+          if (electionData.isTemplate) {
+            toast.success('Template created. You can now add scopes and parties.');
+          } else {
+            toast.success('Election created. You can now add scopes and parties.');
+          }
           router.push(`/admin/dashboard/elections/create?eid=${newId}`);
           return;
         }
@@ -696,9 +723,20 @@ function CreateElectionContent() {
         {/* Election form title and description only for Election tab */}
         {activeTab === "election" && (
           <>
-            <h2 className="text-lg font-semibold mb-4 px-2 sm:px-5">{isEditing ? 'Edit election' : 'Election form'}</h2>
+            <h2 className="text-lg font-semibold mb-4 px-2 sm:px-5">
+              {isEditing 
+                ? (electionData.isTemplate ? 'Edit repeating election' : 'Edit election')
+                : (electionData.isTemplate ? 'Create repeating election' : 'Create election')
+              }
+            </h2>
             <p className="text-gray-600 mb-4 px-2 sm:px-5">
-              {isEditing ? 'Update the fields and click Update to save changes.' : 'Fill out the necessary fields to create a new election for your organization.'}
+              {isEditing 
+                ? 'Update the fields and click Update to save changes.'
+                : (electionData.isTemplate 
+                  ? 'Fill out the necessary fields to create a repeating election.'
+                  : 'Fill out the necessary fields to create a new election for your organization.'
+                )
+              }
             </p>
           </>
         )}
