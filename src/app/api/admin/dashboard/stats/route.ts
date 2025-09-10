@@ -18,9 +18,12 @@ export async function GET(request: NextRequest) {
     if (!authResult.authorized) return authResult.response;
     const user = authResult.user;
 
-    // Get admin's organization ID only
-    const organization = await db.organization.findFirst({
-      where: { adminId: user.id },
+    // Get admin's organization using the same approach as elections API
+    const organization = await db.organization.findUnique({
+      where: { 
+        adminId: user.id,
+        isDeleted: false 
+      },
       select: { id: true }
     });
 
@@ -40,7 +43,8 @@ export async function GET(request: NextRequest) {
       draftElections,
       totalVoters,
       votersWhoVoted,
-      recentElections
+      recentElections,
+      completedElectionsList
     ] = await Promise.all([
       // Active/ongoing elections
       db.election.count({
@@ -77,7 +81,7 @@ export async function GET(request: NextRequest) {
         }
       }),
 
-      // Recent elections (only name and status needed)
+      // Recent elections
       db.election.findMany({
         where: { orgId: organization.id, isDeleted: false },
         select: {
@@ -85,10 +89,26 @@ export async function GET(request: NextRequest) {
           status: true
         },
         orderBy: { createdAt: 'desc' },
-        take: 5
+        take: 1
+      }),
+
+      // Completed elections (only need 3 for frontend)
+      db.election.findMany({
+        where: { 
+          orgId: organization.id, 
+          isDeleted: false,
+          status: ELECTION_STATUS.CLOSED
+        },
+        select: {
+          name: true,
+          status: true
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 2
       })
     ]);
 
+    // Process the data for frontend
     const dashboardStats = {
       summary: {
         totalVoters,
@@ -96,14 +116,12 @@ export async function GET(request: NextRequest) {
         draftElections,
         voterTurnout: totalVoters > 0 ? Math.round((votersWhoVoted / totalVoters) * 100) : 0
       },
-      recentElections: recentElections.map(election => ({
-        name: election.name,
-        status: election.status
-      }))
+      recentElections: recentElections,
+      completedElections: completedElectionsList
     };
 
-    // Create audit log
-    const audit = await createAuditLog({
+    // Create audit log (but don't include in response)
+    await createAuditLog({
       user,
       action: "READ",
       request,
@@ -116,8 +134,7 @@ export async function GET(request: NextRequest) {
       success: true,
       message: "Dashboard statistics retrieved successfully",
       data: {
-        stats: dashboardStats,
-        audit
+        stats: dashboardStats
       },
       error: null,
       status: 200
