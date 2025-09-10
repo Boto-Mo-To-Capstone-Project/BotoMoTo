@@ -1,33 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+import { generateUniqueVoterCode } from "../src/lib/utils.js";
 
 const db = new PrismaClient();
 
 // Secret key for HMAC (use environment variable or generate one)
 const VOTE_SECRET = process.env.VOTE_SECRET;
-
-// Generate a unique voter code
-async function generateUniqueVoterCode() {
-  let code;
-  let isUnique = false;
-  
-  while (!isUnique) {
-    // Generate a 6-digit number (100000 to 999999)
-    code = Math.floor(Math.random() * 900000 + 100000).toString();
-    
-    // Check if this code already exists
-    const existingVoter = await db.voter.findUnique({
-      where: { code }
-    });
-    
-    if (!existingVoter) {
-      isUnique = true;
-    }
-  }
-  
-  return code;
-}
 
 // Sample data arrays
 const organizations = [
@@ -94,21 +73,65 @@ const adminUsers = [
   }
 ];
 
-const elections = [
+// Template elections (also serve as first instances)
+const templateElections = [
   {
-    name: "Student Council Election 2025",
-    description: "Annual student council election for academic year 2025-2026",
-    allowSurvey: true
+    name: "Student Council Election",
+    description: "Annual student council election for academic year",
+    allowSurvey: true,
+    isTemplate: true,
+    instanceYear: 2023,
+    instanceName: "Fall 2023"
   },
   {
-    name: "Department Representative Election",
+    name: "Department Representative Election", 
     description: "Election for department representatives in academic senate",
-    allowSurvey: false
+    allowSurvey: false,
+    isTemplate: true,
+    instanceYear: 2023,
+    instanceName: "Academic Year 2023"
   },
   {
     name: "Class President Election",
-    description: "Election for class presidents across all grade levels",
-    allowSurvey: true
+    description: "Election for class presidents across all grade levels", 
+    allowSurvey: true,
+    isTemplate: true,
+    instanceYear: 2023,
+    instanceName: "Spring 2023"
+  }
+];
+
+// Instance elections (created from templates)
+const instanceElections = [
+  {
+    templateIndex: 0, // Student Council Election
+    instanceYear: 2024,
+    instanceName: "Spring 2024",
+    status: "CLOSED"
+  },
+  {
+    templateIndex: 0, // Student Council Election
+    instanceYear: 2024,
+    instanceName: "Fall 2024",
+    status: "ACTIVE"
+  },
+  {
+    templateIndex: 0, // Student Council Election
+    instanceYear: 2025,
+    instanceName: "Spring 2025",
+    status: "DRAFT"
+  },
+  {
+    templateIndex: 1, // Department Rep Election
+    instanceYear: 2024,
+    instanceName: "Academic Year 2024",
+    status: "CLOSED"
+  },
+  {
+    templateIndex: 1, // Department Rep Election
+    instanceYear: 2025,
+    instanceName: "Academic Year 2025",
+    status: "DRAFT"
   }
 ];
 
@@ -228,80 +251,183 @@ async function seedDatabase() {
       console.log(`   ✓ Created organization: ${org.name}`);
     }
 
-    console.log("🗳️ Creating elections with schedules...");
+    console.log("🗳️ Creating template elections with schedules...");
     
-    // Create elections with a plan: org[0] gets many elections, org[1] gets one, org[2] gets none
+    // Create template elections first (these are also the first instances)
+    const createdTemplates = [];
     const createdElections = [];
     const noScopeElectionIds = new Set();
-    // Track ibits election to customize scopes/positions/voters
-    const ibitsElectionIds = new Set();
-
+    const ibitsElectionIds = new Set(); // Track ibits election to customize scopes/positions/voters
+    
     // Helper for creating an election + schedule + MFA
-    async function createElectionForOrg(org, electionDef) {
-      const idx = createdElections.length; // overall index for status/mfa variety
+    async function createElectionForOrg(org, electionDef, isTemplate = false, templateId = null) {
       const election = await db.election.create({
         data: {
           ...electionDef,
           orgId: org.id,
-          status: idx === 0 ? "ACTIVE" : "DRAFT",
+          status: electionDef.status || "DRAFT", 
+          isTemplate: isTemplate,
+          templateId: templateId,
+          instanceYear: electionDef.instanceYear,
+          instanceName: electionDef.instanceName,
         },
       });
 
-      // schedule
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - 1);
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + 7);
+      // Create schedule based on instance year
+      const year = electionDef.instanceYear || 2025;
+      const startDate = new Date(`${year}-10-01`);
+      const endDate = new Date(`${year}-10-15`);
+      
       await db.electionSched.create({
         data: { electionId: election.id, dateStart: startDate, dateFinish: endDate },
       });
 
-      // MFA settings
-      await db.mfaSettings.create({
-        data: { electionId: election.id, mfaEnabled: idx === 0, mfaMethods: idx === 0 ? ["email-confirmation", "otp-email"] : [] },
-      });
+      // MFA settings - IBITS only uses email-confirmation
+      if (org.email === "org@ibits.com") {
+        await db.mfaSettings.create({
+          data: { 
+            electionId: election.id, 
+            mfaEnabled: election.status === "ACTIVE", 
+            mfaMethods: election.status === "ACTIVE" ? ["email-confirmation"] : [] 
+          },
+        });
+      } else {
+        await db.mfaSettings.create({
+          data: { 
+            electionId: election.id, 
+            mfaEnabled: election.status === "ACTIVE", 
+            mfaMethods: election.status === "ACTIVE" ? ["email-confirmation", "otp-email"] : [] 
+          },
+        });
+      }
 
       createdElections.push(election);
-      console.log(`   ✓ Created election: ${election.name} (Org: ${org.name})`);
+      if (isTemplate) {
+        createdTemplates.push(election);
+      }
+      
+      const typeLabel = isTemplate ? "template" : "instance";
+      console.log(`   ✓ Created ${typeLabel}: ${election.name} - ${election.instanceName || 'N/A'} (Org: ${org.name})`);
       return election;
     }
 
-    // Plan
-    const org0 = createdOrgs[0];
-    const org1 = createdOrgs[1];
-    const org2 = createdOrgs[2];
-    const org3 = createdOrgs[3]; // ibits
+    // Create elections following the distribution plan:
+    // org[0] (Sarah): Many elections (templates + instances + non-repeating)
+    //         → Gets: Student Council Election (template + 3 instances)
+    //         → Gets: Department Representative Election (template + 2 instances) 
+    //         → Gets: Class President Election (template + 0 instances)
+    //         → Gets: Special Committee Election (standalone)
+    // org[1] (Michael): 1 regular election only
+    //         → Gets: City College Student Government (standalone)
+    // org[2] (Lisa): No elections (skip completely)
+    // org[3] (Brian/IBITS): 1 template with 3 years instances + 1 non-repeating
+    //         → Gets: Provident Fund Annual Election (template + 3 instances)
+    //         → Gets: IBITS Special Election (standalone)
 
-    if (org0) {
-      // First org has MANY elections (sample: 2 elections)
-      const deptRepElection = await createElectionForOrg(org0, elections[1]); // DEPARTMENT-based
-      const councilElection = await createElectionForOrg(org0, elections[0]); // Will be NO SCOPE
-      // mark the Student Council as NO SCOPE sample
-      if (councilElection.name.toLowerCase().includes("student council")) {
-        noScopeElectionIds.add(councilElection.id);
-        console.log(`   → Marked as NO SCOPE: ${councilElection.name}`);
+    // ORG[0] Sarah - Create templates and instances (many elections)
+    const sarahOrg = createdOrgs[0];
+    if (sarahOrg) {
+      console.log(`   Creating elections for ${sarahOrg.name} (Sarah - many elections)...`);
+      
+      // Create templates
+      for (const template of templateElections) {
+        await createElectionForOrg(sarahOrg, {
+          ...template,
+          status: "CLOSED" // Templates are "used" elections from the past
+        }, true);
       }
-    }
 
-    if (org1) {
-      // Second org has ONE election
-      await createElectionForOrg(org1, elections[2]);
-    }
+      // Create instances from templates for Sarah
+      for (const instanceDef of instanceElections) {
+        const template = createdTemplates[instanceDef.templateIndex];
+        if (!template) continue;
 
-    if (org2) {
-      // Third org: no elections (sample)
-      console.log(`   • No elections created for: ${org2.name}`);
-    }
+        await createElectionForOrg(sarahOrg, {
+          name: template.name,
+          description: template.description,
+          allowSurvey: template.allowSurvey,
+          instanceYear: instanceDef.instanceYear,
+          instanceName: instanceDef.instanceName,
+          status: instanceDef.status
+        }, false, template.id);
+      }
 
-    // ibits: create dedicated election
-    if (org3) {
-      const ibitsElection = await createElectionForOrg(org3, {
-        name: "IBITS Election",
-        description: "Election for the Institute of Bachelors in Information Technology Studies",
-        allowSurvey: false,
+      // Add a non-repeating election for Sarah
+      await createElectionForOrg(sarahOrg, {
+        name: "Special Committee Election",
+        description: "One-time election for special committee formation",
+        allowSurvey: true,
+        instanceYear: 2025,
+        instanceName: "Fall 2025"
       });
-      ibitsElectionIds.add(ibitsElection.id);
-      console.log(`   → Marked as IBITS ELECTION: ${ibitsElection.name}`);
+    }
+
+    // ORG[1] Michael - Create 1 regular (non-repeating) election only
+    const michaelOrg = createdOrgs[1];
+    if (michaelOrg) {
+      console.log(`   Creating elections for ${michaelOrg.name} (Michael - 1 regular election)...`);
+      
+      await createElectionForOrg(michaelOrg, {
+        name: "City College Student Government",
+        description: "Annual student government election for City College",
+        allowSurvey: false,
+        instanceYear: 2025,
+        instanceName: "Academic Year 2025"
+      });
+    }
+
+    // ORG[2] Lisa - No elections (skip)
+    const lisaOrg = createdOrgs[2];
+    if (lisaOrg) {
+      console.log(`   Skipping elections for ${lisaOrg.name} (Lisa - no elections)...`);
+    }
+
+    console.log("📊 Creating election instances...");
+
+    // ORG[3] Brian/IBITS - Create template with 3 years instances + 1 non-repeating
+    const ibitsOrg = createdOrgs[3];
+    if (ibitsOrg) {
+      console.log(`   Creating elections for ${ibitsOrg.name} (IBITS - template + instances + regular)...`);
+      
+      // Create IBITS template
+      const ibitsTemplate = await createElectionForOrg(ibitsOrg, {
+        name: "Provident Fund Annual Election",
+        description: "Annual election for IBITS Provident Fund representatives",
+        allowSurvey: true,
+        isTemplate: true,
+        instanceYear: 2023,
+        instanceName: "Academic Year 2023",
+        status: "CLOSED"
+      }, true);
+
+      // Create 3 years of instances for IBITS template
+      const ibitsInstanceYears = [
+        { year: 2024, name: "Academic Year 2024", status: "CLOSED" },
+        { year: 2025, name: "Academic Year 2025", status: "ACTIVE" },
+        { year: 2026, name: "Academic Year 2026", status: "DRAFT" }
+      ];
+
+      for (const instance of ibitsInstanceYears) {
+        await createElectionForOrg(ibitsOrg, {
+          name: ibitsTemplate.name,
+          description: ibitsTemplate.description,
+          allowSurvey: ibitsTemplate.allowSurvey,
+          instanceYear: instance.year,
+          instanceName: instance.name,
+          status: instance.status
+        }, false, ibitsTemplate.id);
+      }
+
+      // Add a non-repeating election for IBITS
+      const ibitsRegularElection = await createElectionForOrg(ibitsOrg, {
+        name: "IBITS Special Election",
+        description: "Special election for IBITS organizational restructuring",
+        allowSurvey: false,
+        instanceYear: 2025,
+        instanceName: "Special Term 2025"
+      });
+      ibitsElectionIds.add(ibitsRegularElection.id);
+      console.log(`   → Marked as IBITS REGULAR ELECTION: ${ibitsRegularElection.name}`);
     }
 
     console.log("📍 Creating voting scopes...");
@@ -332,7 +458,7 @@ async function seedDatabase() {
           scopesForElection.push(scope);
         }
         scopesByElection.set(election.id, scopesForElection);
-        console.log(`   ✓ ${election.name}: created ${scopesForElection.length} scope(s) [IBITS ELECTION]`);
+        console.log(`   ✓ ${election.name}: created ${scopesForElection.length} scope(s) [IBITS ELECTION - LEVEL 1/2/3]`);
         continue;
       }
 
@@ -358,9 +484,16 @@ async function seedDatabase() {
 
     console.log("🎭 Creating parties...");
     
-    // Create parties for each election
+    // Create parties for each election (IBITS elections get no parties)
     const createdParties = [];
     for (const election of createdElections) {
+      // Skip creating parties for IBITS elections
+      const org = createdOrgs.find(o => o.id === election.orgId);
+      if (org && org.email === "org@ibits.com") {
+        console.log(`   ✓ ${election.name}: created 0 parties [IBITS - NO PARTIES]`);
+        continue;
+      }
+
       for (const party of parties) {
         const createdParty = await db.party.create({
           data: {
@@ -370,6 +503,7 @@ async function seedDatabase() {
         });
         createdParties.push(createdParty);
       }
+      console.log(`   ✓ ${election.name}: created ${parties.length} parties`);
     }
 
     console.log("🏛️ Creating positions...");
@@ -381,7 +515,7 @@ async function seedDatabase() {
       const scopesForElection = scopesByElection.get(election.id) || [];
       const positionsForElection = [];
 
-      // IBITS ELECTION: create exactly 3 positions LEVEL 1/2/3 bound 1:1 to Level 1/2/3 scopes
+      // IBITS ELECTION: exactly 3 positions LEVEL 1/2/3 bound 1:1 to Level 1/2/3 scopes
       if (ibitsElectionIds.has(election.id)) {
         const byName = new Map(scopesForElection.map((s) => [s.name.toLowerCase(), s]));
         const ibitsPositions = [
@@ -407,7 +541,7 @@ async function seedDatabase() {
           positionsForElection.push(pos);
         }
         positionsByElection.set(election.id, positionsForElection);
-        console.log(`   ✓ ${election.name}: created ${positionsForElection.length} position(s) [IBITS ELECTION]`);
+        console.log(`   ✓ ${election.name}: created ${positionsForElection.length} position(s) [IBITS ELECTION - LEVEL 1/2/3]`);
         continue;
       }
 
@@ -614,6 +748,9 @@ async function seedDatabase() {
       organizations: await db.organization.count(),
       users: await db.user.count(),
       elections: await db.election.count(),
+      templates: await db.election.count({ where: { isTemplate: true } }),
+      instances: await db.election.count({ where: { isTemplate: false, templateId: { not: null } } }),
+      standaloneElections: await db.election.count({ where: { isTemplate: false, templateId: null } }),
       positions: await db.position.count(),
       parties: await db.party.count(),
       votingScopes: await db.votingScope.count(),
@@ -624,7 +761,10 @@ async function seedDatabase() {
 
     console.log(`   Organizations: ${stats.organizations}`);
     console.log(`   Users: ${stats.users} (including existing super admin)`);
-    console.log(`   Elections: ${stats.elections}`);
+    console.log(`   Elections Total: ${stats.elections}`);
+    console.log(`     • Templates: ${stats.templates}`);
+    console.log(`     • Instances: ${stats.instances}`);
+    console.log(`     • Standalone: ${stats.standaloneElections}`);
     console.log(`   Positions: ${stats.positions}`);
     console.log(`   Parties: ${stats.parties}`);
     console.log(`   Voting Scopes: ${stats.votingScopes}`);
@@ -632,7 +772,19 @@ async function seedDatabase() {
     console.log(`   Candidates: ${stats.candidates}`);
     console.log(`   Votes Cast: ${stats.votes}`);
 
-    console.log("\n🔐 Test Credentials:");
+    console.log("\n� Template → Instance Relationships:");
+    for (const template of createdTemplates) {
+      const instances = createdElections.filter(e => e.templateId === template.id);
+      console.log(`   Template: ${template.name} (${template.instanceName})`);
+      instances.forEach(instance => {
+        console.log(`     → Instance: ${instance.instanceName} (${instance.status})`);
+      });
+      if (instances.length === 0) {
+        console.log(`     → No instances created yet`);
+      }
+    }
+
+    console.log("\n�🔐 Test Credentials:");
     console.log("Admin Users:");
     adminUsers.forEach((admin, i) => {
       console.log(`   ${admin.name}: ${admin.email} / ${admin.password}`);
