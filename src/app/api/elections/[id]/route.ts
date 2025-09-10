@@ -158,7 +158,36 @@ export async function PUT(
     const validation = validateWithZod(electionSchema, rawBody);
     if (!('data' in validation)) return validation;
     
-    const { name, description, status, allowSurvey } = validation.data;
+    const { 
+      name, 
+      description, 
+      status, 
+      allowSurvey, 
+      isTemplate, 
+      templateId, 
+      instanceYear, 
+      instanceName 
+    } = validation.data;
+
+    // Validate template/instance logic for updates
+    if (isTemplate && templateId) {
+      return apiResponse({
+        success: false,
+        message: 'Templates cannot have a parent template',
+        error: 'Bad Request',
+        status: 400,
+      });
+    }
+
+    // For templates (repeating elections), require instance details
+    if (isTemplate && (!instanceYear || !instanceName)) {
+      return apiResponse({
+        success: false,
+        message: 'instanceYear and instanceName are required for repeating elections',
+        error: 'Bad Request',
+        status: 400,
+      });
+    }
 
     const election = await db.election.findUnique({
       where: {
@@ -205,6 +234,38 @@ export async function PUT(
       });
     }
 
+    // Validate template/instance relationships for updates
+    if (!isTemplate && templateId) {
+      // This is an instance - require year and name
+      if (!instanceYear || !instanceName) {
+        return apiResponse({
+          success: false,
+          message: 'instanceYear and instanceName are required for election instances',
+          error: 'Bad Request',
+          status: 400,
+        });
+      }
+
+      // Verify template exists and belongs to this organization
+      const template = await db.election.findUnique({
+        where: { 
+          id: templateId,
+          isDeleted: false,
+          isTemplate: true,
+          orgId: election.organization.id
+        }
+      });
+
+      if (!template) {
+        return apiResponse({
+          success: false,
+          message: 'Template not found or does not belong to your organization',
+          error: 'Not Found',
+          status: 404,
+        });
+      }
+    }
+
     // Check if election name already exists in the organization (excluding current election)
     const nameExists = await db.election.findFirst({
       where: {
@@ -233,6 +294,10 @@ export async function PUT(
       description: election.description,
       status: election.status,
       allowSurvey: election.allowSurvey,
+      isTemplate: election.isTemplate,
+      templateId: election.templateId,
+      instanceYear: election.instanceYear,
+      instanceName: election.instanceName,
     } as const;
 
     const updatedElection = await db.election.update({
@@ -242,6 +307,10 @@ export async function PUT(
         description,
         status,
         allowSurvey,
+        isTemplate: isTemplate || false,
+        templateId: templateId || null,
+        instanceYear: instanceYear || null,
+        instanceName: instanceName || null,
       },
       include: {
         organization: {
@@ -337,7 +406,7 @@ export async function PUT(
 
     // Compare and log changed fields
     const changedFields: Record<string, { old: any; new: any }> = {};
-    for (const key of ["name", "description", "status", "allowSurvey"] as const) {
+    for (const key of ["name", "description", "status", "allowSurvey", "isTemplate", "templateId", "instanceYear", "instanceName"] as const) {
       const oldVal = (oldData as any)[key];
       const newVal = (updatedElection as any)[key] ?? null;
       if (oldVal !== newVal) {

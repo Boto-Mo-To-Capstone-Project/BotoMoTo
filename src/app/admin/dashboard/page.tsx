@@ -8,9 +8,14 @@ interface DashboardStats {
     totalVoters: number;
     ongoingElections: number;
     draftElections: number;
+    completedElections: number;
     voterTurnout: number;
   };
   recentElections: Array<{
+    name: string;
+    status: string;
+  }>;
+  completedElections: Array<{
     name: string;
     status: string;
   }>;
@@ -142,6 +147,7 @@ export default function VoterDashboardPage() {
     name: stats.recentElections[0].name,
     status: stats.recentElections[0].status === 'ACTIVE' ? 'Ongoing' : 
             stats.recentElections[0].status === 'CLOSED' ? 'Completed' : 
+            stats.recentElections[0].status === 'DRAFT' ? 'Draft' :
             stats.recentElections[0].status,
     color: stats.recentElections[0].status === 'ACTIVE' ? "bg-secondary" : 
            stats.recentElections[0].status === 'CLOSED' ? "bg-green-500" : "bg-gray-500"
@@ -151,9 +157,8 @@ export default function VoterDashboardPage() {
     color: "bg-gray-400"
   };
 
-  // Get completed elections with closed status
-  const completedElections = stats.recentElections
-    .filter(e => e.status === 'CLOSED')
+  // Get completed elections from API (no need to filter since API provides them directly)
+  const completedElections = stats.completedElections
     .slice(0, 3)
     .map(e => ({
       name: e.name,
@@ -195,6 +200,11 @@ export default function VoterDashboardPage() {
               <div className="flex flex-col lg:flex-row gap-8 w-full">
                 {/* Chart Section */}
                 {/* comparing voter turnout of similar elections */}
+                {/* pano ko kaya magagawa pag maraming template/instance election 
+                na icocompare  */}
+                {/* like what if may 5 template elections pano ko un i-compare lahat sa
+                isang chart lang, pwede kayang gawin kong dumami ang chart per template 
+                election? */}
                 {/* not yet implemenented */}
                 <div className="flex-1 bg-white rounded-2xl shadow-sm p-4 border-2 border-gray-200 min-w-0 w-full overflow-visible">
                   <div className="flex items-center justify-between mb-2">
@@ -211,19 +221,19 @@ export default function VoterDashboardPage() {
                   <div className="bg-white rounded-2xl shadow-sm p-6 border-2 border-yellow-200">
                     <h3 className="text-base font-semibold mb-3">Recent Election</h3>
                     <div className="flex items-center gap-3 mb-2">
-                      <span className={`w-6 h-6 rounded-full ${recentElection.color} flex items-center justify-center text-white font-bold`}></span>
+                      <span className={`w-6 h-6 rounded-full ${recentElection.color} flex items-center justify-center text-white font-bold flex-shrink-0`}></span>
                       <span className="font-semibold text-gray-700">{recentElection.name}</span>
+                      <span className="text-xs text-gray-500">{recentElection.status}</span>
                     </div>
-                    <span className="text-xs text-gray-500">{recentElection.status}</span>
                   </div>
                   <div className="bg-white rounded-2xl shadow-sm p-6 border-2 border-green-200">
-                    <h3 className="text-base font-semibold mb-3">Completed Election</h3>
+                    <h3 className="text-base font-semibold mb-3">Completed Elections</h3>
                     <div className="flex flex-col gap-3">
                       {completedElections.map((e, idx) => (
                         <div key={idx} className="flex items-center gap-3">
-                          <span className={`w-6 h-6 rounded-full ${e.color} flex items-center justify-center text-white font-bold`}></span>
+                          <span className={`w-6 h-6 rounded-full ${e.color} flex items-center justify-center text-white font-bold flex-shrink-0`}></span>
                           <span className="font-semibold text-gray-700">{e.name}</span>
-                          <span className="text-xs text-gray-500 ml-auto">{e.status}</span>
+                          <span className="text-xs text-gray-500">{e.status}</span>
                         </div>
                       ))}
                     </div>

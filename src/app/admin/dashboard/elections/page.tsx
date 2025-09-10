@@ -3,19 +3,23 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { MdAdd, MdDownload, MdFilterList, MdDelete, MdEdit } from "react-icons/md";
 import { SubmitButton } from '@/components/SubmitButton';
-// import { ElectionModal } from '@/components/ElectionModal'; // keep component file but not used here per requirement
+import { CreateElectionModal } from '@/components/CreateElectionModal';
 import SearchBar from '@/components/SearchBar';
 import ElectionTable from '@/components/ElectionTable';
 import toast, { Toaster } from 'react-hot-toast';
-// import CustomToast from '@/components/CustomToast';
 
 // Define the shape expected by ElectionTable
 interface UiElection {
   id: number;
   name: string;
+  description: string;
   status: "Draft" | "Active" | "Closed";
   votingDate: string;
   time: string;
+  isTemplate?: boolean;
+  templateId?: number | null;
+  instanceYear?: number | null;
+  instanceName?: string | null;
 }
 
 // Wrapper component that provides the Suspense boundary required by Next.js
@@ -45,6 +49,9 @@ function ElectionDashboardContent() {
   // Sidebar open state for mobile
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  
+  // Create modal state
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Keep selection in sync with ?eid=
   useEffect(() => {
@@ -74,7 +81,7 @@ function ElectionDashboardContent() {
           const fmtDate = (d: Date | null) => d?.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) ?? '—';
           const fmtTime = (d: Date | null) => d?.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) ?? '—';
           
-          // Direct mapping from backend to frontend
+          // Status mapping - templates are shown as Draft but marked with isTemplate
           let status: UiElection['status'];
           switch (e?.status) {
             case 'ACTIVE':
@@ -90,12 +97,25 @@ function ElectionDashboardContent() {
               status = 'Draft'; // fallback
           }
           
+          // Name display logic
+          let displayName = e.name;
+          if (e.isTemplate) {
+            displayName = `${e.name} (Template)`;
+          } else if (e.instanceName) {
+            displayName = `${e.name} - ${e.instanceName}`;
+          }
+          
           return {
             id: e.id,
-            name: e.name,
+            name: displayName,
+            description: e.description || '',
             status,
             votingDate: start && finish ? `${fmtDate(start)} - ${fmtDate(finish)}` : '—',
             time: start && finish ? `${fmtTime(start)} - ${fmtTime(finish)}` : '—',
+            isTemplate: e.isTemplate,
+            templateId: e.templateId,
+            instanceYear: e.instanceYear,
+            instanceName: e.instanceName,
           } as UiElection;
         });
         if (!cancelled) setElectionsList(mapped);
@@ -189,6 +209,39 @@ function ElectionDashboardContent() {
     });
   }
 
+  // Create modal handlers
+  const handleCreateNew = () => {
+    setShowCreateModal(false);
+    router.push('/admin/dashboard/elections/create');
+  };
+
+  const handleCreateInstance = async (templateId: number, instanceYear: number, instanceName: string) => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/elections/instances', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateId, instanceYear, instanceName })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        toast.success('Election instance created successfully!');
+        setShowCreateModal(false);
+        // Refresh elections list
+        window.location.reload();
+      } else {
+        toast.error(result.message || 'Failed to create election instance');
+      }
+    } catch (error) {
+      console.error('Error creating instance:', error);
+      toast.error('Failed to create election instance');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const paginatedElections = filteredElections.slice(
     (page - 1) * pageSize,
     page * pageSize
@@ -206,7 +259,7 @@ function ElectionDashboardContent() {
         <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
           {/* Search and actions */}
           <div className="main-toolbar sticky top-16 z-30 bg-white flex flex-col md:flex-row md:items-center md:gap-4 gap-2 mb-6 py-3 px-2 sm:px-5">
-            {/* Updated tabs */}
+            {/* Tabs */}
             <div className="flex-shrink-0">
               <div className="inline-flex w-full max-w-[500px] md:w-auto rounded-md border border-gray-300 overflow-hidden bg-white">
                 {["All", "Draft", "Active", "Closed"].map((t, i) => (
@@ -216,7 +269,7 @@ function ElectionDashboardContent() {
                     variant="tab"
                     isActive={tab === (t as any)}
                     onClick={() => { setTab(t as any); setPage(1); }}
-                    className={`w-full h-[44px] md:w-[90px] md:h-10 ${
+                    className={`w-full h-[44px] md:w-[80px] md:h-10 ${
                       i !== 0 ? "border-l border-gray-200" : ""
                     }`}
                   />
@@ -237,7 +290,7 @@ function ElectionDashboardContent() {
                 variant="action"
                 icon={<MdAdd size={20} />}
                 title="Add"
-                onClick={() => router.push('/admin/dashboard/elections/create')}
+                onClick={() => setShowCreateModal(true)}
               />
               <SubmitButton
                 label=""
@@ -337,7 +390,18 @@ function ElectionDashboardContent() {
             />
           </div>
         </div>
-        {/* Modal kept for future use but not rendered here */}
+        
+        {/* Create Election Modal */}
+        {showCreateModal && (
+          <CreateElectionModal
+            open={showCreateModal}
+            onClose={() => setShowCreateModal(false)}
+            onCreateNew={handleCreateNew}
+            onCreateInstance={handleCreateInstance}
+            templates={electionsList.filter(e => e.isTemplate)}
+            loading={loading}
+          />
+        )}
       </div>
     </>
   );
