@@ -278,7 +278,7 @@ async function seedDatabase() {
     const createdTemplates = [];
     const createdElections = [];
     const noScopeElectionIds = new Set();
-    const ibitsElectionIds = new Set(); // Track ibits election to customize scopes/positions/voters
+    const ibitsProvidentElectionIds = new Set(); // Track IBITS Provident Fund elections (template + instances) for special requirements
     
     // Helper for creating an election + schedule + MFA
     async function createElectionForOrg(org, electionDef, isTemplate = false, templateId = null) {
@@ -303,8 +303,8 @@ async function seedDatabase() {
         data: { electionId: election.id, dateStart: startDate, dateFinish: endDate },
       });
 
-      // MFA settings - IBITS only uses email-confirmation
-      if (org.email === "org@ibits.com") {
+      // MFA settings - IBITS Provident Fund elections only use email-confirmation
+      if (org.email === "org@ibits.com" && electionDef.name === "Provident Fund Annual Election") {
         await db.mfaSettings.create({
           data: { 
             electionId: election.id, 
@@ -373,13 +373,11 @@ async function seedDatabase() {
         }, false, template.id);
       }
 
-      // Add a non-repeating election for Sarah
+      // Add a non-repeating election for Sarah (standalone - no instanceYear/instanceName)
       await createElectionForOrg(sarahOrg, {
         name: "Special Committee Election",
         description: "One-time election for special committee formation",
         allowSurvey: true,
-        instanceYear: 2025,
-        instanceName: "Fall 2025"
       });
     }
 
@@ -392,8 +390,6 @@ async function seedDatabase() {
         name: "City College Student Government",
         description: "Annual student government election for City College",
         allowSurvey: false,
-        instanceYear: 2025,
-        instanceName: "Academic Year 2025"
       });
     }
 
@@ -420,6 +416,10 @@ async function seedDatabase() {
         instanceName: "Academic Year 2023",
         status: "CLOSED"
       }, true);
+      
+      // Mark template as Provident Fund election for special requirements
+      ibitsProvidentElectionIds.add(ibitsTemplate.id);
+      console.log(`   → Marked as IBITS PROVIDENT FUND TEMPLATE: ${ibitsTemplate.name}`);
 
       // Create 3 years of instances for IBITS template
       const ibitsInstanceYears = [
@@ -429,7 +429,7 @@ async function seedDatabase() {
       ];
 
       for (const instance of ibitsInstanceYears) {
-        await createElectionForOrg(ibitsOrg, {
+        const instanceElection = await createElectionForOrg(ibitsOrg, {
           name: ibitsTemplate.name,
           description: ibitsTemplate.description,
           allowSurvey: ibitsTemplate.allowSurvey,
@@ -437,18 +437,19 @@ async function seedDatabase() {
           instanceName: instance.name,
           status: instance.status
         }, false, ibitsTemplate.id);
+        
+        // Mark instance as Provident Fund election for special requirements
+        ibitsProvidentElectionIds.add(instanceElection.id);
+        console.log(`   → Marked as IBITS PROVIDENT FUND INSTANCE: ${instanceElection.name} - ${instanceElection.instanceName}`);
       }
 
-      // Add a non-repeating election for IBITS
+      // Add a non-repeating election for IBITS (regular election - no special requirements, standalone)
       const ibitsRegularElection = await createElectionForOrg(ibitsOrg, {
         name: "IBITS Special Election",
         description: "Special election for IBITS organizational restructuring",
         allowSurvey: false,
-        instanceYear: 2025,
-        instanceName: "Special Term 2025"
       });
-      ibitsElectionIds.add(ibitsRegularElection.id);
-      console.log(`   → Marked as IBITS REGULAR ELECTION: ${ibitsRegularElection.name}`);
+      console.log(`   → Created IBITS REGULAR ELECTION (no special requirements): ${ibitsRegularElection.name}`);
     }
 
     console.log("📍 Creating voting scopes...");
@@ -463,8 +464,8 @@ async function seedDatabase() {
         continue;
       }
 
-      // IBITS ELECTION: exactly 3 scopes Level 1/2/3
-      if (ibitsElectionIds.has(election.id)) {
+      // IBITS PROVIDENT FUND ELECTIONS: exactly 3 scopes Level 1/2/3
+      if (ibitsProvidentElectionIds.has(election.id)) {
         const ibitsScopeNames = ["Level 1", "Level 2", "Level 3"];
         const scopesForElection = [];
         for (const name of ibitsScopeNames) {
@@ -479,7 +480,7 @@ async function seedDatabase() {
           scopesForElection.push(scope);
         }
         scopesByElection.set(election.id, scopesForElection);
-        console.log(`   ✓ ${election.name}: created ${scopesForElection.length} scope(s) [IBITS ELECTION - LEVEL 1/2/3]`);
+        console.log(`   ✓ ${election.name}: created ${scopesForElection.length} scope(s) [IBITS PROVIDENT FUND - LEVEL 1/2/3]`);
         continue;
       }
 
@@ -505,13 +506,12 @@ async function seedDatabase() {
 
     console.log("🎭 Creating parties...");
     
-    // Create parties for each election (IBITS elections get no parties)
+    // Create parties for each election (IBITS Provident Fund elections get no parties)
     const createdParties = [];
     for (const election of createdElections) {
-      // Skip creating parties for IBITS elections
-      const org = createdOrgs.find(o => o.id === election.orgId);
-      if (org && org.email === "org@ibits.com") {
-        console.log(`   ✓ ${election.name}: created 0 parties [IBITS - NO PARTIES]`);
+      // Skip creating parties for IBITS Provident Fund elections only
+      if (ibitsProvidentElectionIds.has(election.id)) {
+        console.log(`   ✓ ${election.name}: created 0 parties [IBITS PROVIDENT FUND - NO PARTIES]`);
         continue;
       }
 
@@ -536,8 +536,8 @@ async function seedDatabase() {
       const scopesForElection = scopesByElection.get(election.id) || [];
       const positionsForElection = [];
 
-      // IBITS ELECTION: exactly 3 positions LEVEL 1/2/3 bound 1:1 to Level 1/2/3 scopes
-      if (ibitsElectionIds.has(election.id)) {
+      // IBITS PROVIDENT FUND ELECTIONS: exactly 3 positions LEVEL 1/2/3 bound 1:1 to Level 1/2/3 scopes
+      if (ibitsProvidentElectionIds.has(election.id)) {
         const byName = new Map(scopesForElection.map((s) => [s.name.toLowerCase(), s]));
         const ibitsPositions = [
           { name: "LEVEL 1", scopeKey: "level 1" },
@@ -562,7 +562,7 @@ async function seedDatabase() {
           positionsForElection.push(pos);
         }
         positionsByElection.set(election.id, positionsForElection);
-        console.log(`   ✓ ${election.name}: created ${positionsForElection.length} position(s) [IBITS ELECTION - LEVEL 1/2/3]`);
+        console.log(`   ✓ ${election.name}: created ${positionsForElection.length} position(s) [IBITS PROVIDENT FUND - LEVEL 1/2/3]`);
         continue;
       }
 
@@ -607,8 +607,8 @@ async function seedDatabase() {
       const voters = await generateVoters(election.id, 50); // 50 voters per election
       const scopesForElection = scopesByElection.get(election.id) || [];
 
-      // IBITS ELECTION: distribute evenly across Level 1/2/3 scopes
-      if (ibitsElectionIds.has(election.id) && scopesForElection.length > 0) {
+      // IBITS PROVIDENT FUND ELECTIONS: distribute evenly across Level 1/2/3 scopes
+      if (ibitsProvidentElectionIds.has(election.id) && scopesForElection.length > 0) {
         for (let i = 0; i < voters.length; i++) {
           const voter = voters[i];
           const assignedScope = scopesForElection[i % scopesForElection.length];
