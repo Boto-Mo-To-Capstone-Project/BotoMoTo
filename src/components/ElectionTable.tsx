@@ -158,8 +158,8 @@ export default function ElectionTable({ title = 'All Elections', selectedIds = [
                       onChange={() => onCheckboxChange?.(election.id)}
                     />
                   </td>
-                  <td className="py-2 px-3 align-middle truncate max-w-[180px]">{election.name}</td>
-                  <td className="py-2 px-3 align-middle text-center">
+                  <td className="py-2 px-3 align-middle min-w-[100px]">{election.name}</td>
+                  <td className="py-2 px-3 align-middle text-center min-w-[120px]">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium w-full block text-center
                         ${election.status === "Draft" ? "bg-gray-100 text-gray-700" :
                           election.status === "Active" ? "bg-green-100 text-green-700" :
@@ -169,8 +169,8 @@ export default function ElectionTable({ title = 'All Elections', selectedIds = [
                       {election.status}
                     </span>
                   </td>
-                  <td className="py-2 px-3 align-middle max-w-[180px] truncate whitespace-nowrap">{election.votingDate}</td>
-                  <td className="py-2 px-3 align-middle truncate max-w-[140px]">{election.time}</td>
+                  <td className="py-2 px-3 align-middle whitespace-nowrap min-w-[200px]">{election.votingDate}</td>
+                  <td className="py-2 px-3 align-middle whitespace-nowrap min-w-[160px]">{election.time}</td>
                 </tr>
               ))
             )}
