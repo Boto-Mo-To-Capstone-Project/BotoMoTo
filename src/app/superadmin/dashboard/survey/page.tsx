@@ -20,7 +20,6 @@ export default function SuperAdminSurveyPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [publishModalOpen, setPublishModalOpen] = useState(false);
   const [publishingSurvey, setPublishingSurvey] = useState<any | null>(null);
-  const [activeSurvey, setActiveSurvey] = useState<any | null>(null);
   const router = useRouter(); // ✅ init router
 
   useEffect(() => {
@@ -30,6 +29,7 @@ export default function SuperAdminSurveyPage() {
         if (!res.ok) throw new Error(`Failed to fetch surveys (${res.status})`);
         const json = await res.json();
         const list = json?.data?.surveys ?? [];
+        
         setSurveys(list);
 
         const mapped = (list as any[]).map((s) => ({
@@ -176,11 +176,7 @@ export default function SuperAdminSurveyPage() {
   };
 
   const handlePublish = async (survey: any) => {
-    // Find if there's already an active survey
-    const currentActiveSurvey = surveys.find(s => s.isActive && s.id !== survey.id);
-    
     setPublishingSurvey(survey);
-    setActiveSurvey(currentActiveSurvey);
     setPublishModalOpen(true);
   };
 
@@ -263,7 +259,6 @@ export default function SuperAdminSurveyPage() {
       // Reset modal states
       setPublishModalOpen(false);
       setPublishingSurvey(null);
-      setActiveSurvey(null);
     } catch (err: any) {
       console.error(err);
       toast.error(err?.message || "Failed to publish survey");
@@ -363,15 +358,10 @@ export default function SuperAdminSurveyPage() {
         onClose={() => {
           setPublishModalOpen(false);
           setPublishingSurvey(null);
-          setActiveSurvey(null);
         }}
         title="Publish Survey"
-        description={
-          activeSurvey 
-            ? `There is already an active survey: "${activeSurvey.title}"\n\nDo you want to replace it with "${publishingSurvey?.title}"?\n\nThis will make "${publishingSurvey?.title}" the new active survey and deactivate "${activeSurvey.title}".`
-            : `Are you sure you want to publish "${publishingSurvey?.title}"?\n\nThis will make it the active survey available to users.`
-        }
-        confirmLabel={activeSurvey ? "Replace Survey" : "Publish Survey"}
+        description={`Are you sure you want to publish "${publishingSurvey?.title}"?\n\nThis will make it the active survey. If another survey is currently active, it will be replaced.`}
+        confirmLabel="Publish Survey"
         cancelLabel="Cancel"
         onConfirm={confirmPublish}
         variant="edit"
