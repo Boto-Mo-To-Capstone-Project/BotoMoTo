@@ -37,6 +37,15 @@ async function updateSurvey(request: NextRequest, { params }: { params: { id: st
   if (!(validation as any).success) return validation as any;
   const { data } = validation as any;
 
+  // Special handling for publishing (isActive = true)
+  if (data.isActive === true) {
+    // First, set all other surveys to inactive
+    await db.surveyForm.updateMany({
+      where: { isDeleted: false },
+      data: { isActive: false },
+    });
+  }
+
   const survey = await db.surveyForm.update({
     where: { id },
     data,

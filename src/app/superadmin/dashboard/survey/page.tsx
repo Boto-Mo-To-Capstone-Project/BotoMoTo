@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
+import { MdUpload, MdVisibility } from "react-icons/md";
 
 import Table from "@/components/TableComponent";
 import SurveyPreview from "@/components/survey/SurveyPreview";
@@ -17,6 +18,9 @@ export default function SuperAdminSurveyPage() {
   const [selectedSurvey, setSelectedSurvey] = useState<any | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [publishingSurvey, setPublishingSurvey] = useState<any | null>(null);
+  const [activeSurvey, setActiveSurvey] = useState<any | null>(null);
   const router = useRouter(); // ✅ init router
 
   useEffect(() => {
@@ -29,20 +33,49 @@ export default function SuperAdminSurveyPage() {
         setSurveys(list);
 
         const mapped = (list as any[]).map((s) => ({
-          Survey_ID: s.id,
+          id: s.id, // Add ID for proper filtering
           Survey_Title: s.title,
           Description: s.description ?? "",
-          Form_Schema: (
-            <button
-              className="text-indigo-600 hover:underline"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedSurvey(s);
-                setPreviewOpen(true);
-              }}
+          Published: (
+            <span
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                s.isActive
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-800"
+              }`}
             >
-              View
-            </button>
+              {s.isActive ? "Yes" : "No"}
+            </span>
+          ),
+          Form_Schema: (
+            <div className="flex justify-center">
+              <button
+                className="inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedSurvey(s);
+                  setPreviewOpen(true);
+                }}
+                title="View schema"
+              >
+                <MdVisibility size={18} />
+              </button>
+            </div>
+          ),
+          Publish: (
+            <div className="flex justify-center">
+              <button
+                className="publish-btn inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-full transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePublish(s);
+                }}
+                title="Publish survey"
+                disabled={s.isActive}
+              >
+                <MdUpload size={18} className={s.isActive ? "text-gray-400" : ""} />
+              </button>
+            </div>
           ),
         }));
         setRows(mapped);
@@ -124,7 +157,7 @@ export default function SuperAdminSurveyPage() {
       setSurveys(updatedSurveys);
 
       // Update the table rows
-      const updatedRows = rows.filter(row => !selectedIds.includes(row.Survey_ID.toString()));
+      const updatedRows = rows.filter(row => !selectedIds.includes(row.id.toString()));
       setRows(updatedRows);
 
       // Clear selection
@@ -142,6 +175,101 @@ export default function SuperAdminSurveyPage() {
     setSelectedIds(newSelectedIds);
   };
 
+  const handlePublish = async (survey: any) => {
+    // Find if there's already an active survey
+    const currentActiveSurvey = surveys.find(s => s.isActive && s.id !== survey.id);
+    
+    setPublishingSurvey(survey);
+    setActiveSurvey(currentActiveSurvey);
+    setPublishModalOpen(true);
+  };
+
+  const confirmPublish = async () => {
+    if (!publishingSurvey) return;
+
+    try {
+      const res = await fetch(`/api/superadmin/surveys/${publishingSurvey.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ isActive: true }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData?.message || "Failed to publish survey");
+      }
+
+      // Reload the surveys to get the updated state from the server
+      const surveyRes = await fetch("/api/superadmin/surveys", { method: "GET" });
+      if (surveyRes.ok) {
+        const json = await surveyRes.json();
+        const list = json?.data?.surveys ?? [];
+        setSurveys(list);
+
+        // Update the table rows with the fresh data
+        const mapped = (list as any[]).map((s) => ({
+          id: s.id,
+          Survey_Title: s.title,
+          Description: s.description ?? "",
+          Published: (
+            <span
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                s.isActive
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-800"
+              }`}
+            >
+              {s.isActive ? "Yes" : "No"}
+            </span>
+          ),
+          Form_Schema: (
+            <div className="flex justify-center">
+              <button
+                className="inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedSurvey(s);
+                  setPreviewOpen(true);
+                }}
+                title="View schema"
+              >
+                <MdVisibility size={18} />
+              </button>
+            </div>
+          ),
+          Publish: (
+            <div className="flex justify-center">
+              <button
+                className="publish-btn inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-full transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePublish(s);
+                }}
+                title="Publish survey"
+                disabled={s.isActive}
+              >
+                <MdUpload size={18} className={s.isActive ? "text-gray-400" : ""} />
+              </button>
+            </div>
+          ),
+        }));
+        setRows(mapped);
+      }
+
+      toast.success(`Survey "${publishingSurvey.title}" has been published successfully!`);
+      
+      // Reset modal states
+      setPublishModalOpen(false);
+      setPublishingSurvey(null);
+      setActiveSurvey(null);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Failed to publish survey");
+    }
+  };
+
   return (
     <>
       {/*<Toaster position="top-center" />*/}
@@ -156,10 +284,11 @@ export default function SuperAdminSurveyPage() {
               loading={loading}
               title="All Surveys"
               columns={[
-                "Survey_ID",
                 "Survey_Title",
-                "Description",
+                "Description", 
+                "Published",
                 "Form_Schema",
+                "Publish",
               ]}
               data={rows}
               showActions={true}
@@ -226,6 +355,26 @@ export default function SuperAdminSurveyPage() {
         cancelLabel="Cancel"
         onConfirm={confirmDelete}
         variant="delete"
+      />
+
+      {/* Publish Confirmation Modal */}
+      <ConfirmationModal
+        open={publishModalOpen}
+        onClose={() => {
+          setPublishModalOpen(false);
+          setPublishingSurvey(null);
+          setActiveSurvey(null);
+        }}
+        title="Publish Survey"
+        description={
+          activeSurvey 
+            ? `There is already an active survey: "${activeSurvey.title}"\n\nDo you want to replace it with "${publishingSurvey?.title}"?\n\nThis will make "${publishingSurvey?.title}" the new active survey and deactivate "${activeSurvey.title}".`
+            : `Are you sure you want to publish "${publishingSurvey?.title}"?\n\nThis will make it the active survey available to users.`
+        }
+        confirmLabel={activeSurvey ? "Replace Survey" : "Publish Survey"}
+        cancelLabel="Cancel"
+        onConfirm={confirmPublish}
+        variant="edit"
       />
     </>
   );
