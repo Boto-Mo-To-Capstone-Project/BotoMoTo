@@ -42,10 +42,6 @@ export default function SuperAdminSurveyPage() {
               View
             </button>
           ),
-          Created_At: s.createdAt ? new Date(s.createdAt).toLocaleString() : "",
-          Deleted_At: s.deletedAt ? new Date(s.deletedAt).toLocaleString() : "",
-          Is_Deleted: s.isDeleted ? "true" : "false",
-          Is_Active: s.isActive ? "true" : "false",
         }));
         setRows(mapped);
       } catch (err: any) {
@@ -73,8 +69,6 @@ export default function SuperAdminSurveyPage() {
 
   // Action handlers
   const handleAdd = () => {
-    // TODO: Implement add functionality
-    toast.success("Add button clicked"); // just remve this toast
     router.push("/superadmin/dashboard/create-survey");
   };
 
@@ -84,8 +78,8 @@ export default function SuperAdminSurveyPage() {
   };
 
   const handleEdit = () => {
-    // TODO: Implement edit functionality
-    toast.success("Edit button clicked");
+    const surveyId = selectedIds[0];
+    router.push(`/superadmin/dashboard/edit-survey/${surveyId}`);
   };
 
   const handleFilter = () => {
@@ -120,10 +114,6 @@ export default function SuperAdminSurveyPage() {
                 "Survey_Title",
                 "Description",
                 "Form_Schema",
-                "Created_At",
-                "Deleted_At",
-                "Is_Deleted",
-                "Is_Active",
               ]}
               data={rows}
               showActions={true}
