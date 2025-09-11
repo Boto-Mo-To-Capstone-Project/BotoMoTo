@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { MdAdd, MdDownload, MdFilterList, MdDelete, MdEdit } from "react-icons/md";
 import { SubmitButton } from '@/components/SubmitButton';
 import { CreateElectionModal } from '@/components/CreateElectionModal';
+import ConfirmationModal from '@/components/ConfirmationModal';
 import SearchBar from '@/components/SearchBar';
 import ElectionTable from '@/components/ElectionTable';
 import toast, { Toaster } from 'react-hot-toast';
@@ -52,6 +53,9 @@ function ElectionDashboardContent() {
   
   // Create modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
+  
+  // Delete confirmation modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Keep selection in sync with ?eid=
   useEffect(() => {
@@ -242,6 +246,46 @@ function ElectionDashboardContent() {
     }
   };
 
+  const handleDeleteElections = async () => {
+    if (selectedIds.length === 0) return;
+
+    try {
+      setLoading(true);
+      const deletePromises = selectedIds.map(async (id) => {
+        const response = await fetch(`/api/elections/${id}`, {
+          method: 'DELETE',
+        });
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.message || `Failed to delete election ${id}`);
+        }
+        
+        return result;
+      });
+
+      await Promise.all(deletePromises);
+      
+      toast.success(`${selectedIds.length === 1 ? 'Election' : 'Elections'} deleted successfully!`);
+      
+      // Clear selection and refresh the list
+      setSelectedIds([]);
+      
+      // Refresh elections list
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('Error deleting elections:', error);
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to delete elections');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const paginatedElections = filteredElections.slice(
     (page - 1) * pageSize,
     page * pageSize
@@ -354,9 +398,7 @@ function ElectionDashboardContent() {
                 title="Delete"
                 onClick={
                   selectedIds.length >= 1
-                    ? () => {
-                        /* TODO: handle delete */
-                      }
+                    ? () => setShowDeleteModal(true)
                     : undefined
                 }
                 className={
@@ -402,6 +444,25 @@ function ElectionDashboardContent() {
             loading={loading}
           />
         )}
+
+        {/* Delete Confirmation Modal */}
+        <ConfirmationModal
+          open={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          title={`Delete ${selectedIds.length === 1 ? 'Election' : 'Elections'}`}
+          description={`Are you sure you want to delete ${
+            selectedIds.length === 1 
+              ? 'this election' 
+              : `these ${selectedIds.length} elections`
+          }? This action cannot be undone.`}
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onConfirm={async () => {
+            await handleDeleteElections();
+            setShowDeleteModal(false);
+          }}
+          variant="delete"
+        />
       </div>
     </>
   );
