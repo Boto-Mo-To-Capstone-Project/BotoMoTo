@@ -71,6 +71,11 @@ const SuperAdminSidebar = ({
       href: "/superadmin/dashboard/settings",
       icon: Settings,
     },
+    {
+      name: "Manage Admins",
+      href: "/superadmin/dashboard/admins",
+      icon: Settings,
+    },
   ];
 
   const displayName = session?.user?.name || "Username";
