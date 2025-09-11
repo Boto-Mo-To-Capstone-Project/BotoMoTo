@@ -23,7 +23,10 @@ model User {
   role          UserRole        @default(ADMIN) // Enhanced role system
   emailVerified DateTime?
   image         String?
-  
+  isDeleted     Boolean         @default(false)
+
+  deletedAt     DateTime?
+
   // Organization relationship for admins
   organization  Organization?
   
