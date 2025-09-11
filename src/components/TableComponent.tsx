@@ -324,7 +324,7 @@ export default function Table({
                 <SubmitButton
                   label="Approve"
                   variant="action"
-                  icon={<MdCheckCircleOutline size={20} />}
+                  icon={<MdCheckCircleOutline size={20} className="text-green-600" />}
                   title="Approve"
                   onClick={selectedIds.length >= 1 ? () => {
                     // Handle approve for selected rows
@@ -335,7 +335,7 @@ export default function Table({
                   } : undefined}
                   className={
                     selectedIds.length >= 1
-                      ? ""
+                      ? "border-green-200 hover:bg-green-150"
                       : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
                   }
                 />
@@ -345,7 +345,7 @@ export default function Table({
                 <SubmitButton
                   label="Reject"
                   variant="action"
-                  icon={<MdOutlineCancel size={20} />}
+                  icon={<MdOutlineCancel size={20} className="text-red-600" />}
                   title="Reject"
                   onClick={selectedIds.length >= 1 ? () => {
                     // Handle reject for selected rows
@@ -356,7 +356,7 @@ export default function Table({
                   } : undefined}
                   className={
                     selectedIds.length >= 1
-                      ? ""
+                      ? "border-red-200 hover:bg-red-150"
                       : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
                   }
                 />
