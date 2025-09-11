@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
+import { MdUpload, MdVisibility } from "react-icons/md";
 
 import Table from "@/components/TableComponent";
 import SurveyPreview from "@/components/survey/SurveyPreview";
+import ConfirmationModal from "@/components/ConfirmationModal";
 import { useRouter } from "next/navigation";
 
 export default function SuperAdminSurveyPage() {
@@ -15,6 +17,9 @@ export default function SuperAdminSurveyPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedSurvey, setSelectedSurvey] = useState<any | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [publishingSurvey, setPublishingSurvey] = useState<any | null>(null);
   const router = useRouter(); // ✅ init router
 
   useEffect(() => {
@@ -24,28 +29,54 @@ export default function SuperAdminSurveyPage() {
         if (!res.ok) throw new Error(`Failed to fetch surveys (${res.status})`);
         const json = await res.json();
         const list = json?.data?.surveys ?? [];
+        
         setSurveys(list);
 
         const mapped = (list as any[]).map((s) => ({
-          Survey_ID: s.id,
+          id: s.id, // Add ID for proper filtering
           Survey_Title: s.title,
           Description: s.description ?? "",
-          Form_Schema: (
-            <button
-              className="text-indigo-600 hover:underline"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedSurvey(s);
-                setPreviewOpen(true);
-              }}
+          Published: (
+            <span
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                s.isActive
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-800"
+              }`}
             >
-              View
-            </button>
+              {s.isActive ? "Yes" : "No"}
+            </span>
           ),
-          Created_At: s.createdAt ? new Date(s.createdAt).toLocaleString() : "",
-          Deleted_At: s.deletedAt ? new Date(s.deletedAt).toLocaleString() : "",
-          Is_Deleted: s.isDeleted ? "true" : "false",
-          Is_Active: s.isActive ? "true" : "false",
+          Form_Schema: (
+            <div className="flex justify-center">
+              <button
+                className="inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedSurvey(s);
+                  setPreviewOpen(true);
+                }}
+                title="View schema"
+              >
+                <MdVisibility size={18} />
+              </button>
+            </div>
+          ),
+          Publish: (
+            <div className="flex justify-center">
+              <button
+                className="publish-btn inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-full transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePublish(s);
+                }}
+                title="Publish survey"
+                disabled={s.isActive}
+              >
+                <MdUpload size={18} className={s.isActive ? "text-gray-400" : ""} />
+              </button>
+            </div>
+          ),
         }));
         setRows(mapped);
       } catch (err: any) {
@@ -73,8 +104,6 @@ export default function SuperAdminSurveyPage() {
 
   // Action handlers
   const handleAdd = () => {
-    // TODO: Implement add functionality
-    toast.success("Add button clicked"); // just remve this toast
     router.push("/superadmin/dashboard/create-survey");
   };
 
@@ -84,8 +113,8 @@ export default function SuperAdminSurveyPage() {
   };
 
   const handleEdit = () => {
-    // TODO: Implement edit functionality
-    toast.success("Edit button clicked");
+    const surveyId = selectedIds[0];
+    router.push(`/superadmin/dashboard/edit-survey/${surveyId}`);
   };
 
   const handleFilter = () => {
@@ -93,13 +122,147 @@ export default function SuperAdminSurveyPage() {
     toast.success("Filter button clicked");
   };
 
-  const handleDelete = () => {
-    // TODO: Implement delete functionality
-    toast.success("Delete button clicked");
+  const handleDelete = async () => {
+    if (!selectedIds.length) {
+      toast.error("Please select survey(s) to delete");
+      return;
+    }
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedIds.length) {
+      toast.error("No surveys selected");
+      return;
+    }
+
+    try {
+      const deletePromises = selectedIds.map(surveyId => 
+        fetch(`/api/superadmin/surveys/${surveyId}`, {
+          method: "DELETE",
+        })
+      );
+
+      const responses = await Promise.all(deletePromises);
+      
+      // Check if any requests failed
+      const failures = responses.filter(res => !res.ok);
+      if (failures.length > 0) {
+        const errorData = await failures[0].json();
+        throw new Error(errorData?.message || "Failed to delete some surveys");
+      }
+
+      // Remove the deleted surveys from the state
+      const updatedSurveys = surveys.filter(s => !selectedIds.includes(s.id.toString()));
+      setSurveys(updatedSurveys);
+
+      // Update the table rows
+      const updatedRows = rows.filter(row => !selectedIds.includes(row.id.toString()));
+      setRows(updatedRows);
+
+      // Clear selection
+      setSelectedIds([]);
+
+      const count = selectedIds.length;
+      toast.success(`${count} survey${count > 1 ? 's' : ''} deleted successfully`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Failed to delete surveys");
+    }
   };
 
   const handleSelectionChange = (newSelectedIds: string[]) => {
     setSelectedIds(newSelectedIds);
+  };
+
+  const handlePublish = async (survey: any) => {
+    setPublishingSurvey(survey);
+    setPublishModalOpen(true);
+  };
+
+  const confirmPublish = async () => {
+    if (!publishingSurvey) return;
+
+    try {
+      const res = await fetch(`/api/superadmin/surveys/${publishingSurvey.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ isActive: true }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData?.message || "Failed to publish survey");
+      }
+
+      // Reload the surveys to get the updated state from the server
+      const surveyRes = await fetch("/api/superadmin/surveys", { method: "GET" });
+      if (surveyRes.ok) {
+        const json = await surveyRes.json();
+        const list = json?.data?.surveys ?? [];
+        setSurveys(list);
+
+        // Update the table rows with the fresh data
+        const mapped = (list as any[]).map((s) => ({
+          id: s.id,
+          Survey_Title: s.title,
+          Description: s.description ?? "",
+          Published: (
+            <span
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                s.isActive
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-800"
+              }`}
+            >
+              {s.isActive ? "Yes" : "No"}
+            </span>
+          ),
+          Form_Schema: (
+            <div className="flex justify-center">
+              <button
+                className="inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedSurvey(s);
+                  setPreviewOpen(true);
+                }}
+                title="View schema"
+              >
+                <MdVisibility size={18} />
+              </button>
+            </div>
+          ),
+          Publish: (
+            <div className="flex justify-center">
+              <button
+                className="publish-btn inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-full transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePublish(s);
+                }}
+                title="Publish survey"
+                disabled={s.isActive}
+              >
+                <MdUpload size={18} className={s.isActive ? "text-gray-400" : ""} />
+              </button>
+            </div>
+          ),
+        }));
+        setRows(mapped);
+      }
+
+      toast.success(`Survey "${publishingSurvey.title}" has been published successfully!`);
+      
+      // Reset modal states
+      setPublishModalOpen(false);
+      setPublishingSurvey(null);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Failed to publish survey");
+    }
   };
 
   return (
@@ -116,14 +279,11 @@ export default function SuperAdminSurveyPage() {
               loading={loading}
               title="All Surveys"
               columns={[
-                "Survey_ID",
                 "Survey_Title",
-                "Description",
+                "Description", 
+                "Published",
                 "Form_Schema",
-                "Created_At",
-                "Deleted_At",
-                "Is_Deleted",
-                "Is_Active",
+                "Publish",
               ]}
               data={rows}
               showActions={true}
@@ -174,6 +334,38 @@ export default function SuperAdminSurveyPage() {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title={`Delete ${selectedIds.length > 1 ? 'Surveys' : 'Survey'}`}
+        description={selectedIds.length > 1 
+          ? `Are you sure you want to delete ${selectedIds.length} surveys?\n\nThis action cannot be undone.`
+          : `Are you sure you want to delete the survey "${
+              surveys.find(s => s.id.toString() === selectedIds[0])?.title || 'this survey'
+            }"?\n\nThis action cannot be undone.`
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={confirmDelete}
+        variant="delete"
+      />
+
+      {/* Publish Confirmation Modal */}
+      <ConfirmationModal
+        open={publishModalOpen}
+        onClose={() => {
+          setPublishModalOpen(false);
+          setPublishingSurvey(null);
+        }}
+        title="Publish Survey"
+        description={`Are you sure you want to publish "${publishingSurvey?.title}"?\n\nThis will make it the active survey. If another survey is currently active, it will be replaced.`}
+        confirmLabel="Publish Survey"
+        cancelLabel="Cancel"
+        onConfirm={confirmPublish}
+        variant="edit"
+      />
     </>
   );
 }
