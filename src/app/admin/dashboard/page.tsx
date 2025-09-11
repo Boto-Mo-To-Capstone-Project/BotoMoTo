@@ -199,19 +199,12 @@ export default function VoterDashboardPage() {
 
               <div className="flex flex-col lg:flex-row gap-8 w-full">
                 {/* Chart Section */}
-                {/* comparing voter turnout of similar elections */}
-                {/* pano ko kaya magagawa pag maraming template/instance election 
-                na icocompare  */}
-                {/* like what if may 5 template elections pano ko un i-compare lahat sa
-                isang chart lang, pwede kayang gawin kong dumami ang chart per template 
-                election? */}
-                {/* not yet implemenented */}
                 <div className="flex-1 bg-white rounded-2xl shadow-sm p-4 border-2 border-gray-200 min-w-0 w-full overflow-visible">
                   <div className="flex items-center justify-between mb-2">
                     <h2 className="text-lg font-semibold">Election Turnout Trends</h2>
                   </div>
                   {/* Line Chart */}
-                  <div className="w-full min-h-[180px] flex items-center justify-center overflow-x-auto">
+                  <div className="w-full min-h-[180px] flex overflow-x-auto">
                     <DashboardLineChart />
                   </div>
                 </div>
