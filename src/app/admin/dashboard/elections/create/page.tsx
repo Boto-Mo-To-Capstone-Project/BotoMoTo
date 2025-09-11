@@ -8,6 +8,7 @@ import { MdAdd, MdFilterList, MdDelete, MdEdit, MdSave } from "react-icons/md";
 import { ElectionForm, ElectionFormHandle } from "@/components/ElectionForm";
 import { ScopeTab } from "@/components/ScopeTab";
 import { PartyTab } from "@/components/PartyTab"; // Use PartyTab instead of PartyTable/PartyModal
+import { PartyCandidatesModal } from "@/components/PartyCandidatesModal"; // NEW: Import the modal
 import toast, { Toaster } from 'react-hot-toast';
 
 // Prefer API 'message' over 'error' object to avoid [object Object]
@@ -74,6 +75,12 @@ function CreateElectionContent() {
   // For editing an existing scope/party
   const [scopeEditId, setScopeEditId] = useState<number | null>(null);
   const [partyEditId, setPartyEditId] = useState<number | null>(null);
+
+  // NEW: Party candidates modal state
+  const [showCandidatesModal, setShowCandidatesModal] = useState(false);
+  const [selectedParty, setSelectedParty] = useState<{ id: number; name: string } | null>(null);
+  const [partyCandidates, setPartyCandidates] = useState([]);
+  const [loadingCandidates, setLoadingCandidates] = useState(false);
 
   const electionFormRef = useRef<ElectionFormHandle>(null);
 
@@ -417,6 +424,41 @@ function CreateElectionContent() {
     }
   };
 
+  // NEW: Handler for showing party candidates
+  const handleShowMembers = async (partyId: number, partyName: string) => {
+    if (!ensureHasElectionId()) return;
+    
+    setSelectedParty({ id: partyId, name: partyName });
+    setShowCandidatesModal(true);
+    setLoadingCandidates(true);
+    
+    try {
+      // Fetch candidates for this party in this election
+      const response = await fetch(`/api/candidates?electionId=${editId}&partyId=${partyId}`);
+      const result = await response.json();
+      
+      if (result.success) {
+        // Map API candidates to modal format
+        const mapped = (result.data?.candidates || []).map((c: any) => ({
+          id: c.id,
+          name: `${c.voter?.firstName || ""} ${c.voter?.lastName || ""}`.trim() || "—",
+          email: c.voter?.email || "",
+          position: c.position?.name || "",
+        }));
+        setPartyCandidates(mapped);
+      } else {
+        setPartyCandidates([]);
+        toast.error(result.message || 'Failed to fetch party candidates');
+      }
+    } catch (error) {
+      console.error('Error fetching party candidates:', error);
+      setPartyCandidates([]);
+      toast.error('Failed to fetch party candidates');
+    } finally {
+      setLoadingCandidates(false);
+    }
+  };
+
   const handleDeleteSelectedParties = async () => {
     if (!ensureHasElectionId()) return;
     if (partySelectedIds.length < 1) return;
@@ -525,6 +567,7 @@ function CreateElectionContent() {
             remoteRows={filteredPartyRows}
             onSave={handleSavePartyFromModal}
             initialData={partyInitialData}
+            onShowMembers={handleShowMembers} // NEW: Add the handler
           />
         );
       default:
@@ -769,6 +812,22 @@ function CreateElectionContent() {
           )}
         </div>
       </div>
+
+      {/* NEW: Party Candidates Modal */}
+      {showCandidatesModal && selectedParty && (
+        <PartyCandidatesModal
+          open={showCandidatesModal}
+          onClose={() => {
+            setShowCandidatesModal(false);
+            setSelectedParty(null);
+            setPartyCandidates([]);
+          }}
+          partyName={selectedParty.name}
+          partyId={selectedParty.id}
+          candidates={partyCandidates}
+          loading={loadingCandidates}
+        />
+      )}
     </div>
   );
 }

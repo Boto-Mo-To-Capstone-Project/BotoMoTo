@@ -1,6 +1,6 @@
 import React from "react";
 import { FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
-import { MdFirstPage, MdLastPage, MdChevronLeft, MdChevronRight } from "react-icons/md";
+import { MdFirstPage, MdLastPage, MdChevronLeft, MdChevronRight, MdVisibility } from "react-icons/md";
 
 interface Party {
   id: number;
@@ -13,6 +13,7 @@ interface PartyTableProps {
   selectedIds: number[];
   onCheckboxChange: (id: number) => void;
   onRowClick?: (party: Party) => void;
+  onShowMembers?: (partyId: number, partyName: string) => void; // NEW: callback for showing members
   sortCol: keyof Party | null;
   sortDir: "asc" | "desc";
   onSort: (col: keyof Party) => void;
@@ -31,6 +32,7 @@ const PartyTable: React.FC<PartyTableProps> = ({
   selectedIds,
   onCheckboxChange,
   onRowClick,
+  onShowMembers, // NEW
   sortCol,
   sortDir,
   onSort,
@@ -96,12 +98,16 @@ const PartyTable: React.FC<PartyTableProps> = ({
                   <FaSort className="inline opacity-50" />
                 )}
               </th>
+              {/* NEW: Show Members column */}
+              <th className="py-2 px-3 border-b border-gray-200 text-center">
+                Show Members
+              </th>
             </tr>
           </thead>
           <tbody>
             {parties.length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-4 py-4 text-center text-gray-400">
+                <td colSpan={4} className="px-4 py-4 text-center text-gray-400">
                   No parties found.
                 </td>
               </tr>
@@ -112,6 +118,7 @@ const PartyTable: React.FC<PartyTableProps> = ({
                   className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
                   onClick={(e) => {
                     if ((e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
+                    if ((e.target as HTMLElement).closest('.show-members-btn')) return;
                     onRowClick?.(party);
                   }}
                 >
@@ -126,6 +133,19 @@ const PartyTable: React.FC<PartyTableProps> = ({
                   <td className="py-2 px-3 align-middle">{party.name}</td>
                   <td className="py-2 px-3 align-middle">
                     <span style={{ color: party.color }}>{party.color}</span>
+                  </td>
+                  {/* NEW: Show Members button */}
+                  <td className="py-2 px-3 align-middle text-center">
+                    <button
+                      className="show-members-btn inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onShowMembers?.(party.id, party.name);
+                      }}
+                      title="View candidates"
+                    >
+                      <MdVisibility size={18} />
+                    </button>
                   </td>
                 </tr>
               ))

@@ -21,6 +21,7 @@ interface PartyTabProps {
   remoteRows?: Party[];
   onSave?: (data: { partyName: string; selectedColor: string }) => Promise<void> | void;
   initialData?: { partyName: string; selectedColor: string } | null;
+  onShowMembers?: (partyId: number, partyName: string) => void; // NEW: callback for showing members
 }
 
 export function PartyTab({
@@ -35,6 +36,7 @@ export function PartyTab({
   remoteRows,
   onSave,
   initialData,
+  onShowMembers, // NEW
 }: PartyTabProps) {
   const [sortCol, setSortCol] = useState<keyof Party | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -101,6 +103,7 @@ export function PartyTab({
         selectedIds={selectedIds}
         onCheckboxChange={handleCheckboxChange}
         onRowClick={handleRowClick}
+        onShowMembers={onShowMembers} // NEW: pass through the callback
         sortCol={sortCol}
         sortDir={sortDir}
         onSort={handleSort}
