@@ -5,6 +5,7 @@ import toast, { Toaster } from "react-hot-toast";
 
 import Table from "@/components/TableComponent";
 import SurveyPreview from "@/components/survey/SurveyPreview";
+import ConfirmationModal from "@/components/ConfirmationModal";
 import { useRouter } from "next/navigation";
 
 export default function SuperAdminSurveyPage() {
@@ -15,6 +16,7 @@ export default function SuperAdminSurveyPage() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedSurvey, setSelectedSurvey] = useState<any | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const router = useRouter(); // ✅ init router
 
   useEffect(() => {
@@ -87,9 +89,53 @@ export default function SuperAdminSurveyPage() {
     toast.success("Filter button clicked");
   };
 
-  const handleDelete = () => {
-    // TODO: Implement delete functionality
-    toast.success("Delete button clicked");
+  const handleDelete = async () => {
+    if (!selectedIds.length) {
+      toast.error("Please select survey(s) to delete");
+      return;
+    }
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedIds.length) {
+      toast.error("No surveys selected");
+      return;
+    }
+
+    try {
+      const deletePromises = selectedIds.map(surveyId => 
+        fetch(`/api/superadmin/surveys/${surveyId}`, {
+          method: "DELETE",
+        })
+      );
+
+      const responses = await Promise.all(deletePromises);
+      
+      // Check if any requests failed
+      const failures = responses.filter(res => !res.ok);
+      if (failures.length > 0) {
+        const errorData = await failures[0].json();
+        throw new Error(errorData?.message || "Failed to delete some surveys");
+      }
+
+      // Remove the deleted surveys from the state
+      const updatedSurveys = surveys.filter(s => !selectedIds.includes(s.id.toString()));
+      setSurveys(updatedSurveys);
+
+      // Update the table rows
+      const updatedRows = rows.filter(row => !selectedIds.includes(row.Survey_ID.toString()));
+      setRows(updatedRows);
+
+      // Clear selection
+      setSelectedIds([]);
+
+      const count = selectedIds.length;
+      toast.success(`${count} survey${count > 1 ? 's' : ''} deleted successfully`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Failed to delete surveys");
+    }
   };
 
   const handleSelectionChange = (newSelectedIds: string[]) => {
@@ -164,6 +210,23 @@ export default function SuperAdminSurveyPage() {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title={`Delete ${selectedIds.length > 1 ? 'Surveys' : 'Survey'}`}
+        description={selectedIds.length > 1 
+          ? `Are you sure you want to delete ${selectedIds.length} surveys?\n\nThis action cannot be undone.`
+          : `Are you sure you want to delete the survey "${
+              surveys.find(s => s.id.toString() === selectedIds[0])?.title || 'this survey'
+            }"?\n\nThis action cannot be undone.`
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={confirmDelete}
+        variant="delete"
+      />
     </>
   );
 }
