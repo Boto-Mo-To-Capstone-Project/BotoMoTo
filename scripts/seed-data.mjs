@@ -32,36 +32,35 @@ async function generateUniqueVoterCode() {
 // Sample data arrays
 const organizations = [
   {
-    name: "University of Technology",
-    email: "admin@university.edu",
-    membersCount: 5000,
+    name: "Supreme Student Government",
+    email: "ssg@university.edu.ph",
+    membersCount: 2500,
     logoObjectKey: "/assets/sample/logo.png",
     logoProvider: "local",
     letterObjectKey: "/assets/sample/letter.pdf",
     letterProvider: "local"
   },
   {
-    name: "City College",
-    email: "admin@citycollege.edu", 
-    membersCount: 3000,
+    name: "Central Student Council",
+    email: "csc@citycollege.edu.ph", 
+    membersCount: 1800,
     logoObjectKey: "/assets/sample/logo.png",
     logoProvider: "local",
     letterObjectKey: "/assets/sample/letter.pdf",
     letterProvider: "local"
   },
   {
-    name: "Metro High School",
-    email: "admin@metrohigh.edu",
+    name: "Junior Philippine Computer Society",
+    email: "jpcs@metrohigh.edu.ph",
     membersCount: 1200,
     logoObjectKey: "/assets/sample/logo.png",
     logoProvider: "local",
     letterObjectKey: "/assets/sample/letter.pdf",
     letterProvider: "local"
   },
-  // New organization for ibits
   {
-    name: "Institute of Bachelors in Information Technology Studies",
-    email: "org@ibits.com",
+    name: "Institute of Bachelors in Information Technology Studies Student Organization",
+    email: "ibits@ibits.edu.ph",
     membersCount: 1500,
     logoObjectKey: "/assets/sample/logo.png",
     logoProvider: "local",
@@ -70,99 +69,91 @@ const organizations = [
   }
 ];
 
+
+
 const adminUsers = [
   {
-    name: "Dr. Sarah Johnson",
-    email: "sarah.johnson@university.edu",
+    name: "Christine Julia Alpornon",
+    email: "christine.alpornon@university.edu",
     password: "Admin@123"
   },
   {
-    name: "Prof. Michael Chen", 
-    email: "michael.chen@citycollege.edu",
+    name: "Marc King", 
+    email: "marc.king@citycollege.edu",
     password: "Admin@456"
   },
   {
-    name: "Principal Lisa Brown",
-    email: "lisa.brown@metrohigh.edu", 
+    name: "Marie Cris Edusma",
+    email: "marie.edusma@metrohigh.edu", 
     password: "Admin@789"
   },
-  // New admin for ibits
   {
     name: "Brian Sebastian",
-    email: "brian@ibits.com",
+    email: "brian.sebastian@ibits.edu.ph",
     password: "Admin@999"
   }
 ];
 
 // Template elections (also serve as first instances)
 const templateElections = [
-  {
-    name: "Student Council Election",
-    description: "Annual student council election for academic year",
-    allowSurvey: true,
-    isTemplate: true,
-    instanceYear: 2023,
-    instanceName: "Fall 2023"
-  },
-  {
+    {
     name: "Department Representative Election", 
     description: "Election for department representatives in academic senate",
-    allowSurvey: false,
     isTemplate: true,
     instanceYear: 2023,
     instanceName: "Academic Year 2023"
   },
   {
-    name: "Class President Election",
-    description: "Election for class presidents across all grade levels", 
-    allowSurvey: true,
+    name: "Student Council Election",
+    description: "Annual student council election for academic year",
     isTemplate: true,
     instanceYear: 2023,
-    instanceName: "Spring 2023"
-  }
+    instanceName: "Academic Year 2023"
+  },
+  {
+    name: "Class Officers Election",
+    description: "Election for class officers across all grade levels", 
+    isTemplate: true,
+    instanceYear: 2023,
+    instanceName: "Academic Year 2023"
+  },
 ];
 
 // Instance elections (created from templates)
 const instanceElections = [
   {
-    templateIndex: 0, // Student Council Election
-    instanceYear: 2024,
-    instanceName: "Spring 2024",
-    status: "CLOSED"
-  },
-  {
-    templateIndex: 0, // Student Council Election
-    instanceYear: 2024,
-    instanceName: "Fall 2024",
-    status: "ACTIVE"
-  },
-  {
-    templateIndex: 0, // Student Council Election
-    instanceYear: 2025,
-    instanceName: "Spring 2025",
-    status: "DRAFT"
-  },
-  {
-    templateIndex: 1, // Department Rep Election
+    templateIndex: 0, // Department Rep Election
     instanceYear: 2024,
     instanceName: "Academic Year 2024",
     status: "CLOSED"
   },
   {
-    templateIndex: 1, // Department Rep Election
+    templateIndex: 0, // Department Rep Election
+    instanceYear: 2025,
+    instanceName: "Academic Year 2025",
+    status: "DRAFT"
+  },
+  {
+    templateIndex: 1, // Student Council Election
+    instanceYear: 2024,
+    instanceName: "Academic Year 2024",
+    status: "CLOSED"
+  },
+  {
+    templateIndex: 1, // Student Council Election
     instanceYear: 2025,
     instanceName: "Academic Year 2025",
     status: "DRAFT"
   }
 ];
 
+// there should be a different set of positions for each election
 const positions = [
   { name: "President", voteLimit: 1, numOfWinners: 1, order: 1 },
   { name: "Vice President", voteLimit: 1, numOfWinners: 1, order: 2 },
   { name: "Secretary", voteLimit: 1, numOfWinners: 1, order: 3 },
   { name: "Treasurer", voteLimit: 1, numOfWinners: 1, order: 4 },
-  { name: "Senator", voteLimit: 3, numOfWinners: 5, order: 5 },
-  { name: "Class Representative", voteLimit: 2, numOfWinners: 3, order: 6 }
+  { name: "Class Representative", voteLimit: 2, numOfWinners: 3, order: 5 }
 ];
 
 const parties = [
@@ -172,28 +163,40 @@ const parties = [
   { name: "Student Voice", color: "#F59E0B" }
 ];
 
+// Special scopes and positions for Department Representative Election
+const departmentScopes = [
+  { name: "Computer Science Department", description: "Scope for CS students" },
+  { name: "Information Technology Department", description: "Scope for IT students" }
+];
+
+const departmentPositions = [
+  { name: "Department Representative", voteLimit: 1, numOfWinners: 1, order: 1 },
+  { name: "Assistant Representative", voteLimit: 1, numOfWinners: 1, order: 2 }
+];
+
+// Default scopes and positions for other elections
 const votingScopes = [
-  { name: "Undergraduate", description: "All undergraduate students" },
-  { name: "Graduate", description: "All graduate students" },
+  { name: "Information Technology", description: "IT department students" },
+  { name: "Computer Science", description: "Computer Science department students" },
   { name: "Engineering", description: "Engineering department students" },
-  { name: "Business", description: "Business department students" },
-  { name: "Arts & Sciences", description: "Arts and Sciences students" },
-  { name: "Campus North", description: "Students in north campus area" },
-  { name: "Campus South", description: "Students in south campus area" }
 ];
 
 // Generate realistic voter data
 async function generateVoters(electionId, count = 100) {
   const firstNames = [
-    "Alex", "Blake", "Casey", "Dana", "Ellis", "Finley", "Gray", "Harper", 
-    "Ian", "Jordan", "Kelly", "Logan", "Morgan", "Noel", "Parker", "Quinn",
-    "River", "Sage", "Taylor", "Uri", "Vale", "Wren", "Xander", "Yael", "Zara"
+    "Juan", "Jose", "Antonio", "Carlos", "Miguel", "Andres", "Manuel", "Pedro", "Alfonso", "Ramon",
+    "Paolo", "Rafael", "Marco", "Julio", "Luis", "Emilio", "Enrique", "Tomas", "Iñigo", "Fernando",
+    "Maria", "Ana", "Sofia", "Isabella", "Gabriela", "Carmela", "Teresa", "Angela", "Beatriz", "Rosa",
+    "Clarissa", "Lucia", "Veronica", "Elena", "Victoria", "Daniela", "Regina", "Patricia", "Catherine", "Althea",
+    "Brian", "Marie", "Marc", "Christine", "Ayumi", "Ayana", "Yuki", "Hana", "Sakura", "Emi", "Keiko", "Kristelle"
   ];
   
   const lastNames = [
-    "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis",
-    "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson",
-    "Thomas", "Taylor", "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson", "White"
+    "Santos", "Reyes", "Cruz", "Bautista", "Ocampo", "Garcia", "Mendoza", "Villanueva", "Del Rosario", "Aquino",
+    "Torres", "Ramos", "Castillo", "Gonzales", "Navarro", "Domingo", "Dela Cruz", "Fernandez", "Pascual", "Salazar",
+    "Chua", "Tan", "Sy", "Lim", "Go", "Co", "Ong", "Dy", "Tiu", "Yap", "Lopez", "Martinez", "Hernandez", "Gomez", 
+    "Diaz", "Sanchez", "Ramirez", "Vargas", "Molina", "Sebastian", "Edusma", "Alpornon", "King", "Evangelista",
+    "Flores", "Torno", "Silverio"
   ];
 
   const domains = ["university.edu", "citycollege.edu", "student.edu"];
@@ -214,8 +217,7 @@ async function generateVoters(electionId, count = 100) {
       email,
       firstName,
       lastName,
-      contactNum: `+1${Math.floor(Math.random() * 900000000) + 100000000}`,
-      isVerified: Math.random() > 0.1, // 90% verified
+      contactNum: "09" + Math.floor(Math.random() * 1e9).toString().padStart(9, "0"),
       isActive: Math.random() > 0.05 // 95% active
     });
   }
@@ -296,7 +298,7 @@ async function seedDatabase() {
 
       // Create schedule based on instance year
       const year = electionDef.instanceYear || 2025;
-      const startDate = new Date(`${year}-10-01`);
+      const startDate = new Date(`${year}-09-12`);
       const endDate = new Date(`${year}-10-15`);
       
       await db.electionSched.create({
@@ -304,7 +306,7 @@ async function seedDatabase() {
       });
 
       // MFA settings - IBITS Provident Fund elections only use email-confirmation
-      if (org.email === "org@ibits.com" && electionDef.name === "Provident Fund Annual Election") {
+      if (org.email === "ibits@ibits.edu.ph" && electionDef.name === "Provident Fund Annual Election") {
         await db.mfaSettings.create({
           data: { 
             electionId: election.id, 
@@ -333,70 +335,67 @@ async function seedDatabase() {
     }
 
     // Create elections following the distribution plan:
-    // org[0] (Sarah): Many elections (templates + instances + non-repeating)
-    //         → Gets: Student Council Election (template + 3 instances)
-    //         → Gets: Department Representative Election (template + 2 instances) 
-    //         → Gets: Class President Election (template + 0 instances)
+    // org[0] (Christine): Many elections (templates + instances + non-repeating)
+    //         → Gets: Student Council Election (template + instances)
+    //         → Gets: Department Representative Election (template + instances) 
+    //         → Gets: Class Officers Election (template + 0 instances)
     //         → Gets: Special Committee Election (standalone)
-    // org[1] (Michael): 1 regular election only
+    // org[1] (Marc): 1 regular election only
     //         → Gets: City College Student Government (standalone)
-    // org[2] (Lisa): No elections (skip completely)
+    // org[2] (Marie): No elections (skip completely)
     // org[3] (Brian/IBITS): 1 template with 3 years instances + 1 non-repeating
     //         → Gets: Provident Fund Annual Election (template + 3 instances)
     //         → Gets: IBITS Special Election (standalone)
 
-    // ORG[0] Sarah - Create templates and instances (many elections)
-    const sarahOrg = createdOrgs[0];
-    if (sarahOrg) {
-      console.log(`   Creating elections for ${sarahOrg.name} (Sarah - many elections)...`);
+    // ORG[0] Christine - Create templates and instances (many elections)
+    const christineOrg = createdOrgs[0];
+    if (christineOrg) {
+      console.log(`   Creating elections for ${christineOrg.name} (Christine - many elections)...`);
       
       // Create templates
       for (const template of templateElections) {
-        await createElectionForOrg(sarahOrg, {
+        await createElectionForOrg(christineOrg, {
           ...template,
           status: "CLOSED" // Templates are "used" elections from the past
         }, true);
       }
 
-      // Create instances from templates for Sarah
+      // Create instances from templates for Christine
       for (const instanceDef of instanceElections) {
         const template = createdTemplates[instanceDef.templateIndex];
         if (!template) continue;
 
-        await createElectionForOrg(sarahOrg, {
+        await createElectionForOrg(christineOrg, {
           name: template.name,
           description: template.description,
-          allowSurvey: template.allowSurvey,
           instanceYear: instanceDef.instanceYear,
           instanceName: instanceDef.instanceName,
           status: instanceDef.status
         }, false, template.id);
       }
 
-      // Add a non-repeating election for Sarah (standalone - no instanceYear/instanceName)
-      await createElectionForOrg(sarahOrg, {
+      // Add a non-repeating election for Christine (standalone - no instanceYear/instanceName)
+      await createElectionForOrg(christineOrg, {
         name: "Special Committee Election",
         description: "One-time election for special committee formation",
-        allowSurvey: true,
       });
     }
 
-    // ORG[1] Michael - Create 1 regular (non-repeating) election only
-    const michaelOrg = createdOrgs[1];
-    if (michaelOrg) {
-      console.log(`   Creating elections for ${michaelOrg.name} (Michael - 1 regular election)...`);
+    // ORG[1] Marc - Create 1 regular (non-repeating) election only
+    const marcOrg = createdOrgs[1];
+    if (marcOrg) {
+      console.log(`   Creating elections for ${marcOrg.name} (Marc - 1 regular election)...`);
       
-      await createElectionForOrg(michaelOrg, {
+      await createElectionForOrg(marcOrg, {
         name: "City College Student Government",
         description: "Annual student government election for City College",
-        allowSurvey: false,
       });
     }
 
-    // ORG[2] Lisa - No elections (skip)
-    const lisaOrg = createdOrgs[2];
-    if (lisaOrg) {
-      console.log(`   Skipping elections for ${lisaOrg.name} (Lisa - no elections)...`);
+    // ORG[2] Marie - No elections (skip)
+    const marieOrg = createdOrgs[2];
+    if (marieOrg) {
+      console.log(`   Skipping elections for ${marieOrg.name} (Marie - no elections)...`);
     }
 
     console.log("📊 Creating election instances...");
@@ -410,10 +409,9 @@ async function seedDatabase() {
       const ibitsTemplate = await createElectionForOrg(ibitsOrg, {
         name: "Provident Fund Annual Election",
         description: "Annual election for IBITS Provident Fund representatives",
-        allowSurvey: true,
         isTemplate: true,
-        instanceYear: 2023,
-        instanceName: "Academic Year 2023",
+        instanceYear: 2022,
+        instanceName: "Academic Year 2022",
         status: "CLOSED"
       }, true);
       
@@ -423,16 +421,15 @@ async function seedDatabase() {
 
       // Create 3 years of instances for IBITS template
       const ibitsInstanceYears = [
+        { year: 2023, name: "Academic Year 2023", status: "CLOSED" },
         { year: 2024, name: "Academic Year 2024", status: "CLOSED" },
-        { year: 2025, name: "Academic Year 2025", status: "ACTIVE" },
-        { year: 2026, name: "Academic Year 2026", status: "DRAFT" }
+        { year: 2025, name: "Academic Year 2025", status: "DRAFT" },
       ];
 
       for (const instance of ibitsInstanceYears) {
         const instanceElection = await createElectionForOrg(ibitsOrg, {
           name: ibitsTemplate.name,
           description: ibitsTemplate.description,
-          allowSurvey: ibitsTemplate.allowSurvey,
           instanceYear: instance.year,
           instanceName: instance.name,
           status: instance.status
@@ -447,20 +444,38 @@ async function seedDatabase() {
       const ibitsRegularElection = await createElectionForOrg(ibitsOrg, {
         name: "IBITS Special Election",
         description: "Special election for IBITS organizational restructuring",
-        allowSurvey: false,
       });
       console.log(`   → Created IBITS REGULAR ELECTION (no special requirements): ${ibitsRegularElection.name}`);
     }
 
     console.log("📍 Creating voting scopes...");
     
-    // Create voting scopes for each election (no scope type)
+    // Create voting scopes for each election
     const createdScopes = [];
     const scopesByElection = new Map();
     for (const election of createdElections) {
       if (noScopeElectionIds.has(election.id)) {
         scopesByElection.set(election.id, []);
         console.log(`   ✓ ${election.name}: created 0 scope(s) [NO SCOPE]`);
+        continue;
+      }
+
+      // DEPARTMENT REPRESENTATIVE ELECTION: exactly 2 scopes CS/IT Department
+      if (election.name === "Department Representative Election") {
+        const scopesForElection = [];
+        for (const scopeDef of departmentScopes) {
+          const scope = await db.votingScope.create({
+            data: {
+              name: scopeDef.name,
+              description: scopeDef.description,
+              electionId: election.id,
+            },
+          });
+          createdScopes.push(scope);
+          scopesForElection.push(scope);
+        }
+        scopesByElection.set(election.id, scopesForElection);
+        console.log(`   ✓ ${election.name}: created ${scopesForElection.length} scope(s) [DEPARTMENT REP - CS/IT DEPARTMENTS]`);
         continue;
       }
 
@@ -536,6 +551,26 @@ async function seedDatabase() {
       const scopesForElection = scopesByElection.get(election.id) || [];
       const positionsForElection = [];
 
+      // DEPARTMENT REPRESENTATIVE ELECTION: use special department positions for each scope
+      if (election.name === "Department Representative Election") {
+        for (const scope of scopesForElection) {
+          for (const position of departmentPositions) {
+            const pos = await db.position.create({
+              data: {
+                ...position,
+                electionId: election.id,
+                votingScopeId: scope.id,
+              },
+            });
+            createdPositions.push(pos);
+            positionsForElection.push(pos);
+          }
+        }
+        positionsByElection.set(election.id, positionsForElection);
+        console.log(`   ✓ ${election.name}: created ${positionsForElection.length} position(s) [DEPARTMENT REP - SPECIAL POSITIONS]`);
+        continue;
+      }
+
       // IBITS PROVIDENT FUND ELECTIONS: exactly 3 positions LEVEL 1/2/3 bound 1:1 to Level 1/2/3 scopes
       if (ibitsProvidentElectionIds.has(election.id)) {
         const byName = new Map(scopesForElection.map((s) => [s.name.toLowerCase(), s]));
@@ -604,8 +639,24 @@ async function seedDatabase() {
     // Create voters for each election and assign them to one of the election's scopes (or none)
     const createdVoters = [];
     for (const election of createdElections) {
-      const voters = await generateVoters(election.id, 50); // 50 voters per election
+      const voters = await generateVoters(election.id, 36); // 36 voters per election
       const scopesForElection = scopesByElection.get(election.id) || [];
+
+      // DEPARTMENT REPRESENTATIVE ELECTION: distribute evenly across CS/IT Department scopes
+      if (election.name === "Department Representative Election" && scopesForElection.length > 0) {
+        for (let i = 0; i < voters.length; i++) {
+          const voter = voters[i];
+          const assignedScope = scopesForElection[i % scopesForElection.length];
+          const createdVoter = await db.voter.create({
+            data: {
+              ...voter,
+              votingScopeId: assignedScope.id,
+            },
+          });
+          createdVoters.push(createdVoter);
+        }
+        continue;
+      }
 
       // IBITS PROVIDENT FUND ELECTIONS: distribute evenly across Level 1/2/3 scopes
       if (ibitsProvidentElectionIds.has(election.id) && scopesForElection.length > 0) {
@@ -689,7 +740,16 @@ async function seedDatabase() {
     
     // Create some vote responses for a random subset of voters, restricted to their scope (or global for NO SCOPE)
     // Process votes PER ELECTION to maintain separate chains
-    const votedVoters = createdVoters.filter(() => Math.random() > 0.7);
+    // Skip 2025 elections to keep voter codes available for testing
+    const votedVoters = createdVoters.filter((voter) => {
+      // Get the election for this voter
+      const election = createdElections.find(e => e.id === voter.electionId);
+      // Skip if election is from 2025 (keep these for testing)
+      if (election && election.instanceYear === 2025) {
+        return false;
+      }
+      return Math.random() > 0.6; // ~40% of voters vote for non-2025 elections
+    });
     
     // Group voters by election for per-election chain ordering
     const votersByElection = new Map();

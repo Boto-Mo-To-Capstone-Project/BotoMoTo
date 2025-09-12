@@ -195,7 +195,6 @@ model Election {
   name        String
   description String
   status      ElectionStatus @default(DRAFT)
-  allowSurvey Boolean        @default(false) // Enable post-vote survey
   
   // Repeating election fields
   isTemplate      Boolean   @default(false)  // Is this a template?
@@ -301,7 +300,6 @@ model Voter {
   middleName      String?
   lastName        String
   codeSendStatus  CodeSendStatus @default(PENDING)
-  isVerified      Boolean   @default(false)
   votingScopeId   Int?
   isActive        Boolean   @default(true)
   

@@ -74,7 +74,6 @@ async function quickSeed() {
         name: "Test Election 2025",
         description: "Sample election for API testing",
         status: "ACTIVE",
-        allowSurvey: true
       }
     });
 
@@ -150,7 +149,6 @@ async function quickSeed() {
           lastName: "Test",
           contactNum: `+1555000${String(i).padStart(4, '0')}`,
           votingScopeId: testScope.id,
-          isVerified: true,
           isActive: true
         }
       });

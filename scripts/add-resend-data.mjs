@@ -49,7 +49,6 @@ const resendAdmin = {
 const resendElection = {
   name: "Resend Testing Election",
   description: "Election for testing email deliverability with Resend",
-  allowSurvey: false,
 };
 
 // Resend test email domains for different scenarios
@@ -100,7 +99,6 @@ async function generateResendVoters(electionId, count = 150) {
       firstName,
       lastName,
       contactNum: `+1${Math.floor(Math.random() * 900000000) + 100000000}`,
-      isVerified: Math.random() > 0.1, // 90% verified
       isActive: Math.random() > 0.05 // 95% active
     });
   }

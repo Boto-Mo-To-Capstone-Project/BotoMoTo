@@ -221,14 +221,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Mark voter as verified (first time verification)
-    if (!voter.isVerified) {
-      await db.voter.update({
-        where: { id: voter.id },
-        data: { isVerified: true }
-      });
-    }
-
     // Fetch ballot data for the voter's election and voting scope
     const positions = await db.position.findMany({
       where: {
@@ -318,7 +310,6 @@ export async function POST(request: NextRequest) {
           middleName: voter.middleName,
           lastName: voter.lastName,
           email: voter.email,
-          isVerified: true,
           voted: hasVoted,
           votingScope: voter.votingScope
         },
