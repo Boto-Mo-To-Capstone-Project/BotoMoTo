@@ -26,17 +26,17 @@ export function SubmitButton({
   const base = 'transition-colors focus:outline-none font-semibold';
   let styles = '';
   if (variant === 'primary') {
-    styles = `w-full max-w-[380px] h-[44px] bg-[var(--color-primary)] hover:brightness-90 text-white rounded-[8px] text-sm ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`;
+    styles = `w-full max-w-[380px] h-[44px] bg-[var(--color-primary)] hover:brightness-90 text-white rounded-[8px] text-sm ${isLoading ? 'opacity-70 cursor-not-allowed' : ''} hover:border-primary-700`;
   } else if (variant === 'tab') {
-    styles = `w-[90px] h-[44px] md:h-10 flex items-center justify-center text-base rounded-none ${isActive ? 'text-[var(--color-primary)] bg-white' : 'text-gray-700 bg-gray-50 hover:bg-gray-100'} border-0`;
+    styles = `w-[90px] h-[44px] md:h-10 flex items-center justify-center text-base rounded-none ${isActive ? 'text-[var(--color-primary)] bg-white' : 'text-gray-700 bg-gray-50 hover:bg-gray-100'} border-0 hover:border-primary-700`;
   } else if (variant === 'action') {
-    styles = `p-2 bg-white border border-gray-200 rounded-[8px] hover:bg-gray-100 flex items-center justify-center`;
+    styles = `p-2 bg-white border-2 border-gray-200 rounded-[8px] flex items-center justify-center hover:border-gray-800 hover:bg-gray-500 hover:text-white`;
   } else if (variant === 'action-primary') {
-    styles = `p-2 bg-white border-2 border-[var(--color-primary,#b91c1c)] text-[var(--color-primary,#b91c1c)] fill-[var(--color-primary,#b91c1c)] rounded-[8px] hover:bg-[var(--color-primary,#b91c1c)/10] flex items-center justify-center`; // <-- new style
+    styles = "p-2 bg-white border-2 border-[var(--color-primary,#b91c1c)] text-[var(--color-primary,#b91c1c)] fill-[var(--color-primary,#b91c1c)] rounded-[8px] flex items-center justify-center hover:bg-[var(--color-primary,#b91c1c)] hover:text-white hover:fill-white";
   } else if (variant === 'small') {
-    styles = `w-[80px] h-[40px] flex items-center justify-center rounded-[8px] bg-[var(--color-primary)] text-white text-sm hover:brightness-90`;
+    styles = `p-2 bg-white border-2 border-[var(--color-primary,#b91c1c)] text-[var(--color-primary,#b91c1c)] text-base rounded-[8px] flex items-center justify-center hover:bg-[var(--color-primary,#b91c1c)] hover:text-white`;
   } else if (variant === 'small-action') {
-    styles = `w-[80px] h-[40px] flex items-center justify-center rounded-[8px] bg-white border border-gray-300 text-gray-700 text-sm hover:bg-gray-100`;
+    styles = `w-[80px] h-[40px] flex items-center justify-center rounded-[8px] bg-white border border-gray-300 text-gray-700 text-sm hover:bg-gray-100 hover:border-primary-700`;
   }
   return (
     <button

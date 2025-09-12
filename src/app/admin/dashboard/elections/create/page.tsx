@@ -613,7 +613,7 @@ function CreateElectionContent() {
               <SubmitButton
                 label={isEditing ? "Update" : "Save"}
                 variant="action-primary"
-                icon={<MdSave size={20} className="text-[var(--color-primary)]" />}
+                icon={<MdSave size={20} className="fill-current" />}
                 title={isEditing ? "Update" : "Save"}
                 onClick={handleSaveElection} // <-- This triggers the form's submit
                 className={`min-w-[100px] ${saving ? 'opacity-70 pointer-events-none' : ''}`}

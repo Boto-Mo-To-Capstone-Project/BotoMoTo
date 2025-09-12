@@ -6,6 +6,7 @@ import Email from "@/app/assets/Email.png";
 import Setup from "@/app/assets/Setup.png";
 import OpenElection from "@/app/assets/OpenElection.png";
 import LiveDashboard from "@/app/assets/LiveDashboard.png";
+import Integrity from "@/app/assets/Integrity.png";
 
 import { useState, useEffect } from "react";
 import { MFAModal } from '@/components/MFAModal';
@@ -18,13 +19,12 @@ import { toast, Toaster } from "react-hot-toast";
 
 const setupCards = [
     {
-    title: "Ballot Preview",
-    desc: "Preview the ballot to be used for the election.",
-    img: BallotPreview,
-    bg: "bg-pink-100",
-    text: "text-pink-900",
+      title: "Ballot Preview",
+      desc: "Preview the ballot to be used for the election.",
+      img: BallotPreview,
+      bg: "bg-pink-100",
+      text: "text-pink-900",
     },
-
     {
       title: "Sending of Emails",
       desc: "Setup the email configurations to be sent to voters.",
@@ -55,10 +55,11 @@ const setupCards = [
     },
     {
       title: "Election Integrity",
-      desc: "election integrity mo to",
-      img: LiveDashboard,
-      bg: "bg-red-100",
-      text: "text-red-900",
+      desc: "Verify the integrity of your election process.",
+      img: Integrity,
+      bg: "bg-blue-200",
+      text: "text-blue-900",
+      hover: "hover:border-blue-900",
     },
 
 ];
@@ -192,42 +193,35 @@ export default function ManageElectionPage() {
             )}
             {/* Setup Cards/Buttons inside the card */}
             <div className="main-content pb-3 px-2 sm:px-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mt-2 sm:mt-0 p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 mt-2 sm:mt-0 p-4">
                 {setupCards.map((card, idx) => (
                   <button
                     key={idx}
                     className={`
               ${card.bg} rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200 p-2
               border-4 border-transparent
-              ${idx === 0 ? "hover:border-violet-700" : ""}
-              ${idx === 1 ? "hover:border-pink-700" : ""}
-              ${idx === 2 ? "hover:border-yellow-700" : ""}
+              ${idx === 0 ? "hover:border-red-700" : ""}
+              ${idx === 1 ? "hover:border-yellow-700" : ""}
+              ${idx === 2 ? "hover:border-purple-700" : ""}
               ${idx === 3 ? "hover:border-blue-700" : ""}
               ${idx === 4 ? "hover:border-green-700" : ""}
+              ${idx === 5 ? "hover:border-blue-900" : ""}
                 flex flex-col items-center text-left w-full h-60 lg:h-auto
             `}
                     onClick={() => {
                       if (card.title === 'Ballot Preview') {
                         router.push(`/admin/dashboard/elections/${electionId}/setup/manage-election/ballot-preview`);
-                      }
-                      if (card.title === 'Sending of Emails') {
+                      } else if (card.title === 'Sending of Emails') {
                         router.push(`/admin/dashboard/elections/${electionId}/setup/manage-election/send-email`);
-                      }
-                      if (card.title === 'MFA') {
+                      } else if (card.title === 'MFA') {
                         setShowMFAModal(true);
-                      }
-                      if (card.title === 'Open Election') {
+                      } else if (card.title === 'Open Election') {
                         setShowOpenElectionModal(true);
-                      }
-                      if (card.title === 'Live Dashboard') {
-                        // Navigate to Live Dashboard page
+                      } else if (card.title === 'Live Dashboard') {
                         router.push(`/admin/dashboard/elections/${electionId}/setup/manage-election/live-dashboard`);
-                      }
-                      if (card.title === 'Election Integrity') {
-                        // Navigate to Live Dashboard page
+                      } else if (card.title === 'Election Integrity') {
                         router.push(`/admin/dashboard/elections/${electionId}/setup/manage-election/verify-integrity`);
                       }
-                      // Add navigation logic for other cards here
                     }}
                   >
                     <div className="w-full mb-2">
