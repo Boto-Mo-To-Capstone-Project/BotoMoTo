@@ -22,6 +22,7 @@ const SurveyForm = () => {
   const [error, setError] = useState<string | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [voterData, setVoterData] = useState<any>(null);
+  const [submissionStatus, setSubmissionStatus] = useState<'none' | 'already_submitted' | 'just_submitted'>('none');
 
   useEffect(() => {
     // Check for voter data in localStorage
@@ -84,12 +85,17 @@ const SurveyForm = () => {
       
       if (data.success) {
         toast.success("Survey submitted successfully!");
+        setSubmissionStatus('just_submitted');
         setHasSubmitted(true);
       } else {
         if (data.message?.includes("already submitted")) {
-          setHasSubmitted(true); // Show the submitted state instead of error
+          // If already submitted, update status but don't show success
+          setSubmissionStatus('already_submitted');
+          setHasSubmitted(true);
+          toast.error("You have already submitted this survey");
+        } else {
+          toast.error(data.message || "Failed to submit survey");
         }
-        toast.error(data.message || "Failed to submit survey");
       }
     } catch (err) {
       toast.error("Failed to submit survey");
@@ -135,10 +141,15 @@ const SurveyForm = () => {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-10 px-5 md:px-10 pb-20 pt-40">
         <div className="text-center space-y-4 flex flex-col items-center">
-          <h1 className="voter-election-heading">Survey Submitted</h1>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6 max-w-md mx-auto">
-            <p className="text-green-800">
-              Thank you for your feedback! Your survey response has been submitted successfully.
+          <h1 className="voter-election-heading">
+            {submissionStatus === 'just_submitted' ? 'Survey Submitted' : 'Survey Already Submitted'}
+          </h1>
+          <div className={`${submissionStatus === 'just_submitted' ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'} border rounded-lg p-6 max-w-md mx-auto`}>
+            <p className={submissionStatus === 'just_submitted' ? 'text-green-800' : 'text-blue-800'}>
+              {submissionStatus === 'just_submitted' 
+                ? "Thank you for your feedback! Your survey response has been submitted successfully."
+                : "You have already submitted a response to this survey. Thank you for your participation!"
+              }
             </p>
           </div>
           <Button
