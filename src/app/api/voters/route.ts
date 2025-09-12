@@ -311,8 +311,6 @@ async function createVoter(request: NextRequest) {
           electionId,
           code: await generateUniqueVoterCode(),
           codeSendStatus: "PENDING",
-          isVerified: false,
-          // hasVoted removed; computed from VoteResponse
           isActive: true
         }))
       );
@@ -560,8 +558,6 @@ async function createVoter(request: NextRequest) {
           votingScopeId,
           isActive,
           codeSendStatus: "PENDING",
-          isVerified: false
-          // hasVoted removed; computed from VoteResponse
         },
         include: {
           votingScope: {

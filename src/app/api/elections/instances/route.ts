@@ -80,7 +80,6 @@ export async function POST(request: NextRequest) {
         orgId: template.orgId,
         name: template.name,
         description: template.description,
-        allowSurvey: template.allowSurvey,
         isTemplate: false,
         templateId: template.id,
         instanceYear,
@@ -104,7 +103,6 @@ export async function POST(request: NextRequest) {
         lastName: voter.lastName,
         votingScopeId: voter.votingScopeId, // Will need to map to new scope IDs
         codeSendStatus: CodeSendStatus.PENDING,
-        isVerified: false,
         isActive: voter.isActive
       });
     }

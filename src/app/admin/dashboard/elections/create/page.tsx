@@ -92,7 +92,7 @@ function CreateElectionContent() {
   const isEditing = !!editId && !Number.isNaN(editId);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [originalMeta, setOriginalMeta] = useState<{ status?: "DRAFT" | "ACTIVE" | "CLOSED"; allowSurvey?: boolean }>({});
+  const [originalMeta, setOriginalMeta] = useState<{ status?: "DRAFT" | "ACTIVE" | "CLOSED"; }>({});
 
   // Helper to format ISO -> datetime-local value
   const toDateTimeLocal = (iso?: string | null) => {
@@ -133,7 +133,7 @@ function CreateElectionContent() {
         };
         if (!cancelled) {
           setElectionData(nextData);
-          setOriginalMeta({ status: e.status, allowSurvey: e.allowSurvey });
+          setOriginalMeta({ status: e.status });
         }
         // Fetch scopes and parties in parallel
         const [scopesRes, partiesRes] = await Promise.all([
@@ -241,10 +241,8 @@ function CreateElectionContent() {
           : 'Election updated successfully';
         // keep existing server-side meta fields
         basePayload.status = originalMeta.status ?? 'DRAFT';
-        basePayload.allowSurvey = originalMeta.allowSurvey ?? false;
       } else {
         basePayload.status = 'DRAFT';
-        basePayload.allowSurvey = false;
       }
 
       const res = await fetch(url, {

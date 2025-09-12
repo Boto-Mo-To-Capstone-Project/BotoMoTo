@@ -162,7 +162,6 @@ export async function PUT(
       name, 
       description, 
       status, 
-      allowSurvey, 
       isTemplate, 
       templateId, 
       instanceYear, 
@@ -293,7 +292,6 @@ export async function PUT(
       name: election.name,
       description: election.description,
       status: election.status,
-      allowSurvey: election.allowSurvey,
       isTemplate: election.isTemplate,
       templateId: election.templateId,
       instanceYear: election.instanceYear,
@@ -306,7 +304,6 @@ export async function PUT(
         name,
         description,
         status,
-        allowSurvey,
         isTemplate: isTemplate || false,
         templateId: templateId || null,
         instanceYear: instanceYear || null,
@@ -406,7 +403,7 @@ export async function PUT(
 
     // Compare and log changed fields
     const changedFields: Record<string, { old: any; new: any }> = {};
-    for (const key of ["name", "description", "status", "allowSurvey", "isTemplate", "templateId", "instanceYear", "instanceName"] as const) {
+    for (const key of ["name", "description", "status", "isTemplate", "templateId", "instanceYear", "instanceName"] as const) {
       const oldVal = (oldData as any)[key];
       const newVal = (updatedElection as any)[key] ?? null;
       if (oldVal !== newVal) {

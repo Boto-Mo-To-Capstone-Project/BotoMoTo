@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
 import db from "@/lib/db/db";
-import { AuditAction, AuditResource, User } from "@prisma/client";
+import { AuditAction, AuditResource, User, Voter } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 
 type CreateAuditLogArgs = {
-  user: User;
+  user: User | Voter;
   action: AuditAction;
   request: NextRequest;
   resource: AuditResource;
@@ -29,14 +29,27 @@ export async function createAuditLog({
   const ipAddress = request.headers.get("x-real-ip") ||request.headers.get("x-forwarded-for") || "unknown";
   const userAgent = request.headers.get("user-agent") || "unknown";
 
+  // Helper function to check if the user is a Voter
+  const isVoter = (user: User | Voter): user is Voter => {
+    return 'firstName' in user && 'lastName' in user && 'code' in user;
+  };
+
+  // Normalize user data for both User and Voter
+  const actorData = isVoter(user) ? {
+    id: user.id.toString(), // Convert number to string for voters
+    name: `${user.firstName} ${user.lastName}`,
+    email: user.email || "voter@election.system",
+    role: "VOTER" as const,
+  } : {
+    id: user.id,
+    name: user.name || `${user.email}`,
+    email: user.email || "unknown@system.local",
+    role: user.role,
+  };
+
   const details: Prisma.JsonObject = {
     operation: action,
-    actor: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    },
+    actor: actorData,
     resource: {
       type: resource,
       id: resourceId?.toString(),
@@ -54,8 +67,8 @@ export async function createAuditLog({
 
   return db.audits.create({
     data: {
-      actorId: user.id,
-      actorRole: user.role,
+      actorId: actorData.id,
+      actorRole: actorData.role,
       action,
       ipAddress,
       userAgent,

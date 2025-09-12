@@ -118,7 +118,6 @@ export async function GET(request: NextRequest) {
         email: true,
         contactNum: true,
         isActive: true,
-        isVerified: true,
         votingScope: {
           select: {
             id: true,

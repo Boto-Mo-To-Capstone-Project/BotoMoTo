@@ -159,7 +159,6 @@ const electionSchema = z.object({
     required_error: "Election status is required",
     invalid_type_error: "Invalid election status"
   }).default("DRAFT"),
-  allowSurvey: z.boolean().default(false),
   
   // Template fields
   isTemplate: z.boolean().default(false),
