@@ -16,6 +16,7 @@ import {
   BadgeAlert,
   LogOut,
   Settings,
+  FolderKanban,
 } from "lucide-react";
 import { useLogout } from "@/hooks/useLogout";
 import { useEffect } from "react";
@@ -74,7 +75,7 @@ const SuperAdminSidebar = ({
     {
       name: "Manage Admins",
       href: "/superadmin/dashboard/admins",
-      icon: Settings,
+      icon: FolderKanban,
     },
   ];
 
