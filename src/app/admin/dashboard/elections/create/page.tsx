@@ -35,6 +35,7 @@ interface ElectionFormData {
   startDate: string;
   endDate: string;
   isTemplate?: boolean;
+  templateId?: number; // For instances created from templates
   instanceYear?: string;
   instanceName?: string;
 }
@@ -128,6 +129,7 @@ function CreateElectionContent() {
           startDate: toDateTimeLocal(start),
           endDate: toDateTimeLocal(end),
           isTemplate: e.isTemplate || false,
+          templateId: e.templateId || undefined, // Include templateId for instances
           instanceYear: e.instanceYear ? e.instanceYear.toString() : "",
           instanceName: e.instanceName || "",
         };
@@ -210,6 +212,18 @@ function CreateElectionContent() {
       if (electionData.isTemplate) {
         if (!electionData.instanceYear || !electionData.instanceName) {
           toast.error('Instance year and name are required for repeating elections');
+          setSaving(false);
+          return;
+        }
+        basePayload.instanceYear = parseInt(electionData.instanceYear);
+        basePayload.instanceName = electionData.instanceName.trim();
+      }
+
+      // For instances, include template reference and instance details
+      if (electionData.templateId) {
+        basePayload.templateId = electionData.templateId;
+        if (!electionData.instanceYear || !electionData.instanceName) {
+          toast.error('Instance year and name are required for election instances');
           setSaving(false);
           return;
         }
