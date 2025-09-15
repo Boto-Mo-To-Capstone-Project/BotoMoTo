@@ -124,53 +124,49 @@ const BallotComponent = ({
       .filter(position => position.candidates.length > 0);
 
   return (
-    <main className="flex flex-col items-center gap-10 px-10 pb-20 pt-20 text-justify">
-      <div className="text-center space-y-2">
-        <p className="voter-election-heading">
-          {mode === 'preview' ? 'Ballot Preview' : 'Official Ballot Form'}
-        </p>
-        <p className="voter-election-subheading">
-          {mode === 'preview' ? 'Preview for your' : "You're voting in the"} {isLoading ? "election" : electionName}
-        </p>
-      </div>
-      
-      <div className="w-full lg:w-3/5 flex flex-col">
-        <div className="mb-10">
-          <p className="voter-election-desc">
-            <strong>
-              {mode === 'preview' ? 'Ballot Information' : 'Instructions for Voting'}
-            </strong>
+    <main className={`flex flex-col items-center px-10 pb-20 text-justify ${mode === 'preview' ? 'pt-8' : 'pt-30'}`}>
+      <div className="w-full flex flex-col">
+        {/* Header and subheading */}
+        <div className="mb-2">
+          <h2 className="text-xl font-semibold mb-1">
+            {mode === 'preview' ? 'Ballot Preview' : 'Official Ballot Form'}
+          </h2>
+          <p className="text-base text-red-800 mb-2">
+            {mode === 'preview' ? 'Preview for your' : "You're voting in the"} {isLoading ? "election" : electionName}
           </p>
-          <li className="list-none voter-election-desc space-y-3 mt-2">
-            {mode === 'preview' ? (
-              <>
-                <ul>This is how the ballot will appear to voters.</ul>
-                <ul>Candidates are grouped by position with selection limits applied.</ul>
-                <ul>Preview mode - interactions are disabled.</ul>
-              </>
-            ) : (
-              <>
-                <ul>1. Select the circle next to your chosen candidate's name.</ul>
-                <ul>
-                  2. Do not select more candidates than the allowed number for each
-                  position.
-                </ul>
-                <ul>
-                  3. Click 'Check Credentials' to review the background and details
-                  of each candidates.
-                </ul>
-              </>
-            )}
-          </li>
+        </div>
+
+        {/* Instructions box */}
+        <div className="mb-6">
+          <div className="border rounded-md p-4 bg-white" style={{ borderColor: '#c62828' }}>
+            <h3 className="text-base font-semibold mb-2">
+              {mode === 'preview' ? 'Ballot Information' : 'Instructions for Voting'}
+            </h3>
+            <ul className="text-sm space-y-2 list-none">
+              {mode === 'preview' ? (
+                <>
+                  <li>This is how the ballot will appear to voters.</li>
+                  <li>Candidates are grouped by position with selection limits applied.</li>
+                  <li>Preview mode - interactions are disabled.</li>
+                </>
+              ) : (
+                <>
+                  <li>1. Select the circle next to your chosen candidate's name.</li>
+                  <li>2. Do not select more candidates than the allowed number for each position.</li>
+                  <li>3. Click 'Check Credentials' to review the background and details of each candidates.</li>
+                </>
+              )}
+            </ul>
+          </div>
         </div>
 
         {/* Voter scope information */}
         {voterScope && (
           <div className="mb-5 p-3 border rounded-md bg-blue-50 border-blue-200">
-            <p className="voter-election-desc text-blue-800">
-              <strong>Your Voting Scope:</strong> {voterScope}
+            <p className="text-base text-blue-800 font-semibold">
+              Your Voting Scope: <span className="font-normal">{voterScope}</span>
             </p>
-            <p className="voter-election-desc text-blue-600 text-sm mt-1">
+            <p className="text-sm text-blue-600 mt-1">
               You can only vote for candidates within your assigned scope.
             </p>
           </div>
@@ -178,53 +174,54 @@ const BallotComponent = ({
 
         {/* Party dropdown - only show in voter mode */}
         {!isLoading && mode === 'voter' && availableParties.length > 0 && (
-          <Dropdown
-            label="Vote Straight (Party)"
-            options={availableParties}
-            onSelect={handleVoteStraight}
-            onClear={handleClearAllSelections}
-          />
-        )}
-
-        {/* Preview mode party info */}
-        {!isLoading && mode === 'preview' && availableParties.length > 0 && (
-          <div className="mb-5 p-4 border rounded-md bg-gray-50">
-            <p className="voter-election-desc font-semibold">Available Parties:</p>
-            <p className="voter-election-desc">{availableParties.join(', ')}</p>
-          </div>
-        )}
-        
-        {/* dropdown for voting scope in preview mode */}
-        {!isLoading && mode === 'preview' && (
-          <div className="mb-5 p-4 border rounded-md bg-gray-50">
-            <p className="voter-election-desc font-semibold">Available Voting Scope:</p>
+          <div className="mb-6">
             <Dropdown
-              label="Select Voting Scope"
-              options={["All Voting Scope", ...(ballotData.scopes || []).map(s => s.name)]}
-              onSelect={(scope) => {
-                if (scope === "All Voting Scope") {
-                  setSelectedScopeId("all");
-                } else {
-                  const id = ballotData.scopes?.find((s) => s.name === scope)?.id;
-                  if (id) setSelectedScopeId(Number(id)); 
-                }
-              }}
+              label="Vote Straight (Party)"
+              options={availableParties}
+              onSelect={handleVoteStraight}
+              onClear={handleClearAllSelections}
             />
           </div>
         )}
 
-        {/* some changes here, suggested ni ai,, d nmn naka affect sa voter mode */}
+        {/* Preview mode party info and voting scope side by side on desktop */}
+        {!isLoading && mode === 'preview' && (
+          <div className="flex flex-col lg:flex-row gap-5 mb-5 w-full">
+            {availableParties.length > 0 && (
+              <div className="flex-1 p-4 border rounded-md bg-gray-50">
+                <p className="font-semibold text-base mb-1">Available Parties:</p>
+                <p className="text-base text-gray-700">{availableParties.join(', ')}</p>
+              </div>
+            )}
+            <div className="flex-1 p-4 border rounded-md bg-gray-50">
+              <p className="font-semibold text-base mb-1">Available Voting Scope:</p>
+              <p className="text-sm">Available Voting Scope:</p>
+              <Dropdown
+                options={["All Voting Scope", ...(ballotData.scopes || []).map(s => s.name)]}
+                onSelect={(scope) => {
+                  if (scope === "All Voting Scope") {
+                    setSelectedScopeId("all");
+                  } else {
+                    const id = ballotData.scopes?.find((s) => s.name === scope)?.id;
+                    if (id) setSelectedScopeId(Number(id));
+                  }
+                } } label={""}              />
+            </div>
+          </div>
+        )}
+
+        {/* Candidate categories */}
         <div className="mt-5">
-          {filteredPositions.map((pos) => (
+          {filteredPositions.map((pos, idx) => (
             <CandidateCategory
-              key={pos.name}
+              key={pos.name + '-' + idx}
               position={pos.name}
               selectCount={pos.maxSelections}
               candidateList={pos.candidates}
-              onSelectCandidate={(candidate) =>
+              onSelectCandidate={(candidate: Candidate) =>
                 handleSelectCandidate(pos.name, candidate)
               }
-              onDeselectCandidate={(candidate) =>
+              onDeselectCandidate={(candidate: Candidate) =>
                 handleDeselectCandidate(pos.name, candidate.id)
               }
               disabled={mode === 'preview'}
@@ -233,7 +230,7 @@ const BallotComponent = ({
         </div>
 
         {/* Action buttons */}
-        <div className="flex gap-4 justify-end">
+        <div className="flex gap-4 justify-end mt-8">
           {mode === 'voter' ? (
             <>
               <Button
