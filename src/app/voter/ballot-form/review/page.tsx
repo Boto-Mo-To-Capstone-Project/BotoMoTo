@@ -108,19 +108,19 @@ const ReviewPage = () => {
   // Return this if no votes yet
   if (Object.keys(selections).length === 0) {
     return (
-      <div className="flex flex-col items-center mt-40 gap-30">
+      <div className="flex flex-col items-center mt-40 gap-10">
         <div className="text-center space-y-2">
-          <p className="voter-election-heading">Ballot Form Review</p>
-          <p className="voter-election-subheading">
+          <h2 className="text-xl font-semibold mb-1">Ballot Form Review</h2>
+          <p className="text-base text-red-800 mb-2">
             You're voting in the {electionName}
           </p>
           {voterScope && (
-            <p className="voter-election-desc text-blue-600">
-              <strong>Voting Scope:</strong> {voterScope}
+            <p className="text-base text-blue-800 font-semibold">
+              Voting Scope: <span className="font-normal">{voterScope}</span>
             </p>
           )}
         </div>
-        <p className="voter-election-heading">No votes were selected.</p>
+        <p className="text-lg font-semibold text-gray-700">No votes were selected.</p>
         <Button
           variant="long_secondary"
           onClick={() => router.push("/voter/ballot-form")}
@@ -132,16 +132,16 @@ const ReviewPage = () => {
   }
 
   return (
-    <main className="flex flex-col items-center gap-10 px-10 pb-20 pt-40 text-justify">
-      {/*<Toaster position="top-center" />*/} 
+    <main className="flex flex-col items-center px-10 pb-20 pt-40 text-justify">
+      {/*<Toaster position="top-center" />*/}
       <div className="text-center space-y-2">
-        <p className="voter-election-heading">Ballot Form Review</p>
-        <p className="voter-election-subheading">
+        <h2 className="text-xl font-semibold mb-1">Ballot Form Review</h2>
+        <p className="text-base text-red-800 mb-2">
           You're voting in the {electionName}
         </p>
         {voterScope && (
-          <p className="voter-election-desc text-blue-600">
-            <strong>Voting Scope:</strong> {voterScope}
+          <p className="text-base text-blue-800 font-semibold">
+            Voting Scope: <span className="font-normal">{voterScope}</span>
           </p>
         )}
       </div>
