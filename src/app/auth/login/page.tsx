@@ -83,7 +83,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40">
+    <main className="min-h-screen w-full flex justify-center items-center px-2 bg-[var(--background)] text-[var(--foreground)] md:pt-40 md:pb-40 overflow-auto md:overflow-visible">
       <AuthContainer>
         <Logo />
         <AuthHeading 
