@@ -72,7 +72,7 @@ function ElectionDashboardContent() {
     const load = async () => {
       try {
         setLoading(true);
-        const res = await fetch('/api/elections', { cache: 'no-store' });
+        const res = await fetch('/api/elections?all=true', { cache: 'no-store' });
         const json = await res.json();
         if (!res.ok || !json?.success) {
           throw new Error(json?.error || json?.message || 'Failed to fetch elections');

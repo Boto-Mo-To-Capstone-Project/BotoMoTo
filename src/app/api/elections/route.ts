@@ -19,13 +19,29 @@ async function getElections(request: NextRequest) {
     if (!authResult.authorized) return authResult.response;
     const user = authResult.user;
 
+    // Get pagination parameters from query
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = parseInt(url.searchParams.get('limit') || '50');
+    const all = url.searchParams.get('all') === 'true';
+
     let elections;
     let message;
+    let totalCount;
 
     if (user.role === ROLES.SUPER_ADMIN) {
       // Super admin can see all elections
+      const where = { isDeleted: false };
+      
+      // Get total count for pagination
+      totalCount = await db.election.count({ where });
+
+      // Calculate pagination (skip if fetching all)
+      const skip = all ? 0 : (page - 1) * limit;
+      const take = all ? undefined : limit;
+
       elections = await db.election.findMany({
-        where: { isDeleted: false },
+        where,
         include: {
           organization: {
             select: {
@@ -64,15 +80,26 @@ async function getElections(request: NextRequest) {
           }
         },
         orderBy: { createdAt: "desc" },
+        skip,
+        ...(take !== undefined && { take })
       });
-      message = "All elections fetched successfully (superadmin)";
+      message = `All elections fetched successfully (superadmin)${all ? ' (all elections)' : ''}`;
     } else {
       // Admin can only see elections from their own organization
+      const where = {
+        isDeleted: false,
+        organization: { adminId: user.id },
+      };
+
+      // Get total count for pagination
+      totalCount = await db.election.count({ where });
+
+      // Calculate pagination (skip if fetching all)
+      const skip = all ? 0 : (page - 1) * limit;
+      const take = all ? undefined : limit;
+
       elections = await db.election.findMany({
-        where: {
-          isDeleted: false,
-          organization: { adminId: user.id },
-        },
+        where,
         include: {
           organization: {
             select: {
@@ -103,8 +130,10 @@ async function getElections(request: NextRequest) {
           }
         },
         orderBy: { createdAt: "desc" },
+        skip,
+        ...(take !== undefined && { take })
       });
-      message = "Your elections fetched successfully (admin)";
+      message = `Your elections fetched successfully (admin)${all ? ' (all elections)' : ''}`;
     }
 
     const audit = await createAuditLog({
@@ -117,14 +146,31 @@ async function getElections(request: NextRequest) {
         : "Viewed own elections (admin)",
     });
 
+    // Calculate pagination info
+    const totalPages = all ? 1 : Math.ceil(totalCount / limit);
+
+    // Prepare response data
+    const responseData: any = {
+      elections,
+      audit
+    };
+
+    // Only include pagination when not fetching all
+    if (!all) {
+      responseData.pagination = {
+        currentPage: page,
+        pageSize: limit,
+        totalCount,
+        totalPages
+      };
+    } else {
+      responseData.totalCount = totalCount;
+    }
+
     return apiResponse({
       success: true,
       message,
-      data: {
-        elections,
-        totalCount: elections.length,
-        audit,
-      },
+      data: responseData,
       status: 200,
     });
   } catch (error) {
