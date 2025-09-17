@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { FiTrash2, FiEye, FiDownload } from "react-icons/fi";
 import { SubmitButton } from "@/components/SubmitButton";
+import toast from "react-hot-toast";
 
 interface Template {
   id: string;
@@ -66,7 +67,7 @@ export function TemplateManagementModal({
       await fetchTemplates();
     } catch (error) {
       console.error('Delete error:', error);
-      alert('Failed to delete template');
+      toast.error('Failed to delete template');
     } finally {
       setDeletingId(null);
     }

@@ -9,6 +9,7 @@ import SectionHeaderContainer from "./SectionHeaderContainer";
 import FileViewer from "./FileViewer";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
+import toast from "react-hot-toast";
 
 type CandidateCategoryProps = {
   position: string;
@@ -46,7 +47,7 @@ const CandidateCategory = ({
       });
       setFileViewerOpen(true);
     } else {
-      alert("No credentials available for this candidate.");
+      toast.error("No credentials available for this candidate.");
     }
   };
 
@@ -65,7 +66,7 @@ const CandidateCategory = ({
       if (selectedCandidatesFromRedux.length < selectCount) {
         onSelectCandidate(candidate);
       } else {
-        alert(
+        toast.error(
           `You can only select up to ${selectCount} candidates for ${position}.`
         );
       }

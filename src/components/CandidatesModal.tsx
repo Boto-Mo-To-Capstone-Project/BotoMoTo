@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { SubmitButton } from "@/components/SubmitButton";
 import { FileDropzone } from "@/components/FileDropzone";
 import { UploadedFileDisplay } from "@/components/UploadedFileDisplay";
+import toast from "react-hot-toast";
 
 // Define lightweight types used internally for fetched options
 type VoterOpt = { id: number; firstName: string; lastName: string; email?: string };
@@ -247,7 +248,7 @@ export function CandidatesModal({
     e.preventDefault();
 
     if (!voterId || !positionId) {
-      alert("Please select both a voter and a position");
+      toast.error("Please select both a voter and a position");
       return;
     }
 

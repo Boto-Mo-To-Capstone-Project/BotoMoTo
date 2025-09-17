@@ -95,7 +95,7 @@ export function AdminModal({
       onUpdated(data.data.user); // pass updated user
       onClose();
     } else {
-      alert(data.message);
+      toast.error(data.message);
     }
   };
   if (!admin) return null
