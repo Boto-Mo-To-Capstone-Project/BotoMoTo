@@ -57,6 +57,7 @@ const Button = ({
 
   return (
     <button
+      disabled={disabled} 
       className={`${baseStyles} ${variants[variant]} ${
         disabled ? disabledStyles : ""
       } ${className}`}

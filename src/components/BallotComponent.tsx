@@ -1,5 +1,7 @@
 "use client";
 
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 import Button from "@/components/Button";
 import { useState, useEffect } from "react";
 import { Candidate } from "@/types";
@@ -51,6 +53,20 @@ const BallotComponent = ({
 }: BallotComponentProps) => {
   const dispatch = useDispatch<AppDispatch>();
   
+  // 👇 get selections from Redux
+  const selections = useSelector((state: RootState) => state.ballot.selections);
+
+  // check if at least one candidate is selected
+  const hasSelections = Object.values(selections).some(
+    (selected) => selected && selected.length > 0
+  );
+
+  useEffect(() => {
+    if (mode === "voter") {
+      dispatch(clearSelections());
+    }
+  }, [dispatch, mode]);
+
   // Clear selections when component loads (only in voter mode)
   useEffect(() => {
     if (mode === 'voter') {
@@ -249,6 +265,7 @@ const BallotComponent = ({
             <Button
               variant="primary"
               onClick={onReview}
+              disabled={!hasSelections}
             >
               Review Vote
             </Button>
