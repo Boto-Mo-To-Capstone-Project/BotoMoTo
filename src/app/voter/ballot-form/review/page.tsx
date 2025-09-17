@@ -8,6 +8,7 @@ import CandidateRow from "@/components/CandidateRow";
 import SectionHeaderContainer from "@/components/SectionHeaderContainer";
 import { useState, useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
+import ReviewModal from "@/components/ReviewModal";
 
 const ReviewPage = () => {
   const [isChecked, setIsChecked] = useState(false);
@@ -129,27 +130,35 @@ const ReviewPage = () => {
         </Button>
       </div>
     );
-  }
+  } 
 
   return (
-    <main className="flex flex-col items-center px-10 pb-20 pt-40 text-justify">
+    <main className="flex flex-col items-center px-10 pb-20 pt-30 text-justify pt-8 w-full">
       {/*<Toaster position="top-center" />*/}
-      <div className="text-center space-y-2">
-        <h2 className="text-xl font-semibold mb-1">Ballot Form Review</h2>
-        <p className="text-base text-red-800 mb-2">
-          You're voting in the {electionName}
-        </p>
-        {voterScope && (
-          <p className="text-base text-blue-800 font-semibold">
-            Voting Scope: <span className="font-normal">{voterScope}</span>
+      <div className="w-full flex flex-col">
+        {/* Header and subheading */}
+        <div className="mb-6 rounded-2xl bg-[#a30d1a] px-8 py-6 flex flex-col items-start w-full">
+          <h2 className="text-white text-xl font-semibold mb-2">Ballot Form Review</h2>
+          <p className="text-white text-base">
+            You're voting in the {electionName}
           </p>
+        </div>
+        {voterScope && (
+          <div className="mb-5 p-3 border rounded-md bg-blue-50 border-blue-200 w-full">
+            <p className="text-base text-blue-800 font-semibold">
+              Voting Scope: <span className="font-normal">{voterScope}</span>
+            </p>
+            <p className="text-sm text-blue-600 mt-1">
+              You can only vote for candidates within your assigned scope.
+            </p>
+          </div>
         )}
       </div>
-      <div className="w-full lg:w-3/5 flex flex-col">
+  <div className="w-full flex flex-col">
         <div className="mt-5 space-y-3 w-full">
           {Object.entries(selections).map(([position, candidates]) => (
             <div key={position} className="">
-              <SectionHeaderContainer variant="yellow">
+              <SectionHeaderContainer variant="yellow" fullWidth>
                 {position}
                 <span className="bg-primary/5 text-sm align-center font-bold ml-2 rounded-xl py-1 px-2 text-primary">
                   You selected {candidates?.length}
@@ -162,7 +171,7 @@ const ReviewPage = () => {
                       <th className="px-4 py-2 candidate-category-desc w-3/5">
                         Candidate
                       </th>
-                      <th className="px-4 py-2 candidate-category-desc w-1/5">
+                      <th className="px-4 py-2 candidate-category-desc w-2/5">
                         Party
                       </th>
                     </tr>
@@ -171,7 +180,7 @@ const ReviewPage = () => {
                     {candidates && candidates.length > 0 ? (
                       candidates.map((candidate) => (
                         <CandidateRow
-                          key={candidate.name}
+                          key={candidate.id ?? candidate.name}
                           candidate={candidate}
                           showCredentials={false}
                         />
@@ -193,7 +202,7 @@ const ReviewPage = () => {
           ))}
         </div>
         <div className="mt-10">
-          <div className="flex gap-3 justify-center items-center">
+          <div className="flex gap-3 justify-start items-center w-full pb-10">
             <input
               type="checkbox"
               id="terms-agreement"
@@ -204,7 +213,7 @@ const ReviewPage = () => {
             />
             <label
               htmlFor="terms-agreement"
-              className="text-sm text-gray-600 sm:text-md"
+              className="text-sm font-bold text-gray-600 sm:text-md"
             >
               I confirm that my vote is final and accurate.
             </label>

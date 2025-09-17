@@ -97,14 +97,18 @@ const CandidateCategory = ({
               } hover:shadow-lg w-full h-full`}
             >
               {/* Candidate Image */}
-              <img
-                src={
-                  candidate.img ||
-                  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaHfpIhAPZHSbZstaGEgFBIjZZ-Y-K533dag&s"
-                }
-                alt={`${candidate.name} photo`}
-                className="w-28 h-28 object-cover rounded-xl border-2 border-gray-200"
-              />
+              <div className="w-28 h-28 flex items-center justify-center rounded-xl border-2 border-gray-200 overflow-hidden">
+                <img
+                  src={candidate.img ? candidate.img : "/assets/placeholderuser.png"}
+                  alt={candidate.img ? `${candidate.name} photo` : "Placeholder user"}
+                  className="w-full h-full object-cover"
+                  onError={e => {
+                    if (e.currentTarget.src.indexOf('placeholderuser.png') === -1) {
+                      e.currentTarget.src = '/assets/placeholderuser.png';
+                    }
+                  }}
+                />
+              </div>
 
               {/* Candidate Info */}
               <div className="flex flex-col flex-1 w-full">
