@@ -65,7 +65,7 @@ export default function ElectionTable({ title = 'All Elections', selectedIds = [
                 />
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("name")}
               >
                 Election{" "}
@@ -76,7 +76,7 @@ export default function ElectionTable({ title = 'All Elections', selectedIds = [
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("status")}
               >
                 Status{" "}
@@ -87,7 +87,7 @@ export default function ElectionTable({ title = 'All Elections', selectedIds = [
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("votingDate")}
               >
                 Voting date{" "}
@@ -98,7 +98,7 @@ export default function ElectionTable({ title = 'All Elections', selectedIds = [
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("time")}
               >
                 Time{" "}

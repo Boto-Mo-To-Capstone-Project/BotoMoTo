@@ -79,7 +79,7 @@ const CandidatesTable: React.FC<CandidatesTableProps> = ({
                 />
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => onSort("name")}
               >
                 Name{" "}
@@ -90,7 +90,7 @@ const CandidatesTable: React.FC<CandidatesTableProps> = ({
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => onSort("position")}
               >
                 Position{" "}
@@ -100,7 +100,7 @@ const CandidatesTable: React.FC<CandidatesTableProps> = ({
                   <FaSort className="inline opacity-50" />
                 )}
               </th>
-              <th className="py-2 px-3 border-b border-gray-200 flex items-center gap-1">
+              <th className="py-2 px-3 border-b border-gray-200 flex items-center gap-1 whitespace-nowrap">
                 <span
                   className="cursor-pointer select-none"
                   onClick={() => onSort("partylist")}
@@ -115,7 +115,7 @@ const CandidatesTable: React.FC<CandidatesTableProps> = ({
                 <MdHelpOutline size={16} className="inline text-gray-400" title="Partylist is optional" />
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => onSort("email")}
               >
                 Email{" "}

@@ -78,7 +78,7 @@ export default function PositionsTable({
                 />
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("position")}
               >
                 Position{" "}
@@ -89,7 +89,7 @@ export default function PositionsTable({
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("voteLimit")}
               >
                 Vote Limit{" "}
@@ -100,7 +100,7 @@ export default function PositionsTable({
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("numberOfWinners")}
               >
                 Number of Winners{" "}
@@ -111,7 +111,7 @@ export default function PositionsTable({
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("order")}
               >
                 Order{" "}
@@ -122,7 +122,7 @@ export default function PositionsTable({
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("scopeName")}
               >
                 Scope Name{" "}
