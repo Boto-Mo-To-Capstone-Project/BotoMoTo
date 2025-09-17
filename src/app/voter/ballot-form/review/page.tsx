@@ -8,7 +8,6 @@ import CandidateRow from "@/components/CandidateRow";
 import SectionHeaderContainer from "@/components/SectionHeaderContainer";
 import { useState, useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
-import ReviewModal from "@/components/ReviewModal";
 
 const ReviewPage = () => {
   const [isChecked, setIsChecked] = useState(false);
@@ -154,7 +153,7 @@ const ReviewPage = () => {
           </div>
         )}
       </div>
-  <div className="w-full flex flex-col">
+      <div className="w-full flex flex-col">
         <div className="mt-5 space-y-3 w-full">
           {Object.entries(selections).map(([position, candidates]) => (
             <div key={position} className="">
