@@ -295,7 +295,6 @@ model Voter {
   electionId      Int
   code            String    @unique // Globally unique voter code (also serves as voting code)
   email           String
-  contactNum      String?
   firstName       String
   middleName      String?
   lastName        String

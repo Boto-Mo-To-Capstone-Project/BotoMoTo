@@ -99,7 +99,6 @@ export async function GET(request: NextRequest) {
           { lastName: { contains: searchTerm } },
           { email: { contains: searchTerm } },
           { code: { contains: searchTerm } },
-          { contactNum: { contains: searchTerm } },
           // Combined name search
           {
             AND: [
@@ -116,7 +115,6 @@ export async function GET(request: NextRequest) {
         middleName: true,
         lastName: true,
         email: true,
-        contactNum: true,
         isActive: true,
         votingScope: {
           select: {

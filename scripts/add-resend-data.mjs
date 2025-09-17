@@ -98,7 +98,6 @@ async function generateResendVoters(electionId, count = 150) {
       email,
       firstName,
       lastName,
-      contactNum: `+1${Math.floor(Math.random() * 900000000) + 100000000}`,
       isActive: Math.random() > 0.05 // 95% active
     });
   }

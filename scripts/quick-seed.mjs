@@ -147,7 +147,6 @@ async function quickSeed() {
           email: `voter${i}@testuniversity.edu`,
           firstName: `Voter${i}`,
           lastName: "Test",
-          contactNum: `+1555000${String(i).padStart(4, '0')}`,
           votingScopeId: testScope.id,
           isActive: true
         }

@@ -53,7 +53,6 @@ export async function GET(
             middleName: true,
             lastName: true,
             email: true,
-            contactNum: true,
             votingScope: {
               select: {
                 id: true,
@@ -466,7 +465,6 @@ export async function PUT(
             middleName: true,
             lastName: true,
             email: true,
-            contactNum: true
           }
         },
         position: {

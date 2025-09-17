@@ -161,7 +161,6 @@ export async function PUT(
     if (!('data' in validation)) return validation;
     const { 
       email, 
-      contactNum, 
       firstName, 
       middleName, 
       lastName, 
@@ -276,7 +275,6 @@ export async function PUT(
       where: { id: voterId },
       data: {
         email: email || null,
-        contactNum: contactNum || null,
         firstName,
         middleName: middleName || null,
         lastName,
@@ -308,7 +306,7 @@ export async function PUT(
 
     // Compare and log changed fields
     const changedFields: Record<string, { old: any; new: any }> = {};
-    const fieldsToCheck = ["email", "contactNum", "firstName", "middleName", "lastName", "votingScopeId", "isActive"] as const;
+    const fieldsToCheck = ["email", "firstName", "middleName", "lastName", "votingScopeId", "isActive"] as const;
     
     for (const key of fieldsToCheck) {
       if ((existingVoter as any)[key] !== (updatedVoter as any)[key]) {

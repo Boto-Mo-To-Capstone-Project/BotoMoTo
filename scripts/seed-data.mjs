@@ -217,7 +217,6 @@ async function generateVoters(electionId, count = 100) {
       email,
       firstName,
       lastName,
-      contactNum: "09" + Math.floor(Math.random() * 1e9).toString().padStart(9, "0"),
       isActive: Math.random() > 0.05 // 95% active
     });
   }

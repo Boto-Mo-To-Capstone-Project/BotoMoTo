@@ -97,7 +97,6 @@ export async function POST(request: NextRequest) {
         electionId: newElection.id,
         code: newCode,
         email: voter.email,
-        contactNum: voter.contactNum,
         firstName: voter.firstName,
         middleName: voter.middleName,
         lastName: voter.lastName,

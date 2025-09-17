@@ -9,7 +9,6 @@ interface ParsedVoter {
   middleName?: string;
   lastName: string;
   email: string;
-  contactNum?: string;
   votingScopeId?: number;
   isActive: boolean;
   rowNumber: number;
@@ -241,7 +240,6 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
       middleName: rowData.middlename || undefined,
       lastName: rowData.lastname,
       email: rowData.email,
-      contactNum: rowData.contactnumber || undefined,
       votingScopeId,
       isActive: true,
       rowNumber

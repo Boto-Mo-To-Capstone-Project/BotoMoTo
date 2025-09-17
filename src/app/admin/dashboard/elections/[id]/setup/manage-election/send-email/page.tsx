@@ -39,7 +39,6 @@ export default function SendEmailPage() {
     | "status"
     | "scope"
     | "email"
-    | "contactNumber"
     | "birthdate"
     | "codeSendStatus"
     | "code"
@@ -81,7 +80,6 @@ export default function SendEmailPage() {
     status: string;
     scope: string;
     email: string;
-    contactNumber: string;
     birthdate: string;
     voted: boolean;
     codeSendStatus: string;
@@ -133,7 +131,6 @@ export default function SendEmailPage() {
       | "status"
       | "scope"
       | "email"
-      | "contactNumber"
       | "birthdate"
       | "codeSendStatus"
       | "code"
@@ -454,7 +451,6 @@ export default function SendEmailPage() {
           status: v.isActive ? "Active" : "Inactive",
           scope: v.votingScope?.name ?? "—",
           email: v.email ?? "",
-          contactNumber: v.contactNum ?? "",
           birthdate: "",
           voted: !!v.voted,
           codeSendStatus: v.codeSendStatus || "PENDING",
@@ -714,7 +710,6 @@ export default function SendEmailPage() {
         onSave={async function (data: {
           voterName: string;
           email: string;
-          contactNumber: string;
           voterLimit: number;
           numberOfWinners: number;
           votingScopeId?: number | null;
