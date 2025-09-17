@@ -143,7 +143,12 @@ const VoterLoginPage = () => {
         >
           {isLoading ? "Verifying..." : "Submit"}
         </Button>
-        <Button variant="long_secondary">Cancel</Button>
+        <Button 
+          variant="long_secondary"
+          onClick={() => router.push("/")}
+        >
+          Cancel
+        </Button>
       </div>
     </main>
   );
