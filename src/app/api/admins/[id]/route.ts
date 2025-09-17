@@ -6,7 +6,7 @@ import { apiResponse } from "@/lib/apiResponse";
 // import { validateWithZod } from "@/lib/validateWithZod";
 // import { userSchema } from "@/lib/schema";
 import { createAuditLog } from "@/lib/audit";
-import bcrypt from "bcryptjs";
+import { hash } from "bcryptjs";
 import { requireAuth } from "@/lib/helpers/requireAuth";
 
 // Import performance logging middleware
@@ -107,7 +107,7 @@ async function updateAdmin(req: NextRequest, { params }: { params: Promise<{ id:
     if (!password ) {
       return apiResponse({
         success: false,
-        message: "Nothing to update. Provide password or role.",
+        message: "Nothing to update. Provide password.",
         data: null,
         error: "Bad Request",
         status: 400,
@@ -132,7 +132,7 @@ async function updateAdmin(req: NextRequest, { params }: { params: Promise<{ id:
     // Prepare update data
     const updateData: any = {};
     if (password) {
-      updateData.password = await bcrypt.hash(password, 12);
+      updateData.password = await hash(password, 12);
     }
 
     // Update user
@@ -199,6 +199,7 @@ async function updateAdmin(req: NextRequest, { params }: { params: Promise<{ id:
   }
 }
 
+// soft delete, patch
 async function deleteAdmin(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Authenticate superadmin

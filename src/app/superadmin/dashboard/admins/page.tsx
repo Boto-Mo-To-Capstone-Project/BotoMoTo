@@ -22,6 +22,7 @@ export default function ManageAdminsPage() {
   const handleUpdated = (updated: any) => {
     const updatedItem = {
       ...updated,
+      isDeleted: updated.isDeleted,
     };
 
     setAdmins((prev) =>
@@ -43,7 +44,9 @@ export default function ManageAdminsPage() {
             setAdmins(
                 json.data.admins.map((a: any) => ({
                     ...a,
-                    isDeleted: a.isDeleted ? "Yes" : "No",
+                    organizationName: a.organization?.name || "—",
+                    organizationStatus: a.organization?.status || "—",
+                    isDeleted: a.isDeleted,
                 }))
             );
         } else {
@@ -68,6 +71,8 @@ export default function ManageAdminsPage() {
     "isDeleted",
     "createdAt",
     "updatedAt",
+    "organizationName",
+    "organizationStatus",
   ];
 
   return (
@@ -79,7 +84,10 @@ export default function ManageAdminsPage() {
             <Table
               title="Admins"
               columns={columns}
-              data={admins}
+              data={admins.map(a => ({
+                ...a,
+                isDeleted: a.isDeleted ? "Yes" : "No", // only for display
+              }))}
               showActions
               actions={["edit", "export"]}
               page={page}

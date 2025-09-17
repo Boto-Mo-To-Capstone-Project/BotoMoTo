@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
 import ConfirmationModal from "./ConfirmationModal";
+import toast from "react-hot-toast";
 
 export function AdminModal({
   admin,        // the admins object being edited
@@ -54,9 +55,9 @@ export function AdminModal({
     e.preventDefault();
     setConfirmationOpen(true);
     setModalConfig({
-        title: "Confirm Edit",
-        description: `Are you sure you want to ${adminData.isDeleted ? "RESTORE" : "DELETE "} this admin?`,
-        confirmLabel: "Save Changes",
+        title: "Confirm Delete",
+        description: `Confirm ${adminData.isDeleted ? "RESTORE " : "DELETE "} the admin "${adminData?.email ?? "..."}"?`,
+        confirmLabel: "Yes",
         cancelLabel: "Cancel",
         variant: "edit",
         onConfirm: async () => {
@@ -80,7 +81,7 @@ export function AdminModal({
       onUpdated(data.data.user); // pass updated user
       onClose();
     } else {
-      alert(data.message);
+      toast.error(data.message);
     }
   };
 
@@ -135,7 +136,7 @@ export function AdminModal({
                   type="password"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  placeholder="Leave blank to keep current password"                
+                  placeholder="Enter new password"                
                 />
               </div>
 
