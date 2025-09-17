@@ -221,7 +221,6 @@ const positionUpdateSchema = z.object({
 const voterSchema = z.object({
   electionId: z.number().int().positive("Election ID must be a positive integer"),
   email: field.email("Email", { required: true }),
-  contactNum: field.string("Contact number", { required: false, min: 10, max: 15 }),
   firstName: field.string("First name", { min: 2, max: 50 }),
   middleName: field.string("Middle name", { required: false, min: 1, max: 50 }),
   lastName: field.string("Last name", { min: 2, max: 50 }),
@@ -231,7 +230,6 @@ const voterSchema = z.object({
 
 const voterUpdateSchema = z.object({
   email: field.email("Email", { required: true }),
-  contactNum: field.string("Contact number", { required: false, min: 10, max: 15 }),
   firstName: field.string("First name", { min: 2, max: 50 }),
   middleName: field.string("Middle name", { required: false, min: 1, max: 50 }),
   lastName: field.string("Last name", { min: 2, max: 50 }),
@@ -243,7 +241,6 @@ const voterBulkUploadSchema = z.object({
   electionId: z.number().int().positive("Election ID must be a positive integer"),
   voters: z.array(z.object({
     email: field.email("Email", { required: true }),
-    contactNum: field.string("Contact number", { required: false, min: 10, max: 15 }),
     firstName: field.string("First name", { min: 2, max: 50 }),
     middleName: field.string("Middle name", { required: false, min: 1, max: 50 }),
     lastName: field.string("Last name", { min: 2, max: 50 }),

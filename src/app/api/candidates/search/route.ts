@@ -210,7 +210,6 @@ export async function GET(request: NextRequest) {
             middleName: true,
             lastName: true,
             email: true,
-            contactNum: true,
             votingScope: {
               select: {
                 id: true,

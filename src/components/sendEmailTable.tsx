@@ -7,7 +7,6 @@ interface Voter {
   status: string;
   scope: string;
   email: string;
-  contactNumber: string;
   birthdate: string;
   codeSendStatus: string; // Required field from database: "PENDING", "SENT", "FAILED", etc.
   code: string; // Add voting code field
@@ -15,9 +14,9 @@ interface Voter {
 
 interface VoterTableProps {
   voters: Voter[];
-  sortCol: 'name' | 'status' | 'scope' | 'email' | 'contactNumber' | 'birthdate' | 'codeSendStatus' | 'code' | null;
+  sortCol: 'name' | 'status' | 'scope' | 'email' | 'birthdate' | 'codeSendStatus' | 'code' | null;
   sortDir: 'asc' | 'desc';
-  onSort: (col: 'name' | 'status' | 'scope' | 'email' | 'contactNumber' | 'birthdate' | 'codeSendStatus' | 'code') => void;
+  onSort: (col: 'name' | 'status' | 'scope' | 'email' | 'birthdate' | 'codeSendStatus' | 'code') => void;
   page: number;
   totalPages: number;
   onFirst: () => void;
@@ -30,12 +29,16 @@ interface VoterTableProps {
   title?: string;
   selectedIds?: number[];
   onCheckboxChange?: (id: number) => void;
+  loading: boolean;
+  hasLoaded: boolean;
 }
 
 export default function VoterTable({
   title = 'All Voters',
   selectedIds = [],
   onCheckboxChange,
+  loading,
+  hasLoaded,
   ...props
 }: VoterTableProps) {
   // Helper for header checkbox
@@ -119,17 +122,6 @@ export default function VoterTable({
               </th>
               <th
                 className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
-                onClick={() => props.onSort("contactNumber")}
-              >
-                Contact{" "}
-                {props.sortCol === "contactNumber" ? (
-                  props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
-                ) : (
-                  <FaSort className="inline opacity-50" />
-                )}
-              </th>
-              <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("code")}
               >
                 Code{" "}
@@ -153,13 +145,42 @@ export default function VoterTable({
             </tr>
           </thead>
           <tbody>
-            {props.voters.length === 0 ? (
+            {(!hasLoaded && loading) ? (
+              // Loading skeleton
+              [...Array(5)].map((_, idx) => (
+                <tr key={idx} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="w-4 h-4 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-6 w-24 bg-gray-200 rounded-full animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-4 w-36 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-6 w-16 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-6 w-20 bg-gray-200 rounded-full animate-pulse" />
+                  </td>
+                </tr>
+              ))
+            ) : (!loading && hasLoaded && props.voters.length === 0) ? (
+              // Empty state
               <tr>
                 <td colSpan={9} className="px-4 py-4 text-center text-gray-400">
                   No voters found.
                 </td>
               </tr>
             ) : (
+              // Actual data
               props.voters.map((voter, idx) => (
                 <tr
                   key={voter.id + '-' + idx}
@@ -192,7 +213,6 @@ export default function VoterTable({
                   </td>
                   <td className="py-2 px-3 align-middle truncate max-w-[120px]">{voter.scope}</td>
                   <td className="py-2 px-3 align-middle truncate max-w-[180px]">{voter.email}</td>
-                  <td className="py-2 px-3 align-middle truncate max-w-[140px]">{voter.contactNumber}</td>
                   <td className="py-2 px-3 align-middle truncate max-w-[100px]">
                     <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
                       {voter.code || '—'}

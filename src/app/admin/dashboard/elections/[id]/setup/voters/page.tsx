@@ -35,7 +35,7 @@ export default function VoterDashboardPage() {
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 400);
-  const [sortCol, setSortCol] = useState<"name" | "status" | "scope" | "email" | "contactNumber" | "birthdate" | "voted" | null>(null);
+  const [sortCol, setSortCol] = useState<"name" | "status" | "scope" | "email" | "birthdate" | "voted" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showVotersModal, setShowVotersModal] = useState(false);
@@ -48,7 +48,6 @@ export default function VoterDashboardPage() {
     voterFirstName?: string;
     voterMiddleInitial?: string;
     email?: string;
-    contactNumber?: string;
     voterLimit?: number;
     numberOfWinners?: number;
     votingScopeId?: number | null;
@@ -72,7 +71,6 @@ export default function VoterDashboardPage() {
     status: string;
     scope: string;
     email: string;
-    contactNumber: string;
     birthdate: string;
     voted: boolean;
   }>>([]);
@@ -175,7 +173,7 @@ export default function VoterDashboardPage() {
     setPageSize(Number(e.target.value));
     setPage(1);
   };
-  const handleSort = (col: "name" | "status" | "scope" | "email" | "contactNumber" | "birthdate" | "voted") => {
+  const handleSort = (col: "name" | "status" | "scope" | "email" | "birthdate" | "voted") => {
     if (sortCol === col) {
       setSortDir(sortDir === "asc" ? "desc" : "asc");
     } else {
@@ -274,7 +272,7 @@ export default function VoterDashboardPage() {
       if (!electionId || Number.isNaN(electionId)) return;
       setLoading(true);
 
-      // VotersModal passes { voterName, email, contactNumber, votingScopeId, ... }
+      // VotersModal passes { voterName, email, votingScopeId, ... }
       const fullName = (data?.voterName || "").trim();
       let firstName = "";
       let middleName = "";
@@ -293,8 +291,6 @@ export default function VoterDashboardPage() {
         middleName: middleName || undefined,
         lastName: lastName || undefined,
         email: data?.email?.trim() || undefined,
-        contactNum: data?.contactNumber?.trim() || undefined,
-        // address removed
         isActive: true,
       };
       if (typeof data?.votingScopeId === 'number') {
@@ -350,7 +346,6 @@ export default function VoterDashboardPage() {
         voterFirstName: v.firstName || "",
         voterMiddleInitial: v.middleName || "",
         email: v.email || "",
-        contactNumber: v.contactNum || "",
         voterLimit: 1,
         numberOfWinners: 1,
         votingScopeId: v.votingScope?.id ?? null,
@@ -404,8 +399,6 @@ export default function VoterDashboardPage() {
         middleName: middleName || undefined,
         lastName: lastName || undefined,
         email: data?.email?.trim() || undefined,
-        contactNum: data?.contactNumber?.trim() || undefined,
-        // address removed
         isActive: editIsActive,
       };
       if (typeof data?.votingScopeId === 'number') {
@@ -476,7 +469,6 @@ export default function VoterDashboardPage() {
           status: v.isActive ? "Active" : "Inactive",
           scope: v.votingScope?.name ?? "—",
           email: v.email ?? "",
-          contactNumber: v.contactNum ?? "",
           birthdate: "",
           voted: !!v.voted,
         }));
@@ -554,7 +546,6 @@ export default function VoterDashboardPage() {
     middleName?: string;
     lastName: string;
     email: string;
-    contactNum?: string;
     votingScopeId?: number;
     isActive: boolean;
     rowNumber: number;
@@ -569,7 +560,6 @@ export default function VoterDashboardPage() {
         middleName: voter.middleName || undefined,
         lastName: voter.lastName,
         email: voter.email.trim(),
-        contactNum: voter.contactNum?.trim() || undefined,
         votingScopeId: voter.votingScopeId || undefined,
         isActive: voter.isActive,
       }));

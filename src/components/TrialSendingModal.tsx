@@ -8,7 +8,6 @@ type TrialSendingModalProps = {
   onSave: (data: {
     voterName: string;
     email: string;
-    contactNumber: string;
     voterLimit: number;
     numberOfWinners: number;
     votingScopeId?: number | null; // NEW: optional scope id
@@ -19,7 +18,6 @@ type TrialSendingModalProps = {
     voterFirstName?: string;
     voterMiddleInitial?: string;
     email?: string;
-    contactNumber?: string;
     voterLimit?: number;
     numberOfWinners?: number;
     votingScopeId?: number | null; // NEW: selected scope id (edit mode)
@@ -37,7 +35,6 @@ export function TrialSendingModal({
   initialData = {
     voterName: "",
     email: "",
-    contactNumber: "",
     voterLimit: 1,
     numberOfWinners: 1,
   },
@@ -50,7 +47,6 @@ export function TrialSendingModal({
   const [voterFirstName, setVoterFirstName] = useState(initialData.voterFirstName || "");
   const [voterMiddleInitial, setVoterMiddleInitial] = useState(initialData.voterMiddleInitial || "");
   const [email, setEmail] = useState(initialData.email || "");
-  const [contactNumber, setContactNumber] = useState(initialData.contactNumber || "");
   const [voterLimit, setVoterLimit] = useState(initialData.voterLimit || 1);
   const [numberOfWinners, setNumberOfWinners] = useState(initialData.numberOfWinners || 1);
   // NEW: dynamic voting scope selection (optional)
@@ -72,7 +68,6 @@ export function TrialSendingModal({
       setVoterFirstName(initialData.voterFirstName || "");
       setVoterMiddleInitial(initialData.voterMiddleInitial || "");
       setEmail(initialData.email || "");
-      setContactNumber(initialData.contactNumber || "");
       setVoterLimit(initialData.voterLimit || 1);
       setNumberOfWinners(initialData.numberOfWinners || 1);
       setVotingScopeId(initialData.votingScopeId ?? undefined);
@@ -82,7 +77,6 @@ export function TrialSendingModal({
       setVoterFirstName("");
       setVoterMiddleInitial("");
       setEmail("");
-      setContactNumber("");
       setVoterLimit(1);
       setNumberOfWinners(1);
       setVotingScopeId(undefined);
@@ -132,7 +126,6 @@ export function TrialSendingModal({
                   onSave({
                     voterName: `${voterSurname} ${voterFirstName} ${voterMiddleInitial}`.trim(),
                     email,
-                    contactNumber,
                     voterLimit,
                     numberOfWinners,
                     votingScopeId: votingScopeId ?? null,
@@ -178,15 +171,6 @@ export function TrialSendingModal({
                     onChange={e => setEmail(e.target.value)}
                     placeholder="Enter Email Address"
                     required
-                  />
-                </div>
-                <div className="col-span-1">
-                  <InputField
-                    label="Contact Number"
-                    type="text"
-                    value={contactNumber}
-                    onChange={e => setContactNumber(e.target.value)}
-                    placeholder="Enter Contact Number"
                   />
                 </div>
                 {/* NEW: Voting Scope selector (optional) */}

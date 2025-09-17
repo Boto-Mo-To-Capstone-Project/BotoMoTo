@@ -142,7 +142,6 @@ async function getVoters(request: NextRequest) {
         { middleName: { contains: searchTerm, mode: 'insensitive' } },
         { email: { contains: searchTerm, mode: 'insensitive' } },
         { code: { contains: searchTerm, mode: 'insensitive' } },
-        { contactNum: { contains: searchTerm, mode: 'insensitive' } }
       ];
     }
 
@@ -348,7 +347,6 @@ async function createVoter(request: NextRequest) {
                   firstName: voterData.firstName,
                   middleName: voterData.middleName,
                   lastName: voterData.lastName,
-                  contactNum: voterData.contactNum,
                   votingScopeId: voterData.votingScopeId,
                   isActive: voterData.isActive,
                   updatedAt: new Date()
@@ -416,7 +414,7 @@ async function createVoter(request: NextRequest) {
       const validation = validateWithZod(voterSchema, body);
       if (!('data' in validation)) return validation;
       
-      const { electionId, email, contactNum, firstName, middleName, lastName, votingScopeId, isActive } = validation.data;
+      const { electionId, email, firstName, middleName, lastName, votingScopeId, isActive } = validation.data;
 
       // Check if election exists and user has permission
       const election = await db.election.findUnique({
@@ -496,7 +494,6 @@ async function createVoter(request: NextRequest) {
                 firstName,
                 middleName,
                 lastName,
-                contactNum,
                 votingScopeId,
                 isActive,
                 updatedAt: new Date()
@@ -551,7 +548,6 @@ async function createVoter(request: NextRequest) {
           electionId,
           code: voterCode,
           email,
-          contactNum,
           firstName,
           middleName,
           lastName,

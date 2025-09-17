@@ -39,7 +39,6 @@ export default function SendEmailPage() {
     | "status"
     | "scope"
     | "email"
-    | "contactNumber"
     | "birthdate"
     | "codeSendStatus"
     | "code"
@@ -75,20 +74,47 @@ export default function SendEmailPage() {
   const [sseConnected, setSseConnected] = useState(false);
 
   // Data state from API
-  const [rows, setRows] = useState<Array<{
+  const [rawRows, setRawRows] = useState<Array<{
     id: number;
     name: string;
     status: string;
     scope: string;
     email: string;
-    contactNumber: string;
     birthdate: string;
     voted: boolean;
     codeSendStatus: string;
     code: string; // Add voting code field
   }>>([]);
+
+  // Frontend sorting function
+  const getSortedRows = () => {
+    if (!sortCol) return rawRows;
+    
+    const sorted = [...rawRows].sort((a, b) => {
+      let aVal: any = a[sortCol];
+      let bVal: any = b[sortCol];
+      
+      // Handle different data types
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        aVal = aVal.toLowerCase();
+        bVal = bVal.toLowerCase();
+      }
+      
+      if (sortDir === "asc") {
+        return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+      } else {
+        return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+      }
+    });
+    
+    return sorted;
+  };
+
+  // Get the final sorted rows for display
+  const rows = getSortedRows();
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
   const handleFirst = () => setPage(1);
@@ -105,7 +131,6 @@ export default function SendEmailPage() {
       | "status"
       | "scope"
       | "email"
-      | "contactNumber"
       | "birthdate"
       | "codeSendStatus"
       | "code"
@@ -396,6 +421,7 @@ export default function SendEmailPage() {
     if (!electionId || Number.isNaN(electionId)) return;
 
     const ctrl = new AbortController();
+    let alive = true;                // guard: only latest run updates state
     const run = async () => {
       setLoading(true);
       try {
@@ -404,7 +430,6 @@ export default function SendEmailPage() {
           page: String(page),
           limit: String(pageSize),
           ...(debouncedSearch ? { search: debouncedSearch } : {}),
-          ...(sortCol ? { sortCol: sortCol, sortDir: sortDir } : {}),
         });
         const res = await fetch(`/api/voters?${qs.toString()}`, {
           method: "GET",
@@ -426,28 +451,33 @@ export default function SendEmailPage() {
           status: v.isActive ? "Active" : "Inactive",
           scope: v.votingScope?.name ?? "—",
           email: v.email ?? "",
-          contactNumber: v.contactNum ?? "",
           birthdate: "",
           voted: !!v.voted,
           codeSendStatus: v.codeSendStatus || "PENDING",
           code: v.code || "—", // Add voting code display
         }));
 
-        setRows(mapped);
-        setTotalPages(json.data?.pagination?.totalPages || 1);
+        if (alive) {
+          setRawRows(mapped);
+          setTotalPages(json.data?.pagination?.totalPages || 1);
+          setHasLoaded(true);
+        }
       } catch (e: any) {
-        if (e?.name !== "AbortError") {
+        if (e?.name !== "AbortError" && alive) {
           console.error("Failed to fetch voters:", e);
           toast.error("Failed to load voters");
         }
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
     };
 
     run();
-    return () => ctrl.abort();
-  }, [electionId, page, pageSize, debouncedSearch, sortCol, sortDir, reloadKey]);
+    return () => {
+      alive = false;
+      ctrl.abort();
+    };
+  }, [electionId, page, pageSize, debouncedSearch, reloadKey]); // Removed sortCol, sortDir
 
   // SSE connection for real-time status updates
   useEffect(() => {
@@ -666,6 +696,8 @@ export default function SendEmailPage() {
               onPageSizeChange={handlePageSizeChange}
               selectedIds={selectedIds}
               onCheckboxChange={handleCheckboxChange}
+              loading={loading}
+              hasLoaded={hasLoaded}
             />
           </div>
         </div>
@@ -678,7 +710,6 @@ export default function SendEmailPage() {
         onSave={async function (data: {
           voterName: string;
           email: string;
-          contactNumber: string;
           voterLimit: number;
           numberOfWinners: number;
           votingScopeId?: number | null;

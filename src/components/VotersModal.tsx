@@ -8,7 +8,6 @@ type VotersModalProps = {
   onSave: (data: {
     voterName: string;
     email: string;
-    contactNumber: string;
     voterLimit: number;
     numberOfWinners: number;
     votingScopeId?: number | null; // NEW: optional scope id
@@ -19,7 +18,6 @@ type VotersModalProps = {
     voterFirstName?: string;
     voterMiddleInitial?: string;
     email?: string;
-    contactNumber?: string;
     voterLimit?: number;
     numberOfWinners?: number;
     votingScopeId?: number | null; // NEW: selected scope id (edit mode)
@@ -37,7 +35,6 @@ export function VotersModal({
   initialData = {
     voterName: "",
     email: "",
-    contactNumber: "",
     voterLimit: 1,
     numberOfWinners: 1,
   },
@@ -50,7 +47,6 @@ export function VotersModal({
   const [voterFirstName, setVoterFirstName] = useState(initialData.voterFirstName || "");
   const [voterMiddleInitial, setVoterMiddleInitial] = useState(initialData.voterMiddleInitial || "");
   const [email, setEmail] = useState(initialData.email || "");
-  const [contactNumber, setContactNumber] = useState(initialData.contactNumber || "");
   const [voterLimit, setVoterLimit] = useState(initialData.voterLimit || 1);
   const [numberOfWinners, setNumberOfWinners] = useState(initialData.numberOfWinners || 1);
   // NEW: dynamic voting scope selection (optional)
@@ -72,7 +68,6 @@ export function VotersModal({
       setVoterFirstName(initialData.voterFirstName || "");
       setVoterMiddleInitial(initialData.voterMiddleInitial || "");
       setEmail(initialData.email || "");
-      setContactNumber(initialData.contactNumber || "");
       setVoterLimit(initialData.voterLimit || 1);
       setNumberOfWinners(initialData.numberOfWinners || 1);
       setVotingScopeId(initialData.votingScopeId ?? undefined);
@@ -82,7 +77,6 @@ export function VotersModal({
       setVoterFirstName("");
       setVoterMiddleInitial("");
       setEmail("");
-      setContactNumber("");
       setVoterLimit(1);
       setNumberOfWinners(1);
       setVotingScopeId(undefined);
@@ -132,7 +126,6 @@ export function VotersModal({
                   onSave({
                     voterName: `${voterSurname} ${voterFirstName} ${voterMiddleInitial}`.trim(),
                     email,
-                    contactNumber,
                     voterLimit,
                     numberOfWinners,
                     votingScopeId: votingScopeId ?? null,
@@ -178,28 +171,6 @@ export function VotersModal({
                     onChange={e => setEmail(e.target.value)}
                     placeholder="Enter Email Address"
                     required
-                  />
-                </div>
-                <div className="col-span-1">
-                  <InputField
-                    label="Contact Number"
-                    type="text"
-                    maxLength={11}
-                    value={contactNumber}
-                    onChange={e => {
-                      // Accept only numbers and maximum 11 digits
-                      const val = e.target.value.replace(/\D/g, "").slice(0, 11);
-                      setContactNumber(val);
-                    }}
-                    onKeyDown={e => {
-                      // Prevent typing non-numeric characters
-                      if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-                        e.preventDefault();
-                      }
-                    }}
-                    placeholder="Enter Contact Number"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
                   />
                 </div>
                 {/* NEW: Voting Scope selector (optional) */}
