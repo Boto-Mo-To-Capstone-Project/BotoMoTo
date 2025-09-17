@@ -1,5 +1,6 @@
 import { MdFirstPage, MdLastPage, MdChevronLeft, MdChevronRight, MdUnfoldMore, MdArrowDropUp, MdArrowDropDown } from 'react-icons/md';
 import { FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+import { useRouter } from 'next/navigation';
 
 interface Election {
   id: number;
@@ -45,6 +46,8 @@ export default function ElectionTable({ title = 'All Elections', selectedIds = [
       });
     }
   };
+
+  const router = useRouter();
 
   return (
     <div>
@@ -146,9 +149,11 @@ export default function ElectionTable({ title = 'All Elections', selectedIds = [
                   key={election.id + '-' + idx}
                   className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
                   onClick={e => {
-                    // Prevent double toggle if checkbox is clicked
+                    // Prevent navigation if checkbox is clicked
                     if ((e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
-                    onCheckboxChange?.(election.id);
+                    
+                    // Row click - just navigate to overview
+                    router.push(`/admin/dashboard/elections/${election.id}/setup/overview`);
                   }}
                 >
                   <td className="py-2 px-3 align-middle">
