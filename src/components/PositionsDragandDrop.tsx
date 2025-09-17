@@ -3,6 +3,7 @@ import React, { useState, useCallback } from "react";
 import { FiDownload, FiEye, FiAlertCircle, FiCheckCircle, FiAlertTriangle } from "react-icons/fi";
 import { MdDocumentScanner, MdRemove } from "react-icons/md";
 import { SubmitButton } from "./SubmitButton";
+import toast from "react-hot-toast";
 
 // Parsed position & issue types
 interface ParsedPosition {
@@ -270,11 +271,11 @@ export const PositionsDragandDropdown: React.FC<DragandDropdownProps> = ({
   const validateFileAndParse = (file: File) => {
     const maxSizeBytes = maxSizeMB * 1024 * 1024;
     if (file.size > maxSizeBytes) {
-      alert(`File too large: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)}MB). Max: ${maxSizeMB}MB`);
+      toast.error(`File too large: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)}MB). Max: ${maxSizeMB}MB`);
       return;
     }
     if (!file.name.toLowerCase().endsWith('.csv')) {
-      alert(`Invalid file type: ${file.name}. Only CSV files are accepted.`);
+      toast.error(`Invalid file type: ${file.name}. Only CSV files are accepted.`);
       return;
     }
     setSelectedFile(file);
@@ -317,7 +318,7 @@ export const PositionsDragandDropdown: React.FC<DragandDropdownProps> = ({
     
     const hasErrors = parseIssues.some(issue => issue.severity === 'error');
     if (hasErrors) {
-      alert('Please fix all errors before importing');
+      toast.error('Please fix all errors before importing');
       return;
     }
     

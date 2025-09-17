@@ -3,6 +3,7 @@ import React, { useState, useCallback } from "react";
 import { FiDownload, FiAlertCircle, FiCheckCircle, FiEye, FiAlertTriangle } from "react-icons/fi";
 import { MdDocumentScanner, MdRemove } from "react-icons/md";
 import { SubmitButton } from "./SubmitButton";
+import toast from "react-hot-toast";
 
 interface ParsedVoter {
   firstName: string;
@@ -260,13 +261,13 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
       // File size validation
       const maxSizeBytes = maxSizeMB * 1024 * 1024;
       if (file.size > maxSizeBytes) {
-        alert(`File too large: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)}MB). Max: ${maxSizeMB}MB`);
+        toast.error(`File too large: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)}MB). Max: ${maxSizeMB}MB`);
         return;
       }
 
       // Check if file is CSV
       if (!file.name.toLowerCase().endsWith('.csv')) {
-        alert(`Invalid file type: ${file.name}. Only CSV files are accepted.`);
+        toast.error(`Invalid file type: ${file.name}. Only CSV files are accepted.`);
         return;
       }
 
@@ -302,7 +303,7 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
     
     const hasErrors = parseIssues.some(issue => issue.severity === 'error');
     if (hasErrors) {
-      alert('Please fix all errors before importing');
+      toast.error('Please fix all errors before importing');
       return;
     }
 

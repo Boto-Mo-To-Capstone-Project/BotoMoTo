@@ -6,6 +6,7 @@ import termsAndConditionList from "@/app/assets/termsAndConditionList"; // examp
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 const ElectionTermsCondition = () => {
   const [isChecked, setIsChecked] = useState(false); // so checkbutton must be clicked before proceeding
@@ -23,7 +24,7 @@ const ElectionTermsCondition = () => {
 
   const handleStartVoting = () => {
     if (!isChecked) {
-      alert("Please read and agree to the Terms and Conditions before proceeding.");
+      toast.error("Please read and agree to the Terms and Conditions before proceeding.");
       return;
     }
     router.push("/voter/ballot-form");

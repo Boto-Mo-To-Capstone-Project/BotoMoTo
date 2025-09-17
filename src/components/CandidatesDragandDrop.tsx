@@ -3,6 +3,7 @@ import React, { useState, useCallback } from "react";
 import { FiDownload, FiAlertCircle, FiCheckCircle, FiEye, FiAlertTriangle } from "react-icons/fi";
 import { MdDocumentScanner, MdRemove } from "react-icons/md";
 import { SubmitButton } from "./SubmitButton";
+import toast from "react-hot-toast";
 
 // Parsed candidate & issue types
 interface ParsedCandidate {
@@ -247,11 +248,11 @@ export const CandidatesDragandDropdown: React.FC<CandidatesDragandDropdownProps>
   const validateFileAndParse = (file: File) => {
     const maxSizeBytes = maxSizeMB * 1024 * 1024;
     if (file.size > maxSizeBytes) {
-      alert(`File too large: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)}MB). Max: ${maxSizeMB}MB`);
+      toast.error(`File too large: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)}MB). Max: ${maxSizeMB}MB`);
       return;
     }
     if (!file.name.toLowerCase().endsWith('.csv')) {
-      alert(`Invalid file type: ${file.name}. Only CSV files are accepted.`);
+      toast.error(`Invalid file type: ${file.name}. Only CSV files are accepted.`);
       return;
     }
     setSelectedFile(file);
@@ -292,7 +293,7 @@ export const CandidatesDragandDropdown: React.FC<CandidatesDragandDropdownProps>
   const handleImport = async () => {
     if (parsedCandidates.length === 0) return;
     if (errorCount > 0) {
-      alert('Please fix all errors before importing');
+      toast.error('Please fix all errors before importing');
       return;
     }
     try {

@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import db from "@/lib/db/db";
 import { requireAuth } from "@/lib/helpers/requireAuth"; // <-- make sure this path is correct
 import { ROLES } from "@/lib/constants";   // <-- where you define roles
-import { generatePublicUrl, generatePresignedUrl } from "@/lib/storage/utils";
 
 export async function GET(
   _req: Request,
@@ -16,8 +15,14 @@ export async function GET(
   const {id} = await params;
   const electionId = parseInt(id);
 
-  const election = await db.election.findUnique({
-    where: { id: electionId },
+  // ✅ Find election with ownership guard
+  const election = await db.election.findFirst({
+    where: {
+      id: electionId,
+      organization: {
+        adminId: user.id, // ✅ only allow if admin owns the org
+      },
+    },
     select: {
       id: true,
       name: true,
@@ -56,7 +61,7 @@ export async function GET(
   });
 
   if (!election) {
-    return NextResponse.json({ error: "Election not found" }, { status: 404 });
+    return NextResponse.json({ error: "Election not found or not accessible" }, { status: 404 });
   }
 
   return NextResponse.json({

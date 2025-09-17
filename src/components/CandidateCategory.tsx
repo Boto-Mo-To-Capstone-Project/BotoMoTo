@@ -9,6 +9,7 @@ import SectionHeaderContainer from "./SectionHeaderContainer";
 import FileViewer from "./FileViewer";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
+import toast from "react-hot-toast";
 
 type CandidateCategoryProps = {
   position: string;
@@ -46,7 +47,7 @@ const CandidateCategory = ({
       });
       setFileViewerOpen(true);
     } else {
-      alert("No credentials available for this candidate.");
+      toast.error("No credentials available for this candidate.");
     }
   };
 
@@ -65,7 +66,7 @@ const CandidateCategory = ({
       if (selectedCandidatesFromRedux.length < selectCount) {
         onSelectCandidate(candidate);
       } else {
-        alert(
+        toast.error(
           `You can only select up to ${selectCount} candidates for ${position}.`
         );
       }
@@ -82,7 +83,12 @@ const CandidateCategory = ({
       </SectionHeaderContainer>
 
       <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[auto-fit,minmax(320px,1fr)] gap-6 mt-4">
-        {candidateList.map((candidate) => {
+      {candidateList.length === 0 ? (
+        <div className="text-gray-600 italic text-center py-6 col-span-full">
+          No candidates assigned for this position
+        </div>
+      ) : (
+        candidateList.map((candidate) => {
           const isSelected = selectedCandidatesFromRedux.some(
             (c) => c.id === candidate.id
           );
@@ -156,7 +162,8 @@ const CandidateCategory = ({
               </div>
             </div>
           );
-        })}
+        })
+      )}
       </div>
 
       {/* File Viewer Modal */}

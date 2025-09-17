@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { AuthHeading } from "@/components/AuthHeading";
 import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
+import toast from "react-hot-toast";
 
 type PositionsModalProps = {
   open: boolean;
@@ -157,17 +158,17 @@ export function PositionsModal({
 
                 // Simple validation
                 if (voteLimit > numberOfWinners) {
-                  alert("Vote limit cannot be greater than number of winners");
+                  toast.error("Vote limit cannot be greater than number of winners");
                   return;
                 }
 
                 if (order <= 0) {
-                  alert("Order must be greater than 0");
+                  toast.error("Order must be greater than 0");
                   return;
                 }
 
                 if (existingOrders.includes(order)) {
-                  alert("This order is already taken for this scope. Please choose a different order.");
+                  toast.error("This order is already taken for this scope. Please choose a different order.");
                   return;
                 }
 
