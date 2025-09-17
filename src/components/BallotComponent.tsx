@@ -1,5 +1,5 @@
 "use client";
-import ReviewModal from "./ReviewModal";
+
 import Button from "@/components/Button";
 import { useState, useEffect } from "react";
 import { Candidate } from "@/types";
@@ -125,10 +125,6 @@ const BallotComponent = ({
       })
       // remove empty positions (no candidates after filter)
       .filter(position => position.candidates.length > 0);
-
-  if (mode === 'voter' && filteredPositions.length === 0) {
-    return <ReviewModal electionName={electionName} voterScope={voterScope} />;
-  }
 
   return (
     <main className={`flex flex-col items-center px-10 pb-20 text-justify ${mode === 'preview' ? 'pt-8' : 'pt-30'}`}>
