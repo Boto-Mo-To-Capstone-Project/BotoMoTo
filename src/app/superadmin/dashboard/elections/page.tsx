@@ -36,17 +36,31 @@ export default function SuperAdminElectionsPage() {
   const [results, setResults] = useState<VerificationResult[]>([]);
   const [summary, setSummary] = useState<any>(null);
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/elections");
+        // Use pagination for superadmin elections page
+        const res = await fetch(`/api/elections?page=${page}&limit=${pageSize}`);
         const json = await res.json();
         if (!res.ok || !json?.success) {
           throw new Error(json?.error || json?.message || "Failed to fetch elections");
         }
         const elections = json?.data?.elections || [];
+        const pagination = json?.data?.pagination;
+        
+        if (pagination) {
+          setTotalPages(pagination.totalPages);
+          setTotalCount(pagination.totalCount);
+        }
+        
         const mapped = elections.map((e: any) => {
           const orgName = e?.organization?.name || "—";
           const start = e?.schedule?.dateStart ? new Date(e.schedule.dateStart) : null;
@@ -82,12 +96,8 @@ export default function SuperAdminElectionsPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [page, pageSize]); // Add dependencies for pagination
 
-  // NEW: pagination state to satisfy Table props (reference: organization-requests)
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   const handleFirst = () => setPage(1);
   const handlePrev = () => setPage((p) => Math.max(1, p - 1));
   const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
@@ -135,11 +145,30 @@ export default function SuperAdminElectionsPage() {
 
   // select all functionality for integrity
   const [selectAll, setSelectAll] = useState(false);
+  const [allElectionIds, setAllElectionIds] = useState<number[]>([]);
+
+  // Fetch all election IDs for select all functionality
+  useEffect(() => {
+    const fetchAllIds = async () => {
+      try {
+        const res = await fetch("/api/elections?all=true");
+        const json = await res.json();
+        if (res.ok && json?.success) {
+          const elections = json?.data?.elections || [];
+          const ids = elections.map((e: any) => e.id).filter((id: any) => id);
+          setAllElectionIds(ids);
+        }
+      } catch (err) {
+        console.error("Failed to fetch all election IDs:", err);
+      }
+    };
+    fetchAllIds();
+  }, []);
 
   const handleSelectAll = () => {
     if (!selectAll) {
-      // Collect all election IDs from rows
-      const allIds = rows.map((r) => r.Election_ID).join(", ");
+      // Use all election IDs from API
+      const allIds = allElectionIds.join(", ");
       setInput(allIds);
     } else {
       setInput("");
@@ -149,13 +178,13 @@ export default function SuperAdminElectionsPage() {
 
   // Keep integrity checkbox in sync with manual input changes
   useEffect(() => {
-    const allIds = rows.map((r) => r.Election_ID).join(", ");
+    const allIds = allElectionIds.join(", ");
     if (input.replace(/\s+/g, "") === allIds.replace(/\s+/g, "")) {
       setSelectAll(true);
     } else {
       setSelectAll(false);
     }
-  }, [input, rows]);
+  }, [input, allElectionIds]);
 
   
 
