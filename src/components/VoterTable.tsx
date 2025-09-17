@@ -7,6 +7,7 @@ interface Voter {
   status: string;
   scope: string;
   email: string;
+  code: string;
   birthdate: string;
   // computed voting status
   voted: boolean;
@@ -14,9 +15,9 @@ interface Voter {
 
 interface VoterTableProps {
   voters: Voter[];
-  sortCol: 'name' | 'status' | 'scope' | 'email' | 'birthdate' | 'voted' | null;
+  sortCol: 'name' | 'status' | 'scope' | 'email' | 'code' | 'birthdate' | 'voted' | null;
   sortDir: 'asc' | 'desc';
-  onSort: (col: 'name' | 'status' | 'scope' | 'email' | 'birthdate' | 'voted') => void;
+  onSort: (col: 'name' | 'status' | 'scope' | 'email' | 'code' | 'birthdate' | 'voted') => void;
   page: number;
   totalPages: number;
   onFirst: () => void;
@@ -73,7 +74,7 @@ export default function VoterTable({
                 />
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("name")}
               >
                 Name{" "}
@@ -84,7 +85,7 @@ export default function VoterTable({
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("status")}
               >
                 Status{" "}
@@ -95,7 +96,7 @@ export default function VoterTable({
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("scope")}
               >
                 Scope{" "}
@@ -106,7 +107,7 @@ export default function VoterTable({
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("email")}
               >
                 Email{" "}
@@ -117,7 +118,18 @@ export default function VoterTable({
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
+                onClick={() => props.onSort("code")}
+              >
+                Voter Code{" "}
+                {props.sortCol === "code" ? (
+                  props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
+                ) : (
+                  <FaSort className="inline opacity-50" />
+                )}
+              </th>
+              <th
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("voted")}
               >
                 Voted{" "}
@@ -149,6 +161,9 @@ export default function VoterTable({
                   <td className="py-2 px-3 align-middle">
                     <div className="h-4 w-36 bg-gray-200 rounded animate-pulse" />
                   </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+                  </td>
                   <td className="py-2 px-3 align-middle text-center">
                     <div className="h-6 w-12 bg-gray-200 rounded-full mx-auto animate-pulse" />
                   </td>
@@ -157,7 +172,7 @@ export default function VoterTable({
             ) : (!loading && hasLoaded && props.voters.length === 0) ? (
               // Empty state
               <tr>
-                <td colSpan={7} className="px-4 py-4 text-center text-gray-400">
+                <td colSpan={8} className="px-4 py-4 text-center text-gray-400">
                   No voters found.
                 </td>
               </tr>
@@ -190,6 +205,7 @@ export default function VoterTable({
                   </td>
                   <td className="py-2 px-3 align-middle truncate max-w-[120px]">{voter.scope}</td>
                   <td className="py-2 px-3 align-middle truncate max-w-[180px]">{voter.email}</td>
+                  <td className="py-2 px-3 align-middle truncate max-w-[120px] font-mono text-xs">{voter.code}</td>
                   <td className="py-2 px-3 align-middle text-center">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       voter.voted 

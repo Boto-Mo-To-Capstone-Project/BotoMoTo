@@ -75,7 +75,7 @@ const ScopeTable: React.FC<ScopeTableProps> = ({
                 />
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => onSort("name")}
               >
                 Scoping Name{" "}
@@ -86,7 +86,7 @@ const ScopeTable: React.FC<ScopeTableProps> = ({
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => onSort("description")}
               >
                 Description{" "}

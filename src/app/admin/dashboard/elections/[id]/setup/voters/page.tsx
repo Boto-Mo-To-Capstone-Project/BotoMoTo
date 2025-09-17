@@ -35,7 +35,7 @@ export default function VoterDashboardPage() {
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 400);
-  const [sortCol, setSortCol] = useState<"name" | "status" | "scope" | "email" | "birthdate" | "voted" | null>(null);
+  const [sortCol, setSortCol] = useState<"name" | "status" | "scope" | "email" | "code" | "birthdate" | "voted" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showVotersModal, setShowVotersModal] = useState(false);
@@ -71,6 +71,7 @@ export default function VoterDashboardPage() {
     status: string;
     scope: string;
     email: string;
+    code: string;
     birthdate: string;
     voted: boolean;
   }>>([]);
@@ -173,7 +174,7 @@ export default function VoterDashboardPage() {
     setPageSize(Number(e.target.value));
     setPage(1);
   };
-  const handleSort = (col: "name" | "status" | "scope" | "email" | "birthdate" | "voted") => {
+  const handleSort = (col: "name" | "status" | "scope" | "email" | "code" | "birthdate" | "voted") => {
     if (sortCol === col) {
       setSortDir(sortDir === "asc" ? "desc" : "asc");
     } else {
@@ -469,6 +470,7 @@ export default function VoterDashboardPage() {
           status: v.isActive ? "Active" : "Inactive",
           scope: v.votingScope?.name ?? "—",
           email: v.email ?? "",
+          code: v.code ?? "",
           birthdate: "",
           voted: !!v.voted,
         }));

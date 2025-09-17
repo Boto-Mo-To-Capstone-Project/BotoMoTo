@@ -77,7 +77,7 @@ const PartyTable: React.FC<PartyTableProps> = ({
                 />
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => onSort("name")}
               >
                 Party Name{" "}
@@ -88,7 +88,7 @@ const PartyTable: React.FC<PartyTableProps> = ({
                 )}
               </th>
               <th
-                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none"
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => onSort("color")}
               >
                 Party Color{" "}
@@ -99,7 +99,7 @@ const PartyTable: React.FC<PartyTableProps> = ({
                 )}
               </th>
               {/* NEW: Show Members column */}
-              <th className="py-2 px-3 border-b border-gray-200 text-center">
+              <th className="py-2 px-3 border-b border-gray-200 text-center whitespace-nowrap">
                 Show Members
               </th>
             </tr>
