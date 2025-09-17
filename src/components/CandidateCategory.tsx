@@ -82,7 +82,12 @@ const CandidateCategory = ({
       </SectionHeaderContainer>
 
       <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[auto-fit,minmax(320px,1fr)] gap-6 mt-4">
-        {candidateList.map((candidate) => {
+      {candidateList.length === 0 ? (
+        <div className="text-gray-600 italic text-center py-6 col-span-full">
+          No candidates assigned for this position
+        </div>
+      ) : (
+        candidateList.map((candidate) => {
           const isSelected = selectedCandidatesFromRedux.some(
             (c) => c.id === candidate.id
           );
@@ -156,7 +161,8 @@ const CandidateCategory = ({
               </div>
             </div>
           );
-        })}
+        })
+      )}
       </div>
 
       {/* File Viewer Modal */}
