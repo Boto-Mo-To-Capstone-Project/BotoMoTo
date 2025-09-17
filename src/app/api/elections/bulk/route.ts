@@ -172,7 +172,6 @@ async function handleBulkCreate(electionsData: any[], user: any, request: NextRe
         ...validation.data,
         orgId: electionData.orgId,
         status: validation.data.status || ELECTION_STATUS.DRAFT,
-        allowSurvey: validation.data.allowSurvey || false
       });
     } else {
       errors.push({ index: i, error: `Election ${i + 1} validation failed` });

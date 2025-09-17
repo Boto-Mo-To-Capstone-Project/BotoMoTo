@@ -175,7 +175,7 @@ export default function VoterDashboardPage() {
         {/* Universal App Header */}
         <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
           {/* Table */}
-          <div className="main-content flex-auto py-3 overflow-auto pb-3 px-2 md:gap-4 gap-2 py-3 sm:px-5">
+          <div className="main-content flex-auto py-3 overflow-auto pb-3 px-2 md:gap-4 gap-2 py-3 sm:px-5 pt-8">
             <div>
               <div className="mb-4">
                 <h1 className="text-2xl md:text-3xl font-bold mb-1">Welcome back, {session?.user?.name || 'Username'}!

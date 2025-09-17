@@ -183,7 +183,6 @@ async function createElection(request: NextRequest) {
       name, 
       description, 
       status, 
-      allowSurvey, 
       isTemplate, 
       templateId, 
       instanceYear, 
@@ -280,18 +279,53 @@ async function createElection(request: NextRequest) {
     }
 
     // Check if election name already exists in this organization
-    const nameExists = await db.election.findFirst({
-      where: {
+    // Handle different conflict scenarios based on election type
+    let nameConflictQuery: any;
+    let conflictMessage: string;
+
+    if (isTemplate && !templateId) {
+      // This is a template - only check for other templates with same name
+      // Instances with same name are allowed (they inherit from template)
+      nameConflictQuery = {
         orgId: organization.id,
         name,
+        isDeleted: false,
+        isTemplate: true,
+        templateId: null
+      };
+      conflictMessage = "A template with this name already exists in this organization";
+    } else if (!isTemplate && templateId) {
+      // This is an instance - check for duplicate instances with same template, year, and name
+      nameConflictQuery = {
+        orgId: organization.id,
+        templateId: templateId,
+        instanceYear: instanceYear,
+        instanceName: instanceName,
         isDeleted: false
-      }
+      };
+      conflictMessage = "An instance with this year and name already exists for this template";
+    } else {
+      // This is a standalone - check for any election with same name (standalone or template)
+      nameConflictQuery = {
+        orgId: organization.id,
+        name,
+        isDeleted: false,
+        OR: [
+          { isTemplate: true, templateId: null }, // Other templates
+          { isTemplate: false, templateId: null } // Other standalone elections
+        ]
+      };
+      conflictMessage = "Election name already exists in this organization";
+    }
+
+    const nameExists = await db.election.findFirst({
+      where: nameConflictQuery
     });
 
     if (nameExists) {
       return apiResponse({
         success: false,
-        message: 'Election name already exists in your organization',
+        message: conflictMessage,
         error: 'Conflict',
         status: 409,
       });
@@ -304,7 +338,6 @@ async function createElection(request: NextRequest) {
         name,
         description,
         status: status || ELECTION_STATUS.DRAFT,
-        allowSurvey: allowSurvey || false,
         isTemplate: isTemplate || false,
         templateId: templateId || null,
         instanceYear: instanceYear || null,

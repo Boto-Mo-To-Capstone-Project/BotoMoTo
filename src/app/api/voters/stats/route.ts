@@ -84,8 +84,6 @@ export async function GET(request: NextRequest) {
       inactiveVoters,
       votersWhoVoted,
       votersWhoHaventVoted,
-      verifiedVoters,
-      unverifiedVoters,
       codeStatusStats,
       recentVotes
     ] = await Promise.all([
@@ -112,16 +110,6 @@ export async function GET(request: NextRequest) {
       // Voters who haven't voted
       db.voter.count({
         where: { electionId: electionIdInt, isDeleted: false, voteResponses: { none: { electionId: electionIdInt } } }
-      }),
-      
-      // Verified voters
-      db.voter.count({
-        where: { electionId: electionIdInt, isDeleted: false, isVerified: true }
-      }),
-      
-      // Unverified voters
-      db.voter.count({
-        where: { electionId: electionIdInt, isDeleted: false, isVerified: false }
       }),
       
       // Code send status stats
@@ -197,7 +185,6 @@ export async function GET(request: NextRequest) {
 
     // Calculate overall statistics
     const overallVotingPercentage = totalVoters > 0 ? Math.round((votersWhoVoted / totalVoters) * 100) : 0;
-    const verificationPercentage = totalVoters > 0 ? Math.round((verifiedVoters / totalVoters) * 100) : 0;
     const activePercentage = totalVoters > 0 ? Math.round((activeVoters / totalVoters) * 100) : 0;
 
     // Format code status statistics
@@ -215,9 +202,6 @@ export async function GET(request: NextRequest) {
         votersWhoVoted,
         votersWhoHaventVoted,
         overallVotingPercentage,
-        verifiedVoters,
-        unverifiedVoters,
-        verificationPercentage,
         recentVotes
       },
       votingByScope: votingScopeStats,

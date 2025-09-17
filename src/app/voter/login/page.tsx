@@ -47,7 +47,6 @@ const VoterLoginPage = () => {
             firstName: data.data.voter.firstName,
             middleName: data.data.voter.middleName,
             lastName: data.data.voter.lastName,
-            isVerified: data.data.voter.isVerified,
             voted: data.data.voter.voted,
             votingScope: data.data.voter.votingScope
             // Removed email for security

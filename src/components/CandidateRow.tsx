@@ -27,14 +27,19 @@ const CandidateRow = ({
             !showCredentials ? "w-1/2" : "w-2/5"
           }`}
         >
-          <img
-            src={
-              candidate.img ||
-              "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaHfpIhAPZHSbZstaGEgFBIjZZ-Y-K533dag&s"
-            }
-            alt={`${candidate.name} photo`}
-            className="w-10 h-10 object-cover rounded-full"
-          />
+          {/* Candidate Image */}
+          <div className="min-w-[3.5rem] min-h-[3.5rem] w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-xl border-2 border-gray-200 overflow-hidden">
+            <img
+              src={candidate.img ? candidate.img : "/assets/placeholderuser.png"}
+              alt={candidate.img ? `${candidate.name} photo` : "Placeholder user"}
+              className="w-full h-full object-cover max-w-none"
+              onError={e => {
+                if (e.currentTarget.src.indexOf('placeholderuser.png') === -1) {
+                  e.currentTarget.src = '/assets/placeholderuser.png';
+                }
+              }}
+            />
+          </div>
           <strong>{candidate.name}</strong>
         </td>
         <td

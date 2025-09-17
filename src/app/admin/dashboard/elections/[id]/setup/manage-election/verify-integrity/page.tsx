@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Loader2, CheckCircle2, XCircle, Vote, Users, BarChart2, Clock, ShieldCheck, CheckSquare, BadgeCheck, UserSquare } from "lucide-react";
 import Button from "@/components/Button";
+import { SubmitButton } from "@/components/SubmitButton";
 import KpiCard from "@/components/KpiCard";
 
 interface VerificationResponse {
@@ -72,74 +73,95 @@ export default function VerifyIntegrityPage() {
   const verification = data?.verification;
 
   return (
-    <div className="p-6 space-y-6">
-      {/* page head and details */}
-      <div className="flex flex-col items-start gap-10 justify-between xl:flex-row w-full">
-        <div className="text-center xl:text-start space-y-2">
-          <p className="voter-election-heading">
-            {election ? election.name : "Election name"}
-          </p>
-          <p className="voter-election-desc">
-            Organization: {election ? election.organization : "Your organization"}
-          </p>
-          <p className="voter-election-desc">
-            Status: {election ? election.status : "Election status"}
-          </p>
-        </div>
-        <div className="flex justify-center w-full xs:w-auto">
-          <p className="voter-election-desc">
-            Verified at: {verification ? new Date(verification.timestamp).toLocaleString() : "Verified date"}
-          </p>
+    <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8 pt-4">
+      {/* Sticky Go Back Button at top */}
+      <div className="main-toolbar sticky top-16 z-30 bg-white flex flex-row items-end justify-end mb-6 py-3 px-2 sm:px-5 w-full">
+        <SubmitButton
+          variant="action"
+          label="Go Back"
+          onClick={() => router.push(`/admin/dashboard/elections/${id}/setup/manage-election`)}
+        />
+      </div>
+      {/* Maroon Header Card */}
+      <div className="flex items-center rounded-2xl bg-red-800 mb-6 px-6 py-6 relative overflow-hidden mt-8">
+        <div>
+          <h2 className="text-white text-xl font-semibold mb-2">{election ? election.name : "Election name"}</h2>
+          <p className="text-white text-base">Organization: {election ? election.organization : "Your organization"}</p>
+          <p className="text-white text-base">Status: {election ? election.status : "Election status"}</p>
+          <p className="text-white text-sm">Verified at: {verification ? new Date(verification.timestamp).toLocaleString() : "Verified date"}</p>
         </div>
       </div>
 
       {verification?.errors && (
-        <div className="rounded-xl shadow border border-gray-200">
-          <h2 className="text-lg font-semibold mb-2 text-primary pt-4 pl-4">
-            Integrity Issues!!
-          </h2>
-          <div className="p-4 overflow-y-auto h-70">
-            <div className="space-y-4">
-              {verification.errors.map((err, idx) => (
-                <div
-                  key={idx}
-                  className="border p-3 rounded-md bg-red-50 border-red-200 text-wrap overflow-hidden"
-                >
-                  <p className="font-medium">
-                    Vote ID: {err.voteId} | Chain Order: {err.chainOrder}
-                  </p>
-                  <ul className="list-disc list-inside text-sm text-red-700">
-                    {err.issues.map((issue, i) => (
-                      <li key={i}>{issue}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
+          <h2 className="text-lg font-semibold mb-2 text-primary">Integrity Issues!!</h2>
+          <div className="space-y-4">
+            {verification.errors.map((err, idx) => (
+              <div
+                key={idx}
+                className="border p-3 rounded-md bg-red-100 border-red-300 text-wrap overflow-hidden"
+              >
+                <p className="font-medium">
+                  Vote ID: {err.voteId} | Chain Order: {err.chainOrder}
+                </p>
+                <ul className="list-disc list-inside text-sm text-red-700">
+                  {err.issues.map((issue, i) => (
+                    <li key={i}>{issue}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* KPI section */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 w-full mt-10">
-        <KpiCard name="Integrity:" value={verification ? `${verification.integrityPercentage}%` : "..."} icon={ShieldCheck} />
-        <KpiCard name="Total Votes" value={verification ? `${verification.summary.totalVotes}` : "..."} icon={CheckSquare} />
-        <KpiCard name="Total Voters" value={verification ? `${verification.summary.totalVoters}` : "..."} icon={Users} />
-        <KpiCard name="Verified Votes" value={verification ? `${verification.summary.verifiedVotes}` : "..."} icon={BadgeCheck} />
-        <KpiCard name="Candidates" value={verification ? `${verification.summary.totalCandidates}` : "..."} icon={UserSquare} />
-        <KpiCard name="Invalid Votes" value={verification ? `${verification.summary.invalidVotes}` : "..."} icon={XCircle} />
+      {/* KPI Cards Section - dashboard style with icons */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 w-full">
+        <div className="rounded-2xl shadow-sm p-6 bg-orange-100 flex items-center min-w-0 w-full">
+          <div className="flex-1">
+            <div className="text-3xl font-bold mb-1 text-[#7c3a12]">{verification ? `${verification.integrityPercentage}%` : "..."}</div>
+            <div className="text-base font-semibold text-[#7c3a12]">Integrity</div>
+          </div>
+          <ShieldCheck className="w-14 h-14 text-[#7c3a12]" />
+        </div>
+        <div className="rounded-2xl shadow-sm p-6 bg-blue-100 flex items-center min-w-0 w-full">
+          <div className="flex-1">
+            <div className="text-3xl font-bold mb-1 text-[#1e3a8a]">{verification ? `${verification.summary.totalVotes}` : "..."}</div>
+            <div className="text-base font-semibold text-[#1e3a8a]">Total Votes</div>
+          </div>
+          <CheckSquare className="w-14 h-14 text-[#1e3a8a]" />
+        </div>
+        <div className="rounded-2xl shadow-sm p-6 bg-green-100 flex items-center min-w-0 w-full">
+          <div className="flex-1">
+            <div className="text-3xl font-bold mb-1 text-[#166534]">{verification ? `${verification.summary.totalVoters}` : "..."}</div>
+            <div className="text-base font-semibold text-[#166534]">Total Voters</div>
+          </div>
+          <Users className="w-14 h-14 text-[#166534]" />
+        </div>
+        <div className="rounded-2xl shadow-sm p-6 bg-pink-100 flex items-center min-w-0 w-full">
+          <div className="flex-1">
+            <div className="text-3xl font-bold mb-1 text-[#a21a5b]">{verification ? `${verification.summary.verifiedVotes}` : "..."}</div>
+            <div className="text-base font-semibold text-[#a21a5b]">Verified Votes</div>
+          </div>
+          <BadgeCheck className="w-14 h-14 text-[#a21a5b]" />
+        </div>
+        <div className="rounded-2xl shadow-sm p-6 bg-yellow-100 flex items-center min-w-0 w-full">
+          <div className="flex-1">
+            <div className="text-3xl font-bold mb-1 text-[#854d0e]">{verification ? `${verification.summary.totalCandidates}` : "..."}</div>
+            <div className="text-base font-semibold text-[#854d0e]">Candidates</div>
+          </div>
+          <UserSquare className="w-14 h-14 text-[#854d0e]" />
+        </div>
+        <div className="rounded-2xl shadow-sm p-6 bg-red-100 flex items-center min-w-0 w-full">
+          <div className="flex-1">
+            <div className="text-3xl font-bold mb-1 text-[#991b1b]">{verification ? `${verification.summary.invalidVotes}` : "..."}</div>
+            <div className="text-base font-semibold text-[#991b1b]">Invalid Votes</div>
+          </div>
+          <XCircle className="w-14 h-14 text-[#991b1b]" />
+        </div>
       </div>
 
-      <div className="flex w-full justify-end mt-10">
-        <Button
-          variant="long_secondary"
-          onClick={() =>
-            router.push(`/admin/dashboard/elections/${id}/setup/manage-election`)
-          }
-        >
-          Go Back
-        </Button>
-      </div>
+  {/* ...existing code... */}
     </div>
   );
 }

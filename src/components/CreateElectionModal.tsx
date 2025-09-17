@@ -135,8 +135,8 @@ export function CreateElectionModal({
                 )}
               </div>
             ) : (
-              <form onSubmit={handleCreateInstanceSubmit} className="space-y-4">
-                <div className="flex items-center space-x-3 mb-4">
+              <form onSubmit={handleCreateInstanceSubmit} className="grid gap-4 mb-4 grid-cols-2">
+                <div className="col-span-2 flex items-center space-x-3 mb-4">
                   <button
                     type="button"
                     onClick={() => setModalType('choice')}
@@ -148,15 +148,14 @@ export function CreateElectionModal({
                   </button>
                   <h4 className="text-lg font-medium text-gray-900">Create Instance from Template</h4>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Select Template*
                   </label>
                   <select
                     value={selectedTemplate || ''}
                     onChange={(e) => setSelectedTemplate(Number(e.target.value))}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full border border-[var(--color-secondary)] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-[var(--color-secondary)] bg-white text-gray-900"
                     required
                   >
                     <option value="">Choose a template...</option>
@@ -167,15 +166,14 @@ export function CreateElectionModal({
                     ))}
                   </select>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Instance Year*
                   </label>
                   <select
                     value={instanceYear}
                     onChange={(e) => setInstanceYear(Number(e.target.value))}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full border border-[var(--color-secondary)] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-[var(--color-secondary)] bg-white text-gray-900"
                     required
                   >
                     {yearOptions.map((year) => (
@@ -183,8 +181,7 @@ export function CreateElectionModal({
                     ))}
                   </select>
                 </div>
-                
-                <div>
+                <div className="col-span-2">
                   <InputField
                     label="Instance Name*"
                     type="text"
@@ -197,22 +194,20 @@ export function CreateElectionModal({
                     A descriptive name for this election instance
                   </p>
                 </div>
-                
-                <div className="flex space-x-3 pt-4">
-                  <button
+                <div className="col-span-2 flex justify-end gap-2 mt-2">
+                  <SubmitButton
                     type="button"
+                    variant="action"
                     onClick={() => setModalType('choice')}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Back
-                  </button>
-                  <button
+                    label="Cancel"
+                  />
+                  <SubmitButton
                     type="submit"
-                    disabled={loading}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {loading ? 'Creating...' : 'Create Instance'}
-                  </button>
+                    variant="small"
+                    label={loading ? 'Creating...' : 'Create'}
+                    className="px-5 py-2.5 text-sm font-medium rounded-lg"
+                    isLoading={loading}
+                  />
                 </div>
               </form>
             )}

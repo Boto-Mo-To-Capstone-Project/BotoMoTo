@@ -35,6 +35,7 @@ interface ElectionFormData {
   startDate: string;
   endDate: string;
   isTemplate?: boolean;
+  templateId?: number; // For instances created from templates
   instanceYear?: string;
   instanceName?: string;
 }
@@ -92,7 +93,7 @@ function CreateElectionContent() {
   const isEditing = !!editId && !Number.isNaN(editId);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [originalMeta, setOriginalMeta] = useState<{ status?: "DRAFT" | "ACTIVE" | "CLOSED"; allowSurvey?: boolean }>({});
+  const [originalMeta, setOriginalMeta] = useState<{ status?: "DRAFT" | "ACTIVE" | "CLOSED"; }>({});
 
   // Helper to format ISO -> datetime-local value
   const toDateTimeLocal = (iso?: string | null) => {
@@ -128,12 +129,13 @@ function CreateElectionContent() {
           startDate: toDateTimeLocal(start),
           endDate: toDateTimeLocal(end),
           isTemplate: e.isTemplate || false,
+          templateId: e.templateId || undefined, // Include templateId for instances
           instanceYear: e.instanceYear ? e.instanceYear.toString() : "",
           instanceName: e.instanceName || "",
         };
         if (!cancelled) {
           setElectionData(nextData);
-          setOriginalMeta({ status: e.status, allowSurvey: e.allowSurvey });
+          setOriginalMeta({ status: e.status });
         }
         // Fetch scopes and parties in parallel
         const [scopesRes, partiesRes] = await Promise.all([
@@ -217,6 +219,18 @@ function CreateElectionContent() {
         basePayload.instanceName = electionData.instanceName.trim();
       }
 
+      // For instances, include template reference and instance details
+      if (electionData.templateId) {
+        basePayload.templateId = electionData.templateId;
+        if (!electionData.instanceYear || !electionData.instanceName) {
+          toast.error('Instance year and name are required for election instances');
+          setSaving(false);
+          return;
+        }
+        basePayload.instanceYear = parseInt(electionData.instanceYear);
+        basePayload.instanceName = electionData.instanceName.trim();
+      }
+
       // All elections need schedule data now
       const isoStart = electionData.startDate ? new Date(electionData.startDate).toISOString() : null;
       const isoEnd = electionData.endDate ? new Date(electionData.endDate).toISOString() : null;
@@ -241,10 +255,8 @@ function CreateElectionContent() {
           : 'Election updated successfully';
         // keep existing server-side meta fields
         basePayload.status = originalMeta.status ?? 'DRAFT';
-        basePayload.allowSurvey = originalMeta.allowSurvey ?? false;
       } else {
         basePayload.status = 'DRAFT';
-        basePayload.allowSurvey = false;
       }
 
       const res = await fetch(url, {
@@ -613,7 +625,7 @@ function CreateElectionContent() {
               <SubmitButton
                 label={isEditing ? "Update" : "Save"}
                 variant="action-primary"
-                icon={<MdSave size={20} className="text-[var(--color-primary)]" />}
+                icon={<MdSave size={20} className="fill-current" />}
                 title={isEditing ? "Update" : "Save"}
                 onClick={handleSaveElection} // <-- This triggers the form's submit
                 className={`min-w-[100px] ${saving ? 'opacity-70 pointer-events-none' : ''}`}

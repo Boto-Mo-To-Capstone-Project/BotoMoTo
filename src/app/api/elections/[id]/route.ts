@@ -162,7 +162,6 @@ export async function PUT(
       name, 
       description, 
       status, 
-      allowSurvey, 
       isTemplate, 
       templateId, 
       instanceYear, 
@@ -267,21 +266,62 @@ export async function PUT(
     }
 
     // Check if election name already exists in the organization (excluding current election)
-    const nameExists = await db.election.findFirst({
-      where: {
+    // Handle different conflict scenarios based on election type
+    let nameConflictQuery: any;
+    let conflictMessage: string;
+
+    if (isTemplate && !templateId) {
+      // This is a template - only check for other templates with same name
+      // Instances with same name are allowed (they inherit from template)
+      nameConflictQuery = {
         orgId: election.organization.id,
         name,
+        isDeleted: false,
+        isTemplate: true,
+        templateId: null,
+        NOT: {
+          id: electionId
+        }
+      };
+      conflictMessage = "A template with this name already exists in this organization";
+    } else if (!isTemplate && templateId) {
+      // This is an instance - check for duplicate instances with same template, year, and name
+      nameConflictQuery = {
+        orgId: election.organization.id,
+        templateId: templateId,
+        instanceYear: instanceYear,
+        instanceName: instanceName,
         isDeleted: false,
         NOT: {
           id: electionId
         }
-      }
+      };
+      conflictMessage = "An instance with this year and name already exists for this template";
+    } else {
+      // This is a standalone - check for any election with same name (standalone or template)
+      nameConflictQuery = {
+        orgId: election.organization.id,
+        name,
+        isDeleted: false,
+        OR: [
+          { isTemplate: true, templateId: null }, // Other templates
+          { isTemplate: false, templateId: null } // Other standalone elections
+        ],
+        NOT: {
+          id: electionId
+        }
+      };
+      conflictMessage = "Election name already exists in this organization";
+    }
+
+    const nameExists = await db.election.findFirst({
+      where: nameConflictQuery
     });
 
     if (nameExists) {
       return apiResponse({
         success: false,
-        message: "Election name already exists in this organization",
+        message: conflictMessage,
         data: null,
         error: "Conflict",
         status: 409
@@ -293,7 +333,6 @@ export async function PUT(
       name: election.name,
       description: election.description,
       status: election.status,
-      allowSurvey: election.allowSurvey,
       isTemplate: election.isTemplate,
       templateId: election.templateId,
       instanceYear: election.instanceYear,
@@ -306,7 +345,6 @@ export async function PUT(
         name,
         description,
         status,
-        allowSurvey,
         isTemplate: isTemplate || false,
         templateId: templateId || null,
         instanceYear: instanceYear || null,
@@ -406,7 +444,7 @@ export async function PUT(
 
     // Compare and log changed fields
     const changedFields: Record<string, { old: any; new: any }> = {};
-    for (const key of ["name", "description", "status", "allowSurvey", "isTemplate", "templateId", "instanceYear", "instanceName"] as const) {
+    for (const key of ["name", "description", "status", "isTemplate", "templateId", "instanceYear", "instanceName"] as const) {
       const oldVal = (oldData as any)[key];
       const newVal = (updatedElection as any)[key] ?? null;
       if (oldVal !== newVal) {
