@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import Select from 'react-select';
 import { SubmitButton } from "@/components/SubmitButton";
 import { FileDropzone } from "@/components/FileDropzone";
 import { UploadedFileDisplay } from "@/components/UploadedFileDisplay";
@@ -32,6 +33,51 @@ type CandidatesModalProps = {
   disableSave?: boolean;
   isEditMode?: boolean;
   candidateId?: number | null;
+};
+
+// Custom styles for react-select to match existing design
+const customSelectStyles = {
+  control: (provided: any, state: any) => ({
+    ...provided,
+    borderColor: getComputedStyle(document.documentElement).getPropertyValue('--color-secondary').trim(),
+    borderRadius: '6px',
+    padding: '2px 4px',
+    fontSize: '14px',
+    minHeight: '38px',
+    boxShadow: state.isFocused ? '0 0 0 2px rgba(251, 191, 36, 0.2)' : 'none',
+    '&:hover': {
+      borderColor: getComputedStyle(document.documentElement).getPropertyValue('--color-secondary').trim(),
+    },
+    backgroundColor: 'white',
+    opacity: state.isDisabled ? 0.6 : 1,
+  }),
+  option: (provided: any, state: any) => ({
+    ...provided,
+    fontSize: '14px',
+    backgroundColor: state.isSelected
+      ? getComputedStyle(document.documentElement).getPropertyValue('--color-secondary').trim()
+      : state.isFocused
+      ? 'rgba(251, 191, 36, 0.1)'
+      : 'white',
+    color: state.isSelected ? 'white' : '#111827',
+    '&:hover': {
+      backgroundColor: state.isSelected ? getComputedStyle(document.documentElement).getPropertyValue('--color-secondary').trim() : 'rgba(251, 191, 36, 0.1)',
+    },
+  }),
+  placeholder: (provided: any) => ({
+    ...provided,
+    color: '#6B7280',
+    fontSize: '14px',
+  }),
+  singleValue: (provided: any) => ({
+    ...provided,
+    color: '#111827',
+    fontSize: '14px',
+  }),
+  menu: (provided: any) => ({
+    ...provided,
+    zIndex: 9999,
+  }),
 };
 
 export function CandidatesModal({
@@ -144,6 +190,21 @@ export function CandidatesModal({
     if (p.votingScopeId) return `Scope #${p.votingScopeId}`;
     return "All voters"; // no scope restriction
   };
+
+  // Transform voters into react-select options
+  const voterOptions = useMemo(() => {
+    return voters.map(v => ({
+      value: v.id,
+      label: `${v.firstName} ${v.lastName}${v.email ? ` (${v.email})` : ''}`,
+      voter: v,
+    }));
+  }, [voters]);
+
+  // Get selected voter option for react-select
+  const selectedVoterOption = useMemo(() => {
+    if (!voterId) return null;
+    return voterOptions.find(option => option.value === voterId) || null;
+  }, [voterId, voterOptions]);
 
   // Helper function to create existing file objects
   const createExistingFile = (filename: string, type: string) => {
@@ -343,20 +404,17 @@ export function CandidatesModal({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Voter (Candidate)*
                 </label>
-                <select
-                  value={voterId ?? ''}
-                  onChange={e => setVoterId(e.target.value ? Number(e.target.value) : undefined)}
-                  className={`w-full border border-[var(--color-secondary)] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-[var(--color-secondary)] bg-white text-gray-900 ${isEditMode ? 'opacity-60' : ''}`}
+                <Select
+                  value={selectedVoterOption}
+                  onChange={(option) => setVoterId(option?.value)}
+                  options={voterOptions}
+                  styles={customSelectStyles}
+                  placeholder="Select a voter to become a candidate"
+                  isClearable
+                  isSearchable
+                  isDisabled={isEditMode}
                   required
-                  disabled={isEditMode}
-                >
-                  <option value="">Select a voter to become a candidate</option>
-                  {voters.map(v => (
-                    <option key={v.id} value={v.id}>
-                      {v.firstName} {v.lastName}{v.email ? ` (${v.email})` : ''}
-                    </option>
-                  ))}
-                </select>
+                />
                 {isEditMode && (
                   <p className="text-xs text-gray-500 mt-1">
                     Voter cannot be changed when editing a candidate
