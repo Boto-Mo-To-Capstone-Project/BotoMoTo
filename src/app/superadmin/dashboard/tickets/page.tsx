@@ -45,7 +45,6 @@ export default function SuperAdminTicketsPage() {
         setTickets(mappedTickets);
 
         if (mappedTickets.length === 0 && !hasShownToast.current) {
-          toast.error("No tickets found");
           hasShownToast.current = true;
         }
       } catch (error) {
