@@ -4,7 +4,7 @@ import { Suspense, useState, useRef, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { SubmitButton } from "@/components/SubmitButton";
 import SearchBar from '@/components/SearchBar';
-import { MdAdd, MdFilterList, MdDelete, MdEdit, MdSave } from "react-icons/md";
+import { MdAdd, MdDownload, MdDelete, MdEdit, MdSave } from "react-icons/md";
 import { ElectionForm, ElectionFormHandle } from "@/components/ElectionForm";
 import { ScopeTab } from "@/components/ScopeTab";
 import { PartyTab } from "@/components/PartyTab"; // Use PartyTab instead of PartyTable/PartyModal
@@ -664,13 +664,12 @@ function CreateElectionContent() {
                 <SubmitButton
                   label=""
                   variant="action"
-                  icon={<MdFilterList size={20} />}
-                  title="Filter"
+                  icon={<MdDownload size={20} />}
+                  title="Download"
                   onClick={
                     scopeSelectedIds.length >= 1
                       ? () => {
-                          /* TODO: handle filter */
-                          toast('Filter not implemented');
+                          /* TODO: handle download */
                         }
                       : undefined
                   }
@@ -737,13 +736,12 @@ function CreateElectionContent() {
                 <SubmitButton
                   label=""
                   variant="action"
-                  icon={<MdFilterList size={20} />}
-                  title="Filter"
+                  icon={<MdDownload size={20} />}
+                  title="Download"
                   onClick={
                     partySelectedIds.length >= 1
                       ? () => {
-                          /* TODO: handle filter party */
-                          toast('Filter not implemented');
+                          /* TODO: handle download */
                         }
                       : undefined
                   }

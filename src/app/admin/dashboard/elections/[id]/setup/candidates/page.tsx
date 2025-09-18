@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
-import { MdAdd, MdFilterList, MdDelete, MdEdit, MdFileUpload } from "react-icons/md";
+import { MdAdd, MdDownload, MdDelete, MdEdit, MdFileUpload } from "react-icons/md";
 import { SubmitButton } from '@/components/SubmitButton';
 import SearchBar from '@/components/SearchBar';
 import CandidatesTable from '@/components/CandidatesTable';
@@ -516,14 +516,14 @@ export default function CandidatesDashboardPage() {
                     : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
                 }
               />
-              <SubmitButton
+              {/* <SubmitButton
                 label=""
                 variant="action"
                 icon={<MdFilterList size={20} />}
                 title="Filter"
                 onClick={
                   selectedIds.length >= 1
-                    ? () => { /* TODO: handle filter */ }
+                    ? () => { }
                     : undefined
                 }
                 className={
@@ -531,7 +531,7 @@ export default function CandidatesDashboardPage() {
                     ? ""
                     : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
                 }
-              />
+              /> */}
               <SubmitButton
                 label=""
                 variant="action"
@@ -546,6 +546,16 @@ export default function CandidatesDashboardPage() {
                   selectedIds.length >= 1
                     ? ""
                     : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
+                }
+              />
+              <SubmitButton
+                label=""
+                variant="action"
+                icon={<MdDownload size={20} />}
+                title="Download"
+                onClick={() => {
+                        /* TODO: handle download */
+                      }
                 }
               />
             </div>

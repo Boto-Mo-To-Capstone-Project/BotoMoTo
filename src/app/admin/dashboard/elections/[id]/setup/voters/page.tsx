@@ -1,12 +1,13 @@
 "use client";
-import { useState, useEffect, useRef } from 'react';
-import { MdAdd, MdFilterList, MdDelete, MdEdit, MdSave, MdFileUpload } from "react-icons/md";
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { MdAdd, MdDownload, MdDelete, MdEdit, MdSave, MdFileUpload } from "react-icons/md";
 import { SubmitButton } from '@/components/SubmitButton';
 import SearchBar from '@/components/SearchBar';
 import VoterTable from '@/components/VoterTable';
 import { VotersModal } from '@/components/VotersModal'; 
 import { VotersDragandDropdown } from '@/components/VotersDragandDropdown';
 import FileViewer from '@/components/FileViewer';
+import { FilterToolbar } from '@/components/FilterToolbar';
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Toaster, toast } from 'react-hot-toast';
 import ConfirmationModal from '@/components/ConfirmationModal';
@@ -54,6 +55,11 @@ export default function VoterDashboardPage() {
   } | undefined>(undefined);
   const [editingVoterId, setEditingVoterId] = useState<number | null>(null);
   const [editIsActive, setEditIsActive] = useState<boolean>(true);
+
+  // Filter states for demonstration
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [votedFilter, setVotedFilter] = useState("all");
+  const [scopeFilter, setScopeFilter] = useState("all");
 
   // FileViewer state for template preview
   const [showFileViewer, setShowFileViewer] = useState(false);
@@ -129,10 +135,16 @@ export default function VoterDashboardPage() {
     const p = Number(sp.get("page") || 1);
     const l = Number(sp.get("limit") || 10);
     const s = sp.get("search") || "";
+    const status = sp.get("status") || "all";
+    const voted = sp.get("voted") || "all";
+    const scope = sp.get("scope") || "all";
 
     if (!Number.isNaN(p) && p > 0) setPage(p);
     if (!Number.isNaN(l) && l > 0) setPageSize(l);
     setSearch(s);
+    setStatusFilter(status);
+    setVotedFilter(voted);
+    setScopeFilter(scope);
   }, [searchParams]);
 
   // FileViewer handlers
@@ -158,12 +170,15 @@ export default function VoterDashboardPage() {
     sp.set("page", String(page));
     sp.set("limit", String(pageSize));
     if (debouncedSearch) sp.set("search", debouncedSearch); else sp.delete("search");
+    if (statusFilter !== "all") sp.set("status", statusFilter); else sp.delete("status");
+    if (votedFilter !== "all") sp.set("voted", votedFilter); else sp.delete("voted");
+    if (scopeFilter !== "all") sp.set("scope", scopeFilter); else sp.delete("scope");
 
     const target = sp.toString();
     if (target !== current) {
       router.replace(`?${target}`, { scroll: false });
     }
-  }, [page, pageSize, debouncedSearch, router, searchParams]);
+  }, [page, pageSize, debouncedSearch, statusFilter, votedFilter, scopeFilter, router, searchParams]);
 
   // Pagination handlers
   const handleFirst = () => setPage(1);
@@ -186,6 +201,59 @@ export default function VoterDashboardPage() {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
+  };
+
+  // Filter definitions for FilterToolbar (demonstration)
+  const voterFilters = useMemo(() => [
+    {
+      key: "status",
+      label: "Status",
+      value: statusFilter,
+      onChange: (value: string) => {
+        setStatusFilter(value);
+        setPage(1);
+      },
+      options: [
+        { value: "all", label: "All Status" },
+        { value: "active", label: "Active" },
+        { value: "inactive", label: "Inactive" },
+      ]
+    },
+    {
+      key: "voted",
+      label: "Voted",
+      value: votedFilter,
+      onChange: (value: string) => {
+        setVotedFilter(value);
+        setPage(1);
+      },
+      options: [
+        { value: "all", label: "All Voters" },
+        { value: "voted", label: "Has Voted" },
+        { value: "not_voted", label: "Not Voted" },
+      ]
+    },
+    {
+      key: "scope",
+      label: "Voting Scope",
+      value: scopeFilter,
+      onChange: (value: string) => {
+        setScopeFilter(value);
+        setPage(1);
+      },
+      options: [
+        { value: "all", label: "All Scopes" },
+        // Note: In a real implementation, you would populate this from votingScopes state
+        ...votingScopes.map(scope => ({ value: scope.id.toString(), label: scope.name }))
+      ]
+    }
+  ], [statusFilter, votedFilter, scopeFilter, votingScopes]);
+
+  const handleClearVoterFilters = () => {
+    setStatusFilter("all");
+    setVotedFilter("all");
+    setScopeFilter("all");
+    setPage(1);
   };
 
   // Bulk delete selected voters -> POST /api/voters/bulk { operation: 'soft_delete', voterIds, electionId }
@@ -446,6 +514,10 @@ export default function VoterDashboardPage() {
           page: String(page),
           limit: String(pageSize),
           ...(debouncedSearch ? { search: debouncedSearch } : {}),
+          // Apply filters
+          ...(statusFilter !== "all" ? { isActive: statusFilter === "active" ? "true" : "false" } : {}),
+          ...(votedFilter !== "all" ? { voted: votedFilter === "voted" ? "true" : "false" } : {}),
+          ...(scopeFilter !== "all" ? { votingScopeId: scopeFilter } : {}),
           // Removed sortCol and sortDir - frontend sorting only
         });
         const res = await fetch(`/api/voters?${qs.toString()}`, {
@@ -495,7 +567,7 @@ export default function VoterDashboardPage() {
       alive = false;
       ctrl.abort();
     };
-  }, [electionId, page, pageSize, debouncedSearch, reloadKey]); // Removed sortCol, sortDir
+  }, [electionId, page, pageSize, debouncedSearch, statusFilter, votedFilter, scopeFilter, reloadKey]); // Added filter dependencies
 
   // NEW: Fetch voting scopes for this election (for the modal select)
   useEffect(() => {
@@ -661,24 +733,6 @@ export default function VoterDashboardPage() {
               <SubmitButton
                 label=""
                 variant="action"
-                icon={<MdFilterList size={20} />}
-                title="Filter"
-                onClick={
-                  selectedIds.length >= 1
-                    ? () => {
-                        /* TODO: handle filter */
-                      }
-                    : undefined
-                }
-                className={
-                  selectedIds.length >= 1
-                    ? ""
-                    : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
-                }
-              />
-              <SubmitButton
-                label=""
-                variant="action"
                 icon={<MdDelete size={20} />}
                 title="Delete"
                 onClick={
@@ -692,6 +746,21 @@ export default function VoterDashboardPage() {
                     : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
                 }
               />
+              <SubmitButton
+                label=""
+                variant="action"
+                icon={<MdDownload size={20} />}
+                title="Download"
+                onClick={() => {
+                        /* TODO: handle download */
+                      }
+                }
+              />
+            {/* Filter toolbar */}
+              <FilterToolbar
+                filters={voterFilters}
+                buttonText='Filters'
+              />    
             </div>
           </div>
 

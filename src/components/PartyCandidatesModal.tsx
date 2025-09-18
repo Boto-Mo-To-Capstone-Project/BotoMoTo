@@ -42,10 +42,8 @@ export function PartyCandidatesModal({
               <h3 className="text-lg font-semibold text-gray-900">
                 {partyName} - Candidates
               </h3>
-              <p className="text-sm text-gray-500">
-                View all candidates belonging to this party.
-              </p>
             </div>
+             
             <button
               type="button"
               className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center"
@@ -60,6 +58,7 @@ export function PartyCandidatesModal({
 
           {/* Modal body */}
           <div className="p-4">
+            <p className="text-sm text-gray-500 mb-4">View all candidates belonging to this party.</p>
             {loading ? (
               <div className="text-center py-8">
                 <div className="text-gray-500">Loading candidates...</div>

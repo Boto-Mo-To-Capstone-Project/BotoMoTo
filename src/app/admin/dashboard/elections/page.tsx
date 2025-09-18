@@ -358,42 +358,6 @@ function ElectionDashboardContent() {
               <SubmitButton
                 label=""
                 variant="action"
-                icon={<MdDownload size={20} />}
-                title="Download"
-                onClick={
-                  selectedIds.length >= 1
-                    ? () => {
-                        /* TODO: handle download */
-                      }
-                    : undefined
-                }
-                className={
-                  selectedIds.length >= 1
-                    ? ""
-                    : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
-                }
-              />
-              <SubmitButton
-                label=""
-                variant="action"
-                icon={<MdFilterList size={20} />}
-                title="Filter"
-                onClick={
-                  selectedIds.length >= 1
-                    ? () => {
-                        /* TODO: handle filter */
-                      }
-                    : undefined
-                }
-                className={
-                  selectedIds.length >= 1
-                    ? ""
-                    : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
-                }
-              />
-              <SubmitButton
-                label=""
-                variant="action"
                 icon={<MdDelete size={20} />}
                 title="Delete"
                 onClick={
@@ -405,6 +369,16 @@ function ElectionDashboardContent() {
                   selectedIds.length >= 1
                     ? ""
                     : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
+                }
+              />
+              <SubmitButton
+                label=""
+                variant="action"
+                icon={<MdDownload size={20} />}
+                title="Download"
+                onClick={() => {
+                        /* TODO: handle download */
+                      }
                 }
               />
             </div>
