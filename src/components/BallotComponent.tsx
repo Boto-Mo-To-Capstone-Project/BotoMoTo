@@ -241,6 +241,7 @@ const BallotComponent = ({
             position={pos.name}
             selectCount={pos.maxSelections}
             candidateList={pos.candidates}
+            scopes={ballotData.scopes || []}
             onSelectCandidate={(candidate: Candidate) =>
               handleSelectCandidate(pos.name, candidate)
             }
