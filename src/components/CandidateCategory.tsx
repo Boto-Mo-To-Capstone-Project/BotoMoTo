@@ -82,15 +82,17 @@ const CandidateCategory = ({
         <span className="bg-primary/5 text-sm align-center font-bold ml-2 rounded-xl py-1 px-2 text-primary">
           Select up to {selectCount}
         </span>
-        {/* 👇 Show scope name (get the scope of the first candidate) */}
-        {candidateList.length > 0 && (
-          <span className="bg-primary/5 text-sm align-center font-bold ml-2 rounded-xl py-1 px-2 text-primary">
-            Scope:{" "}
-            {scopes.find(
-              (s) => Number(s.id) === Number(candidateList[0].scopeId)
-            )?.name || "N/A"}
-          </span>
-        )}
+        {/* 👇 Show scope name only if found */}
+        {candidateList.length > 0 && (() => {
+          const scope = scopes.find(
+            (s) => Number(s.id) === Number(candidateList[0].scopeId)
+          );
+          return scope ? (
+            <span className="bg-primary/5 text-sm align-center font-bold ml-2 rounded-xl py-1 px-2 text-primary">
+              Scope: {scope.name}
+            </span>
+          ) : null;
+        })()}
       </SectionHeaderContainer>
 
       <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[auto-fit,minmax(320px,1fr)] gap-6 mt-4">
