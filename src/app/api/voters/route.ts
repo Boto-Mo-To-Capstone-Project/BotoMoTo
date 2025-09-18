@@ -134,15 +134,34 @@ async function getVoters(request: NextRequest) {
 
     // Add search filter if provided
     if (search) {
-      const searchTerm = search.trim();
+      const searchTerm = search.trim().toLowerCase();
       
-      where.OR = [
+      const searchConditions: any[] = [
         { firstName: { contains: searchTerm, mode: 'insensitive' } },
         { lastName: { contains: searchTerm, mode: 'insensitive' } },
         { middleName: { contains: searchTerm, mode: 'insensitive' } },
         { email: { contains: searchTerm, mode: 'insensitive' } },
         { code: { contains: searchTerm, mode: 'insensitive' } },
       ];
+
+      // Handle status-related searches
+      if (searchTerm === 'active') {
+        searchConditions.push({ isActive: true });
+      } else if (searchTerm === 'inactive') {
+        searchConditions.push({ isActive: false });
+      } else if (searchTerm === 'voted' || searchTerm === 'yes') {
+        // Users who have voted
+        searchConditions.push({ 
+          voteResponses: { some: { electionId: electionIdInt } } 
+        });
+      } else if (searchTerm === 'not voted' || searchTerm === 'no') {
+        // Users who haven't voted
+        searchConditions.push({ 
+          voteResponses: { none: { electionId: electionIdInt } } 
+        });
+      }
+
+      where.OR = searchConditions;
     }
 
     // Calculate pagination (skip if fetching all)
