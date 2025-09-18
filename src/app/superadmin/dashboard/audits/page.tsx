@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef, Suspense } from "react";
+import { FilterToolbar } from "@/components/FilterToolbar";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -220,6 +221,13 @@ function AuditsPageContent() {
     }
   ], [actionFilter, resourceFilter, actorRoleFilter]);
 
+  const handleClearAllFilters = () => {
+    setActionFilter("all");
+    setResourceFilter("all");
+    setActorRoleFilter("all");
+    setPage(1);
+  };
+
   return (
     <>
       {/*<Toaster position="top-center" />*/}
@@ -234,9 +242,10 @@ function AuditsPageContent() {
             columns={columns}
             data={rows}
             showActions={true}
-            actions={["export"]}
-            showFilters={true}
-            filters={filters}
+            actions={["export", "filter"]}
+            showFilters={false}
+            filterToolbarFilters={filters}
+            onFilterClearAll={handleClearAllFilters}
             onRowClick={(row) => {
               const idx = rows.findIndex((r) => r.Audit_ID === row.Audit_ID);
               if (idx >= 0) openDetails(idx);

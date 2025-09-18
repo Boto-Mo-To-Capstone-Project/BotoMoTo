@@ -1,12 +1,13 @@
 "use client";
-import { useState, useEffect, useRef } from 'react';
-import { MdAdd, MdFilterList, MdDelete, MdEdit, MdSave, MdFileUpload } from "react-icons/md";
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { MdAdd, MdDownload, MdDelete, MdEdit, MdSave, MdFileUpload } from "react-icons/md";
 import { SubmitButton } from '@/components/SubmitButton';
 import SearchBar from '@/components/SearchBar';
 import VoterTable from '@/components/VoterTable';
 import { VotersModal } from '@/components/VotersModal'; 
 import { VotersDragandDropdown } from '@/components/VotersDragandDropdown';
 import FileViewer from '@/components/FileViewer';
+import { FilterToolbar } from '@/components/FilterToolbar';
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Toaster, toast } from 'react-hot-toast';
 import ConfirmationModal from '@/components/ConfirmationModal';
@@ -54,6 +55,11 @@ export default function VoterDashboardPage() {
   } | undefined>(undefined);
   const [editingVoterId, setEditingVoterId] = useState<number | null>(null);
   const [editIsActive, setEditIsActive] = useState<boolean>(true);
+
+  // Filter states for demonstration
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [votedFilter, setVotedFilter] = useState("all");
+  const [scopeFilter, setScopeFilter] = useState("all");
 
   // FileViewer state for template preview
   const [showFileViewer, setShowFileViewer] = useState(false);
@@ -186,6 +192,59 @@ export default function VoterDashboardPage() {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
+  };
+
+  // Filter definitions for FilterToolbar (demonstration)
+  const voterFilters = useMemo(() => [
+    {
+      key: "status",
+      label: "Status",
+      value: statusFilter,
+      onChange: (value: string) => {
+        setStatusFilter(value);
+        setPage(1);
+      },
+      options: [
+        { value: "all", label: "All Status" },
+        { value: "active", label: "Active" },
+        { value: "inactive", label: "Inactive" },
+      ]
+    },
+    {
+      key: "voted",
+      label: "Voted",
+      value: votedFilter,
+      onChange: (value: string) => {
+        setVotedFilter(value);
+        setPage(1);
+      },
+      options: [
+        { value: "all", label: "All Voters" },
+        { value: "voted", label: "Has Voted" },
+        { value: "not_voted", label: "Not Voted" },
+      ]
+    },
+    {
+      key: "scope",
+      label: "Voting Scope",
+      value: scopeFilter,
+      onChange: (value: string) => {
+        setScopeFilter(value);
+        setPage(1);
+      },
+      options: [
+        { value: "all", label: "All Scopes" },
+        // Note: In a real implementation, you would populate this from votingScopes state
+        ...votingScopes.map(scope => ({ value: scope.id.toString(), label: scope.name }))
+      ]
+    }
+  ], [statusFilter, votedFilter, scopeFilter, votingScopes]);
+
+  const handleClearVoterFilters = () => {
+    setStatusFilter("all");
+    setVotedFilter("all");
+    setScopeFilter("all");
+    setPage(1);
   };
 
   // Bulk delete selected voters -> POST /api/voters/bulk { operation: 'soft_delete', voterIds, electionId }
@@ -661,24 +720,6 @@ export default function VoterDashboardPage() {
               <SubmitButton
                 label=""
                 variant="action"
-                icon={<MdFilterList size={20} />}
-                title="Filter"
-                onClick={
-                  selectedIds.length >= 1
-                    ? () => {
-                        /* TODO: handle filter */
-                      }
-                    : undefined
-                }
-                className={
-                  selectedIds.length >= 1
-                    ? ""
-                    : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
-                }
-              />
-              <SubmitButton
-                label=""
-                variant="action"
                 icon={<MdDelete size={20} />}
                 title="Delete"
                 onClick={
@@ -692,6 +733,21 @@ export default function VoterDashboardPage() {
                     : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
                 }
               />
+              <SubmitButton
+                label=""
+                variant="action"
+                icon={<MdDownload size={20} />}
+                title="Download"
+                onClick={() => {
+                        /* TODO: handle download */
+                      }
+                }
+              />
+            {/* Filter toolbar */}
+              <FilterToolbar
+                filters={voterFilters}
+                buttonText='Filters'
+              />    
             </div>
           </div>
 

@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { MdAdd, MdCheckCircleOutline, MdChevronLeft, MdChevronRight, MdFirstPage, MdLastPage, MdOutlineCancel, MdFileUpload, MdEdit, MdFilterList, MdDelete, MdFileDownload } from "react-icons/md";
 import SearchBar from "./SearchBar";
+import { FilterToolbar } from "./FilterToolbar";
 import { FaSort, FaSortDown, FaSortUp } from "react-icons/fa";
 import { SubmitButton } from "./SubmitButton";
 import { useRouter } from "next/navigation";
@@ -35,6 +36,15 @@ type TableProps = {
     value: string;
     onChange: (value: string) => void;
   }>;
+  // FilterToolbar props (for the new filter button)
+  filterToolbarFilters?: Array<{
+    key: string;
+    label: string;
+    value: string;
+    options: Array<{ value: string; label: string }>;
+    onChange: (value: string) => void;
+  }>;
+  onFilterClearAll?: () => void;
   pageSize: number;
   page: number;
   totalPages: number;
@@ -67,6 +77,8 @@ export default function Table({
   onExport,
   showFilters,
   filters = [],
+  filterToolbarFilters = [],
+  onFilterClearAll,
   loading,
   
   ...props
@@ -258,21 +270,6 @@ export default function Table({
                 />
               )}
 
-              {actions?.includes("filter") && (
-                <SubmitButton
-                  label=""
-                  variant="action"
-                  icon={<MdFilterList size={20} />}
-                  title="Filter"
-                  onClick={selectedIds.length >= 1 ? onFilter : undefined}
-                  className={
-                    selectedIds.length >= 1
-                      ? ""
-                      : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
-                  }
-                />
-              )}
-
               {actions?.includes("delete") && (
                 <SubmitButton
                   label=""
@@ -302,6 +299,15 @@ export default function Table({
                   }
                 />
               )}
+              
+              {actions?.includes("filter") && filterToolbarFilters.length > 0 && (
+                <FilterToolbar
+                  filters={filterToolbarFilters}
+                  onClearAll={onFilterClearAll}
+                  buttonText="Filter"
+                />
+              )}        
+      
               {showFilters && filters && filters.length > 0 && (
                   <div className="flex gap-2 flex-wrap">
                     {filters.map((filter) => (
