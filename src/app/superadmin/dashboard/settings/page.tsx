@@ -5,6 +5,8 @@ import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
 import { MdSave } from "react-icons/md";
 import { ChangePassModal } from "@/components/ChangePassModal";
+import Image from "next/image";
+import LogomarkHD from "@/app/assets/LogomarkHD.png";
 import toast from "react-hot-toast";
 
 const ProfilePage = () => {
@@ -13,6 +15,7 @@ const ProfilePage = () => {
     fullName: "",
     email: "",
     accountCreated: "",
+    profileImage: ""
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -36,6 +39,7 @@ const ProfilePage = () => {
             fullName: profile.name || "",
             email: profile.email || "",
             accountCreated: profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : "",
+            profileImage: profile.image || ""
           });
         } else {
           toast.error("Failed to load profile data");
@@ -190,8 +194,14 @@ const ProfilePage = () => {
                     Profile
                   </label>
                   <div className="flex items-center gap-4">
-                    <div className="relative inline-flex items-center justify-center w-12 h-12 overflow-hidden bg-gray-100 rounded-full">
-                      <span className="font-medium text-gray-600">JL</span>
+                    <div className="w-28 h-28 rounded-full border-2 border-gray-200 overflow-hidden">
+                      <Image
+                        src={personalData.profileImage || LogomarkHD}
+                        width={112}
+                        height={112}
+                        alt={personalData.profileImage ? `${personalData.fullName} profile picture` : "System Administrator"}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                     <button
                       type="button"

@@ -6,10 +6,12 @@ import { SubmitButton } from "@/components/SubmitButton";
 import { MdSave } from "react-icons/md";
 import { ChangePassModal } from "@/components/ChangePassModal";
 import { AccountModal } from "@/components/DeactDeleteModal";
+import { AvatarLarge } from "@/components/Avatar";
 import toast from "react-hot-toast";
 
 const ProfilePage = () => {
   const { data: session } = useSession();
+
   const [personalData, setPersonalData] = useState({
     fullName: "",
     email: "",
@@ -201,19 +203,11 @@ const ProfilePage = () => {
                     Profile
                   </label>
                   <div className="flex items-center gap-4">
-                  {/* Admin Image */}
-                  <div className="w-28 h-28 flex items-center justify-center rounded-xl border-2 border-gray-200 overflow-hidden">
-                    <img
-                      src={personalData.profileImage ? personalData.profileImage : "/assets/placeholderuser.png"}
-                      alt={personalData.profileImage ? `${personalData.fullName} photo` : "Placeholder user"}
-                      className="w-full h-full object-cover"
-                      onError={e => {
-                        if (e.currentTarget.src.indexOf('placeholderuser.png') === -1) {
-                          e.currentTarget.src = '/assets/placeholderuser.png';
-                        }
-                      }}
+                    <AvatarLarge
+                      name={personalData.fullName || "User"}
+                      image={personalData.profileImage}
+                      alt={`${personalData.fullName} profile picture`}
                     />
-                  </div>
                     <button
                       type="button"
                       onClick={handleChangePhoto}
