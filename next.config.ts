@@ -1,6 +1,22 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        port: '',
+        pathname: '/a/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'botomoto.s3.ap-southeast-1.amazonaws.com',
+        port: '',
+        pathname: '/**',
+      }
+    ],
+  },
   async headers() {
     return [
       {
@@ -14,7 +30,7 @@ const nextConfig: NextConfig = {
               "default-src 'self';",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval';",
               "style-src 'self' 'unsafe-inline';",
-              "img-src 'self' data:;",
+              "img-src 'self' data: https://lh3.googleusercontent.com https://botomoto.s3.ap-southeast-1.amazonaws.com;",
               "font-src 'self';",
               "connect-src 'self';",
               "frame-src 'self';", // Allow iframes from same origin for PDF viewing
