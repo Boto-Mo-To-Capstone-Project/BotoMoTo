@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useLogout } from "@/hooks/useLogout";
 import { useEffect } from "react";
+import { Avatar } from "@/components/Avatar";
 
 type SuperAdminSidebarProps = {
   variant?: "default";
@@ -81,7 +82,7 @@ const SuperAdminSidebar = ({
 
   const displayName = session?.user?.name || "Username";
   const displayEmail = session?.user?.email || "Email";
-  const displayPic = session?.user?.image || LogomarkHD;
+  const displayPic = session?.user?.image;
   
   // Disable scroll when sidebar is open
   useEffect(() => {
@@ -155,12 +156,13 @@ const SuperAdminSidebar = ({
         {/* Logout Section */}
         <div className="flex items-start justify-between mt-auto">
           <div className="flex items-center gap-2">
-            <Image
-              src={displayPic}
-              width={40}
-              height={40}
-              alt="Picture of the author"
-              className="shrink-0 rounded-full"/>
+            <Avatar
+              name={displayName}
+              image={displayPic}
+              defaultImage={LogomarkHD.src}
+              size="w-10 h-10"
+              className="shrink-0"
+            />
             <div>
               <p className="text-white text-sm">{displayName}</p>
               {/* Mobile / small screens → truncated */}

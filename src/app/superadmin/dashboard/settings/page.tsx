@@ -5,18 +5,19 @@ import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
 import { MdSave } from "react-icons/md";
 import { ChangePassModal } from "@/components/ChangePassModal";
-import Image from "next/image";
+import { AvatarLarge } from "@/components/Avatar";
 import LogomarkHD from "@/app/assets/LogomarkHD.png";
 import toast from "react-hot-toast";
 
 const ProfilePage = () => {
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const [personalData, setPersonalData] = useState({
     fullName: "",
     email: "",
     accountCreated: "",
     profileImage: ""
   });
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showChangePassModal, setShowChangePassModal] = useState(false);
@@ -136,7 +137,62 @@ const ProfilePage = () => {
     }
   };
 
-  const handleChangePhoto = () => toast("Change avatar functionality will be implemented soon");
+  const handleChangePhoto = () => {
+    // Trigger file input click
+    const input = document.getElementById('profile-image-input') as HTMLInputElement;
+    if (input) {
+      input.click();
+    }
+  };
+
+  const handleProfileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Basic validation
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/png', 'image/jpg', 'image/jpeg', 'image/gif', 'image/webp'];
+    
+    if (file.size > maxSize) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+    
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Please upload a valid image file (PNG, JPG, JPEG, GIF, WebP)');
+      return;
+    }
+
+    // Upload the image immediately
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('profileImage', file);
+
+      const response = await fetch('/api/users/profile/image', {
+        method: 'PUT',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        // Update local state with new profile image URL
+        setPersonalData(prev => ({ ...prev, profileImage: result.data.image }));
+        toast.success("Profile image updated successfully");
+        
+        // Refresh the session to update the sidebar avatar
+        await update();
+      } else {
+        const error = await response.json();
+        toast.error(error.message || "Failed to update profile image");
+      }
+    } catch (error) {
+      console.error("Error updating profile image:", error);
+      toast.error("Failed to update profile image");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -194,22 +250,28 @@ const ProfilePage = () => {
                     Profile
                   </label>
                   <div className="flex items-center gap-4">
-                    <div className="w-28 h-28 rounded-full border-2 border-gray-200 overflow-hidden">
-                      <Image
-                        src={personalData.profileImage || LogomarkHD}
-                        width={112}
-                        height={112}
-                        alt={personalData.profileImage ? `${personalData.fullName} profile picture` : "System Administrator"}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+                    <AvatarLarge
+                      name={personalData.fullName || "Super Admin"}
+                      image={personalData.profileImage}
+                      defaultImage={LogomarkHD.src}
+                      alt={personalData.profileImage ? `${personalData.fullName} profile picture` : "System Administrator"}
+                    />
                     <button
                       type="button"
                       onClick={handleChangePhoto}
-                      className="text-sm text-blue-600 hover:underline"
+                      disabled={uploading}
+                      className="text-sm text-blue-600 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Change
+                      {uploading ? "Uploading..." : "Change"}
                     </button>
+                    {/* Hidden file input */}
+                    <input
+                      id="profile-image-input"
+                      type="file"
+                      accept="image/png,image/jpg,image/jpeg,image/gif,image/webp,image/*"
+                      onChange={handleProfileImageUpload}
+                      className="hidden"
+                    />
                   </div>
                 </div>
 
