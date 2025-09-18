@@ -17,6 +17,7 @@ const ProfilePage = () => {
     organizationName: "",
     organizationEmail: "",
     numberOfMembers: "",
+    profileImage: ""
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -43,6 +44,7 @@ const ProfilePage = () => {
             organizationName: profile.organization?.name || "",
             organizationEmail: profile.organization?.email || "",
             numberOfMembers: profile.organization?.membersCount?.toString() || "",
+            profileImage: profile.image || ""
           });
         } else {
           toast.error("Failed to load profile data");
@@ -199,9 +201,19 @@ const ProfilePage = () => {
                     Profile
                   </label>
                   <div className="flex items-center gap-4">
-                    <div className="relative inline-flex items-center justify-center w-12 h-12 overflow-hidden bg-gray-100 rounded-full">
-                      <span className="font-medium text-gray-600">JL</span>
-                    </div>
+                  {/* Admin Image */}
+                  <div className="w-28 h-28 flex items-center justify-center rounded-xl border-2 border-gray-200 overflow-hidden">
+                    <img
+                      src={personalData.profileImage ? personalData.profileImage : "/assets/placeholderuser.png"}
+                      alt={personalData.profileImage ? `${personalData.fullName} photo` : "Placeholder user"}
+                      className="w-full h-full object-cover"
+                      onError={e => {
+                        if (e.currentTarget.src.indexOf('placeholderuser.png') === -1) {
+                          e.currentTarget.src = '/assets/placeholderuser.png';
+                        }
+                      }}
+                    />
+                  </div>
                     <button
                       type="button"
                       onClick={handleChangePhoto}
