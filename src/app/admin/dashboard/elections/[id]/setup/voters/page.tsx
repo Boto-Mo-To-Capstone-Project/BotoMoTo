@@ -135,10 +135,16 @@ export default function VoterDashboardPage() {
     const p = Number(sp.get("page") || 1);
     const l = Number(sp.get("limit") || 10);
     const s = sp.get("search") || "";
+    const status = sp.get("status") || "all";
+    const voted = sp.get("voted") || "all";
+    const scope = sp.get("scope") || "all";
 
     if (!Number.isNaN(p) && p > 0) setPage(p);
     if (!Number.isNaN(l) && l > 0) setPageSize(l);
     setSearch(s);
+    setStatusFilter(status);
+    setVotedFilter(voted);
+    setScopeFilter(scope);
   }, [searchParams]);
 
   // FileViewer handlers
@@ -164,12 +170,15 @@ export default function VoterDashboardPage() {
     sp.set("page", String(page));
     sp.set("limit", String(pageSize));
     if (debouncedSearch) sp.set("search", debouncedSearch); else sp.delete("search");
+    if (statusFilter !== "all") sp.set("status", statusFilter); else sp.delete("status");
+    if (votedFilter !== "all") sp.set("voted", votedFilter); else sp.delete("voted");
+    if (scopeFilter !== "all") sp.set("scope", scopeFilter); else sp.delete("scope");
 
     const target = sp.toString();
     if (target !== current) {
       router.replace(`?${target}`, { scroll: false });
     }
-  }, [page, pageSize, debouncedSearch, router, searchParams]);
+  }, [page, pageSize, debouncedSearch, statusFilter, votedFilter, scopeFilter, router, searchParams]);
 
   // Pagination handlers
   const handleFirst = () => setPage(1);
@@ -505,6 +514,10 @@ export default function VoterDashboardPage() {
           page: String(page),
           limit: String(pageSize),
           ...(debouncedSearch ? { search: debouncedSearch } : {}),
+          // Apply filters
+          ...(statusFilter !== "all" ? { isActive: statusFilter === "active" ? "true" : "false" } : {}),
+          ...(votedFilter !== "all" ? { voted: votedFilter === "voted" ? "true" : "false" } : {}),
+          ...(scopeFilter !== "all" ? { votingScopeId: scopeFilter } : {}),
           // Removed sortCol and sortDir - frontend sorting only
         });
         const res = await fetch(`/api/voters?${qs.toString()}`, {
@@ -554,7 +567,7 @@ export default function VoterDashboardPage() {
       alive = false;
       ctrl.abort();
     };
-  }, [electionId, page, pageSize, debouncedSearch, reloadKey]); // Removed sortCol, sortDir
+  }, [electionId, page, pageSize, debouncedSearch, statusFilter, votedFilter, scopeFilter, reloadKey]); // Added filter dependencies
 
   // NEW: Fetch voting scopes for this election (for the modal select)
   useEffect(() => {
