@@ -18,6 +18,7 @@ type CandidateCategoryProps = {
   onSelectCandidate: (candidate: Candidate) => void;
   onDeselectCandidate: (candidate: Candidate) => void;
   disabled?: boolean; // For preview mode
+  scopes: {id: string; name: string }[];
 };
 
 const CandidateCategory = ({
@@ -27,6 +28,7 @@ const CandidateCategory = ({
   onSelectCandidate,
   onDeselectCandidate,
   disabled = false,
+  scopes
 }: CandidateCategoryProps) => {
   const selectedCandidatesFromRedux = useSelector(
     (state: RootState) => state.ballot.selections[position] || []
@@ -80,6 +82,17 @@ const CandidateCategory = ({
         <span className="bg-primary/5 text-sm align-center font-bold ml-2 rounded-xl py-1 px-2 text-primary">
           Select up to {selectCount}
         </span>
+        {/* 👇 Show scope name only if found */}
+        {candidateList.length > 0 && (() => {
+          const scope = scopes.find(
+            (s) => Number(s.id) === Number(candidateList[0].scopeId)
+          );
+          return scope ? (
+            <span className="bg-primary/5 text-sm align-center font-bold ml-2 rounded-xl py-1 px-2 text-primary">
+              Scope: {scope.name}
+            </span>
+          ) : null;
+        })()}
       </SectionHeaderContainer>
 
       <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[auto-fit,minmax(320px,1fr)] gap-6 mt-4">
@@ -124,7 +137,8 @@ const CandidateCategory = ({
                     {candidate.name}
                   </span>
                   {candidate.party && (
-                    <span className="px-4 py-1 rounded-full font-semibold text-gray-700 bg-gray-200 text-sm mt-2 lg:mt-0 text-center self-center lg:self-auto">
+                    <span className="px-4 py-1 rounded-full font-semibold text-white text-sm mt-2 lg:mt-0 text-center self-center lg:self-auto"
+                    style={{ backgroundColor: candidate.partyColor || "#999999" }}>
                       {candidate.party}
                     </span>
                   )}

@@ -53,19 +53,24 @@ const VoteReceipt = () => {
     );
   }
   return (
-    <main className="flex flex-col items-center gap-10 px-10 pb-20 pt-40 text-justify">
-      <div className="text-center space-y-2">
-        <p className="voter-election-heading">Vote Receipt</p>
-        <p className="voter-election-subheading">
+    <main className="flex flex-col items-center px-10 pb-20 pt-30 text-justify pt-8 w-full">
+      <div className="mb-6 rounded-2xl bg-[#a30d1a] px-8 py-6 flex flex-col items-start w-full">
+        <h2 className="text-white text-xl font-semibold mb-2">Vote Receipt</h2>
+        <p className="text-white text-base">
           You voted in the {electionName}
         </p>
-        {voterScope && (
-          <p className="voter-election-desc text-blue-600">
-            <strong>Voting Scope:</strong> {voterScope}
-          </p>
-        )}
       </div>
-      <div className="w-full lg:w-3/5 flex flex-col">
+      {voterScope && (
+        <div className="mb-5 p-3 border rounded-md bg-blue-50 border-blue-200 w-full">
+          <p className="text-base text-blue-800 font-semibold">
+            Voting Scope: <span className="font-normal">{voterScope}</span>
+          </p>
+          <p className="text-sm text-blue-600 mt-1">
+            You can only vote for candidates within your assigned scope.
+          </p>
+        </div>
+      )}
+      <div className="w-full flex flex-col">
         <div className="mt-5 space-y-3 w-full">
           {Object.entries(selections).map(([position, candidates]) => (
             <div key={position}>
@@ -111,7 +116,7 @@ const VoteReceipt = () => {
           <div className="flex gap-3 justify-center items-center">
             <label
               htmlFor="terms-agreement"
-              className="text-sm text-gray-600 sm:text-md mb-5"
+              className="text-sm font-bold text-gray-600 sm:text-md"
             >
               Please answer the app feedback survey to help us improve the
               system. Your insights are valuable for enhancing the voting
