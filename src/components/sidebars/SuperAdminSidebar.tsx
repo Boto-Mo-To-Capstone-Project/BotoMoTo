@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import BotoMoToLogo from "@/app/assets/BotoMoToLogo_light.png";
-import Logomark from "@/app/assets/Logomark.png"
+import LogomarkHD from "@/app/assets/LogomarkHD.png"
 import {
   LayoutDashboard,
   ListChecks,
@@ -81,6 +81,7 @@ const SuperAdminSidebar = ({
 
   const displayName = session?.user?.name || "Username";
   const displayEmail = session?.user?.email || "Email";
+  const displayPic = session?.user?.image || LogomarkHD;
   
   // Disable scroll when sidebar is open
   useEffect(() => {
@@ -155,11 +156,11 @@ const SuperAdminSidebar = ({
         <div className="flex items-start justify-between mt-auto">
           <div className="flex items-center gap-2">
             <Image
-              src={Logomark}
+              src={displayPic}
               width={40}
               height={40}
               alt="Picture of the author"
-              className="shrink-0"/>
+              className="shrink-0 rounded-full"/>
             <div>
               <p className="text-white text-sm">{displayName}</p>
               {/* Mobile / small screens → truncated */}
