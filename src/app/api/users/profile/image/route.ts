@@ -54,7 +54,6 @@ export async function PUT(request: NextRequest) {
     // Upload file using storage-agnostic system (S3 + local fallback)
     const imageUpload = await uploadFile(Buffer.from(imageBuffer), imageKey, {
       contentType: imageFile.type,
-      isPublic: true, // Profile images are public
       metadata: { 
         userId: user.id.toString(),
         originalName: imageFile.name,
@@ -71,10 +70,10 @@ export async function PUT(request: NextRequest) {
       select: { image: true }
     });
 
-    // Update user's profile image in database (store the public URL)
+    // Update user's profile image in database (store S3 key for session-based signed URLs)
     const updatedUser = await db.user.update({
       where: { id: user.id },
-      data: { image: imageUpload.url },
+      data: { image: imageUpload.key }, // Store S3 key, session will generate signed URLs
       select: {
         id: true,
         name: true,
@@ -104,7 +103,7 @@ export async function PUT(request: NextRequest) {
       resource: "USER",
       resourceId: user.id,
       changedFields: {
-        image: { old: currentUser?.image, new: imageUpload.url }
+        image: { old: currentUser?.image, new: imageUpload.key }
       },
       message: "Profile image updated"
     });
