@@ -157,13 +157,7 @@ export default function OnboardProcessingPage() {
     (realtimeStatus.toLowerCase() as ApplicationStatus) : 
     status;
 
-  // Redirect to login if no session
-  useEffect(() => {
-    if (sessionStatus === "unauthenticated") {
-      router.replace("/auth/login");
-      return;
-    }
-  }, [sessionStatus, router]);
+  // Note: Role-based access control is now handled by the admin layout
 
   // Handle real-time status changes and auto-redirect when approved
   useEffect(() => {
@@ -419,7 +413,7 @@ export default function OnboardProcessingPage() {
           autoExpandAwaitingApproval={shouldExpandAwaitingApproval}
         />
         
-        <AuthFooter question="Need help?" link="/contact" linkText="Contact Support" />
+        <AuthFooter question="Need help?" link="/support" linkText="Contact Support" />
       </AuthContainer>
       <CompleteTaskModal 
         open={showModal} 
