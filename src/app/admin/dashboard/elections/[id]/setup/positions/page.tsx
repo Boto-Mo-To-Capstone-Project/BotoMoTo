@@ -5,6 +5,7 @@ import { SubmitButton } from '@/components/SubmitButton';
 import SearchBar from '@/components/SearchBar';
 import PositionsTable from '@/components/PositionsTable';
 import { PositionsModal } from '@/components/PositionsModal';
+import { PositionCandidatesModal } from '@/components/PositionCandidatesModal';
 import { PositionsDragandDropdown } from '@/components/PositionsDragandDrop';
 import FileViewer from '@/components/FileViewer';
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -62,6 +63,12 @@ export default function PositionsDashboardPage() {
     name: string;
     votingScopeId: number | null;
   }>>([]);
+
+  // NEW: Position candidates modal state
+  const [showCandidatesModal, setShowCandidatesModal] = useState(false);
+  const [selectedPosition, setSelectedPosition] = useState<{ id: number; name: string } | null>(null);
+  const [positionCandidates, setPositionCandidates] = useState([]);
+  const [loadingCandidates, setLoadingCandidates] = useState(false);
 
     // Data state from API
   const [rows, setRows] = useState<Array<{
@@ -401,6 +408,40 @@ export default function PositionsDashboardPage() {
     }
   };
 
+  // NEW: Handler for showing position candidates
+  const handleShowCandidates = async (positionId: number, positionName: string) => {
+    setSelectedPosition({ id: positionId, name: positionName });
+    setShowCandidatesModal(true);
+    setLoadingCandidates(true);
+    
+    try {
+      const res = await fetch(`/api/candidates?electionId=${electionId}&positionId=${positionId}`);
+      const json = await res.json().catch(() => ({}));
+      
+      if (!res.ok || json?.success === false) {
+        toast.error(json?.message || 'Failed to load candidates');
+        setPositionCandidates([]);
+        return;
+      }
+
+      // Map API candidate data to match modal interface
+      const candidates = (json.data?.candidates || []).map((c: any) => ({
+        id: c.id,
+        name: `${c.voter?.firstName || ''} ${c.voter?.lastName || ''}`.trim() || 'Unknown',
+        email: c.voter?.email || '',
+        party: c.party?.name || '—',
+      }));
+      
+      setPositionCandidates(candidates);
+    } catch (error) {
+      console.error('Error loading position candidates:', error);
+      toast.error('Failed to load candidates');
+      setPositionCandidates([]);
+    } finally {
+      setLoadingCandidates(false);
+    }
+  };
+
   // Fetch positions from API (no sorting params; sorting is client-side)
   useEffect(() => {
     if (!electionId || Number.isNaN(electionId)) return;
@@ -698,6 +739,7 @@ export default function PositionsDashboardPage() {
               onPageSizeChange={handlePageSizeChange}
               selectedIds={selectedIds}
               onCheckboxChange={handleCheckboxChange}
+              onShowCandidates={handleShowCandidates}
             />
           </div>
         </div>
@@ -718,6 +760,15 @@ export default function PositionsDashboardPage() {
           {...modalConfig}
         />
       )}
+      {/* NEW: Position Candidates Modal */}
+      <PositionCandidatesModal
+        open={showCandidatesModal}
+        onClose={() => setShowCandidatesModal(false)}
+        positionName={selectedPosition?.name || ''}
+        positionId={selectedPosition?.id || 0}
+        candidates={positionCandidates}
+        loading={loadingCandidates}
+      />
     </>
   );
 }
