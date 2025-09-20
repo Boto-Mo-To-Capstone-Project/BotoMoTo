@@ -505,6 +505,35 @@ export default function PositionsDashboardPage() {
     return () => ctrl.abort();
   }, [electionId, reloadKey]);
 
+  // CSV download helper
+  const downloadCSV = (data: any[], filename: string, headers: string[]) => {
+    const csvContent = [
+      headers.join(','), // Header row
+      ...data.map(row => headers.map(header => 
+        `"${String(row[header.toLowerCase()] || '').replace(/"/g, '""')}"`
+      ).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Download all positions
+  const handleDownloadPositions = () => {
+    const headers = ['ID', 'Position', 'VoteLimit', 'NumberOfWinners', 'ScopeName', 'Order'];
+    const filename = `positions-${electionId}-${new Date().toISOString().split('T')[0]}.csv`;
+    downloadCSV(rows, filename, headers);
+    toast.success(`Downloaded ${rows.length} position(s)`);
+  };
+
   return (
     <>
       {/*<Toaster position="top-center" />*/}
@@ -645,10 +674,7 @@ export default function PositionsDashboardPage() {
                 variant="action"
                 icon={<MdDownload size={20} />}
                 title="Download"
-                onClick={() => {
-                        /* TODO: handle download */
-                      }
-                }
+                onClick={handleDownloadPositions}
               />
             </div>
           </div>
