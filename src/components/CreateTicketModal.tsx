@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
+import { SubmitButton } from "@/components/SubmitButton";
 
 interface CreateTicketModalProps {
   open: boolean;
@@ -89,66 +90,88 @@ export default function CreateTicketModal({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/30 backdrop-blur-sm"
+      className="fixed inset-0 z-[200] flex justify-center items-center bg-black/30 backdrop-blur-sm lg:ml-68"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <form
-        className="bg-white rounded-xl shadow-xl w-full max-w-md relative px-0 pt-8 pb-2 mx-2 text-left border border-gray-200 overflow-y-auto max-h-[90vh] flex flex-col"
-        onSubmit={handleSubmit}
-      >
-        <button
-          className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
-          onClick={onClose}
-          type="button"
-          aria-label="Close"
-        >
-          &times;
-        </button>
-        <div className="text-lg font-bold mb-1 text-gray-900 px-6">Create Ticket</div>
-        <div className="flex flex-col gap-3 px-6 py-4">
-          <label className="text-sm font-semibold text-gray-700">
-            Subject
-            <input
-              className="w-full mt-1 px-3 py-2 border rounded bg-gray-50"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              disabled={submitting}
-              required
-              maxLength={50}
-            />
-          </label>
-          <label className="text-sm font-semibold text-gray-700">
-            Message
-            <textarea
-              className="w-full mt-1 px-3 py-2 border rounded bg-gray-50"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              disabled={submitting}
-              required
-              rows={4}
-            />
-          </label>
+      <div className="relative max-w-2xl max-h-screen p-10 flex flex-col justify-center w-full">
+        <div className="bg-white rounded-lg shadow-sm overflow-y-auto max-h-[80vh]">
+          {/* Modal header */}
+          <div className="flex items-center justify-between p-4 border-b rounded-t border-gray-200">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Create Ticket</h3>
+            </div>
+            <button
+              type="button"
+              className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center"
+              onClick={onClose}
+            >
+              <svg className="w-3 h-3" aria-hidden="true" fill="none" viewBox="0 0 14 14">
+                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
+              </svg>
+              <span className="sr-only">Close modal</span>
+            </button>
+          </div>
+          {/* Modal body */}
+          <div className="p-4">
+              <p className="text-sm text-gray-500 mb-4">
+                Create a new support ticket for assistance.
+              </p>
+
+            {/* Form */}
+            <form
+              onSubmit={handleSubmit}
+              className="grid gap-4 mb-4 grid-cols-1"
+            >
+              <div className="col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Subject*
+                </label>
+                <input
+                  type="text"
+                  className="w-full border border-[var(--color-secondary)] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-[var(--color-secondary)] bg-white text-gray-900"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="Enter ticket subject"
+                  disabled={submitting}
+                  required
+                  maxLength={50}
+                />
+              </div>
+              <div className="col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Message*
+                </label>
+                <textarea
+                  className="w-full border border-[var(--color-secondary)] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-[var(--color-secondary)] bg-white text-gray-900"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Describe your issue or request"
+                  disabled={submitting}
+                  required
+                  rows={4}
+                />
+              </div>
+              <div className="col-span-1 flex justify-end gap-2 mt-2">
+                <SubmitButton
+                  type="button"
+                  variant="action"
+                  onClick={onClose}
+                  label="Cancel"
+                />
+                <SubmitButton
+                  type="submit"
+                  variant="small"
+                  label={submitting ? "Creating" : "Create"}
+                  className="px-5 py-2.5 text-sm font-medium rounded-lg"
+                  isLoading={submitting}
+                />
+              </div>
+            </form>
+          </div>
         </div>
-        <div className="flex justify-end gap-2 px-6 pb-4">
-          <button
-            type="button"
-            className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-            onClick={onClose}
-            disabled={submitting}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 font-semibold"
-            disabled={submitting}
-          >
-            {submitting ? "Creating..." : "Create"}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 }

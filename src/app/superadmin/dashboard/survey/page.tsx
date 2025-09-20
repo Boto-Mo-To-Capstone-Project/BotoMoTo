@@ -307,32 +307,13 @@ export default function SuperAdminSurveyPage() {
         </div>
       </div>
 
-      {/* Preview Modal (styled like AuditDetailsModal) */}
+      {/* Preview Modal */}
       {previewOpen && selectedSurvey && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-sm lg:ml-68"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setPreviewOpen(false);
-          }}
-        >
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-[95vw] sm:max-w-md md:max-w-lg lg:max-w-3xl relative px-4 sm:px-6 pt-8 pb-6 mx-2 sm:mx-4 text-left space-y-6 border border-gray-200 overflow-y-auto max-h-[90vh] overflow-x-hidden">
-            <button
-              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
-              onClick={() => setPreviewOpen(false)}
-              aria-label="Close"
-            >
-              &times;
-            </button>
-
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Survey Preview</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                {selectedSurvey?.title}
-              </p>
-              <SurveyPreview schema={selectedSurvey?.formSchema} />
-            </div>
-          </div>
-        </div>
+        <SurveyPreview 
+          schema={selectedSurvey?.formSchema} 
+          open={previewOpen} 
+          onClose={() => setPreviewOpen(false)} 
+        />
       )}
 
       {/* Delete Confirmation Modal */}
@@ -360,7 +341,7 @@ export default function SuperAdminSurveyPage() {
           setPublishingSurvey(null);
         }}
         title="Publish Survey"
-        description={`Are you sure you want to publish "${publishingSurvey?.title}"?\n\nThis will make it the active survey. If another survey is currently active, it will be replaced.`}
+        description={`Are you sure you want to publish "${publishingSurvey?.title}"?\n\nThis will make it the active survey. \n If another survey is currently active, it will be replaced.`}
         confirmLabel="Publish Survey"
         cancelLabel="Cancel"
         onConfirm={confirmPublish}

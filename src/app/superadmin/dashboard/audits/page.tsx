@@ -118,13 +118,9 @@ function AuditsPageContent() {
 
         const mapped = list.map((a: any) => ({
           Audit_ID: a.id,
-          Actor_ID: a.actorId || "—",
           Actor_Role: a.actorRole || "—",
           Action: a.action || "—",
-          IP_Address: a.ipAddress || "—",
-          User_Agent: a.userAgent ? (a.userAgent.length > 50 ? a.userAgent.substring(0, 50) + "..." : a.userAgent) : "—",
           Resource: a.resource || "—",
-          Resource_ID: a.resourceId || "—",
           Time_Stamp: a.timestamp ? new Date(a.timestamp).toLocaleString() : "—",
         }));
 
@@ -150,13 +146,9 @@ function AuditsPageContent() {
   const columns = useMemo(
     () => [
       "Audit_ID",
-      "Actor_ID", 
       "Actor_Role",
       "Action",
-      "IP_Address",
-      "User_Agent",
       "Resource",
-      "Resource_ID",
       "Time_Stamp",
     ],
     []

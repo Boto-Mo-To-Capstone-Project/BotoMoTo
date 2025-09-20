@@ -8,12 +8,12 @@ import { validateWithZod } from "@/lib/validateWithZod";
 import { createAuditLog } from "@/lib/audit";
 import { ROLES } from "@/lib/constants";
 
-async function getSurvey(request: NextRequest, { params }: { params: { id: string } }) {
+async function getSurvey(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const authResult = await requireAuth([ROLES.SUPER_ADMIN]);
   if (!authResult.authorized) return authResult.response;
   const user = authResult.user;
 
-  const id = Number(params.id);
+  const id = Number((await params).id);
   if (!Number.isFinite(id)) return apiResponse({ success: false, message: "Invalid id", error: "Bad Request", status: 400 });
 
   const survey = await db.surveyForm.findFirst({ where: { id, isDeleted: false } });
