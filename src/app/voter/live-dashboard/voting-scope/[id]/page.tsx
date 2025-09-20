@@ -270,7 +270,6 @@ const DemographicDashboard = () => {
               {isConnected ? 'Live Updates' : 'Disconnected'}
             </span>
           </div>
-          {/* <Button variant="long_primary">Export Results</Button> */}
         </div>
         {/* kpi section */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 w-full mt-10">

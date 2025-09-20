@@ -267,7 +267,6 @@ const LiveDashboard = () => {
                 {isConnected ? 'Live' : 'Disconnected'}
               </span>
             </div>
-            <Button variant="long_primary">Export Results</Button>
           </div>
         </div>
         {/* kpi section */}

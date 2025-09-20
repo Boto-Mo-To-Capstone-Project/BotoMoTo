@@ -351,7 +351,6 @@ const CandidateDashboard = () => {
                 {isConnected ? 'Live Updates' : 'Disconnected'}
               </span>
             </div>
-            {/* <Button variant="long_primary">Export Results</Button> */}
           </div>
           <div className="flex flex-col-reverse items-start w-full gap-10 mt-10 xl:flex-row">
             {/* candidate list */}
