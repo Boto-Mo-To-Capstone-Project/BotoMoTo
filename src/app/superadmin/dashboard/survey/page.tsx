@@ -360,7 +360,7 @@ export default function SuperAdminSurveyPage() {
           setPublishingSurvey(null);
         }}
         title="Publish Survey"
-        description={`Are you sure you want to publish "${publishingSurvey?.title}"?\n\nThis will make it the active survey. If another survey is currently active, it will be replaced.`}
+        description={`Are you sure you want to publish "${publishingSurvey?.title}"?\n\nThis will make it the active survey. \n If another survey is currently active, it will be replaced.`}
         confirmLabel="Publish Survey"
         cancelLabel="Cancel"
         onConfirm={confirmPublish}

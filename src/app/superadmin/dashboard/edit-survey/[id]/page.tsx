@@ -81,34 +81,6 @@ export default function SuperAdminEditSurveyPage() {
     }
   };
 
-  const publish = async (schema: FormSchema) => {
-    if (saving) return; // prevent double clicks
-    setSaving(true);
-    try {
-      const payload = {
-        title: schema.title,
-        description: schema.description ?? "",
-        formSchema: schema,
-        isActive: true,
-      };
-
-      const res = await fetch(`/api/superadmin/surveys/${surveyId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.message || "Failed to publish");
-
-      setLastSchema(schema);
-      toast.success("Survey published");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to publish");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const preview = (schema: FormSchema) => {
     setLastSchema(schema);
     setPreviewOpen(true);
@@ -150,7 +122,6 @@ export default function SuperAdminEditSurveyPage() {
           <SurveyBuilder 
             initial={initialSchema} 
             onSave={saveDraft} 
-            onPublish={publish} 
             onPreview={preview} 
           />
         </div>

@@ -121,13 +121,15 @@ export default function SurveyBuilder({ initial, onSave, onPublish, onPreview }:
             title="Save draft"
             onClick={() => onSave?.(schema)}
           />
-          <SubmitButton
-            label=""
-            variant="action-primary"
-            icon={<MdPublish size={20} className="text-[var(--color-primary)]" />}
-            title="Publish"
-            onClick={() => onPublish?.(schema)}
-          />
+          {onPublish && (
+            <SubmitButton
+              label=""
+              variant="action-primary"
+              icon={<MdPublish size={20} className="text-[var(--color-primary)]" />}
+              title="Publish"
+              onClick={() => onPublish?.(schema)}
+            />
+          )}
         </div>
       </div>
 
