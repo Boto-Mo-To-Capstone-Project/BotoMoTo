@@ -88,9 +88,6 @@ export function TemplateManagementModal({
           <div className="flex items-center justify-between p-4 border-b rounded-t border-gray-200">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Manage Email Templates</h3>
-              <p className="text-sm text-gray-500">
-                View and manage your email templates. System templates cannot be deleted.
-              </p>
             </div>
             <button
               type="button"
@@ -106,6 +103,9 @@ export function TemplateManagementModal({
 
           {/* Modal body */}
           <div className="p-4">
+            <p className="text-sm text-gray-500 mb-4">
+              View and manage your email templates. System templates cannot be deleted.
+            </p>
             {loadingTemplates ? (
               <div className="flex justify-center items-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
