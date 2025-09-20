@@ -299,6 +299,43 @@ function CreateElectionContent() {
     return true;
   };
 
+  // CSV download helper
+  const downloadCSV = (data: any[], filename: string, headers: string[]) => {
+    const csvContent = [
+      headers.join(','), // Header row
+      ...data.map(row => headers.map(header => 
+        `"${String(row[header.toLowerCase()] || '').replace(/"/g, '""')}"`
+      ).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Download all scopes
+  const handleDownloadScopes = () => {
+    const headers = ['ID', 'Name', 'Description'];
+    const filename = `scopes-${electionData.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}-${new Date().toISOString().split('T')[0]}.csv`;
+    downloadCSV(scopeRows, filename, headers);
+    toast.success(`Downloaded ${scopeRows.length} scope(s)`);
+  };
+
+  // Download all parties
+  const handleDownloadParties = () => {
+    const headers = ['ID', 'Name', 'Color'];
+    const filename = `parties-${electionData.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}-${new Date().toISOString().split('T')[0]}.csv`;
+    downloadCSV(parties, filename, headers);
+    toast.success(`Downloaded ${parties.length} party(ies)`);
+  };
+
   // Scope actions
   const openCreateScopeModal = () => {
     if (!ensureHasElectionId()) return;
@@ -664,35 +701,26 @@ function CreateElectionContent() {
                 <SubmitButton
                   label=""
                   variant="action"
-                  icon={<MdDownload size={20} />}
-                  title="Download"
+                  icon={<MdDelete size={20} />}
+                  title="Delete"
                   onClick={
                     scopeSelectedIds.length >= 1
-                      ? () => {
-                          /* TODO: handle download */
-                        }
-                      : undefined
+                    ? handleDeleteSelectedScopes
+                    : undefined
                   }
                   className={
                     scopeSelectedIds.length >= 1
-                      ? ""
-                      : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
+                    ? ""
+                    : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
                   }
                 />
                 <SubmitButton
                   label=""
                   variant="action"
-                  icon={<MdDelete size={20} />}
-                  title="Delete"
+                  icon={<MdDownload size={20} />}
+                  title="Download"
                   onClick={
-                    scopeSelectedIds.length >= 1
-                      ? handleDeleteSelectedScopes
-                      : undefined
-                  }
-                  className={
-                    scopeSelectedIds.length >= 1
-                      ? ""
-                      : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
+                      handleDownloadScopes
                   }
                 />
                 {/* Removed Save button: changes are persisted immediately via modal */}
@@ -736,24 +764,6 @@ function CreateElectionContent() {
                 <SubmitButton
                   label=""
                   variant="action"
-                  icon={<MdDownload size={20} />}
-                  title="Download"
-                  onClick={
-                    partySelectedIds.length >= 1
-                      ? () => {
-                          /* TODO: handle download */
-                        }
-                      : undefined
-                  }
-                  className={
-                    partySelectedIds.length >= 1
-                      ? ""
-                      : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
-                  }
-                />
-                <SubmitButton
-                  label=""
-                  variant="action"
                   icon={<MdDelete size={20} />}
                   title="Delete"
                   onClick={
@@ -765,6 +775,15 @@ function CreateElectionContent() {
                     partySelectedIds.length >= 1
                       ? ""
                       : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
+                  }
+                />
+                <SubmitButton
+                  label=""
+                  variant="action"
+                  icon={<MdDownload size={20} />}
+                  title="Download"
+                  onClick={
+                    handleDownloadParties
                   }
                 />
                 {/* Removed Save button: changes are persisted immediately via modal */}

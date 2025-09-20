@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get all templates with their completed instances
+    // Get all templates with their instances (including template as first instance)
     const templates = await db.election.findMany({
       where: { 
         orgId: organization.id,
@@ -46,6 +46,17 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         name: true,
+        instanceYear: true, // Template's own year (serves as first instance)
+        status: true,
+        voters: {
+          where: { isDeleted: false },
+          select: {
+            id: true,
+            voteResponses: {
+              select: { id: true }
+            }
+          }
+        },
         // Get instances (elections created from this template)
         instances: {
           where: { 
@@ -80,9 +91,14 @@ export async function GET(request: NextRequest) {
       }>
     };
 
-    // Get all unique years from all templates
+    // Get all unique years from all templates and instances
     const allYears = new Set<number>();
     templates.forEach(template => {
+      // Include template's own year if it exists and is completed
+      if (template.instanceYear && template.status === ELECTION_STATUS.CLOSED) {
+        allYears.add(template.instanceYear);
+      }
+      // Include instance years
       template.instances.forEach(instance => {
         if (instance.instanceYear) {
           allYears.add(instance.instanceYear);
@@ -93,9 +109,12 @@ export async function GET(request: NextRequest) {
     const sortedYears = Array.from(allYears).sort();
     chartData.categories = sortedYears;
 
-    // Create series for each template that has completed instances
+    // Create series for each template that has data (template itself or instances)
     templates.forEach(template => {
-      if (template.instances.length > 0) {
+      const hasTemplateData = template.instanceYear && template.status === ELECTION_STATUS.CLOSED;
+      const hasInstanceData = template.instances.length > 0;
+      
+      if (hasTemplateData || hasInstanceData) {
         const templateData = {
           name: template.name,
           data: [] as (number | null)[]
@@ -103,16 +122,24 @@ export async function GET(request: NextRequest) {
 
         // For each year, find the turnout for this template
         sortedYears.forEach(year => {
-          const instance = template.instances.find(i => i.instanceYear === year);
-          if (instance) {
-            const totalVoters = instance.voters.length;
-            const votersWithResponses = instance.voters.filter(v => v.voteResponses.length > 0).length;
-            const turnout = totalVoters > 0 ? Math.round((votersWithResponses / totalVoters) * 100) : 0;
-            templateData.data.push(turnout);
+          let turnout: number | null = null;
+
+          // Check if this year matches the template's own year
+          if (template.instanceYear === year && template.status === ELECTION_STATUS.CLOSED) {
+            const totalVoters = template.voters.length;
+            const votersWithResponses = template.voters.filter(v => v.voteResponses.length > 0).length;
+            turnout = totalVoters > 0 ? Math.round((votersWithResponses / totalVoters) * 100) : 0;
           } else {
-            // No election for this year, use null for gap in line
-            templateData.data.push(null);
+            // Check instances for this year
+            const instance = template.instances.find(i => i.instanceYear === year);
+            if (instance) {
+              const totalVoters = instance.voters.length;
+              const votersWithResponses = instance.voters.filter(v => v.voteResponses.length > 0).length;
+              turnout = totalVoters > 0 ? Math.round((votersWithResponses / totalVoters) * 100) : 0;
+            }
           }
+
+          templateData.data.push(turnout);
         });
 
         chartData.series.push(templateData);

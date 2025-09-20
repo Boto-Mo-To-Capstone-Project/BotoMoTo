@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { getInitials, getAvatarColor } from '@/lib/avatar';
 
@@ -34,24 +34,93 @@ export const Avatar: React.FC<AvatarProps> = ({
   alt,
   imageDimensions = 40,
 }) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const initials = getInitials(name);
   const avatarColor = getAvatarColor(name);
   const displayName = name || "User";
 
-  if (image) {
+  // Generate signed URL for S3 keys on component mount
+  useEffect(() => {
+    console.log('Avatar useEffect - image:', image);
+    
+    // Reset state when image prop changes
+    setImageUrl(null);
+    setLoading(false);
+    
+    if (!image) {
+      console.log('No image provided');
+      return;
+    }
+
+    // If it's already a valid URL (contains ://) - Google, Facebook, HTTP URLs
+    if (image.includes('://')) {
+      console.log('✅ Using as external URL (Google/Facebook/HTTP):', image);
+      setImageUrl(image);
+      return;
+    }
+
+    // If it's an S3 key (contains "/" but no "://")
+    if (image.includes('/')) {
+      console.log('🔑 Detected S3 key, generating signed URL...');
+      setLoading(true);
+      
+      fetch('/api/storage/signed-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: image })
+      })
+      .then(res => {
+        console.log('Signed URL response status:', res.status);
+        return res.json();
+      })
+      .then(data => {
+        console.log('Signed URL response data:', data);
+        if (data.success && data.data?.url) {
+          console.log('✅ Setting signed URL:', data.data.url);
+          setImageUrl(data.data.url);
+        } else {
+          console.log('❌ Failed to get signed URL, falling back to initials');
+          setImageUrl(null);
+        }
+      })
+      .catch(error => {
+        console.error('❌ Error generating signed URL:', error);
+        setImageUrl(null);
+      })
+      .finally(() => setLoading(false));
+    } else {
+      // It's some other format (simple filename), use as-is
+      console.log('✅ Using as simple filename:', image);
+      setImageUrl(image);
+    }
+  }, [image]);
+
+  // Show loading state for S3 keys
+  if (loading) {
+    return (
+      <div className={`${size} rounded-full ${avatarColor} animate-pulse ${className}`}>
+        <div className="w-full h-full rounded-full bg-gray-300"></div>
+      </div>
+    );
+  }
+
+  if (imageUrl) {
+    console.log('Rendering Image with URL:', imageUrl);
     return (
       <div className={`${size} rounded-full overflow-hidden ${className}`}>
         <Image
-          src={image}
+          src={imageUrl}
           width={imageDimensions}
           height={imageDimensions}
           alt={alt || `${displayName}'s profile picture`}
           className="w-full h-full object-cover"
           quality={95}
-          unoptimized={image.includes('s3')}
-          onError={(e) => {
-            // Hide image on error - will show fallback
-            e.currentTarget.style.display = 'none';
+          unoptimized={imageUrl.includes("s3")} // Don't optimize S3 signed URLs
+          onError={() => {
+            console.log('Image failed to load, falling back to initials');
+            // Fallback to initials on error
+            setImageUrl(null);
           }}
         />
       </div>

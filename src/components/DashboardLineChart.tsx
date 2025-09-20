@@ -1,6 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import { HiChartBar } from "react-icons/hi2";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -36,28 +37,26 @@ export default function DashboardLineChart() {
     fetchChartData();
   }, []);
 
-  // Fallback to hardcoded data if no real data available
-  const fallbackSeries = [
-    {
-      name: "Sample Election 2025",
-      data: [120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 320, 340],
-    },
-    {
-      name: "Sample Election 2024", 
-      data: [100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300, 320],
-    },
-    {
-      name: "Sample Election 2023",
-      data: [80, 100, 120, 140, 160, 180, 200, 220, 240, 260, 280, 300],
-    },
-  ];
-
-  const fallbackCategories = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-  // Use real data if available and has data, otherwise use fallback
+  // Check if we have real data
   const hasRealData = chartData?.series && chartData.series.length > 0 && chartData.categories.length > 0;
-  const displaySeries = hasRealData ? chartData.series : fallbackSeries;
-  const displayCategories = hasRealData ? chartData.categories.map(year => year.toString()) : fallbackCategories;
+  
+  // If no real data available, show message instead of chart
+  if (!loading && !hasRealData) {
+    return (
+      <div className="flex items-center justify-center h-60 w-full bg-gray-50 rounded-lg border border-gray-200">
+        <div className="text-center px-4">
+          <HiChartBar className="text-gray-400 text-5xl mb-3 mx-auto" />
+          <div className="text-gray-600 font-medium text-lg mb-2">No Election Data Available</div>
+          <div className="text-gray-500 text-sm">
+            Create repeating elections to see turnout trends
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const displaySeries = chartData?.series || [];
+  const displayCategories = chartData?.categories.map(year => year.toString()) || [];
 
   const chartOptions: ApexOptions = {
     chart: {
@@ -66,7 +65,15 @@ export default function DashboardLineChart() {
       toolbar: { show: false },
     },
     dataLabels: { enabled: true },
-    colors: ["#8B0000", "#B8860B", "#A9A9A9", "#4CAF50", "#FF9800", "#9C27B0"], // More colors for multiple templates
+    // Color palette for election lines - vibrant and distinct colors
+    colors: [
+      "#DC2626", // Bright Red - 1st election
+      "#F59E0B", // Amber/Orange - 2nd election  
+      "#3B82F6", // Blue - 3rd election (replaced grey)
+      "#10B981", // Emerald Green - 4th election
+      "#8B5CF6", // Purple - 5th election
+      "#F97316"  // Orange - 6th election
+    ],
     stroke: { lineCap: "round", curve: "smooth" },
     markers: { size: 0 },
     xaxis: {
@@ -82,7 +89,7 @@ export default function DashboardLineChart() {
         },
       },
       title: {
-        text: hasRealData ? "Election Year" : "Month",
+        text: "Election Year",
         style: {
           fontSize: "12px",
           color: "#616161"
@@ -99,7 +106,7 @@ export default function DashboardLineChart() {
         },
       },
       title: {
-        text: hasRealData ? "Voter Turnout (%)" : "Sample Data",
+        text: "Voter Turnout (%)",
         style: {
           fontSize: "12px",
           color: "#616161"
@@ -119,7 +126,7 @@ export default function DashboardLineChart() {
       y: {
         formatter: (value) => {
           if (value === null) return "No data";
-          return hasRealData ? `${value}%` : `${value} votes`;
+          return `${value}%`;
         }
       }
     },
