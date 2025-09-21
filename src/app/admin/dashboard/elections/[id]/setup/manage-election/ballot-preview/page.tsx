@@ -45,7 +45,7 @@ export default function BallotPreviewPage() {
         setBallotData({
           ...data.ballotData,
           scopes: data.votingScopes.map((s: any) => ({
-            id: String(s.id),
+            id: Number(s.id),
             name: s.name,
           })),
         });
