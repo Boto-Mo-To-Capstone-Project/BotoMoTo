@@ -182,9 +182,11 @@ export const PositionsDragandDropdown: React.FC<DragandDropdownProps> = ({
 
         if (positionName) {
           // Check for duplicate positions (same name + same scope)
+          // Handle both undefined and null votingScopeId values (fix on dupes not showing)
+          const normalizedVotingScopeId = votingScopeId ?? null;
           const positionExists = existingPositions.some(p => 
             p.name.toLowerCase() === positionName.toLowerCase() && 
-            p.votingScopeId === votingScopeId
+            p.votingScopeId === normalizedVotingScopeId
           );
           
           if (positionExists) {
