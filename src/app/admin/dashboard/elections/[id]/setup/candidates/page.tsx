@@ -54,7 +54,12 @@ export default function CandidatesDashboardPage() {
   const [reloadKey, setReloadKey] = useState(0);
   
   // NEW: positions and parties for the candidates import modal
-  const [positions, setPositions] = useState<Array<{ id: number; name: string }>>([]);
+  const [positions, setPositions] = useState<Array<{ 
+    id: number; 
+    name: string; 
+    votingScopeId?: number | null; 
+    votingScope?: { id: number; name: string } | null; 
+  }>>([]);
   const [parties, setParties] = useState<Array<{ id: number; name: string }>>([]);
   const [voters, setVoters] = useState<Array<{ id: number; firstName: string; lastName: string; email?: string }>>([]);
 
@@ -420,7 +425,9 @@ export default function CandidatesDashboardPage() {
           if (positionsData.success && positionsData.data?.positions) {
             setPositions(positionsData.data.positions.map((p: any) => ({
               id: p.id,
-              name: p.name
+              name: p.name,
+              votingScopeId: p.votingScopeId,
+              votingScope: p.votingScope
             })));
           }
         }

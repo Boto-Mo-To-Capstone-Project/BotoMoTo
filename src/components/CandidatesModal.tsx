@@ -7,8 +7,13 @@ import toast from "react-hot-toast";
 
 // Define lightweight types used internally for fetched options
 type VoterOpt = { id: number; firstName: string; lastName: string; email?: string };
-// Extend PositionOpt to optionally carry scope data coming from API (various possible keys)
-type PositionOpt = { id: number; name: string; votingScopeId?: number | null; votingScope?: { id: number; name: string } | null; votingScopeName?: string; scopeName?: string };
+// Extend PositionOpt to optionally carry scope data coming from API
+type PositionOpt = { 
+  id: number; 
+  name: string; 
+  votingScopeId?: number | null; 
+  votingScope?: { id: number; name: string } | null; 
+};
 type PartyOpt = { id: number; name: string };
 
 type CandidatesModalProps = {
@@ -183,9 +188,9 @@ export function CandidatesModal({
     return counts;
   }, [positions]);
 
-  // NEW: Helper to derive a human-friendly scope label (fallbacks for different API shapes)
+  // NEW: Helper to derive a human-friendly scope label
   const getScopeLabel = (p: PositionOpt) => {
-    const scopeName = p.votingScope?.name || p.votingScopeName || p.scopeName;
+    const scopeName = p.votingScope?.name;
     if (scopeName) return scopeName;
     if (p.votingScopeId) return `Scope #${p.votingScopeId}`;
     return "All voters"; // no scope restriction
