@@ -186,13 +186,14 @@ export const CandidatesDragandDropdown: React.FC<CandidatesDragandDropdownProps>
           
           let wasAutoAssigned = false;
           
-          // If not found and it's any scoped position, try to match with voter's scope
+          // If not found, try to match with voter's scope for scoped positions
           if (!position) {
             // Find voter's scope
             const voter = voters.find(v => 
               v.email && v.email.toLowerCase() === candidate.email.toLowerCase()
             );
             
+            // If voter found and has a scope, try to find position matching both name and voter's scope
             if (voter && voter.votingScopeId) {
               // Find position that matches both name and voter's scope
               position = positions.find(p => 
@@ -211,27 +212,61 @@ export const CandidatesDragandDropdown: React.FC<CandidatesDragandDropdownProps>
                   severity: 'warning',
                   candidateEmail
                 });
+              } else {
+                // Check if there are scoped positions with this name but no match with voter's scope
+                const scopedPositionsWithSameName = positions.filter(p => 
+                  p.name.toLowerCase() === candidate.position.toLowerCase() && p.votingScope
+                );
+                
+                if (scopedPositionsWithSameName.length > 0) {
+                  const availableScopes = scopedPositionsWithSameName.map(p => p.votingScope?.name).join(', ');
+                  issues.push({
+                    rowNumber,
+                    field: 'position',
+                    message: `Position "${candidate.position}" exists with scopes [${availableScopes}], but voter is not in any of these scopes or has no scope assigned.`,
+                    severity: 'error',
+                    candidateEmail
+                  });
+                }
               }
-            }
-            
-            // If still not found, try to find any position with this name (fallback)
-            if (!position) {
-              position = positions.find(p => 
-                p.name.toLowerCase() === candidate.position.toLowerCase()
+            } else {
+              // Voter has no scope or not found, check if position requires scope
+              const scopedPositionsWithSameName = positions.filter(p => 
+                p.name.toLowerCase() === candidate.position.toLowerCase() && p.votingScope
               );
+              
+              if (scopedPositionsWithSameName.length > 0) {
+                const availableScopes = scopedPositionsWithSameName.map(p => p.votingScope?.name).join(', ');
+                issues.push({
+                  rowNumber,
+                  field: 'position',
+                  message: `Position "${candidate.position}" requires scope assignment [${availableScopes}], but voter has no scope or is not found.`,
+                  severity: 'error',
+                  candidateEmail
+                });
+              }
             }
           }
           
           if (position) {
             candidate.positionId = position.id;
-          } else {
-            issues.push({
-              rowNumber,
-              field: 'position',
-              message: `Position "${candidate.position}" not found in this election`,
-              severity: 'error',
-              candidateEmail
-            });
+          } else if (!position) {
+            // Only show generic "not found" if no specific scoping errors were already added
+            const hasSpecificError = issues.some(issue => 
+              issue.rowNumber === rowNumber && 
+              issue.field === 'position' && 
+              issue.severity === 'error'
+            );
+            
+            if (!hasSpecificError) {
+              issues.push({
+                rowNumber,
+                field: 'position',
+                message: `Position "${candidate.position}" not found in this election`,
+                severity: 'error',
+                candidateEmail
+              });
+            }
           }
         }
 
