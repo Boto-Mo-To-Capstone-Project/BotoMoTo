@@ -32,9 +32,10 @@ interface CandidatesDragandDropdownProps {
   id?: string;
   maxSizeMB?: number;
   onUpload: (candidates: ParsedCandidate[]) => Promise<void> | void;
-  positions?: Array<{ id: number; name: string }>;
+  positions?: Array<{ id: number; name: string; votingScopeId?: number | null; votingScope?: { id: number; name: string } | null }>;
   parties?: Array<{ id: number; name: string }>;
-  voters?: Array<{ id: number; firstName: string; lastName: string; email?: string }>;
+  voters?: Array<{ id: number; firstName: string; lastName: string; email?: string; votingScopeId?: number | null }>;
+  existingCandidates?: Array<{ voterId: number; positionId: number; email?: string; position?: string }>;
   loading?: boolean;
   // Template preview handler (parity with voters import)
   onShowTemplatePreview?: () => void;
@@ -53,6 +54,7 @@ export const CandidatesDragandDropdown: React.FC<CandidatesDragandDropdownProps>
   positions = [],
   parties = [],
   voters = [],
+  existingCandidates = [],
   loading = false,
   onShowTemplatePreview,
 }) => {
@@ -174,21 +176,97 @@ export const CandidatesDragandDropdown: React.FC<CandidatesDragandDropdownProps>
           });
         }
 
-        // Position validation (check if position exists in election)
+        // Position validation (enhanced with auto-assignment for scoped positions)
         if (candidate.position) {
-          const position = positions.find(p => 
-            p.name.toLowerCase() === candidate.position.toLowerCase()
+          // First try exact match for positions without scopes
+          let position = positions.find(p => 
+            p.name.toLowerCase() === candidate.position.toLowerCase() && 
+            !p.votingScope
           );
+          
+          let wasAutoAssigned = false;
+          
+          // If not found, try to match with voter's scope for scoped positions
+          if (!position) {
+            // Find voter's scope
+            const voter = voters.find(v => 
+              v.email && v.email.toLowerCase() === candidate.email.toLowerCase()
+            );
+            
+            // If voter found and has a scope, try to find position matching both name and voter's scope
+            if (voter && voter.votingScopeId) {
+              // Find position that matches both name and voter's scope
+              position = positions.find(p => 
+                p.name.toLowerCase() === candidate.position.toLowerCase() &&
+                p.votingScopeId === voter.votingScopeId
+              );
+              
+              if (position) {
+                wasAutoAssigned = true;
+                // Add an informative warning to let user know about auto-assignment
+                const voterScope = position.votingScope?.name || `Scope ID ${voter.votingScopeId}`;
+                issues.push({
+                  rowNumber,
+                  field: 'position',
+                  message: `Auto-assigned "${candidate.position}" to ${voterScope} scope based on voter's constituency.`,
+                  severity: 'warning',
+                  candidateEmail
+                });
+              } else {
+                // Check if there are scoped positions with this name but no match with voter's scope
+                const scopedPositionsWithSameName = positions.filter(p => 
+                  p.name.toLowerCase() === candidate.position.toLowerCase() && p.votingScope
+                );
+                
+                if (scopedPositionsWithSameName.length > 0) {
+                  const availableScopes = scopedPositionsWithSameName.map(p => p.votingScope?.name).join(', ');
+                  issues.push({
+                    rowNumber,
+                    field: 'position',
+                    message: `Position "${candidate.position}" exists with scopes [${availableScopes}], but voter is not in any of these scopes or has no scope assigned.`,
+                    severity: 'error',
+                    candidateEmail
+                  });
+                }
+              }
+            } else {
+              // Voter has no scope or not found, check if position requires scope
+              const scopedPositionsWithSameName = positions.filter(p => 
+                p.name.toLowerCase() === candidate.position.toLowerCase() && p.votingScope
+              );
+              
+              if (scopedPositionsWithSameName.length > 0) {
+                const availableScopes = scopedPositionsWithSameName.map(p => p.votingScope?.name).join(', ');
+                issues.push({
+                  rowNumber,
+                  field: 'position',
+                  message: `Position "${candidate.position}" requires scope assignment [${availableScopes}], but voter has no scope or is not found.`,
+                  severity: 'error',
+                  candidateEmail
+                });
+              }
+            }
+          }
+          
           if (position) {
             candidate.positionId = position.id;
-          } else {
-            issues.push({
-              rowNumber,
-              field: 'position',
-              message: `Position "${candidate.position}" not found in this election`,
-              severity: 'error',
-              candidateEmail
-            });
+          } else if (!position) {
+            // Only show generic "not found" if no specific scoping errors were already added
+            const hasSpecificError = issues.some(issue => 
+              issue.rowNumber === rowNumber && 
+              issue.field === 'position' && 
+              issue.severity === 'error'
+            );
+            
+            if (!hasSpecificError) {
+              issues.push({
+                rowNumber,
+                field: 'position',
+                message: `Position "${candidate.position}" not found in this election`,
+                severity: 'error',
+                candidateEmail
+              });
+            }
           }
         }
 
@@ -210,13 +288,45 @@ export const CandidatesDragandDropdown: React.FC<CandidatesDragandDropdownProps>
           }
         }
 
-        // Add candidate if basic validation passes
         if (candidate.email && candidate.position && candidate.positionId) {
+          // Check for duplicate candidates (same email + same position) against existing candidates in DB
+          const candidateExistsInDB = existingCandidates.some(existingCandidate => 
+            existingCandidate.email?.toLowerCase() === candidate.email.toLowerCase() && 
+            existingCandidate.positionId === candidate.positionId
+          );
+          
+          if (candidateExistsInDB) {
+            issues.push({
+              rowNumber,
+              field: 'candidate',
+              message: `Candidate "${candidate.email}" is already assigned to position "${candidate.position}" in this election. Please use a different email or position.`,
+              severity: 'warning',
+              candidateEmail
+            });
+          }
+
+          // Also check for duplicates within the current CSV file
+          const candidateExistsInCSV = results.some(existingCandidate => 
+            existingCandidate.email.toLowerCase() === candidate.email.toLowerCase() && 
+            existingCandidate.positionId === candidate.positionId
+          );
+          
+          if (candidateExistsInCSV) {
+            issues.push({
+              rowNumber,
+              field: 'candidate',
+              message: `Duplicate candidate "${candidate.email}" for position "${candidate.position}" found in CSV. Please remove duplicates.`,
+              severity: 'warning',
+              candidateEmail
+            });
+          }
+
+          // Add candidate to results regardless of duplicates (they'll be filtered later)
           results.push(candidate);
         }
       }
 
-      // Filter out candidates that have voter email warnings (not found in election)
+      // Filter out candidates that have voter email warnings (not found in election) or blocking duplicate warnings
       const validResults = results.filter(candidate => {
         const hasVoterWarning = issues.some(issue => 
           issue.rowNumber === candidate.rowNumber && 
@@ -224,7 +334,13 @@ export const CandidatesDragandDropdown: React.FC<CandidatesDragandDropdownProps>
           issue.severity === 'warning' &&
           issue.message.includes('not found in this election')
         );
-        return !hasVoterWarning;
+        const hasBlockingDuplicateWarning = issues.some(issue => 
+          issue.rowNumber === candidate.rowNumber && 
+          issue.field === 'candidate' && 
+          issue.severity === 'warning' &&
+          (issue.message.includes('already assigned to position') || issue.message.includes('Duplicate candidate'))
+        );
+        return !hasVoterWarning && !hasBlockingDuplicateWarning;
       });
 
       setParsedCandidates(validResults);

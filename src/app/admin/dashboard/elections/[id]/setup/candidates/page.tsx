@@ -54,9 +54,22 @@ export default function CandidatesDashboardPage() {
   const [reloadKey, setReloadKey] = useState(0);
   
   // NEW: positions and parties for the candidates import modal
-  const [positions, setPositions] = useState<Array<{ id: number; name: string }>>([]);
+  const [positions, setPositions] = useState<Array<{ 
+    id: number; 
+    name: string; 
+    votingScopeId?: number | null; 
+    votingScope?: { id: number; name: string } | null; 
+  }>>([]);
   const [parties, setParties] = useState<Array<{ id: number; name: string }>>([]);
-  const [voters, setVoters] = useState<Array<{ id: number; firstName: string; lastName: string; email?: string }>>([]);
+  const [voters, setVoters] = useState<Array<{ id: number; firstName: string; lastName: string; email?: string; votingScopeId?: number | null }>>([]);
+
+  // NEW: All candidates for duplicate detection (not paginated)
+  const [allCandidates, setAllCandidates] = useState<Array<{
+    voterId: number;
+    positionId: number;
+    email: string;
+    position: string;
+  }>>([]);
 
   // FileViewer state for template preview
   const [showFileViewer, setShowFileViewer] = useState(false);
@@ -69,6 +82,7 @@ export default function CandidatesDashboardPage() {
     position: string;
     partylist: string;
     email: string;
+    scopeName?: string; // Add scope name field
   }>>([]);
 
   // Frontend sorting function
@@ -378,7 +392,9 @@ export default function CandidatesDashboardPage() {
         const mapped = ((json as any).data?.candidates || []).map((c: any) => ({
           id: c.id,
           name: `${c.voter?.firstName || ""} ${c.voter?.lastName || ""}`.trim() || "—",
-          position: c.position?.name || "—",
+          position: c.position?.votingScope?.name 
+            ? `${c.position?.name || "—"} (${c.position.votingScope.name})`
+            : c.position?.name || "—", // Show "Representatives (Undergraduate)" or just "President"
           partylist: c.party?.name || "Independent",
           email: c.voter?.email || "—",
         }));
@@ -420,7 +436,9 @@ export default function CandidatesDashboardPage() {
           if (positionsData.success && positionsData.data?.positions) {
             setPositions(positionsData.data.positions.map((p: any) => ({
               id: p.id,
-              name: p.name
+              name: p.name,
+              votingScopeId: p.votingScopeId,
+              votingScope: p.votingScope
             })));
           }
         }
@@ -450,7 +468,8 @@ export default function CandidatesDashboardPage() {
               id: v.id,
               firstName: v.firstName,
               lastName: v.lastName,
-              email: v.email
+              email: v.email,
+              votingScopeId: v.votingScopeId
             })));
           }
         }
@@ -463,6 +482,36 @@ export default function CandidatesDashboardPage() {
     loadPositionsPartiesAndVoters();
     return () => ctrl.abort();
   }, [electionId]);
+
+  // NEW: Fetch ALL candidates for duplicate detection (not paginated)
+  useEffect(() => {
+    if (!electionId || Number.isNaN(electionId)) return;
+    const ctrl = new AbortController();
+    const loadAllCandidates = async () => {
+      try {
+        const candidatesRes = await fetch(`/api/candidates?electionId=${electionId}&all=true`, {
+          signal: ctrl.signal
+        });
+        if (candidatesRes.ok) {
+          const candidatesData = await candidatesRes.json();
+          if (candidatesData.success && candidatesData.data?.candidates) {
+            setAllCandidates(candidatesData.data.candidates.map((c: any) => ({
+              voterId: c.voter.id,
+              positionId: c.position.id,
+              email: c.voter.email,
+              position: c.position.name
+            })));
+          }
+        }
+      } catch (error) {
+        if (!ctrl.signal.aborted) {
+          console.error('Failed to load all candidates:', error);
+        }
+      }
+    };
+    loadAllCandidates();
+    return () => ctrl.abort();
+  }, [electionId, reloadKey]);
 
   // CSV download helper
   const downloadCSV = (data: any[], filename: string, headers: string[]) => {
@@ -638,6 +687,7 @@ export default function CandidatesDashboardPage() {
         positions={positions}
         parties={parties}
         voters={voters}
+        existingCandidates={allCandidates}
         loading={modalLoading}
         onShowTemplatePreview={() => {
           setFileViewerData({

@@ -5,9 +5,10 @@ import { MdFirstPage, MdLastPage, MdChevronLeft, MdChevronRight, MdHelpOutline }
 interface Candidate {
   id: number;
   name: string;
-  position: string;
+  position: string; // Now includes scope info like "Representatives (Undergraduate)"
   partylist: string;
   email: string;
+  scopeName?: string; // Keep for potential sorting
 }
 
 interface CandidatesTableProps {
@@ -15,7 +16,7 @@ interface CandidatesTableProps {
   selectedIds: number[];
   onCheckboxChange: (id: number) => void;
   onRowClick?: (candidate: Candidate) => void;
-  sortCol: "name" | "position" | "partylist" |  "email" | null;
+  sortCol: "name" | "position" | "partylist" | "email" | null;
   sortDir: "asc" | "desc";
   onSort: (col: "name" | "position" | "partylist" | "email") => void;
   page: number;

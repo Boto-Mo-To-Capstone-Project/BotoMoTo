@@ -136,13 +136,25 @@ export async function GET(request: NextRequest) {
             id: true,
             firstName: true,
             lastName: true,
-            email: true
+            email: true,
+            votingScope: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
           }
         },
         position: {
           select: {
             id: true,
-            name: true
+            name: true,
+            votingScope: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
           }
         },
         party: {
@@ -181,7 +193,13 @@ export async function GET(request: NextRequest) {
             name: true,
             voteLimit: true,
             numOfWinners: true,
-            order: true
+            order: true,
+            votingScope: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
           }
         },
         party: {
@@ -692,7 +710,7 @@ async function handleBatchCandidateImport(candidatesData: any[], electionId: num
       email: { in: emails, mode: 'insensitive' },
       isDeleted: false
     },
-    select: { id: true, firstName: true, lastName: true, email: true }
+    select: { id: true, firstName: true, lastName: true, email: true, votingScopeId: true }
   });
 
   // Find positions by name in this election
@@ -702,7 +720,17 @@ async function handleBatchCandidateImport(candidatesData: any[], electionId: num
       name: { in: positionNames, mode: 'insensitive' },
       isDeleted: false
     },
-    select: { id: true, name: true }
+    select: { 
+      id: true, 
+      name: true, 
+      votingScopeId: true,
+      votingScope: {
+        select: {
+          id: true,
+          name: true
+        }
+      }
+    }
   });
 
   // Find parties by name in this election (if any)
@@ -717,8 +745,27 @@ async function handleBatchCandidateImport(candidatesData: any[], electionId: num
 
   // Create lookup maps
   const voterByEmail = new Map(voters.filter(v => v.email).map(v => [v.email!.toLowerCase(), v]));
-  const positionByName = new Map(positions.map(p => [p.name.toLowerCase(), p]));
+  // Note: Don't create positionByName map anymore, we'll use smart lookup logic
   const partyByName = new Map(parties.map(p => [p.name.toLowerCase(), p]));
+
+  // Helper function for smart position assignment (same logic as frontend)
+  const findPositionForCandidate = (positionName: string, voter: any) => {
+    // First try exact match for positions without scopes
+    let position = positions.find(p => 
+      p.name.toLowerCase() === positionName.toLowerCase() && 
+      !p.votingScope
+    );
+    
+    // If not found, try to match with voter's scope for scoped positions
+    if (!position && voter.votingScopeId) {
+      position = positions.find(p => 
+        p.name.toLowerCase() === positionName.toLowerCase() &&
+        p.votingScopeId === voter.votingScopeId
+      );
+    }
+    
+    return position;
+  };
 
   // Process candidates and collect errors
   const validatedCandidates: any[] = [];
@@ -739,14 +786,36 @@ async function handleBatchCandidateImport(candidatesData: any[], electionId: num
       continue;
     }
 
-    // Find position by name
-    const position = positionByName.get(candidate.position.toLowerCase().trim());
+    // Find position using smart assignment logic (or use positionId if already provided by frontend)
+    let position;
+    if (candidate.positionId) {
+      // Frontend already computed the correct positionId, use it
+      position = positions.find(p => p.id === candidate.positionId);
+    } else {
+      // Fallback to smart assignment logic
+      position = findPositionForCandidate(candidate.position, voter);
+    }
+    
     if (!position) {
-      errors.push({
-        index: i,
-        candidateEmail,
-        error: `Position "${candidate.position}" not found in this election`
-      });
+      // Check if there are scoped positions with this name but no match with voter's scope
+      const scopedPositionsWithSameName = positions.filter(p => 
+        p.name.toLowerCase() === candidate.position.toLowerCase() && p.votingScope
+      );
+      
+      if (scopedPositionsWithSameName.length > 0) {
+        const availableScopes = scopedPositionsWithSameName.map(p => p.votingScope?.name).join(', ');
+        errors.push({
+          index: i,
+          candidateEmail,
+          error: `Position "${candidate.position}" exists with scopes [${availableScopes}], but voter is not in any of these scopes or has no scope assigned.`
+        });
+      } else {
+        errors.push({
+          index: i,
+          candidateEmail,
+          error: `Position "${candidate.position}" not found in this election`
+        });
+      }
       continue;
     }
 

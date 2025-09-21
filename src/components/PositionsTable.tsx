@@ -4,7 +4,8 @@ import {
   MdFirstPage,
   MdLastPage,
   MdChevronLeft,
-  MdChevronRight
+  MdChevronRight,
+  MdVisibility
 } from "react-icons/md";
 
 interface Position {
@@ -30,6 +31,7 @@ interface PositionsTableProps {
   pageSize: number;
   onPageSizeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onRowClick?: (position: Position) => void;
+  onShowCandidates?: (positionId: number, positionName: string) => void; // NEW: callback for showing candidates
   title?: string;
   selectedIds?: number[];
   onCheckboxChange?: (id: number) => void;
@@ -41,6 +43,7 @@ export default function PositionsTable({
   title = 'All Positions',
   selectedIds = [],
   onCheckboxChange,
+  onShowCandidates, // NEW
   loading,
   hasLoaded,
   ...props
@@ -103,7 +106,7 @@ export default function PositionsTable({
                 className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("numberOfWinners")}
               >
-                Number of Winners{" "}
+                No. of Winners{" "}
                 {props.sortCol === "numberOfWinners" ? (
                   props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
                 ) : (
@@ -132,6 +135,10 @@ export default function PositionsTable({
                   <FaSort className="inline opacity-50" />
                 )}
               </th>
+              {/* NEW: Show Candidates column */}
+              <th className="py-2 px-3 border-b border-gray-200 text-center whitespace-nowrap">
+                Show Candidates
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -157,12 +164,16 @@ export default function PositionsTable({
                   <td className="py-2 px-3 align-middle">
                     <div className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
                   </td>
+                  {/* NEW: Show Candidates loading skeleton */}
+                  <td className="py-2 px-3 align-middle text-center">
+                    <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse mx-auto" />
+                  </td>
                 </tr>
               ))
             ) : (!loading && hasLoaded && props.positions.length === 0) ? (
               // Empty state
               <tr>
-                <td colSpan={6} className="px-4 py-4 text-center text-gray-400">
+                <td colSpan={7} className="px-4 py-4 text-center text-gray-400">
                   No positions found.
                 </td>
               </tr>
@@ -174,6 +185,7 @@ export default function PositionsTable({
                   className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
                   onClick={(e) => {
                     if ((e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
+                    if ((e.target as HTMLElement).closest('.show-candidates-btn')) return;
                     if (onCheckboxChange) onCheckboxChange(position.id);
                   }}
                 >
@@ -184,6 +196,7 @@ export default function PositionsTable({
                       onChange={() => {
                         if (onCheckboxChange) onCheckboxChange(position.id);
                       }}
+                      onClick={(e) => e.stopPropagation()}
                     />
                   </td>
                   <td className="py-2 px-3 align-middle truncate max-w-[150px]">{position.position}</td>
@@ -191,6 +204,19 @@ export default function PositionsTable({
                   <td className="py-2 px-3 align-middle">{position.numberOfWinners}</td>
                   <td className="py-2 px-3 align-middle">{position.order}</td>
                   <td className="py-2 px-3 align-middle truncate max-w-[180px]">{position.scopeName}</td>
+                  {/* NEW: Show Candidates button */}
+                  <td className="py-2 px-3 align-middle text-center">
+                    <button
+                      className="show-candidates-btn inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onShowCandidates?.(position.id, position.position);
+                      }}
+                      title="View candidates"
+                    >
+                      <MdVisibility size={18} />
+                    </button>
+                  </td>
                 </tr>
               ))
             )}

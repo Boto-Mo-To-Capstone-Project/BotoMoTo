@@ -57,11 +57,54 @@ export const ElectionForm = forwardRef<ElectionFormHandle, ElectionFormProps>(
     // Show instance fields for templates (first instance) AND instances
     const showInstanceFields = isTemplate || isInstance;
 
+    // Date validation helper functions
+    const getDateValidationErrors = () => {
+      const errors: { startDate?: string; endDate?: string } = {};
+      
+      if (electionData.startDate && electionData.endDate) {
+        const startDate = new Date(electionData.startDate);
+        const endDate = new Date(electionData.endDate);
+        const now = new Date();
+        
+        // Check if start date is in the past (allow same day)
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+        
+        if (startDateOnly < today) {
+          errors.startDate = "Start date cannot be in the past";
+        }
+        
+        // Check if start date is later than end date
+        if (startDate >= endDate) {
+          errors.startDate = "Start date must be before end date";
+          errors.endDate = "End date must be after start date";
+        }
+      } else {
+        // Individual field validation
+        if (electionData.startDate) {
+          const startDate = new Date(electionData.startDate);
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+          
+          if (startDateOnly < today) {
+            errors.startDate = "Start date cannot be in the past";
+          }
+        }
+      }
+      
+      return errors;
+    };
+
+    const dateErrors = getDateValidationErrors();
+    const hasDateErrors = Object.keys(dateErrors).length > 0;
+
     // Validation for enabling the Save button
     const isFormValid = electionData.name.trim() !== "" &&
       electionData.description.trim() !== "" &&
       electionData.startDate.trim() !== "" &&
       electionData.endDate.trim() !== "" &&
+      !hasDateErrors &&
       (!showInstanceFields || (
         electionData.instanceYear && electionData.instanceYear.trim() !== "" &&
         electionData.instanceName && electionData.instanceName.trim() !== ""
@@ -82,7 +125,15 @@ export const ElectionForm = forwardRef<ElectionFormHandle, ElectionFormProps>(
         <div className="space-y-6">
           {showValidation && (
             <div className="text-red-600 text-sm mb-2">
-              Please fill out all required fields.
+              {hasDateErrors ? (
+                <div className="space-y-1">
+                  <p>Please fix the following date validation errors:</p>
+                  {dateErrors.startDate && <p>• {dateErrors.startDate}</p>}
+                  {dateErrors.endDate && <p>• {dateErrors.endDate}</p>}
+                </div>
+              ) : (
+                <p>Please fill out all required fields.</p>
+              )}
             </div>
           )}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -176,6 +227,7 @@ export const ElectionForm = forwardRef<ElectionFormHandle, ElectionFormProps>(
                 setElectionData((prev) => ({ ...prev, startDate: e.target.value }))
               }
               required
+              error={dateErrors.startDate}
             />
             <InputField
               label="Date Time (End)*"
@@ -185,6 +237,7 @@ export const ElectionForm = forwardRef<ElectionFormHandle, ElectionFormProps>(
                 setElectionData((prev) => ({ ...prev, endDate: e.target.value }))
               }
               required
+              error={dateErrors.endDate}
             />
 
             {/* Instance details - show for templates (first instance) AND instances */}
