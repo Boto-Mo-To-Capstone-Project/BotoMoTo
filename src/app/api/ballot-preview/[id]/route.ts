@@ -33,6 +33,7 @@ export async function GET(
           id: true,
           name: true,
           voteLimit: true,
+          votingScope: { select: { id: true, name: true } }, // ✅ pull scope from position
           candidates: {
             where: { isDeleted: false },
             orderBy: { id: "asc" },
@@ -47,7 +48,7 @@ export async function GET(
               credentialProvider: true,
               party: { select: { id: true, name: true, color: true } }, // make sure "color" exists in DB
               voter: {
-                select: { firstName: true, middleName: true, lastName: true, votingScopeId: true },
+                select: { firstName: true, middleName: true, lastName: true },
               },
             },
           },
@@ -82,7 +83,7 @@ export async function GET(
           img: c.imageObjectKey ? `/api/files/${c.imageObjectKey}` : 'assets/sample/logo.png',
           credentialsUrl: c.credentialObjectKey ? `/api/files/${c.credentialObjectKey}` : undefined,
           position: p.name, // match BallotComponentProps
-          scopeId: c.voter?.votingScopeId ?? null,
+          scopeId: p.votingScope?.id ?? null,
         })),
       })),
     },
