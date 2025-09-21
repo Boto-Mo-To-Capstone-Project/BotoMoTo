@@ -136,13 +136,25 @@ export async function GET(request: NextRequest) {
             id: true,
             firstName: true,
             lastName: true,
-            email: true
+            email: true,
+            votingScope: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
           }
         },
         position: {
           select: {
             id: true,
-            name: true
+            name: true,
+            votingScope: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
           }
         },
         party: {
@@ -181,7 +193,13 @@ export async function GET(request: NextRequest) {
             name: true,
             voteLimit: true,
             numOfWinners: true,
-            order: true
+            order: true,
+            votingScope: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
           }
         },
         party: {

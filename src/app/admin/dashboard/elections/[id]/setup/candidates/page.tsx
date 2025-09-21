@@ -82,6 +82,7 @@ export default function CandidatesDashboardPage() {
     position: string;
     partylist: string;
     email: string;
+    scopeName?: string; // Add scope name field
   }>>([]);
 
   // Frontend sorting function
@@ -391,7 +392,9 @@ export default function CandidatesDashboardPage() {
         const mapped = ((json as any).data?.candidates || []).map((c: any) => ({
           id: c.id,
           name: `${c.voter?.firstName || ""} ${c.voter?.lastName || ""}`.trim() || "—",
-          position: c.position?.name || "—",
+          position: c.position?.votingScope?.name 
+            ? `${c.position?.name || "—"} (${c.position.votingScope.name})`
+            : c.position?.name || "—", // Show "Representatives (Undergraduate)" or just "President"
           partylist: c.party?.name || "Independent",
           email: c.voter?.email || "—",
         }));
