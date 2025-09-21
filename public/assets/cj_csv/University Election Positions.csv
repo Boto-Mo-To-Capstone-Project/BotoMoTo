@@ -1,0 +1,9 @@
+﻿Position,VoteLimit,NumberOfWinners,Order,VotingScope
+President,1,1,1,
+Vice President,1,1,2,
+Secretary,1,1,3,
+Treasurer,1,1,4,
+Auditor,1,1,5,
+Representatives,3,3,6,Diploma
+Representatives,3,3,6,Undergraduate
+Representatives,3,3,6,Graduate
