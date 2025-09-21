@@ -61,7 +61,7 @@ export default function CandidatesDashboardPage() {
     votingScope?: { id: number; name: string } | null; 
   }>>([]);
   const [parties, setParties] = useState<Array<{ id: number; name: string }>>([]);
-  const [voters, setVoters] = useState<Array<{ id: number; firstName: string; lastName: string; email?: string }>>([]);
+  const [voters, setVoters] = useState<Array<{ id: number; firstName: string; lastName: string; email?: string; votingScopeId?: number | null }>>([]);
 
   // NEW: All candidates for duplicate detection (not paginated)
   const [allCandidates, setAllCandidates] = useState<Array<{
@@ -465,7 +465,8 @@ export default function CandidatesDashboardPage() {
               id: v.id,
               firstName: v.firstName,
               lastName: v.lastName,
-              email: v.email
+              email: v.email,
+              votingScopeId: v.votingScopeId
             })));
           }
         }

@@ -32,9 +32,9 @@ interface CandidatesDragandDropdownProps {
   id?: string;
   maxSizeMB?: number;
   onUpload: (candidates: ParsedCandidate[]) => Promise<void> | void;
-  positions?: Array<{ id: number; name: string }>;
+  positions?: Array<{ id: number; name: string; votingScopeId?: number | null; votingScope?: { id: number; name: string } | null }>;
   parties?: Array<{ id: number; name: string }>;
-  voters?: Array<{ id: number; firstName: string; lastName: string; email?: string }>;
+  voters?: Array<{ id: number; firstName: string; lastName: string; email?: string; votingScopeId?: number | null }>;
   existingCandidates?: Array<{ voterId: number; positionId: number; email?: string; position?: string }>;
   loading?: boolean;
   // Template preview handler (parity with voters import)
@@ -176,11 +176,52 @@ export const CandidatesDragandDropdown: React.FC<CandidatesDragandDropdownProps>
           });
         }
 
-        // Position validation (check if position exists in election)
+        // Position validation (enhanced with auto-assignment for scoped positions)
         if (candidate.position) {
-          const position = positions.find(p => 
-            p.name.toLowerCase() === candidate.position.toLowerCase()
+          // First try exact match for positions without scopes
+          let position = positions.find(p => 
+            p.name.toLowerCase() === candidate.position.toLowerCase() && 
+            !p.votingScope
           );
+          
+          let wasAutoAssigned = false;
+          
+          // If not found and it's any scoped position, try to match with voter's scope
+          if (!position) {
+            // Find voter's scope
+            const voter = voters.find(v => 
+              v.email && v.email.toLowerCase() === candidate.email.toLowerCase()
+            );
+            
+            if (voter && voter.votingScopeId) {
+              // Find position that matches both name and voter's scope
+              position = positions.find(p => 
+                p.name.toLowerCase() === candidate.position.toLowerCase() &&
+                p.votingScopeId === voter.votingScopeId
+              );
+              
+              if (position) {
+                wasAutoAssigned = true;
+                // Add an informative warning to let user know about auto-assignment
+                const voterScope = position.votingScope?.name || `Scope ID ${voter.votingScopeId}`;
+                issues.push({
+                  rowNumber,
+                  field: 'position',
+                  message: `Auto-assigned "${candidate.position}" to ${voterScope} scope based on voter's constituency.`,
+                  severity: 'warning',
+                  candidateEmail
+                });
+              }
+            }
+            
+            // If still not found, try to find any position with this name (fallback)
+            if (!position) {
+              position = positions.find(p => 
+                p.name.toLowerCase() === candidate.position.toLowerCase()
+              );
+            }
+          }
+          
           if (position) {
             candidate.positionId = position.id;
           } else {
