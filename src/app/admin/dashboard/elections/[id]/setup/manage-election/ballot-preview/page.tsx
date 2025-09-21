@@ -18,8 +18,13 @@ interface BallotData {
       credentialsUrl?: string;
       img: string;
       position: string;
+      scopeId: number | null; // ✅ new
     }[];
   }[];
+  scopes: {
+    id: number;
+    name: string;
+  }[]; // ✅ include scopes here
 }
 
 export default function BallotPreviewPage() {

@@ -24,7 +24,7 @@ interface BallotData {
     candidates: Candidate[];
   }[];
   parties?: string[];
-  scopes?: { id: string; name: string }[]; // 👈 add available scopes
+  scopes?: { id: number; name: string }[]; // 👈 add available scopes
 }
 
 interface BallotComponentProps {
@@ -131,7 +131,7 @@ const BallotComponent = ({
       .map(position => {
         // Filter candidates of this position by selected scope
         const filteredCandidates = position.candidates.filter(
-          (candidate) => Number(candidate.scopeId) === selectedScopeId
+          (candidate) => candidate.scopeId === selectedScopeId
         );
 
         return {
@@ -223,8 +223,8 @@ const BallotComponent = ({
                 if (scope === "All Voting Scope") {
                   setSelectedScopeId("all");
                 } else {
-                  const id = ballotData.scopes?.find((s) => s.name === scope)?.id;
-                  if (id) setSelectedScopeId(Number(id));
+                  const scopeObj = ballotData.scopes?.find((s) => s.name === scope);
+                  if (scopeObj) setSelectedScopeId(scopeObj.id); // ✅ directly use number
                 }
               }}
               label={""}
