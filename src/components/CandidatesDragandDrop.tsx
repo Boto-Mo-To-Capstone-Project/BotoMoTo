@@ -35,6 +35,7 @@ interface CandidatesDragandDropdownProps {
   positions?: Array<{ id: number; name: string }>;
   parties?: Array<{ id: number; name: string }>;
   voters?: Array<{ id: number; firstName: string; lastName: string; email?: string }>;
+  existingCandidates?: Array<{ voterId: number; positionId: number; email?: string; position?: string }>;
   loading?: boolean;
   // Template preview handler (parity with voters import)
   onShowTemplatePreview?: () => void;
@@ -53,6 +54,7 @@ export const CandidatesDragandDropdown: React.FC<CandidatesDragandDropdownProps>
   positions = [],
   parties = [],
   voters = [],
+  existingCandidates = [],
   loading = false,
   onShowTemplatePreview,
 }) => {
@@ -210,13 +212,45 @@ export const CandidatesDragandDropdown: React.FC<CandidatesDragandDropdownProps>
           }
         }
 
-        // Add candidate if basic validation passes
         if (candidate.email && candidate.position && candidate.positionId) {
+          // Check for duplicate candidates (same email + same position) against existing candidates in DB
+          const candidateExistsInDB = existingCandidates.some(existingCandidate => 
+            existingCandidate.email?.toLowerCase() === candidate.email.toLowerCase() && 
+            existingCandidate.positionId === candidate.positionId
+          );
+          
+          if (candidateExistsInDB) {
+            issues.push({
+              rowNumber,
+              field: 'candidate',
+              message: `Candidate "${candidate.email}" is already assigned to position "${candidate.position}" in this election. Please use a different email or position.`,
+              severity: 'warning',
+              candidateEmail
+            });
+          }
+
+          // Also check for duplicates within the current CSV file
+          const candidateExistsInCSV = results.some(existingCandidate => 
+            existingCandidate.email.toLowerCase() === candidate.email.toLowerCase() && 
+            existingCandidate.positionId === candidate.positionId
+          );
+          
+          if (candidateExistsInCSV) {
+            issues.push({
+              rowNumber,
+              field: 'candidate',
+              message: `Duplicate candidate "${candidate.email}" for position "${candidate.position}" found in CSV. Please remove duplicates.`,
+              severity: 'warning',
+              candidateEmail
+            });
+          }
+
+          // Add candidate to results regardless of duplicates (they'll be filtered later)
           results.push(candidate);
         }
       }
 
-      // Filter out candidates that have voter email warnings (not found in election)
+      // Filter out candidates that have voter email warnings (not found in election) or blocking duplicate warnings
       const validResults = results.filter(candidate => {
         const hasVoterWarning = issues.some(issue => 
           issue.rowNumber === candidate.rowNumber && 
@@ -224,7 +258,13 @@ export const CandidatesDragandDropdown: React.FC<CandidatesDragandDropdownProps>
           issue.severity === 'warning' &&
           issue.message.includes('not found in this election')
         );
-        return !hasVoterWarning;
+        const hasBlockingDuplicateWarning = issues.some(issue => 
+          issue.rowNumber === candidate.rowNumber && 
+          issue.field === 'candidate' && 
+          issue.severity === 'warning' &&
+          (issue.message.includes('already assigned to position') || issue.message.includes('Duplicate candidate'))
+        );
+        return !hasVoterWarning && !hasBlockingDuplicateWarning;
       });
 
       setParsedCandidates(validResults);

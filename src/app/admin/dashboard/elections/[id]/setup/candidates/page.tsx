@@ -63,6 +63,14 @@ export default function CandidatesDashboardPage() {
   const [parties, setParties] = useState<Array<{ id: number; name: string }>>([]);
   const [voters, setVoters] = useState<Array<{ id: number; firstName: string; lastName: string; email?: string }>>([]);
 
+  // NEW: All candidates for duplicate detection (not paginated)
+  const [allCandidates, setAllCandidates] = useState<Array<{
+    voterId: number;
+    positionId: number;
+    email: string;
+    position: string;
+  }>>([]);
+
   // FileViewer state for template preview
   const [showFileViewer, setShowFileViewer] = useState(false);
   const [fileViewerData, setFileViewerData] = useState<{ fileUrl: string; fileName: string; title: string; fileType?: 'pdf' | 'image' | 'video' | 'audio' | 'text' | 'unknown'; } | null>(null);
@@ -471,6 +479,36 @@ export default function CandidatesDashboardPage() {
     return () => ctrl.abort();
   }, [electionId]);
 
+  // NEW: Fetch ALL candidates for duplicate detection (not paginated)
+  useEffect(() => {
+    if (!electionId || Number.isNaN(electionId)) return;
+    const ctrl = new AbortController();
+    const loadAllCandidates = async () => {
+      try {
+        const candidatesRes = await fetch(`/api/candidates?electionId=${electionId}&all=true`, {
+          signal: ctrl.signal
+        });
+        if (candidatesRes.ok) {
+          const candidatesData = await candidatesRes.json();
+          if (candidatesData.success && candidatesData.data?.candidates) {
+            setAllCandidates(candidatesData.data.candidates.map((c: any) => ({
+              voterId: c.voter.id,
+              positionId: c.position.id,
+              email: c.voter.email,
+              position: c.position.name
+            })));
+          }
+        }
+      } catch (error) {
+        if (!ctrl.signal.aborted) {
+          console.error('Failed to load all candidates:', error);
+        }
+      }
+    };
+    loadAllCandidates();
+    return () => ctrl.abort();
+  }, [electionId, reloadKey]);
+
   // CSV download helper
   const downloadCSV = (data: any[], filename: string, headers: string[]) => {
     const csvContent = [
@@ -645,6 +683,7 @@ export default function CandidatesDashboardPage() {
         positions={positions}
         parties={parties}
         voters={voters}
+        existingCandidates={allCandidates}
         loading={modalLoading}
         onShowTemplatePreview={() => {
           setFileViewerData({
