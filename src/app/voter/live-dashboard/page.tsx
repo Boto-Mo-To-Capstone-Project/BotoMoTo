@@ -220,7 +220,7 @@ const LiveDashboard = () => {
         <div className="w-4/5 flex flex-col items-center">
           <div className="text-center space-y-4">
             <p className="text-lg text-gray">Loading live election results...</p>
-            {isConnected && <p className="text-sm text-secondary">📡 Connected to live updates</p>}
+            {isConnected && <p className="text-sm text-green-600">📡 Connected to live updates</p>}
           </div>
         </div>
       </main>
@@ -245,69 +245,80 @@ const LiveDashboard = () => {
 
   // Main render with real data
   return (
-    <main className="flex flex-col items-center gap-10 pb-20 pt-40 text-justify px-10">
-      <div className="w-4/5 flex flex-col items-center ">
-        {/* page head and export btn */}
-        <div className="flex flex-col items-center gap-10 justify-between xl:flex-row w-full">
-          <div className="text-center xl:text-start space-y-2 ">
-            <p className="voter-election-heading">
-              {results?.election?.name || "Loading..."}
-            </p>
-            <p className="voter-election-desc">
-              {results?.election?.organization || "Loading..."}
+    <main className="flex flex-col items-center gap-6 pb-20 pt-30 text-justify px-10">
+      <div className="w-full max-w-7xl flex flex-col items-center">
+        {/* Red Header Card - Full Width */}
+        <div className="flex items-center rounded-2xl bg-red-800 px-6 py-4 relative overflow-hidden w-full mb-4">
+          <div>
+            <h2 className="text-white text-xl font-semibold mb-1">
+              {results?.election?.name || "Loading Election..."}
+            </h2>
+            <p className="text-white text-sm">
+              {results?.election?.organization || "Loading Organization..."}
             </p>
           </div>
-          <div className="flex justify-center w-full xs:w-auto gap-4 items-center">
-
-            {/* only for dev, will remove later */}
-            {/* Connection Status Indicator */}
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-secondary' : 'bg-primary'}`}></div>
-              <span className="text-sm text-gray">
-                {isConnected ? 'Live' : 'Disconnected'}
-              </span>
-            </div>
-          </div>
-        </div>
-        {/* kpi section */}
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 w-full mt-10">
-          <KpiCard 
-            name="Vote Count" 
-            value={results?.overview?.votersWhoVoted || 0} 
-            icon={Vote} 
-          />
-          <KpiCard 
-            name="Registered Voters" 
-            value={results?.overview?.totalVoters || 0} 
-            icon={Users} 
-          />
-          <KpiCard 
-            name="Voter Turnout" 
-            value={`${results?.overview?.voterTurnout || 0}%`} 
-            icon={BarChart2} 
-          />
-          <KpiCard 
-            name="Voting Ends In" 
-            value={timeLeft || "Calculating..."} 
-            icon={Clock} 
-          />
         </div>
         
-        {/* position section */}
-        <div className="mt-10 w-full">
-          <SectionHeaderContainer>
-            Votes Per Position
-          </SectionHeaderContainer>
+        {/* Live Dashboard Status - Below Header, Left Aligned */}
+        <div className="flex items-center justify-start w-full mb-4">
+          <div className="flex items-center gap-3 bg-green-50 border border-green-200 px-4 py-2 rounded-lg">
+            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
+            <span className={`text-lg font-semibold ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
+              {isConnected ? 'Live Dashboard' : 'Disconnected'}
+            </span>
+          </div>
         </div>
-        <PositionSection positions={results?.positions} />
 
-        {/* Demographic section */}
-        <div className="mt-10 w-full">
-          <SectionHeaderContainer>
-            Votes Per Demographic (Voter Scope)
-          </SectionHeaderContainer>
+        {/* KPI Section - Better Spacing */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 w-full mb-6">
+          <div className="bg-blue-100 rounded-lg overflow-hidden">
+            <KpiCard 
+              name="Vote Count" 
+              value={results?.overview?.votersWhoVoted || 100} 
+              icon={Vote}
+            />
+          </div>
+          <div className="bg-green-100 rounded-lg overflow-hidden">
+            <KpiCard 
+              name="Registered Voters" 
+              value={results?.overview?.totalVoters || 100} 
+              icon={Users}
+            />
+          </div>
+          <div className="bg-purple-100 rounded-lg overflow-hidden">
+            <KpiCard 
+              name="Voter Turnout" 
+              value={`${results?.overview?.voterTurnout || 100}%`} 
+              icon={BarChart2}
+            />
+          </div>
+          <div className="bg-orange-100 rounded-lg overflow-hidden">
+            <KpiCard 
+              name="Voting Ends In" 
+              value={timeLeft || "Calculating..."} 
+              icon={Clock}
+            />
+          </div>
         </div>
-        <DemographicSection demographics={results?.demographics} />
+        
+        {/* Two Column Layout for Positions and Demographics */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 w-full">
+          {/* Position section - Left Column */}
+          <div className="w-full">
+            <SectionHeaderContainer variant="maroon">
+              <span className="text-white">Votes Per Position (Voter Scope)</span>
+            </SectionHeaderContainer>
+            <PositionSection positions={results?.positions} />
+          </div>
+
+          {/* Demographic section - Right Column */}
+          <div className="w-full">
+            <SectionHeaderContainer variant="maroon">
+              <span className="text-white">Votes Per Demographic (Voter Scope)</span>
+            </SectionHeaderContainer>
+            <DemographicSection demographics={results?.demographics} />
+          </div>
+        </div>
       </div>
     </main>
   );
