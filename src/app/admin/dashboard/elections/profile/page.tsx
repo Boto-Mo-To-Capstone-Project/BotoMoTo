@@ -8,6 +8,8 @@ import { ChangePassModal } from "@/components/ChangePassModal";
 import { AccountModal } from "@/components/DeactDeleteModal";
 import { AvatarLarge } from "@/components/Avatar";
 import toast from "react-hot-toast";
+import ConfirmationModal from "@/components/ConfirmationModal";
+import { useLogout } from "@/hooks/useLogout";
 
 const ProfilePage = () => {
   const { data: session, update } = useSession();
@@ -31,6 +33,9 @@ const ProfilePage = () => {
     newPassword?: string[];
     confirmPassword?: string[];
   }>({});
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
+  const [modalConfig, setModalConfig] = useState<any>(null);
+  const logout = useLogout();
 
   // Fetch user profile on component mount
   useEffect(() => {
@@ -200,6 +205,40 @@ const ProfilePage = () => {
       toast.error("Failed to update profile image");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDelete = (e: React.FormEvent) => {
+    e.preventDefault();
+    setConfirmationOpen(true);
+    setModalConfig({
+        title: "Confirm Delete",
+        description: `Confirm DELETE the admin ${personalData.fullName}?`,
+        confirmLabel: "Yes",
+        cancelLabel: "Cancel",
+        variant: "edit",
+        onConfirm: async () => {
+        await confirmDelete();
+        },
+    });
+
+  };
+
+  // ✅ Delete (soft delete toggle)
+  const confirmDelete = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/users/delete-self`, { method: "PATCH" });
+      const data = await res.json();
+      setLoading(false);
+      if (data.success) {
+        toast.success("Admin successfully deleted")
+        await logout();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error("Something went wrong. Please try again.");
     }
   };
 
@@ -390,21 +429,18 @@ const ProfilePage = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">&nbsp;</label>
                   <SubmitButton
-                    type="button"
+                  type="button"
+                  variant= "action-primary"
+                  onClick={handleDelete}
                     label="Delete / Deactivate Account"
-                    variant="action-primary"
-                    onClick={() => setShowAccountModal(true)}
-                    className="min-w-[180px]"
-                  />
-                  <AccountModal
-                    open={showAccountModal}
-                    onClose={() => setShowAccountModal(false)}
-                    onSave={data => {
-                      // TODO: handle deactivate/delete logic here
-                      setShowAccountModal(false);
-                    }}
                   />
                 </div>
+                {/* ✅ Confirmation Modal */}
+                <ConfirmationModal
+                    open={confirmationOpen}
+                    onClose={() => setConfirmationOpen(false)}
+                  {...modalConfig}
+                />
               </div>
             </div>
 

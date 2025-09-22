@@ -18,7 +18,7 @@ type CandidateCategoryProps = {
   onSelectCandidate: (candidate: Candidate) => void;
   onDeselectCandidate: (candidate: Candidate) => void;
   disabled?: boolean; // For preview mode
-  scopes: {id: string; name: string }[];
+  scopes: {id: number; name: string }[];
 };
 
 const CandidateCategory = ({
