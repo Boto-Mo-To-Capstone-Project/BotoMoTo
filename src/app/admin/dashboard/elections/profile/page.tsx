@@ -8,8 +8,8 @@ import { ChangePassModal } from "@/components/ChangePassModal";
 import { AccountModal } from "@/components/DeactDeleteModal";
 import { AvatarLarge } from "@/components/Avatar";
 import toast from "react-hot-toast";
-import ConfirmationModal from "@/components/ConfirmationModal";
 import { useLogout } from "@/hooks/useLogout";
+import { DeleteTransferModal } from "@/components/DeleteTransferModal";
 
 const ProfilePage = () => {
   const { data: session, update } = useSession();
@@ -28,13 +28,17 @@ const ProfilePage = () => {
   const [saving, setSaving] = useState(false);
   const [showChangePassModal, setShowChangePassModal] = useState(false);
   const [showAccountModal, setShowAccountModal] = useState(false);
+  const [showDeleteTransferModal, setShowDeleteTransferModal] = useState(false);
   const [passwordErrors, setPasswordErrors] = useState<{
     oldPassword?: string[];
     newPassword?: string[];
     confirmPassword?: string[];
   }>({});
-  const [confirmationOpen, setConfirmationOpen] = useState(false);
-  const [modalConfig, setModalConfig] = useState<any>(null);
+  const [transferErrors, setTransferErrors] = useState<{
+    newAdminEmail?: string[];
+    currentPassword?: string[];
+    transferReason?: string[];
+  }>({});
   const logout = useLogout();
 
   // Fetch user profile on component mount
@@ -210,18 +214,24 @@ const ProfilePage = () => {
 
   const handleDelete = (e: React.FormEvent) => {
     e.preventDefault();
-    setConfirmationOpen(true);
-    setModalConfig({
-        title: "Confirm Delete",
-        description: `Confirm DELETE the admin ${personalData.fullName}?`,
-        confirmLabel: "Yes",
-        cancelLabel: "Cancel",
-        variant: "edit",
-        onConfirm: async () => {
-        await confirmDelete();
-        },
-    });
+    setShowDeleteTransferModal(true);
+  };
 
+  // Handle Delete/Transfer Modal Actions
+  const handleDeleteTransferAction = async (data: { 
+    action: "delete" | "transfer"; 
+    transferData?: {
+      newAdminEmail: string;
+      currentPassword: string;
+      transferReason: string;
+    }
+  }) => {
+    if (data.action === "delete") {
+      await confirmDelete();
+    } else if (data.action === "transfer" && data.transferData) {
+      await handleAdminTransfer(data.transferData);
+    }
+    setShowDeleteTransferModal(false);
   };
 
   // ✅ Delete (soft delete toggle)
@@ -239,6 +249,41 @@ const ProfilePage = () => {
       }
     } catch (error) {
       toast.error("Something went wrong. Please try again.");
+    }
+  };
+
+  const handleAdminTransfer = async (data: {
+    newAdminEmail: string;
+    currentPassword: string;
+    transferReason: string;
+  }) => {
+    setTransferErrors({});
+    
+    try {
+      const response = await fetch('/api/admin/transfer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      
+      if (response.ok) {
+        toast.success("Admin transfer completed successfully. You will be logged out.");
+        // Log out the user since they're account is now deleted
+        setTimeout(async () => {
+          await logout();
+        }, 2000);
+      } else {
+        const error = await response.json();
+        
+        if (error.error && typeof error.error === 'object') {
+          setTransferErrors(error.error);
+        } else {
+          toast.error(error.message || "Failed to transfer admin rights");
+        }
+      }
+    } catch (error) {
+      console.error("Error transferring admin:", error);
+      toast.error("Failed to transfer admin rights");
     }
   };
 
@@ -432,18 +477,22 @@ const ProfilePage = () => {
                   type="button"
                   variant= "action-primary"
                   onClick={handleDelete}
-                    label="Delete / Deactivate Account"
+                    label="Delete / Transfer Account"
                   />
                 </div>
-                {/* ✅ Confirmation Modal */}
-                <ConfirmationModal
-                    open={confirmationOpen}
-                    onClose={() => setConfirmationOpen(false)}
-                  {...modalConfig}
-                />
               </div>
             </div>
 
+            {/* Delete/Transfer Modal */}
+            <DeleteTransferModal
+              open={showDeleteTransferModal}
+              onClose={() => {
+                setShowDeleteTransferModal(false);
+                setTransferErrors({}); // Clear errors when modal closes
+              }}
+              onSave={handleDeleteTransferAction}
+              errors={transferErrors}
+            />
           </div>
         </div>
       </div>
