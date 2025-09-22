@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
-import { MdUpload, MdVisibility } from "react-icons/md";
+import { MdUpload, MdVisibility, MdPeople } from "react-icons/md";
 
 import Table from "@/components/TableComponent";
 import SurveyPreview from "@/components/survey/SurveyPreview";
@@ -62,6 +62,20 @@ export default function SuperAdminSurveyPage() {
               </button>
             </div>
           ),
+          View_Responses: (
+            <div className="flex justify-center">
+              <button
+                className="inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleViewResponses(s.id, s.title);
+                }}
+                title="View responses"
+              >
+                <MdPeople size={18} />
+              </button>
+            </div>
+          ),
           Publish: (
             <div className="flex justify-center">
               <button
@@ -105,6 +119,10 @@ export default function SuperAdminSurveyPage() {
   // Action handlers
   const handleAdd = () => {
     router.push("/superadmin/dashboard/create-survey");
+  };
+
+  const handleViewResponses = (surveyId: number, surveyTitle: string) => {
+    router.push(`/superadmin/dashboard/survey/${surveyId}/responses`);
   };
 
   const handleImport = () => {
@@ -235,6 +253,20 @@ export default function SuperAdminSurveyPage() {
               </button>
             </div>
           ),
+          View_Responses: (
+            <div className="flex justify-center">
+              <button
+                className="inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleViewResponses(s.id, s.title);
+                }}
+                title="View responses"
+              >
+                <MdPeople size={18} />
+              </button>
+            </div>
+          ),
           Publish: (
             <div className="flex justify-center">
               <button
@@ -283,6 +315,7 @@ export default function SuperAdminSurveyPage() {
                 "Description", 
                 "Published",
                 "Form_Schema",
+                "View_Responses",
                 "Publish",
               ]}
               data={rows}
