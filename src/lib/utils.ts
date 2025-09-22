@@ -35,19 +35,74 @@ export async function generateUniqueVoterCode(): Promise<string> {
 }
 
 /**
- * Generate multiple unique voter codes
+ * Generate multiple unique voter codes efficiently
  * @param count Number of codes to generate
  * @returns Array of unique voter codes
  */
 export async function generateMultipleUniqueVoterCodes(count: number): Promise<string[]> {
   const codes: string[] = [];
+  const usedCodes = new Set<string>(); // Track codes used in this batch
+  const batchSize = 500; // Larger batch size for better performance
   
-  for (let i = 0; i < count; i++) {
-    const code = await generateUniqueVoterCode();
-    codes.push(code);
+  // Get all existing codes once to avoid repeated database queries
+  const existingVoters = await db.voter.findMany({
+    select: { code: true }
+  });
+  const existingCodes = new Set(existingVoters.map(v => v.code));
+  
+  for (let i = 0; i < count; i += batchSize) {
+    const currentBatchSize = Math.min(batchSize, count - i);
+    const batchCodes = await generateBatchUniqueVoterCodes(currentBatchSize, usedCodes, existingCodes);
+    codes.push(...batchCodes);
+    
+    // usedCodes is already updated in generateBatchUniqueVoterCodes
+  }
+  
+  // Final verification: ensure no duplicates in the final result
+  const uniqueCodes = [...new Set(codes)];
+  if (uniqueCodes.length !== codes.length) {
+    throw new Error(`Duplicate codes detected in generation result. Expected ${codes.length} unique codes, got ${uniqueCodes.length}.`);
   }
   
   return codes;
+}
+
+/**
+ * Generate a batch of unique voter codes efficiently
+ * @param count Number of codes to generate in this batch
+ * @param usedCodes Set of codes already used in this generation session
+ * @param existingCodes Set of codes that already exist in the database
+ * @returns Array of unique voter codes
+ */
+async function generateBatchUniqueVoterCodes(count: number, usedCodes: Set<string> = new Set(), existingCodes: Set<string> = new Set()): Promise<string[]> {
+  const codes: string[] = [];
+  const maxAttempts = count * 5; // Increase safety limit
+  let attempts = 0;
+  
+  while (codes.length < count && attempts < maxAttempts) {
+    // Generate multiple candidate codes
+    const remainingNeeded = count - codes.length;
+    const generateCount = Math.min(remainingNeeded * 3, 500); // Generate more candidate codes
+    
+    for (let i = 0; i < generateCount; i++) {
+      const code = Math.floor(Math.random() * 900000 + 100000).toString();
+      
+      // Skip if already used in this session or exists in DB
+      if (!usedCodes.has(code) && !existingCodes.has(code)) {
+        codes.push(code);
+        usedCodes.add(code); // Add immediately to prevent duplicates in this batch
+        if (codes.length >= count) break;
+      }
+    }
+    
+    attempts++;
+  }
+  
+  if (codes.length < count) {
+    throw new Error(`Could not generate ${count} unique codes after ${maxAttempts} attempts. Generated ${codes.length} out of ${count} requested.`);
+  }
+  
+  return codes.slice(0, count);
 }
 
 /**

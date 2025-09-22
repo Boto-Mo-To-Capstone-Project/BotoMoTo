@@ -58,6 +58,7 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [parsedVoters, setParsedVoters] = useState<ParsedVoter[]>([]);
   const [parseIssues, setParseIssues] = useState<ParseIssue[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -305,14 +306,35 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
       return;
     }
 
+    setIsImporting(true);
+    
     try {
-      await onUpload(parsedVoters);
-      onClose();
+      const importCount = parsedVoters.length;
+      
+      // Show single loading toast with unique ID
+      toast.loading(`Importing ${importCount} voters...`, { id: 'voter-import' });
+      
+      // Start the import (fire-and-forget)
+      onUpload(parsedVoters)
+        .then(() => {
+          // Update the same toast with success message
+          toast.success(`Successfully imported ${importCount} voters`, { id: 'voter-import' });
+        })
+        .catch((error) => {
+          // Update the same toast with error message
+          console.error('Import failed:', error);
+          toast.error('Failed to import voters. Please check and try again.', { id: 'voter-import' });
+        });
+      
+      // Clean up state but keep modal open
       setSelectedFile(null);
       setParsedVoters([]);
       setParseIssues([]);
     } catch (error) {
       console.error('Import failed:', error);
+      toast.error('Failed to start import. Please try again.');
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -499,11 +521,11 @@ export const VotersDragandDropdown: React.FC<VotersDragandDropdownProps> = ({
               <SubmitButton
                 type="button"
                 variant="small"
-                onClick={parsedVoters.length === 0 || errorCount > 0 ? undefined : handleImport}
-                label="Import"
-                isLoading={loading}
+                onClick={parsedVoters.length === 0 || errorCount > 0 || isImporting ? undefined : handleImport}
+                label={isImporting ? "Starting Import..." : "Import"}
+                isLoading={isImporting}
                 className={`px-5 py-2.5 text-sm font-medium rounded-lg ${
-                  parsedVoters.length === 0 || errorCount > 0 ? 'opacity-50 cursor-not-allowed' : ''
+                  parsedVoters.length === 0 || errorCount > 0 || isImporting ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               />
             </div>
