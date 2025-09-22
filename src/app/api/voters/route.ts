@@ -324,6 +324,7 @@ async function createVoter(request: NextRequest) {
 
       // Generate unique codes for all voters efficiently
       const codes = await generateMultipleUniqueVoterCodes(votersData.length);
+      
       const votersWithCodes = votersData.map((voterData: Voter, index: number) => ({
         ...voterData,
         electionId,
@@ -346,7 +347,8 @@ async function createVoter(request: NextRequest) {
       const existingVotersByEmail = new Map(existingVoters.map(v => [v.email!, v]));
 
       // Create all voters in optimized batches to prevent transaction timeout
-      const CHUNK_SIZE = 100; // Process voters in chunks to avoid timeout
+      const CHUNK_SIZE = 50; // Reduce chunk size for faster individual operations
+      
       const createdVoters = await db.$transaction(async (tx) => {
         const voters: any[] = [];
         let createdCount = 0;
@@ -390,29 +392,45 @@ async function createVoter(request: NextRequest) {
 
           // Batch create new voters
           if (newVoters.length > 0) {
-            await tx.voter.createMany({
-              data: newVoters,
-              skipDuplicates: true
-            });
+            try {
+              await tx.voter.createMany({
+                data: newVoters,
+                skipDuplicates: false // Changed from true to false to catch duplicate errors
+              });
 
-            // Fetch created voters with includes
-            const createdInChunk = await tx.voter.findMany({
-              where: {
-                electionId,
-                code: { in: newVoters.map(v => v.code) }
-              },
-              include: {
-                votingScope: {
-                  select: {
-                    id: true,
-                    name: true
+              // Fetch created voters with includes
+              const createdInChunk = await tx.voter.findMany({
+                where: {
+                  electionId,
+                  code: { in: newVoters.map(v => v.code) }
+                },
+                include: {
+                  votingScope: {
+                    select: {
+                      id: true,
+                      name: true
+                    }
                   }
                 }
-              }
-            });
+              });
 
-            voters.push(...createdInChunk.map(v => ({ ...v, voted: false })));
-            createdCount += createdInChunk.length;
+              voters.push(...createdInChunk.map(v => ({ ...v, voted: false })));
+              createdCount += createdInChunk.length;
+            } catch (error: any) {
+              console.error(`Error creating chunk ${Math.floor(i / CHUNK_SIZE) + 1}:`, error.message);
+              if (error.code === 'P2002' && error.meta?.target?.includes('code')) {
+                // Find the specific duplicate code
+                const duplicateCodes = [];
+                for (const voter of newVoters) {
+                  const existing = await tx.voter.findUnique({ where: { code: voter.code } });
+                  if (existing) {
+                    duplicateCodes.push(voter.code);
+                  }
+                }
+                console.error(`Duplicate codes found: ${duplicateCodes.join(', ')}`);
+              }
+              throw error; // Re-throw to abort transaction
+            }
           }
 
           // Batch restore voters (individual updates needed due to different data per voter)
@@ -435,6 +453,8 @@ async function createVoter(request: NextRequest) {
         }
 
         return { voters, createdCount, restoredCount, totalCount: createdCount + restoredCount };
+      }, {
+        timeout: 30000, // 30 seconds timeout for large imports
       });
 
       const audit = await createAuditLog({

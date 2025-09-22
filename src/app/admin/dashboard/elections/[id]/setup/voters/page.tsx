@@ -654,9 +654,7 @@ export default function VoterDashboardPage() {
         return;
       }
 
-      const importedCount = json?.data?.voters?.length || votersToImport.length;
-      toast.success(`Successfully imported ${importedCount} voter${importedCount === 1 ? '' : 's'}`);
-      
+      // Success is handled by VotersDragandDropdown component
       setShowImportModal(false);
       setReloadKey((k) => k + 1);
     } catch (e) {
