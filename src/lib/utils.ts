@@ -35,19 +35,70 @@ export async function generateUniqueVoterCode(): Promise<string> {
 }
 
 /**
- * Generate multiple unique voter codes
+ * Generate multiple unique voter codes efficiently
  * @param count Number of codes to generate
  * @returns Array of unique voter codes
  */
 export async function generateMultipleUniqueVoterCodes(count: number): Promise<string[]> {
   const codes: string[] = [];
+  const batchSize = 50; // Generate codes in batches to avoid memory issues
   
-  for (let i = 0; i < count; i++) {
-    const code = await generateUniqueVoterCode();
-    codes.push(code);
+  for (let i = 0; i < count; i += batchSize) {
+    const currentBatchSize = Math.min(batchSize, count - i);
+    const batchCodes = await generateBatchUniqueVoterCodes(currentBatchSize);
+    codes.push(...batchCodes);
   }
   
   return codes;
+}
+
+/**
+ * Generate a batch of unique voter codes efficiently
+ * @param count Number of codes to generate in this batch
+ * @returns Array of unique voter codes
+ */
+async function generateBatchUniqueVoterCodes(count: number): Promise<string[]> {
+  const codes: string[] = [];
+  const maxAttempts = count * 3; // Safety limit to prevent infinite loops
+  let attempts = 0;
+  
+  while (codes.length < count && attempts < maxAttempts) {
+    // Generate multiple candidate codes
+    const candidateCodes: string[] = [];
+    const remainingNeeded = count - codes.length;
+    const generateCount = Math.min(remainingNeeded * 2, 100); // Generate extra in case of collisions
+    
+    for (let i = 0; i < generateCount; i++) {
+      const code = Math.floor(Math.random() * 900000 + 100000).toString();
+      candidateCodes.push(code);
+    }
+    
+    // Check which codes already exist in a single query
+    const existingVoters = await db.voter.findMany({
+      where: {
+        code: { in: candidateCodes }
+      },
+      select: { code: true }
+    });
+    
+    const existingCodes = new Set(existingVoters.map(v => v.code));
+    
+    // Add unique codes
+    for (const code of candidateCodes) {
+      if (!existingCodes.has(code) && !codes.includes(code)) {
+        codes.push(code);
+        if (codes.length >= count) break;
+      }
+    }
+    
+    attempts++;
+  }
+  
+  if (codes.length < count) {
+    throw new Error(`Could not generate ${count} unique codes after ${maxAttempts} attempts`);
+  }
+  
+  return codes.slice(0, count);
 }
 
 /**

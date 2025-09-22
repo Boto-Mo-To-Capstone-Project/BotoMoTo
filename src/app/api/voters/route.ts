@@ -6,7 +6,7 @@ import { apiResponse } from "@/lib/apiResponse";
 import { validateWithZod } from "@/lib/validateWithZod";
 import { voterSchema, voterBulkUploadSchema } from "@/lib/schema";
 import { createAuditLog } from "@/lib/audit";
-import { generateUniqueVoterCode } from "@/lib/utils";
+import { generateUniqueVoterCode, generateMultipleUniqueVoterCodes } from "@/lib/utils";
 import { Voter } from "@prisma/client";
 import { requireAuth } from "@/lib/helpers/requireAuth";
 
@@ -322,19 +322,18 @@ async function createVoter(request: NextRequest) {
         });
       }
 
-      // Generate unique codes for all voters
-      const votersWithCodes = await Promise.all(
-        votersData.map(async (voterData: Voter) => ({
-          ...voterData,
-          electionId,
-          code: await generateUniqueVoterCode(),
-          codeSendStatus: "PENDING",
-          isActive: true
-        }))
-      );
+      // Generate unique codes for all voters efficiently
+      const codes = await generateMultipleUniqueVoterCodes(votersData.length);
+      const votersWithCodes = votersData.map((voterData: Voter, index: number) => ({
+        ...voterData,
+        electionId,
+        code: codes[index],
+        codeSendStatus: "PENDING",
+        isActive: true
+      }));
 
       // Check for existing voters (both active and soft-deleted) by email
-      const emails = votersWithCodes.map(v => v.email).filter(Boolean);
+      const emails = votersWithCodes.map((v: any) => v.email).filter(Boolean);
       const existingVoters = emails.length > 0 ? await db.voter.findMany({
         where: {
           electionId,
@@ -346,48 +345,62 @@ async function createVoter(request: NextRequest) {
       // Create lookup for existing voters
       const existingVotersByEmail = new Map(existingVoters.map(v => [v.email!, v]));
 
-      // Create all voters in a transaction
+      // Create all voters in optimized batches to prevent transaction timeout
+      const CHUNK_SIZE = 100; // Process voters in chunks to avoid timeout
       const createdVoters = await db.$transaction(async (tx) => {
         const voters: any[] = [];
         let createdCount = 0;
         let restoredCount = 0;
 
-        for (const voterData of votersWithCodes) {
-          const existingVoter = voterData.email ? existingVotersByEmail.get(voterData.email) : null;
+        // Process voters in chunks
+        for (let i = 0; i < votersWithCodes.length; i += CHUNK_SIZE) {
+          const chunk = votersWithCodes.slice(i, i + CHUNK_SIZE);
+          
+          // Separate new voters from potential restores
+          const newVoters: any[] = [];
+          const restoreVoters: any[] = [];
+          
+          for (const voterData of chunk) {
+            const existingVoter = voterData.email ? existingVotersByEmail.get(voterData.email) : null;
 
-          if (existingVoter) {
-            if (existingVoter.isDeleted) {
-              // Restore soft-deleted voter
-              const restoredVoter = await tx.voter.update({
-                where: { id: existingVoter.id },
-                data: {
-                  isDeleted: false,
-                  deletedAt: null,
-                  firstName: voterData.firstName,
-                  middleName: voterData.middleName,
-                  lastName: voterData.lastName,
-                  votingScopeId: voterData.votingScopeId,
-                  isActive: voterData.isActive,
-                  updatedAt: new Date()
-                },
-                include: {
-                  votingScope: {
-                    select: {
-                      id: true,
-                      name: true
-                    }
+            if (existingVoter) {
+              if (existingVoter.isDeleted) {
+                // Prepare for restore
+                restoreVoters.push({
+                  id: existingVoter.id,
+                  data: {
+                    isDeleted: false,
+                    deletedAt: null,
+                    firstName: voterData.firstName,
+                    middleName: voterData.middleName,
+                    lastName: voterData.lastName,
+                    votingScopeId: voterData.votingScopeId,
+                    isActive: voterData.isActive,
+                    updatedAt: new Date()
                   }
-                }
-              });
-              voters.push({ ...restoredVoter, voted: false });
-              restoredCount++;
+                });
+              } else {
+                throw new Error(`A voter with email "${voterData.email}" already exists in this election`);
+              }
             } else {
-              throw new Error(`A voter with email "${voterData.email}" already exists in this election`);
+              // Prepare for creation
+              newVoters.push(voterData);
             }
-          } else {
-            // Create new voter
-            const voter = await tx.voter.create({
-              data: voterData,
+          }
+
+          // Batch create new voters
+          if (newVoters.length > 0) {
+            await tx.voter.createMany({
+              data: newVoters,
+              skipDuplicates: true
+            });
+
+            // Fetch created voters with includes
+            const createdInChunk = await tx.voter.findMany({
+              where: {
+                electionId,
+                code: { in: newVoters.map(v => v.code) }
+              },
               include: {
                 votingScope: {
                   select: {
@@ -397,10 +410,30 @@ async function createVoter(request: NextRequest) {
                 }
               }
             });
-            voters.push({ ...voter, voted: false });
-            createdCount++;
+
+            voters.push(...createdInChunk.map(v => ({ ...v, voted: false })));
+            createdCount += createdInChunk.length;
+          }
+
+          // Batch restore voters (individual updates needed due to different data per voter)
+          for (const restoreData of restoreVoters) {
+            const restoredVoter = await tx.voter.update({
+              where: { id: restoreData.id },
+              data: restoreData.data,
+              include: {
+                votingScope: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
+                }
+              }
+            });
+            voters.push({ ...restoredVoter, voted: false });
+            restoredCount++;
           }
         }
+
         return { voters, createdCount, restoredCount, totalCount: createdCount + restoredCount };
       });
 
