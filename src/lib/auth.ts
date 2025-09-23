@@ -44,6 +44,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!user || !user.password) throw new Error("Invalid credentials");
 
+        // Check if user is deleted - use same error message for security
+        if (user.isDeleted) throw new Error("Invalid credentials");
+
         const isValid = await bcrypt.compare(validated.password, user.password);
         if (!isValid) throw new Error("Invalid credentials");
 
