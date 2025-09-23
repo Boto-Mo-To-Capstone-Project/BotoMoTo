@@ -355,8 +355,13 @@ const CandidateDashboard = () => {
           <div className="flex flex-col-reverse items-start w-full gap-10 mt-10 xl:flex-row">
             {/* candidate list */}
             <div className="w-full xl:w-1/3">
-              <SectionHeaderContainer>
+              <SectionHeaderContainer variant="yellow">
                 {position.name}
+                {position.votingScope ? (
+                  <span className="bg-primary/5 text-sm align-center font-bold ml-2 rounded-xl py-1 px-2 text-primary">
+                    Scope: {position.votingScope.name}
+                  </span>
+                ) : null}
               </SectionHeaderContainer>
               <div className="flex flex-col gap-4 mt-4">
                 {position.candidates.map((candidate) => (
@@ -366,6 +371,7 @@ const CandidateDashboard = () => {
                     imgSrc="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaHfpIhAPZHSbZstaGEgFBIjZZ-Y-K533dag&s" // Default image for now
                     name={candidate.name}
                     party={candidate.party?.name || "Independent"}
+                    partyColor={candidate.party?.color || undefined}
                     votes={candidate.voteCount}
                     maxVotes={maxVotes}
                     highlight={candidate.id === candidateId}
