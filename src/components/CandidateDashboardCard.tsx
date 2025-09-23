@@ -7,6 +7,7 @@ type CandidateDashboardCardProps = {
   imgSrc: string;
   name: string;
   party: string;
+  partyColor?: string;
   votes: number;
   maxVotes: number;
   highlight?: boolean;
@@ -17,6 +18,7 @@ const CandidateDashboardCard = ({
   imgSrc,
   name,
   party,
+  partyColor,
   votes,
   maxVotes,
   highlight = false,
@@ -36,32 +38,50 @@ const CandidateDashboardCard = ({
           : "border-gray-200"
       } cursor-pointer hover:bg-gray-50 transition-colors`}
     >
-      <div className="flex items-center gap-4">
-        <img
-          src={imgSrc}
-          alt={name}
-          width={32}
-          height={32}
-          className="rounded-full object-cover aspect-square"
-        />
-        <div>
-          <h3 className="dashboard-candidate-name font-semibold">{name}</h3>
-          <p className="dashboard-candidate-desc">{party}</p>
-        </div>
-      </div>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex gap-4">
+          <div className="w-28 h-28 flex items-center justify-center rounded-xl border-2 border-gray-200 overflow-hidden">
+            <img
+              src={imgSrc ? imgSrc : "/assets/placeholderuser.png"}
+              alt={name ? `${name} photo` : "Placeholder user"}
+              className="w-full h-full object-cover"
+              onError={e => {
+                if (e.currentTarget.src.indexOf('placeholderuser.png') === -1) {
+                  e.currentTarget.src = '/assets/placeholderuser.png';
+                }
+              }}
+                    />
+          </div>
 
-      <div className="mt-4 flex items-center gap-2">
-        <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-          <div
-            className="h-full bg-primary rounded-full"
-            style={{ width: `${percentage}%` }}
-          ></div>
+          <div className="space-y-4 mt-2">
+            <h3 className="font-bold text-xl text-gray-900 text-center lg:text-left">{name}</h3>
+            {party && (
+              <p
+                className="px-4 py-1 rounded-full font-semibold text-white text-sm mt-2 lg:mt-0 text-center self-center lg:self-auto"
+                style={{
+                  backgroundColor: partyColor || "#6B7280", // fallback gray
+                }}
+              >
+                {party}
+              </p>
+            )}
+          </div>
+
         </div>
-        <span className="dashboard-candidate-desc whitespace-nowrap">
-          {votes} votes
-        </span>
-      </div>
+
+        <div className="mt-4 flex flex-col items-end gap-2">
+          <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+            <div
+              className="h-full bg-primary rounded-full"
+              style={{ width: `${percentage}%` }}
+            >-------------------------</div>
+          </div>
+          <span className="text-lg whitespace-nowrap">
+            {votes} votes
+          </span>
+        </div>
     </div>
+  </div>
   );
 };
 

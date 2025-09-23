@@ -16,6 +16,7 @@ interface Position {
     party: { id: number; name: string; color: string } | null;
     voteCount: number;
     percentage: number;
+    image: string;
   }[];
 }
 
@@ -91,7 +92,7 @@ const PositionSection = ({ positions }: PositionSectionProps) => {
  
           return (
             <div key={pos.position}>
-              <SectionHeaderContainer>{pos.position}</SectionHeaderContainer>
+              <SectionHeaderContainer variant="yellow">{pos.position}</SectionHeaderContainer>
               <div className="flex flex-col gap-4">
                 {pos.candidates.map((candidate) => (
                   <CandidateDashboardCard
@@ -115,20 +116,35 @@ const PositionSection = ({ positions }: PositionSectionProps) => {
  
           return (
             <div key={position.id}>
-              <SectionHeaderContainer>{position.name}</SectionHeaderContainer>
-              <div className="flex flex-col gap-4">
-                {position.candidates.map((candidate) => (
-                  <CandidateDashboardCard
-                    id={candidate.id}
-                    key={candidate.id}
-                    imgSrc="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaHfpIhAPZHSbZstaGEgFBIjZZ-Y-K533dag&s" // Default image for now
-                    name={candidate.name}
-                    party={candidate.party?.name || "Independent"}
-                    votes={candidate.voteCount}
-                    maxVotes={maxVotes}
-                  />
-                ))}
-              </div>
+              <SectionHeaderContainer variant="yellow">
+                {position.name}{" "}
+                {position.votingScope ? (
+                  <span className="bg-primary/5 text-sm align-center font-bold ml-2 rounded-xl py-1 px-2 text-primary">
+                    Scope: {position.votingScope.name}
+                  </span>
+                ) : null}
+              </SectionHeaderContainer>
+
+              {position.candidates.length === 0 ? (
+                <div className="text-gray-600 italic text-center py-6 col-span-full">
+                  No candidates assigned for this position
+                </div>
+                ) : ( 
+                <div className="flex flex-col gap-4">                
+                  {position.candidates.map((candidate) => (
+                    <CandidateDashboardCard
+                      id={candidate.id}
+                      key={candidate.id}
+                      imgSrc={candidate.image} // Default image for now
+                      name={candidate.name}
+                      party={candidate.party?.name || "Independent"}
+                      partyColor={candidate.party?.color || undefined}
+                      votes={candidate.voteCount}
+                      maxVotes={maxVotes}
+                    />
+                  ))}
+                </div>
+                )}
             </div>
           );
         })
