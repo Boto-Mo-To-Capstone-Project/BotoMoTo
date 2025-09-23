@@ -17,6 +17,7 @@ export const CustomPrismaAdapter = (db: PrismaClient) => {
               name: true,
               role: true,
               image: true,
+              isDeleted: true,
               // Add more if needed, but exclude password
                 organization: {
                     select: {
@@ -36,6 +37,10 @@ export const CustomPrismaAdapter = (db: PrismaClient) => {
       });
 
       if (!session) return null;
+      
+      // Check if user is deleted
+      if (session.user.isDeleted) return null;
+      
       const { user, ...sessionData } = session;
       return { user, session: sessionData };
     },

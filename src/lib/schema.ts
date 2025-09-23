@@ -288,6 +288,15 @@ const surveyFormUpdateSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
+// Admin Transfer Schema
+const adminTransferSchema = z.object({
+  newAdminEmail: field.email("New admin email"),
+  currentPassword: field.string("Current password", { min: 1 }),
+  transferReason: field.string("Transfer reason", { max: 500, required: false })
+});
+
+type AdminTransferSchema = z.infer<typeof adminTransferSchema>;
+
 // Types
 type LoginSchema = z.infer<typeof loginSchema>;
 type SignupSchema = z.infer<typeof signupSchema>;
@@ -326,6 +335,7 @@ export {
   candidateUpdateSchema,
   surveyFormCreateSchema,
   surveyFormUpdateSchema,
+  adminTransferSchema,
   type LoginSchema,
   type SignupSchema,
   type OrganizationSchema,
@@ -343,4 +353,5 @@ export {
   type CandidateUpdateSchema,
   type SurveyFormCreateSchema,
   type SurveyFormUpdateSchema,
+  type AdminTransferSchema,
 };

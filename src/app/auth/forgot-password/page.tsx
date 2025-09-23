@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import toast from "react-hot-toast";
+import { field } from "@/lib/schema";
 import ForgotPasswordImage from "@/app/assets/ForgotPassword.png";
 
 import { AuthHeading } from "@/components/AuthHeading";
@@ -14,22 +16,58 @@ import AuthContainer from '@/components/AuthContainer';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string;
+    general?: string;
+  }>({});
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError("");
+    setFieldErrors({});
+
+    // Email validation using schema
+    try {
+      const emailSchema = field.email("Email");
+      emailSchema.parse(email.trim());
+    } catch (error: any) {
+      if (error.errors && error.errors.length > 0) {
+        setFieldErrors({ email: error.errors[0].message });
+      } else {
+        setFieldErrors({ email: "Email is required" });
+      }
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      // TODO: Implement API call to send forgot password email
-      console.log("Sending forgot password email to:", email);
-      // For now, just simulate success
-      router.push("/auth/forgot-password/otp");
-    } catch {
-      setError("An unexpected error occurred. Please try again.");
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Store email in sessionStorage for the OTP page
+        sessionStorage.setItem("resetEmail", email.trim());
+
+        toast.success("Password reset code sent to your email!");
+        
+        router.push("/auth/forgot-password/otp");
+      } else {
+        setFieldErrors({ general: data.message || "Failed to send reset code. Please try again." });
+      }
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      setFieldErrors({ general: "An unexpected error occurred. Please try again." });
     } finally {
       setIsLoading(false);
     }
@@ -46,7 +84,7 @@ export default function ForgotPasswordPage() {
           title="Forgot Password"
           subtitle="Enter your email account to reset password."
         />
-        {error && <ErrorMessage message={error} />}
+        {fieldErrors.general && <ErrorMessage message={fieldErrors.general} />}
         <div className="flex justify-center">
           <Image
             src={ForgotPasswordImage}
@@ -65,6 +103,7 @@ export default function ForgotPasswordPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
             autoComplete="email"
+            error={fieldErrors.email}
           />
           <SubmitButton label="Send OTP" isLoading={isLoading} className="w-full" />
           <button

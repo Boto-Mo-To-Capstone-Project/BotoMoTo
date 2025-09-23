@@ -238,13 +238,17 @@ async function deleteAdmin(req: NextRequest, { params }: { params: Promise<{ id:
 
     const updatedUser = await db.user.update({
       where: { id },
-      data: { isDeleted: newDeletedStatus },
+      data: { 
+        isDeleted: newDeletedStatus,
+        deletedAt: newDeletedStatus ? new Date() : null
+      },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
         isDeleted: true,
+        deletedAt: true,
         createdAt: true,
         updatedAt: true,
         organization: {

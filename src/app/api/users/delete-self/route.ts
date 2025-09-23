@@ -42,13 +42,17 @@ export async function PATCH(req: NextRequest) {
     // Set isDeleted = true (no toggle, only one-way)
     const updatedUser = await db.user.update({
       where: { id: user.id },
-      data: { isDeleted: true },
+      data: { 
+        isDeleted: true,
+        deletedAt: new Date()
+      },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
         isDeleted: true,
+        deletedAt: true,
         createdAt: true,
         updatedAt: true,
       },
