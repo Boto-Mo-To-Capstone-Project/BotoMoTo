@@ -594,34 +594,6 @@ export default function SendEmailPage() {
               />
             </div>
             
-            {/* Status indicator */}
-            {(sendingStatus.total > 0 || isSending) && (
-              <div className="flex-shrink-0 bg-gray-50 rounded-lg p-3 text-sm">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className={`w-2 h-2 rounded-full ${sseConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span className="font-medium">Email Status</span>
-                </div>
-                <div className="flex gap-4 text-xs">
-                  <span className="text-yellow-600">Pending: {sendingStatus.pending}</span>
-                  <span className="text-blue-600">Sending: {sendingStatus.sending}</span>
-                  <span className="text-green-600">Sent: {sendingStatus.sent}</span>
-                  <span className="text-red-600">Failed: {sendingStatus.failed}</span>
-                </div>
-                {sendingStatus.total > 0 && (
-                  <div className="mt-1">
-                    <div className="w-32 bg-gray-200 rounded-full h-1.5">
-                      <div 
-                        className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" 
-                        style={{ 
-                          width: `${((sendingStatus.sent + sendingStatus.failed) / sendingStatus.total) * 100}%` 
-                        }}
-                      ></div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-            
             <div className="flex-shrink-0 flex gap-2 items-center">
               <SubmitButton
                 label="Trial Sending"
