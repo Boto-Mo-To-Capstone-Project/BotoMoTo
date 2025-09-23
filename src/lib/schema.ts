@@ -292,7 +292,7 @@ const surveyFormUpdateSchema = z.object({
 const adminTransferSchema = z.object({
   newAdminEmail: field.email("New admin email"),
   currentPassword: field.string("Current password", { min: 1 }),
-  transferReason: field.string("Transfer reason", { min: 10, max: 500, required: false })
+  transferReason: field.string("Transfer reason", { max: 500, required: false })
 });
 
 type AdminTransferSchema = z.infer<typeof adminTransferSchema>;

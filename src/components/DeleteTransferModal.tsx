@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { SubmitButton } from "@/components/SubmitButton";
 import { InputField } from "@/components/InputField";
+import { PasswordField } from "@/components/PasswordField";
 import { MdWarning, MdClose } from "react-icons/md";
 
 type DeleteTransferModalProps = {
@@ -174,14 +175,12 @@ export function DeleteTransferModal({ open, onClose, onSave, errors = {} }: Dele
                 </div>
 
                 <div className="col-span-1">
-                  <InputField
+                  <PasswordField
                     label="Your Current Password"
-                    type="password"
                     value={transferData.currentPassword}
                     onChange={e => setTransferData(prev => ({ ...prev, currentPassword: e.target.value }))}
                     placeholder="Enter your current password"
-                    required
-                    error={errors.currentPassword?.[0]}
+                    autoComplete="current-password"
                   />
                 </div>
 
