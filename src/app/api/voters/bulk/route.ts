@@ -4,7 +4,6 @@ import { ROLES } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
 import { createAuditLog } from "@/lib/audit";
 import { createEmailService, initializeTemplates } from "@/lib/email";
-import { enqueueVotingCodes } from "@/lib/queue/helpers";
 import { formatElectionSchedule } from "@/lib/email/templates/data";
 import { requireAuth } from "@/lib/helpers/requireAuth";
 
@@ -138,8 +137,6 @@ export async function POST(request: NextRequest) {
             where: { 
               id: { in: validVoterIds },
               isDeleted: false,
-              email: { not: null }, // Only voters with email addresses
-              code: { not: "" }, // Only voters with voting codes
               ...(electionId && { electionId: parseInt(electionId) })
             },
             include: {
@@ -155,7 +152,7 @@ export async function POST(request: NextRequest) {
             }
           });
           
-          console.log(`[Debug] Found ${votersWithDetails.length} voters with details and codes`);
+          console.log(`[Debug] Found ${votersWithDetails.length} voters with details`);
 
           if (votersWithDetails.length === 0) {
             return apiResponse({
@@ -174,8 +171,9 @@ export async function POST(request: NextRequest) {
           const emailService = await createEmailService();
           
           // Update voters status to SENDING
+          const voterIds = votersWithDetails.map(v => v.id);
           await db.voter.updateMany({
-            where: { id: { in: validVoterIds } },
+            where: { id: { in: voterIds } },
             data: { codeSendStatus: "SENDING" }
           });
 
@@ -279,7 +277,7 @@ export async function POST(request: NextRequest) {
         } catch (error) {
           console.error('Direct bulk send error:', error);
           
-          // Reset status to PENDING on error
+          // Reset status to PENDING on error (use original validVoterIds which is in scope)
           await db.voter.updateMany({
             where: { id: { in: validVoterIds } },
             data: { codeSendStatus: "PENDING" }
@@ -303,8 +301,7 @@ export async function POST(request: NextRequest) {
           // Get voters with existing codes (use 'code' field, not 'votingCode')
           const votersWithCodes = await db.voter.findMany({
             where: { 
-              id: { in: validVoterIds },
-              code: { not: "" } // Code exists and is not empty
+              id: { in: validVoterIds }
             },
             include: {
               election: {
@@ -329,19 +326,18 @@ export async function POST(request: NextRequest) {
             });
           }
 
+          // **DIRECT RESENDING** - Same pattern as send_codes
+          console.log(`[Bulk Resend] Using DIRECT resending for ${votersWithCodes.length} voters with template: ${templateId || 'voting-code'}`);
+          
+          // Create email service
+          const emailService = await createEmailService();
+          
           // Update status to SENDING
+          const resendVoterIds = votersWithCodes.map(v => v.id);
           await db.voter.updateMany({
-            where: { id: { in: votersWithCodes.map(v => v.id) } },
+            where: { id: { in: resendVoterIds } },
             data: { codeSendStatus: "SENDING" }
           });
-
-          // Prepare voting codes data for resend
-          const voterCodes = votersWithCodes.map((voter) => ({
-            id: voter.id.toString(),
-            email: voter.email!,
-            name: `${voter.firstName} ${voter.lastName}`.trim(),
-            votingCode: voter.code, // Use existing 6-digit code from database
-          }));
 
           // Get election schedule if available
           const electionSchedule = await db.electionSched.findUnique({
@@ -352,34 +348,101 @@ export async function POST(request: NextRequest) {
             ? formatElectionSchedule(electionSchedule.dateStart, electionSchedule.dateFinish)
             : { startDate: 'TBD', endDate: 'TBD', expiryDate: 'End of voting period' };
 
-          // Enqueue voting codes email jobs
-          const jobIds = await enqueueVotingCodes(
-            votersWithCodes[0].election.id.toString(),
-            voterCodes,
-            {
-              templateId: templateId || 'voting-code', // Use provided template or default
-              templateVars: {
-                electionTitle: votersWithCodes[0].election.name,
-                organizationName: votersWithCodes[0].election.organization.name,
-                ...scheduleData,
-              }
-            }
-          );
+          // Process in chunks for reliability
+          const CHUNK_SIZE = 50;
+          const chunks = [];
+          for (let i = 0; i < votersWithCodes.length; i += CHUNK_SIZE) {
+            chunks.push(votersWithCodes.slice(i, i + CHUNK_SIZE));
+          }
 
-          result = { 
-            count: votersWithCodes.length, 
-            jobIds,
-            codes: votersWithCodes.length 
+          let totalSent = 0;
+          let totalFailed = 0;
+          const failedVoters: any[] = [];
+
+          console.log(`[Bulk Resend] Processing ${votersWithCodes.length} voters in ${chunks.length} chunks`);
+
+          for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+            console.log(`[Bulk Resend] Processing chunk ${i + 1}/${chunks.length} (${chunk.length} voters)`);
+
+            try {
+              // Send individual template emails for each voter in this chunk
+              const sendPromises = chunk.map(voter => 
+                emailService.sendTemplate(
+                  templateId || 'voting-code',
+                  {
+                    voterName: `${voter.firstName} ${voter.lastName}`.trim(),
+                    electionTitle: voter.election.name,
+                    votingCode: voter.code,
+                    organizationName: voter.election.organization.name,
+                    startDate: scheduleData.startDate || 'TBD',
+                    endDate: scheduleData.endDate || 'TBD', 
+                    expiryDate: scheduleData.expiryDate || 'End of voting period',
+                    contactEmail: 'support@boto-mo-to.online'
+                  },
+                  { email: voter.email!, name: `${voter.firstName} ${voter.lastName}`.trim() },
+                  { organizationId: voter.election.organization.id }
+                )
+              );
+
+              // Execute all sends for this chunk
+              const chunkResults = await Promise.all(sendPromises);
+              
+              // Update successful voters
+              await db.voter.updateMany({
+                where: { id: { in: chunk.map(v => v.id) } },
+                data: {
+                  codeSendStatus: 'SENT'
+                }
+              });
+
+              totalSent += chunk.length;
+              console.log(`[Bulk Resend] Chunk ${i + 1} completed successfully`);
+
+            } catch (chunkError) {
+              console.error(`[Bulk Resend] Chunk ${i + 1} failed:`, chunkError);
+              
+              // Mark chunk voters as failed
+              await db.voter.updateMany({
+                where: { id: { in: chunk.map(v => v.id) } },
+                data: { codeSendStatus: 'FAILED' }
+              });
+
+              totalFailed += chunk.length;
+              failedVoters.push(...chunk.map(v => ({ 
+                ...v, 
+                error: chunkError instanceof Error ? chunkError.message : 'Unknown error'
+              })));
+            }
+
+            // Small delay between chunks (rate limiting)
+            if (i < chunks.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
+
+          result = {
+            method: 'direct',
+            total: votersWithCodes.length,
+            sent: totalSent,
+            failed: totalFailed,
+            successRate: `${Math.round((totalSent / votersWithCodes.length) * 100)}%`,
+            failedVoters: failedVoters.map(v => ({
+              id: v.id,
+              name: `${v.firstName} ${v.lastName}`.trim(),
+              email: v.email,
+              error: v.error
+            }))
           };
-          auditMessage = `Bulk resent codes to ${votersWithCodes.length} voters (Jobs: ${jobIds.length})`;
+          auditMessage = `Direct resent voting codes: ${totalSent} sent, ${totalFailed} failed`;
           
         } catch (error) {
-          console.error('Error resending voting codes:', error);
+          console.error('Direct bulk resend error:', error);
           
-          // Reset status to FAILED on error
+          // Reset status to PENDING on error
           await db.voter.updateMany({
             where: { id: { in: validVoterIds } },
-            data: { codeSendStatus: "FAILED" }
+            data: { codeSendStatus: "PENDING" }
           });
           
           return apiResponse({
@@ -426,19 +489,18 @@ export async function POST(request: NextRequest) {
             });
           }
 
+          // **DIRECT RETRY** - Same pattern as send_codes
+          console.log(`[Bulk Retry] Using DIRECT retry for ${failedVoters.length} voters with template: ${templateId || 'voting-code'}`);
+          
+          // Create email service
+          const emailService = await createEmailService();
+          
           // Update status to SENDING
+          const failedVoterIds = failedVoters.map(v => v.id);
           await db.voter.updateMany({
-            where: { id: { in: failedVoters.map(v => v.id) } },
+            where: { id: { in: failedVoterIds } },
             data: { codeSendStatus: "SENDING" }
           });
-
-          // Prepare voting codes data for retry
-          const voterCodes = failedVoters.map((voter) => ({
-            id: voter.id.toString(),
-            email: voter.email!,
-            name: `${voter.firstName} ${voter.lastName}`.trim(),
-            votingCode: voter.code,
-          }));
 
           // Get election schedule if available
           const electionSchedule = await db.electionSched.findUnique({
@@ -449,29 +511,96 @@ export async function POST(request: NextRequest) {
             ? formatElectionSchedule(electionSchedule.dateStart, electionSchedule.dateFinish)
             : { startDate: 'TBD', endDate: 'TBD', expiryDate: 'End of voting period' };
 
-          // Enqueue voting codes email jobs
-          const jobIds = await enqueueVotingCodes(
-            failedVoters[0].election.id.toString(),
-            voterCodes,
-            {
-              templateId: 'voting-code',
-              templateVars: {
-                electionTitle: failedVoters[0].election.name,
-                organizationName: failedVoters[0].election.organization.name,
-                ...scheduleData,
-              }
-            }
-          );
+          // Process in chunks for reliability
+          const CHUNK_SIZE = 50;
+          const chunks = [];
+          for (let i = 0; i < failedVoters.length; i += CHUNK_SIZE) {
+            chunks.push(failedVoters.slice(i, i + CHUNK_SIZE));
+          }
 
-          result = { 
-            count: failedVoters.length, 
-            jobIds,
-            codes: failedVoters.length 
+          let totalSent = 0;
+          let totalFailed = 0;
+          const retriedFailedVoters: any[] = [];
+
+          console.log(`[Bulk Retry] Processing ${failedVoters.length} voters in ${chunks.length} chunks`);
+
+          for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+            console.log(`[Bulk Retry] Processing chunk ${i + 1}/${chunks.length} (${chunk.length} voters)`);
+
+            try {
+              // Send individual template emails for each voter in this chunk
+              const sendPromises = chunk.map(voter => 
+                emailService.sendTemplate(
+                  templateId || 'voting-code',
+                  {
+                    voterName: `${voter.firstName} ${voter.lastName}`.trim(),
+                    electionTitle: voter.election.name,
+                    votingCode: voter.code,
+                    organizationName: voter.election.organization.name,
+                    startDate: scheduleData.startDate || 'TBD',
+                    endDate: scheduleData.endDate || 'TBD', 
+                    expiryDate: scheduleData.expiryDate || 'End of voting period',
+                    contactEmail: 'support@boto-mo-to.online'
+                  },
+                  { email: voter.email!, name: `${voter.firstName} ${voter.lastName}`.trim() },
+                  { organizationId: voter.election.organization.id }
+                )
+              );
+
+              // Execute all sends for this chunk
+              const chunkResults = await Promise.all(sendPromises);
+              
+              // Update successful voters
+              await db.voter.updateMany({
+                where: { id: { in: chunk.map(v => v.id) } },
+                data: {
+                  codeSendStatus: 'SENT'
+                }
+              });
+
+              totalSent += chunk.length;
+              console.log(`[Bulk Retry] Chunk ${i + 1} completed successfully`);
+
+            } catch (chunkError) {
+              console.error(`[Bulk Retry] Chunk ${i + 1} failed:`, chunkError);
+              
+              // Mark chunk voters as failed again
+              await db.voter.updateMany({
+                where: { id: { in: chunk.map(v => v.id) } },
+                data: { codeSendStatus: 'FAILED' }
+              });
+
+              totalFailed += chunk.length;
+              retriedFailedVoters.push(...chunk.map(v => ({ 
+                ...v, 
+                error: chunkError instanceof Error ? chunkError.message : 'Unknown error'
+              })));
+            }
+
+            // Small delay between chunks (rate limiting)
+            if (i < chunks.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
+
+          result = {
+            method: 'direct',
+            total: failedVoters.length,
+            sent: totalSent,
+            failed: totalFailed,
+            successRate: `${Math.round((totalSent / failedVoters.length) * 100)}%`,
+            failedVoters: retriedFailedVoters.map(v => ({
+              id: v.id,
+              name: `${v.firstName} ${v.lastName}`.trim(),
+              email: v.email,
+              error: v.error
+            }))
           };
-          auditMessage = `Bulk retried failed codes to ${failedVoters.length} voters (Jobs: ${jobIds.length})`;
+          auditMessage = `Direct retried voting codes: ${totalSent} sent, ${totalFailed} failed`;
           
         } catch (error) {
-          console.error('Error retrying failed voting codes:', error);
+          console.error('Direct bulk retry error:', error);
           
           // Reset status to FAILED on error
           await db.voter.updateMany({
@@ -579,20 +708,35 @@ export async function POST(request: NextRequest) {
           new: {
             operation,
             voterIds: validVoterIds,
-            count: result.count
+            count: result.count || result.total || 0 // Handle both count and total properties
           }
         }
       }
     });
+
+    // Determine affected count based on operation type
+    const affectedCount = ['send_codes', 'resend_codes', 'retry_failed'].includes(operation) 
+      ? result.total || 0 
+      : result.count || 0;
 
     return apiResponse({
       success: true,
       message: `Bulk operation completed successfully`,
       data: {
         operation,
-        affectedCount: result.count,
+        affectedCount,
         voterIds: validVoterIds,
-        audit
+        audit,
+        ...(result.method && { // Include additional email operation details
+          emailResults: {
+            method: result.method,
+            total: result.total,
+            sent: result.sent,
+            failed: result.failed,
+            successRate: result.successRate,
+            failedVoters: result.failedVoters
+          }
+        })
       },
       error: null,
       status: 200
