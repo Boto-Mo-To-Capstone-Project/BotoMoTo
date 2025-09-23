@@ -55,7 +55,7 @@ export function AdminModal({
     e.preventDefault();
     setConfirmationOpen(true);
     setModalConfig({
-        title: "Confirm Delete",
+        title: `Confirm ${adminData.isDeleted ? "Restore " : "Delete "}`,
         description: `Confirm ${adminData.isDeleted ? "RESTORE " : "DELETE "} the admin "${adminData?.email ?? "..."}"?`,
         confirmLabel: "Yes",
         cancelLabel: "Cancel",
