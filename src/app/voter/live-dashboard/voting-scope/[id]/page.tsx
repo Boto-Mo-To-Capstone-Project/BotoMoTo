@@ -26,6 +26,7 @@ interface ElectionResults {
       party: { id: number; name: string; color: string } | null;
       voteCount: number;
       percentage: number;
+      image: string
     }[];
   }[];
   demographics: {
