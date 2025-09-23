@@ -329,71 +329,68 @@ const CandidateDashboard = () => {
   };
 
   return (
-    <>
-      <main className="flex flex-col items-center gap-10 pb-20 pt-40 text-justify px-10">
-        <div className="w-4/5 flex flex-col items-center ">
-          {/* page head and export btn */}
-          <div className="flex flex-col items-center gap-10 justify-between xl:flex-row w-full">
-            <div className="text-center xl:text-start space-y-2 ">
-              <p className="voter-election-heading">
-                {results?.election.name}
-              </p>
-              <p className="voter-election-desc">
-                {results?.election.organization}
-              </p>
-            </div>
-
-            {/* will remove later, nly for dev */}
-            {/* Connection Status Indicator */}
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-secondary' : 'bg-primary'}`}></div>
-              <span className="text-sm text-gray">
-                {isConnected ? 'Live Updates' : 'Disconnected'}
-              </span>
-            </div>
-          </div>
-          <div className="flex flex-col-reverse items-start w-full gap-10 mt-10 xl:flex-row">
-            {/* candidate list */}
-            <div className="w-full xl:w-1/3">
-              <SectionHeaderContainer variant="yellow">
-                {position.name}
-                {position.votingScope ? (
-                  <span className="bg-primary/5 text-sm align-center font-bold ml-2 rounded-xl py-1 px-2 text-primary">
-                    Scope: {position.votingScope.name}
-                  </span>
-                ) : null}
-              </SectionHeaderContainer>
-              <div className="flex flex-col gap-4 mt-4">
-                {position.candidates.map((candidate) => (
-                  <CandidateDashboardCard
-                    key={candidate.id}
-                    id={candidate.id}
-                    imgSrc="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaHfpIhAPZHSbZstaGEgFBIjZZ-Y-K533dag&s" // Default image for now
-                    name={candidate.name}
-                    party={candidate.party?.name || "Independent"}
-                    partyColor={candidate.party?.color || undefined}
-                    votes={candidate.voteCount}
-                    maxVotes={maxVotes}
-                    highlight={candidate.id === candidateId}
-                  />
-                ))}
-              </div>
-            </div>
-            {/* Bar Chart */}
-            <div className="w-full xl:w-2/3">
-              <SectionHeaderContainer>
-                Vote Comparison for {selectedCandidate?.name} (
-                {position.name})
-              </SectionHeaderContainer>
-              <div className="w-full h-[400px]">
-                <Bar data={barData} options={barOptions} />
-              </div>
-              {/* Fixed height container */}
-            </div>
+    <main className="flex flex-col items-center gap-6 pb-20 pt-30 text-justify px-10">
+      <div className="w-full max-w-7xl flex flex-col items-center">
+        <div className="flex items-center rounded-2xl bg-red-800 px-6 py-4 relative overflow-hidden w-full mb-4">
+          <div>
+            <h2 className="text-white text-xl font-semibold mb-1">
+              {results?.election?.name || "Loading Election..."}
+            </h2>
+            <p className="text-white text-sm">
+              {results?.election?.organization || "Loading Organization..."}
+            </p>
           </div>
         </div>
-      </main>
-    </>
+        {/* Live Dashboard Status - Below Header, Left Aligned */}
+        <div className="flex items-center justify-start w-full mb-4">
+          <div className="flex items-center gap-3 bg-green-50 border border-green-200 px-4 py-2 rounded-lg">
+            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
+            <span className={`text-lg font-semibold ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
+              {isConnected ? 'Live Dashboard' : 'Disconnected'}
+            </span>
+          </div>
+        </div>
+        <div className="flex flex-col-reverse items-start w-full gap-10 xl:flex-row">
+          {/* candidate list */}
+          <div className="w-full xl:w-1/2">
+            <SectionHeaderContainer variant="yellow">
+              {position.name}
+              {position.votingScope ? (
+                <span className="bg-primary/5 text-sm align-center font-bold ml-2 rounded-xl py-1 px-2 text-primary">
+                  Scope: {position.votingScope.name}
+                </span>
+              ) : null}
+            </SectionHeaderContainer>
+            <div className="flex flex-col gap-4 mt-4">
+              {position.candidates.map((candidate) => (
+                <CandidateDashboardCard
+                  key={candidate.id}
+                  id={candidate.id}
+                  imgSrc="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaHfpIhAPZHSbZstaGEgFBIjZZ-Y-K533dag&s" // Default image for now
+                  name={candidate.name}
+                  party={candidate.party?.name || "Independent"}
+                  partyColor={candidate.party?.color || undefined}
+                  votes={candidate.voteCount}
+                  maxVotes={maxVotes}
+                  highlight={candidate.id === candidateId}
+                />
+              ))}
+            </div>
+          </div>
+          {/* Bar Chart */}
+          <div className="w-full xl:w-1/2">
+            <SectionHeaderContainer variant="yellow">
+              Vote Comparison for <b>{selectedCandidate?.name}</b>
+              <span className="bg-primary/5 text-sm align-center font-bold ml-2 rounded-xl py-1 px-2 text-primary">{position.name}</span>
+            </SectionHeaderContainer>
+            <div className="w-full h-[400px]">
+              <Bar data={barData} options={barOptions} />
+            </div>
+            {/* Fixed height container */}
+          </div>
+        </div>
+      </div>
+    </main>
   );
 };
 
