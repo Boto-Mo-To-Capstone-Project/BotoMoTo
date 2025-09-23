@@ -250,55 +250,66 @@ const DemographicDashboard = () => {
   const scopeTotalVoters = Math.round(scopeVotersWhoVoted / (currentScope?.percentage || 1) * 100) || results.overview.totalVoters;
   const scopeVoterTurnout = scopeTotalVoters > 0 ? Math.round((scopeVotersWhoVoted / scopeTotalVoters) * 100) : 0;
   return (
-    <main className="flex flex-col items-center gap-10 pb-20 pt-40 text-justify px-10">
-      <div className="w-4/5 flex flex-col items-center ">
-        {/* page head and export btn */}
-        <div className="flex flex-col items-center gap-10 justify-between xl:flex-row w-full">
-          <div className="text-center xl:text-start space-y-2 ">
-            <p className="voter-election-heading">
-              {results.election.name} ({scopeName})
-            </p>
-            <p className="voter-election-desc">
-              {results.election.organization}
+    <main className="flex flex-col items-center gap-6 pb-20 pt-30 text-justify px-10">
+      <div className="w-full max-w-7xl flex flex-col items-center">
+        {/* Red Header Card - Full Width */}
+        <div className="flex items-center rounded-2xl bg-red-800 px-6 py-4 relative overflow-hidden w-full mb-4">
+          <div>
+            <h2 className="text-white text-xl font-semibold mb-1">
+              {results?.election?.name || "Loading Election..."} ({scopeName})
+            </h2>
+            <p className="text-white text-sm">
+              {results?.election?.organization || "Loading Organization..."} 
             </p>
           </div>
+        </div>
 
-          {/* will remove later  */}
-          {/* Connection Status Indicator */}
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-secondary' : 'bg-primary'}`}></div>
-            <span className="text-sm text-gray">
-              {isConnected ? 'Live Updates' : 'Disconnected'}
+        {/* Live Dashboard Status - Below Header, Left Aligned */}
+        <div className="flex items-center justify-start w-full mb-4">
+          <div className="flex items-center gap-3 bg-green-50 border border-green-200 px-4 py-2 rounded-lg">
+            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
+            <span className={`text-lg font-semibold ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
+              {isConnected ? 'Live Dashboard' : 'Disconnected'}
             </span>
           </div>
         </div>
+
         {/* kpi section */}
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 w-full mt-10">
-          <KpiCard 
-            name="Vote Count" 
-            value={scopeVotersWhoVoted} 
-            icon={Vote} 
-          />
-          <KpiCard 
-            name="Registered Voters" 
-            value={scopeTotalVoters} 
-            icon={Users} 
-          />
-          <KpiCard 
-            name="Voter Turnout" 
-            value={`${scopeVoterTurnout}%`} 
-            icon={BarChart2} 
-          />
-          <KpiCard 
-            name="Voting Ends In" 
-            value={timeLeft || "Calculating..."} 
-            icon={Clock} 
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 w-full mb-6">
+          <div className="bg-blue-100 rounded-lg overflow-hidden">
+            <KpiCard 
+              name="Vote Count" 
+              value={scopeVotersWhoVoted} 
+              icon={Vote} 
+            />
+          </div>
+          <div className="bg-green-100 rounded-lg overflow-hidden">
+            <KpiCard 
+              name="Registered Voters" 
+              value={scopeTotalVoters} 
+              icon={Users} 
+            />
+          </div>
+          <div className="bg-purple-100 rounded-lg overflow-hidden">
+            <KpiCard 
+              name="Voter Turnout" 
+              value={`${scopeVoterTurnout}%`} 
+              icon={BarChart2} 
+            />
+          </div>
+          <div className="bg-orange-100 rounded-lg overflow-hidden">
+            <KpiCard 
+              name="Voting Ends In" 
+              value={timeLeft || "Calculating..."} 
+              icon={Clock} 
+            />
+          </div>
         </div>
+
         {/* position section */}
         {scopePositions.length > 0 ? (
           <>
-            <div className="mt-10 w-full">
+            <div className="w-full">
               <div className="bg-secondary/10 border border-secondary rounded-lg p-4 mb-4">
                 <h3 className="text-lg font-semibold text-black mb-2">
                   Positions for {scopeName}
