@@ -6,6 +6,8 @@ import KpiCard from "@/components/KpiCard";
 import PositionSection from "@/components/PositionSection";
 import DemographicSection from "@/components/DemographicSection";
 import SectionHeaderContainer from "@/components/SectionHeaderContainer";
+import { SubmitButton } from "@/components/SubmitButton";
+import toast from "react-hot-toast";
 
 interface ElectionResults {
   overview: {
@@ -35,6 +37,7 @@ const LiveDashboard = () => {
   const [timeLeft, setTimeLeft] = useState("");
   const [isConnected, setIsConnected] = useState(false);
   const [isAdminContext, setIsAdminContext] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   
   // Check if we're in admin context
   useEffect(() => {
@@ -210,6 +213,72 @@ const LiveDashboard = () => {
     }
   }, [results?.election?.schedule?.dateFinish]);
 
+  // PDF Export function - Now calls API endpoint
+  const exportToPDF = async () => {
+    if (!results) {
+      toast.error("No election data available for export.");
+      return;
+    }
+
+    const electionId = getElectionId();
+    if (!electionId) {
+      toast.error("Unable to determine election ID for export.");
+      return;
+    }
+
+    setIsExporting(true);
+
+    try {
+      console.log('📊 Starting PDF export via API...');
+
+      const response = await fetch(`/api/elections/${electionId}/export-pdf`, {
+        method: 'GET',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // Get the PDF blob from response
+      const blob = await response.blob();
+      
+      // Generate filename with election name and timestamp
+      const timestamp = new Date().toISOString().slice(0, 16).replace('T', '_').replace(/:/g, '-');
+      const electionName = results.election.name || 'Election_Results';
+      const filename = `${electionName.replace(/[^a-zA-Z0-9]/g, '_')}_Results_${timestamp}.pdf`;
+
+      // Create download link and trigger download
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      console.log('✅ PDF exported successfully via API');
+      toast.success("PDF exported successfully!");
+    } catch (error) {
+      console.error('❌ PDF export failed:', error);
+      
+      // Show user-friendly error messages
+      const message = error instanceof Error ? error.message : 'Unknown error occurred';
+      if (message.includes('403') || message.includes('permission')) {
+        toast.error('Only administrators can export election results.');
+      } else if (message.includes('400') && message.includes('closed')) {
+        toast.error('Only closed elections can be exported.');
+      } else if (message.includes('400') && message.includes('votes')) {
+        toast.error('Cannot export election with no votes.');
+      } else {
+        toast.error(`Failed to export PDF: ${message}`);
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // Initialize data fetching and SSE connection
   useEffect(() => {
     const electionId = getElectionId();
@@ -264,7 +333,7 @@ const LiveDashboard = () => {
   // Main render with real data
   return (
     <main className={`flex flex-col items-center gap-6 pb-20 ${isAdminContext ? 'pt-8' : 'pt-30'} text-justify px-10`}>
-      <div className="w-full max-w-7xl flex flex-col items-center">
+      <div className="w-full max-w-7xl flex flex-col items-center" id="pdf-export-content">
         {/* Red Header Card - Full Width */}
         <div className="flex items-center rounded-2xl bg-red-800 px-6 py-4 relative overflow-hidden w-full mb-4">
           <div>
@@ -278,12 +347,20 @@ const LiveDashboard = () => {
         </div>
         
         {/* Live Dashboard Status - Below Header, Left Aligned */}
-        <div className="flex items-center justify-start w-full mb-4">
+        <div className="flex items-center justify-between w-full mb-4">
           <div className="flex items-center gap-3 bg-green-50 border border-green-200 px-4 py-2 rounded-lg">
             <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
             <span className={`text-lg font-semibold ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
               {isConnected ? 'Live Dashboard' : 'Disconnected'}
             </span>
+          </div>
+          <div className="no-print">
+            <SubmitButton
+              variant="action-primary"
+              label={isExporting ? "Exporting" : "Export Results"}
+              onClick={exportToPDF}
+              isLoading={isExporting}
+            />
           </div>
         </div>
 
