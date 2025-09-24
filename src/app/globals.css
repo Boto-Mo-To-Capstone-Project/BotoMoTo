@@ -181,3 +181,10 @@ body {
 .scrollbar-hidden::-webkit-scrollbar {
   display: none; /* Chrome, Safari */
 }
+
+/* Print and PDF export styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
