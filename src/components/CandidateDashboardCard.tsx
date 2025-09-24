@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 type CandidateDashboardCardProps = {
   id: number; // to pass the candidate id
@@ -25,10 +26,19 @@ const CandidateDashboardCard = ({
 }: CandidateDashboardCardProps) => {
   const router = useRouter();
   const percentage = (votes / maxVotes) * 100;
+  const [isAdminContext, setIsAdminContext] = useState(false);
 
   const handleClick = () => {
     router.push(`/voter/live-dashboard/candidate/${id}`);
   };
+
+  // Check if we're in admin context
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const adminContext = sessionStorage.getItem("adminContext") === "true";
+      setIsAdminContext(adminContext);
+    }
+  }, []);
   return (
     <div
       onClick={handleClick}
@@ -38,8 +48,8 @@ const CandidateDashboardCard = ({
           : "border-gray-200"
       } cursor-pointer hover:bg-gray-50 transition-colors`}
     >
-      <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-4">
-        <div className="flex flex-col lg:flex-row gap-4 items-center">
+      <div className={`flex flex-col ${isAdminContext ? 'xl:flex-row xl:items-start': 'lg:flex-row lg:items-start'} items-center justify-between gap-4`}>
+        <div className={`flex flex-col ${isAdminContext ? 'xl:flex-row ':'lg:flex-row '} gap-4 items-center`}>
           <div className="w-28 h-28 flex items-center justify-center rounded-xl border-2 border-gray-200 overflow-hidden">
             <img
               src={imgSrc ? imgSrc : "/assets/placeholderuser.png"}
@@ -69,7 +79,7 @@ const CandidateDashboardCard = ({
 
         </div>
 
-        <div className="mt-4 flex lg:flex-col items-center lg:items-end gap-4 lg:gap-2 ">
+        <div className={`mt-4 flex  ${isAdminContext ? 'xl:flex-col xl:items-end xl:gap-2': 'lg:flex-col lg:items-end lg:gap-2'} items-center  gap-4 `}>
           <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
             <div
               className="h-full bg-primary rounded-full"
