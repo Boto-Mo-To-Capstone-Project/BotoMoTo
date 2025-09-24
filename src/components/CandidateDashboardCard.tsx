@@ -38,8 +38,8 @@ const CandidateDashboardCard = ({
           : "border-gray-200"
       } cursor-pointer hover:bg-gray-50 transition-colors`}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex gap-4">
+      <div className="flex flex-col lg:flex-row items-center lg:items-start justify-between gap-4">
+        <div className="flex flex-col lg:flex-row gap-4 items-center">
           <div className="w-28 h-28 flex items-center justify-center rounded-xl border-2 border-gray-200 overflow-hidden">
             <img
               src={imgSrc ? imgSrc : "/assets/placeholderuser.png"}
@@ -69,7 +69,7 @@ const CandidateDashboardCard = ({
 
         </div>
 
-        <div className="mt-4 flex flex-col items-end gap-2">
+        <div className="mt-4 flex lg:flex-col items-center lg:items-end gap-4 lg:gap-2 ">
           <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
             <div
               className="h-full bg-primary rounded-full"

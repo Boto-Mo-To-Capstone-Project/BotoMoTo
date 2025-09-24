@@ -130,7 +130,7 @@ const PositionSection = ({ positions }: PositionSectionProps) => {
                   No candidates assigned for this position
                 </div>
                 ) : ( 
-                <div className="flex flex-col gap-4">                
+                <div className="w-full grid grid-cols-1 xs:grid-cols-2 xl:grid-cols-1 gap-6 mt-4">                
                   {position.candidates.map((candidate) => (
                     <CandidateDashboardCard
                       id={candidate.id}
