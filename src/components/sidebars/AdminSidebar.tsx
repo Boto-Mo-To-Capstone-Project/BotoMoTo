@@ -43,6 +43,18 @@ const AdminSidebar = ({
 
   const handleLogout = useLogout();
 
+  // Check if we're on voter routes but coming from admin context
+  const isFromAdmin = typeof window !== 'undefined' && 
+    pathname.startsWith("/voter/live-dashboard") && 
+    sessionStorage.getItem("adminContext") === "true";
+
+  // Get election ID from sessionStorage if we're viewing from admin context
+  const adminElectionId = typeof window !== 'undefined' ? 
+    sessionStorage.getItem("adminElectionId") : null;
+
+  // Use the appropriate election ID - either passed prop or from admin session
+  const currentElectionId = electionId || (isFromAdmin ? adminElectionId : null);
+
   // Split links into two groups
   const beforeElectionLinks = [
     { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -70,7 +82,7 @@ const AdminSidebar = ({
   const setupLinks = ["Overview", "Voters", "Positions", "Candidates", "Manage Election"].map(
     (sub) => ({
       name: sub,
-      href: `/admin/dashboard/elections/${electionId}/setup/${sub.toLowerCase().replace(/\s+/g, "-")}`,
+      href: `/admin/dashboard/elections/${currentElectionId}/setup/${sub.toLowerCase().replace(/\s+/g, "-")}`,
     })
   );
 
@@ -147,7 +159,7 @@ const AdminSidebar = ({
             );
           })}
 
-          {variant === "selectedElection" && electionId && (
+          {(variant === "selectedElection" || isFromAdmin) && currentElectionId && (
             <>
               {/* Setup Dropdown */}
               <div className="">

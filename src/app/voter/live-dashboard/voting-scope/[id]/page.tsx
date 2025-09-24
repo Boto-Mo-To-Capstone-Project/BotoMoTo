@@ -57,11 +57,29 @@ const DemographicDashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState("");
   const [isConnected, setIsConnected] = useState(false);
+  const [isAdminContext, setIsAdminContext] = useState(false);
+
+  // Check if we're in admin context
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const adminContext = sessionStorage.getItem("adminContext") === "true";
+      setIsAdminContext(adminContext);
+    }
+  }, []);
 
   // Get election ID (same logic as live dashboard)
   const getElectionId = (): number | null => {
     try {
-      // Try to get from localStorage voter data first
+      // First check if we're coming from admin context
+      if (typeof window !== 'undefined') {
+        const adminElectionId = sessionStorage.getItem("adminElectionId");
+        if (adminElectionId) {
+          console.log(`🔄 Using election ID from admin context: ${adminElectionId}`);
+          return parseInt(adminElectionId, 10);
+        }
+      }
+
+      // Try to get from localStorage voter data
       const voterData = localStorage.getItem("voterData");
       if (voterData) {
         const parsed = JSON.parse(voterData);
@@ -209,7 +227,7 @@ const DemographicDashboard = () => {
   // Loading state
   if (loading) {
     return (
-      <main className="flex flex-col items-center gap-10 pb-20 pt-40 text-justify px-10">
+      <main className={`flex flex-col items-center gap-10 pb-20 ${isAdminContext ? 'pt-8' : 'pt-40'} text-justify px-10`}>
         <div className="w-4/5 flex flex-col items-center">
           <div className="text-center space-y-4">
             <p className="text-lg text-gray">Loading voting scope results...</p>
@@ -223,7 +241,7 @@ const DemographicDashboard = () => {
   // Error state
   if (error || !results) {
     return (
-      <main className="flex flex-col items-center gap-10 pb-20 pt-40 text-justify px-10">
+      <main className={`flex flex-col items-center gap-10 pb-20 ${isAdminContext ? 'pt-8' : 'pt-40'} text-justify px-10`}>
         <div className="w-4/5 flex flex-col items-center">
           <div className="text-center space-y-4">
             <div className="bg-primary/10 border border-primary rounded-lg p-6">
@@ -250,7 +268,7 @@ const DemographicDashboard = () => {
   const scopeTotalVoters = Math.round(scopeVotersWhoVoted / (currentScope?.percentage || 1) * 100) || results.overview.totalVoters;
   const scopeVoterTurnout = scopeTotalVoters > 0 ? Math.round((scopeVotersWhoVoted / scopeTotalVoters) * 100) : 0;
   return (
-    <main className="flex flex-col items-center gap-6 pb-20 pt-30 text-justify px-10">
+    <main className={`flex flex-col items-center gap-6 pb-20 ${isAdminContext ? 'pt-8' : 'pt-30'} text-justify px-10`}>
       <div className="w-full max-w-7xl flex flex-col items-center">
         {/* Red Header Card - Full Width */}
         <div className="flex items-center rounded-2xl bg-red-800 px-6 py-4 relative overflow-hidden w-full mb-4">

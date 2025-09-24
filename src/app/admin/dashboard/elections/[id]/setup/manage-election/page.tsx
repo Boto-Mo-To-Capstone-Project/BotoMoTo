@@ -218,7 +218,10 @@ export default function ManageElectionPage() {
                       } else if (card.title === 'Open Election') {
                         setShowOpenElectionModal(true);
                       } else if (card.title === 'Live Dashboard') {
-                        router.push(`/admin/dashboard/elections/${electionId}/setup/manage-election/live-dashboard`);
+                        // Set admin context and election ID before redirecting to voter route
+                        sessionStorage.setItem("adminContext", "true");
+                        sessionStorage.setItem("adminElectionId", electionId.toString());
+                        router.push(`/voter/live-dashboard`);
                       } else if (card.title === 'Election Integrity') {
                         router.push(`/admin/dashboard/elections/${electionId}/setup/manage-election/verify-integrity`);
                       }

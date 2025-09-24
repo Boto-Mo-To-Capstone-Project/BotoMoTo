@@ -40,8 +40,12 @@ export function useSidebarVisible() {
   const isSuperAdmin = 
   superAdminBaseRoutes.includes(pathname) || pathname.startsWith("/superadmin/dashboard/");
 
+  // Show sidebar for the live-dashboard routes if we came from admin (check sessionStorage)
+  const isFromAdmin = typeof window !== 'undefined' && 
+    pathname.startsWith("/voter/live-dashboard") && 
+    sessionStorage.getItem("adminContext") === "true";
 
-  if (isAdminDefault || isAdminElectionSelected || isSuperAdmin) {
+  if (isAdminDefault || isAdminElectionSelected || isSuperAdmin || isFromAdmin) {
     return true;
   }
 
