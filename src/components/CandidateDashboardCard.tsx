@@ -11,7 +11,6 @@ type CandidateDashboardCardProps = {
   votes: number;
   maxVotes: number;
   highlight?: boolean;
-  routePrefix?: string; // Add route prefix prop for admin vs voter
 };
 
 const CandidateDashboardCard = ({
@@ -23,15 +22,12 @@ const CandidateDashboardCard = ({
   votes,
   maxVotes,
   highlight = false,
-  routePrefix = "/voter/live-dashboard", // Default to voter route
 }: CandidateDashboardCardProps) => {
   const router = useRouter();
   const percentage = (votes / maxVotes) * 100;
 
   const handleClick = () => {
-    if (routePrefix) {
-      router.push(`${routePrefix}/candidate/${id}`);
-    }
+    router.push(`/voter/live-dashboard/candidate/${id}`);
   };
   return (
     <div

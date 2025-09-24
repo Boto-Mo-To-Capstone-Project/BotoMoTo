@@ -22,7 +22,6 @@ interface Position {
 
 interface PositionSectionProps {
   positions?: Position[];
-  routePrefix?: string; // Add route prefix prop for admin vs voter
 }
 
 // Fallback hardcoded data for when no positions are provided
@@ -79,7 +78,7 @@ const fallbackPositions = [
   },
 ];
 
-const PositionSection = ({ positions, routePrefix = "/voter/live-dashboard" }: PositionSectionProps) => {
+const PositionSection = ({ positions }: PositionSectionProps) => {
   // Use API data if available, otherwise fallback to hardcoded data
   const displayPositions = positions || [];
   const useFallback = !positions || positions.length === 0;
@@ -104,7 +103,6 @@ const PositionSection = ({ positions, routePrefix = "/voter/live-dashboard" }: P
                     party={candidate.party}
                     votes={candidate.votes}
                     maxVotes={maxVotes}
-                    routePrefix={routePrefix}
                   />
                 ))}
               </div>
@@ -143,7 +141,6 @@ const PositionSection = ({ positions, routePrefix = "/voter/live-dashboard" }: P
                       partyColor={candidate.party?.color || undefined}
                       votes={candidate.voteCount}
                       maxVotes={maxVotes}
-                      routePrefix={routePrefix}
                     />
                   ))}
                 </div>

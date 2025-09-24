@@ -326,7 +326,7 @@ const LiveDashboard = () => {
             <SectionHeaderContainer variant="maroon">
               <span className="text-white">Votes Per Position (Voter Scope)</span>
             </SectionHeaderContainer>
-            <PositionSection positions={results?.positions} routePrefix="/voter/live-dashboard" />
+            <PositionSection positions={results?.positions} />
           </div>
 
           {/* Demographic section - Right Column */}
@@ -334,7 +334,7 @@ const LiveDashboard = () => {
             <SectionHeaderContainer variant="maroon">
               <span className="text-white">Votes Per Demographic (Voter Scope)</span>
             </SectionHeaderContainer>
-            <DemographicSection demographics={results?.demographics} routePrefix="/voter/live-dashboard" />
+            <DemographicSection demographics={results?.demographics} />
           </div>
         </div>
       </div>
