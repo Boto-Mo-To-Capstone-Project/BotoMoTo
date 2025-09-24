@@ -138,13 +138,17 @@ export async function GET(
     const electionName = election.name || 'Election_Results';
     const filename = `${electionName.replace(/[^a-zA-Z0-9]/g, '_')}_Results_${timestamp}.pdf`;
 
+    // convert the buffer into arraybuffer so that it can be received well by the client
+    // remove type issue with Next.js Response
+    const pdfBufferArray = new Uint8Array(pdfBuffer);
+
     // Return PDF as response
-    return new Response(pdfBuffer, {
+    return new Response(pdfBufferArray, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${filename}"`,
-        'Content-Length': pdfBuffer.length.toString(),
+        'Content-Length': pdfBufferArray.length.toString(),
       },
     });
 
