@@ -1,6 +1,7 @@
 "use client";
 import KpiCard from "./KpiCard";
 import { MapPinHouse } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 // Type definitions for the API demographic data
 interface DemographicData {
@@ -12,6 +13,7 @@ interface DemographicData {
 
 interface DemographicSectionProps {
   demographics?: DemographicData[];
+  routePrefix?: string; // Add route prefix prop for admin vs voter
 }
 
 // Fallback hardcoded data for when no demographics are provided
@@ -34,9 +36,10 @@ const demographicColors = [
   { bg: 'bg-amber-100', hover: 'hover:bg-amber-200 hover:border-amber-400' },      // Level 8
 ];
 
-const DemographicSection = ({ demographics }: DemographicSectionProps) => {
+const DemographicSection = ({ demographics, routePrefix = "/voter/live-dashboard" }: DemographicSectionProps) => {
   // Use API data if available, otherwise fallback to hardcoded data
   const displayDemographics = demographics && demographics.length > 0 ? demographics : fallbackDemographics;
+  const router = useRouter();
   
   return (
     <section className="grid grid-cols-1 gap-5 lg:grid-cols-2 w-full">
@@ -50,13 +53,17 @@ const DemographicSection = ({ demographics }: DemographicSectionProps) => {
               rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-200
               border-4 border-transparent ${colorScheme.hover.split(' ')[1]} cursor-pointer
             `}
+            onClick={() => {
+              if (routePrefix) {
+                router.push(`${routePrefix}/voting-scope/${demographic.id}`);
+              }
+            }}
           >
             <KpiCard
               variant={"demographic"}
               name={demographic.name}
               value={`${demographic.percentage}%`}
               icon={MapPinHouse}
-              href={`/voter/live-dashboard/voting-scope/${demographic.id}`}
             />
           </div>
         );

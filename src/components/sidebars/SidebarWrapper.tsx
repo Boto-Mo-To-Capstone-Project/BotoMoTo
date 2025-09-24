@@ -53,6 +53,11 @@ export default function SidebarWrapper({
     superAdminBaseRoutes.includes(pathname) ||
     pathname.startsWith("/superadmin/dashboard/");
 
+  // Check if we're on voter livedashboard but coming from admin context
+  const isFromAdmin = typeof window !== 'undefined' && 
+    pathname.startsWith("/voter/live-dashboard") && 
+    sessionStorage.getItem("adminContext") === "true";
+
   const sidebarElectionId =
     (!reserved.includes(parts[4]?.toLowerCase()) && parts[4]) || eidParam;
 
@@ -120,6 +125,15 @@ export default function SidebarWrapper({
       return `Election ${electionId} - Manage ${section}`;
     }
 
+    // Handle voter routes when coming from admin context to set title
+    if (pathname.startsWith("/voter/live-dashboard") && typeof window !== 'undefined' && sessionStorage.getItem("adminContext") === "true") {
+      const electionId = sessionStorage.getItem("adminElectionId");
+      if (pathname === "/voter/live-dashboard") return `Election ${electionId} - Live Dashboard`;
+      if (pathname.includes("/candidate/")) return `Election ${electionId} - Candidate Dashboard`;
+      if (pathname.includes("/voting-scope/")) return `Election ${electionId} - Voting Scope Dashboard`;
+      return `Live Dashboard`;
+    }
+
     if (pathname === "/superadmin/dashboard") return "Super Admin Dashboard";
     if (pathname === "/superadmin/dashboard/organization-requests")
       return "Super Admin Organization Requests";
@@ -145,7 +159,7 @@ export default function SidebarWrapper({
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      {(isAdminDefault || isAdminElectionSelected) && (
+      {(isAdminDefault || isAdminElectionSelected || isFromAdmin) && (
         <AdminSidebar
           variant={isAdminElectionSelected ? "selectedElection" : "default"}
           electionId={isAdminElectionSelected ? sidebarElectionId : undefined}
