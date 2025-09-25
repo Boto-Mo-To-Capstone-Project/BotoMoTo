@@ -8,6 +8,8 @@ import { Loader2 } from "lucide-react";
 import SearchBar from "@/components/SearchBar";
 import Button from "@/components/Button";
 import { InputField } from "@/components/InputField";
+import { useRouter } from "next/navigation";
+import { MdVisibility } from "react-icons/md";
 
 // types for integrity verification
 type VerificationResult = {
@@ -41,6 +43,8 @@ export default function SuperAdminElectionsPage() {
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+
+  const router = useRouter();
 
   useEffect(() => {
     let isMounted = true;
@@ -81,8 +85,25 @@ export default function SuperAdminElectionsPage() {
             Organization_Name: orgName,
             Voting_Date: votingDate,
             Time: time,
+            View_Dashboard: ( // to view live dashboard
+              <div className="flex justify-center">
+                <button
+                  className="inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    sessionStorage.setItem("adminContext", "true");
+                    sessionStorage.setItem("adminElectionId", e.id.toString());
+                    router.push(`/voter/live-dashboard`);
+                  }}
+                  title="View Live Dashboard"
+                >
+                  <MdVisibility size={18} />
+                </button>
+              </div>
+            ),
           } as Record<string, any>;
         });
+
         if (isMounted) setRows(mapped);
       } catch (err) {
         console.error(err);
@@ -208,6 +229,7 @@ export default function SuperAdminElectionsPage() {
                 "Organization_Name",
                 "Voting_Date",
                 "Time",
+                "View_Dashboard"
               ]}
               data={rows}
               // pass required pagination props
