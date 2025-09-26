@@ -8,12 +8,13 @@ import LoginNav from "@/components/LoginNavbar";
 const NavbarWrapper = () => {
   const pathname = usePathname();
   const [isAdminContext, setIsAdminContext] = useState(false);
+  const [isSuperAdminContext, setIsSuperAdminContext] = useState(false);
 
   // Check admin context on mount and pathname changes
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const adminContext = sessionStorage.getItem("adminContext") === "true";
-      setIsAdminContext(adminContext);
+    if (typeof window !== "undefined") {
+      setIsAdminContext(sessionStorage.getItem("adminContext") === "true");
+      setIsSuperAdminContext(sessionStorage.getItem("superAdminContext") === "true");
     }
   }, [pathname]);
 
@@ -33,7 +34,7 @@ const NavbarWrapper = () => {
   }
 
   // If on voter routes from admin context, don't show any navbar
-  if (pathname.startsWith("/voter") && isAdminContext) {
+  if (pathname.startsWith("/voter") && (isAdminContext || isSuperAdminContext) ) {
     return null;
   }
 

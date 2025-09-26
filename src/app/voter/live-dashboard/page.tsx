@@ -37,6 +37,7 @@ const LiveDashboard = () => {
   const [timeLeft, setTimeLeft] = useState("");
   const [isConnected, setIsConnected] = useState(false);
   const [isAdminContext, setIsAdminContext] = useState(false);
+  const [isSuperAdminContext, setIsSuperAdminContext] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   
   // Check if we're in admin context
@@ -44,6 +45,8 @@ const LiveDashboard = () => {
     if (typeof window !== 'undefined') {
       const adminContext = sessionStorage.getItem("adminContext") === "true";
       setIsAdminContext(adminContext);
+      const superAdminContext = sessionStorage.getItem("superAdminContext") === "true";
+      setIsSuperAdminContext(superAdminContext);
     }
   }, []);
 
@@ -303,7 +306,7 @@ const LiveDashboard = () => {
   // Loading state
   if (loading) {
     return (
-      <main className={`flex flex-col items-center gap-10 pb-20 ${isAdminContext ? 'pt-8' : 'pt-40'} text-justify px-10`}>
+      <main className={`flex flex-col items-center gap-10 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-8' : 'pt-40'} text-justify px-10`}>
         <div className="w-4/5 flex flex-col items-center">
           <div className="text-center space-y-4">
             <p className="text-lg text-gray">Loading live election results...</p>
@@ -317,7 +320,7 @@ const LiveDashboard = () => {
   // Error state
   if (error) {
     return (
-      <main className={`flex flex-col items-center gap-10 pb-20 ${isAdminContext ? 'pt-8' : 'pt-40'} text-justify px-10`}>
+      <main className={`flex flex-col items-center gap-10 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-8' : 'pt-40'} text-justify px-10`}>
         <div className="w-4/5 flex flex-col items-center">
           <div className="text-center space-y-4">
             <div className="bg-primary/10 border border-primary rounded-lg p-6">
@@ -332,7 +335,7 @@ const LiveDashboard = () => {
 
   // Main render with real data
   return (
-    <main className={`flex flex-col items-center gap-6 pb-20 ${isAdminContext ? 'pt-8' : 'pt-30'} text-justify px-10`}>
+    <main className={`flex flex-col items-center gap-6 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-8' : 'pt-30'} text-justify px-10`}>
       <div className="w-full max-w-7xl flex flex-col items-center" id="pdf-export-content">
         {/* Red Header Card - Full Width */}
         <div className="flex items-center rounded-2xl bg-red-800 px-6 py-4 relative overflow-hidden w-full mb-4">

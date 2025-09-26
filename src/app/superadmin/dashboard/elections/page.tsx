@@ -91,7 +91,7 @@ export default function SuperAdminElectionsPage() {
                   className="inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
                   onClick={(ev) => {
                     ev.stopPropagation();
-                    sessionStorage.setItem("adminContext", "true");
+                    sessionStorage.setItem("superAdminContext", "true");
                     sessionStorage.setItem("adminElectionId", e.id.toString());
                     router.push(`/voter/live-dashboard`);
                   }}
