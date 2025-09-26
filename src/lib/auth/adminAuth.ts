@@ -11,7 +11,7 @@ import Facebook from "next-auth/providers/facebook";
 import { loginSchema } from "@/lib/schema";
 import { requestContext } from "@/lib/requestContext";
 import { UserRole } from "@prisma/client";
-import { CustomPrismaAdapter } from "./customAdapter";
+import { CustomPrismaAdapter } from "./adminAdapter";
 // import { createAuditLog } from "./audit";
 
 const adapter = CustomPrismaAdapter(db);
