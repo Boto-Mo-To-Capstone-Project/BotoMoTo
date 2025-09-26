@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import toast from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
+import CustomToast from "@/components/CustomToast";
 import Logo from "@/components/Logo";
 import { AuthHeading } from "@/components/AuthHeading";
 import { InputField } from "@/components/InputField";
@@ -90,13 +91,23 @@ export default function SignupPage() {
           // No need for general error toast since errors are displayed inline
         } else {
           // Handle other types of errors (like duplicate email)
-          toast.error(result.message || "Failed to create account");
+          toast.custom((t) => (
+            <CustomToast
+              t={t}
+              message={result.message || "Failed to create account"}
+            />
+          ));
         }
         return;
       }
 
       // Success - show toast and sign in
-      toast.success("Account created successfully! Signing you in...");
+      toast.custom((t) => (
+        <CustomToast
+          t={t}
+          message="Account created successfully! Signing you in..."
+        />
+      ));
 
       // After successful signup
       const signInResult = await signIn("credentials", {
@@ -107,14 +118,24 @@ export default function SignupPage() {
       });
 
       if (signInResult?.error) {
-        toast.error("Account created but failed to sign in. Please try logging in manually.");
+        toast.custom((t) => (
+          <CustomToast
+            t={t}
+            message="Account created but failed to sign in. Please try logging in manually."
+          />
+        ));
         router.push("/auth/login");
       } else {
         // Let the redirect happen via useEffect
         router.push("/admin/onboard");
       }
     } catch (err) {
-      toast.error("An unexpected error occurred. Please try again.");
+      toast.custom((t) => (
+        <CustomToast
+          t={t}
+          message="An unexpected error occurred. Please try again."
+        />
+      ));
       console.error("Signup error", err);
     } finally {
       setIsLoading(false);

@@ -125,6 +125,7 @@ const CandidateDashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isAdminContext, setIsAdminContext] = useState(false);
+  const [isSuperAdminContext, setIsSuperAdminContext] = useState(false);
 
   const router = useRouter();
 
@@ -133,6 +134,8 @@ const CandidateDashboard = () => {
     if (typeof window !== 'undefined') {
       const adminContext = sessionStorage.getItem("adminContext") === "true";
       setIsAdminContext(adminContext);
+      const superAdminContext = sessionStorage.getItem("superAdminContext") === "true";
+      setIsSuperAdminContext(superAdminContext);
     }
   }, []);
 
@@ -269,7 +272,7 @@ const CandidateDashboard = () => {
   // Loading state
   if (loading) {
     return (
-      <main className={`flex flex-col items-center gap-10 pb-20 ${isAdminContext ? 'pt-8' : 'pt-40'} text-justify px-10`}>
+      <main className={`flex flex-col items-center gap-10 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-8' : 'pt-40'} text-justify px-10`}>
         <div className="w-4/5 flex flex-col items-center">
           <div className="text-center space-y-4">
             <p className="text-lg text-gray-600">Loading live election results...</p>
@@ -282,7 +285,7 @@ const CandidateDashboard = () => {
 
   if (error) {
     return (
-      <main className={`flex flex-col items-center gap-10 pb-20 ${isAdminContext ? 'pt-8' : 'pt-40'} text-justify px-10`}>
+      <main className={`flex flex-col items-center gap-10 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-8' : 'pt-40'} text-justify px-10`}>
         <div className="w-4/5 flex flex-col items-center">
           <div className="text-center space-y-4">
             <div className="bg-primary/10 border border-primary rounded-lg p-6">
@@ -302,7 +305,7 @@ const CandidateDashboard = () => {
 
   if (!position) {
     return (
-      <main className={`flex flex-col items-center gap-10 pb-20 ${isAdminContext ? 'pt-8' : 'pt-40'} text-justify px-10`}>
+      <main className={`flex flex-col items-center gap-10 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-8' : 'pt-40'} text-justify px-10`}>
         <div className="w-4/5 flex flex-col items-center">
           <div className="text-center">
             <p className="voter-election-heading">Candidate Not Found</p>
@@ -351,7 +354,7 @@ const CandidateDashboard = () => {
   };
 
   return (
-    <main className={`flex flex-col items-center gap-6 pb-20 ${isAdminContext ? 'pt-8' : 'pt-30'} text-justify px-10`}>
+    <main className={`flex flex-col items-center gap-6 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-8' : 'pt-30'} text-justify px-10`}>
       <div className="w-full max-w-7xl flex flex-col items-center">
         <div className="flex items-center rounded-2xl bg-red-800 px-6 py-4 relative overflow-hidden w-full mb-4">
           <div>
@@ -364,7 +367,7 @@ const CandidateDashboard = () => {
           </div>
         </div>
         {/* Live Dashboard Status - Below Header, Left Aligned */}
-        <div className="flex items-center justify-between w-full mb-4">
+        <div className="flex items-center justify-between w-full mb-4 gap-2">
           <div className="flex items-center gap-3 bg-green-50 border border-green-200 px-4 py-2 rounded-lg">
             <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
             <span className={`text-lg font-semibold ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
@@ -387,7 +390,7 @@ const CandidateDashboard = () => {
                 </span>
               ) : null}
             </SectionHeaderContainer>
-            <div className="flex flex-col gap-4 mt-4">
+            <div className="w-full grid grid-cols-1 xs:grid-cols-2 xl:grid-cols-1 gap-6 mt-4">
               {position.candidates.map((candidate) => (
                 <CandidateDashboardCard
                   key={candidate.id}

@@ -58,6 +58,11 @@ export default function SidebarWrapper({
     pathname.startsWith("/voter/live-dashboard") && 
     sessionStorage.getItem("adminContext") === "true";
 
+  // Check if we're on voter livedashboard but coming from superadmin context
+  const isFromSuperadmin = typeof window !== 'undefined' && 
+    pathname.startsWith("/voter/live-dashboard") && 
+    sessionStorage.getItem("superAdminContext") === "true";
+
   const sidebarElectionId =
     (!reserved.includes(parts[4]?.toLowerCase()) && parts[4]) || eidParam;
 
@@ -126,7 +131,9 @@ export default function SidebarWrapper({
     }
 
     // Handle voter routes when coming from admin context to set title
-    if (pathname.startsWith("/voter/live-dashboard") && typeof window !== 'undefined' && sessionStorage.getItem("adminContext") === "true") {
+    if (pathname.startsWith("/voter/live-dashboard") && typeof window !== 'undefined' && 
+    ((sessionStorage.getItem("adminContext") === "true") ||
+    (sessionStorage.getItem("superAdminContext") === "true"))) {
       const electionId = sessionStorage.getItem("adminElectionId");
       if (pathname === "/voter/live-dashboard") return `Election ${electionId} - Live Dashboard`;
       if (pathname.includes("/candidate/")) return `Election ${electionId} - Candidate Dashboard`;
@@ -168,7 +175,7 @@ export default function SidebarWrapper({
         />
       )}
 
-      {isSuperAdmin && (
+      {(isSuperAdmin || isFromSuperadmin) && (
         <SuperAdminSidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
