@@ -11,16 +11,46 @@ import toast from "react-hot-toast";
 const ElectionTermsCondition = () => {
   const [isChecked, setIsChecked] = useState(false); // so checkbutton must be clicked before proceeding
   const [voterData, setVoterData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const router = useRouter(); // to go to another route
 
   useEffect(() => {
-    // Get voter data from localStorage
-    const storedData = localStorage.getItem("voterData");
-    if (storedData) {
-      setVoterData(JSON.parse(storedData));
-    }
+    checkSession();
   }, []);
+
+  // Get voter data from session (more secure than localStorage)
+  const checkSession = async () => {
+    try {
+      const res = await fetch("/api/voter/session", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setVoterData(data.voter);
+      } else {
+        router.push("/voter/login");
+        return;
+      }
+    } catch (e) {
+      console.error("Error checking voter session:", e);
+      router.push("/voter/login");
+      return;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/voter/logout", { method: "POST" });
+    } catch (e) {
+      console.error("Error logging out:", e);
+    } finally {
+      // Clear localStorage and redirect
+      localStorage.removeItem("voterData");
+      localStorage.removeItem("mfaFlow");
+      router.push("/voter/login");
+    }
+  };
 
   const handleStartVoting = () => {
     if (!isChecked) {
@@ -30,12 +60,16 @@ const ElectionTermsCondition = () => {
     router.push("/voter/ballot-form");
   };
 
+  if (!voterData) {
+    return null; // Will redirect to login
+  }
+
   return (
     <main className="flex flex-col items-center gap-10 px-10 pb-20 pt-40 text-justify">
       <div className="text-center space-y-2">
         <p className="voter-election-heading">Terms and Conditions</p>
         <p className="voter-election-subheading">
-          You&apos;re voting in the {voterData?.election?.name || '2025 Election of Provident'}
+          {voterData.name}, you&apos;re voting in the {voterData?.election?.name || '2025 Election of Provident'}
         </p>
       </div>
       <div className="lg:w-3/5">
@@ -104,6 +138,12 @@ const ElectionTermsCondition = () => {
           onClick={handleStartVoting}
         >
           Start Voting
+        </Button>
+        <Button
+          variant="long_secondary"
+          onClick={handleLogout}
+        >
+          Logout
         </Button>
       </div>
     </main>

@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth';
+import { auth } from '@/lib/auth/adminAuth';
 import { apiResponse } from '@/lib/apiResponse';
 import { ROLES } from '@/lib/constants';
 

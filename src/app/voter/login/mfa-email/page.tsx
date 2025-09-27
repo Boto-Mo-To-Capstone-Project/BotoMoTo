@@ -197,11 +197,16 @@ const EmailMFA = () => {
     }
   };
 
-  const handleCancel = () => {
-    // Clear MFA flow and return to login
-    localStorage.removeItem("mfaFlow");
-    localStorage.removeItem("voterData");
-    router.push("/voter/login");
+  const handleCancel = async () => {
+    // Clear MFA flow and logout from session
+    try {
+      await fetch("/api/voter/logout", { method: "POST" });
+    } catch (e) {
+      console.error("Error logging out:", e);
+    } finally {
+      localStorage.removeItem("mfaFlow");
+      router.push("/voter/login");
+    }
   };
 
   if (!sessionData || !sessionToken) {

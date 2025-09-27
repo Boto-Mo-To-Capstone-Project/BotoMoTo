@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // If MFA is complete, we could generate a final token or mark voter as authenticated
+    // If MFA is complete, mark the voter session as MFA completed
     let finalToken = null;
     if (isCompleted) {
       // Generate final authentication token (could be JWT or session token)
@@ -96,6 +96,40 @@ export async function POST(request: NextRequest) {
           lastActiveAt: new Date(),
         },
       });
+
+      // Find the voter and mark their voter session as MFA completed
+      try {
+        const voter = await db.voter.findFirst({
+          where: {
+            electionId: mfaSession.electionId,
+            email: mfaSession.voterEmail,
+            code: mfaSession.voterCode,
+            isActive: true,
+            isDeleted: false,
+          }
+        });
+
+        if (voter) {
+          // Mark the active voter session as MFA completed
+          await db.voterSession.updateMany({
+            where: {
+              voterId: voter.id,
+              isActive: true,
+              expires: { gte: new Date() }
+            },
+            data: {
+              mfaCompleted: true
+            }
+          });
+          
+          console.log(`✅ Marked voter session as MFA completed for voter: ${voter.code}`);
+        } else {
+          console.warn(`⚠️ Could not find voter to mark MFA completed: ${mfaSession.voterEmail}`);
+        }
+      } catch (error) {
+        console.error('Error marking voter session MFA completed:', error);
+        // Don't fail the MFA completion for this error
+      }
     }
 
     return NextResponse.json({

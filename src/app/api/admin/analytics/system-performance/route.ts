@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiResponse } from '@/lib/apiResponse';
 import { PerformanceAnalyzer } from '@/lib/performance/analyzer';
-import { auth } from '@/lib/auth';
 import { requireAuth } from '@/lib/helpers/requireAuth';
 import { ROLES } from '@/lib/constants';
 

@@ -5,67 +5,103 @@ import Button from "@/components/Button";
 import Image from "next/image";
 
 import VotingClose from "@/app/assets/VotingClose.png";
-import VotingOpen from "@/app/assets/VotingOpen.png"; // example image for open state
+import VotingOpen from "@/app/assets/VotingOpen.png";
 
 import { useRouter } from "next/navigation";
 
+interface VoterData {
+  id: string;
+  voterId: string;
+  voterCode: string;
+  name: string;
+  email: string | null;
+  election: any;
+  votingScope: any;
+  voted: boolean;
+}
+
 const ElectionStatus = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [voterData, setVoterData] = useState<any>(null);
   const [error, setError] = useState("");
-  const router = useRouter(); // to go to another route
+  const [voter, setVoter] = useState<VoterData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+
+  // Check session and get voter data
+  const checkSession = async () => {
+    try {
+      const res = await fetch("/api/voter/session", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setVoter(data.voter);
+      } else {
+        setVoter(null);
+        router.push("/voter/login");
+        return;
+      }
+    } catch (e) {
+      console.error("Error checking voter session:", e);
+      setVoter(null);
+      router.push("/voter/login");
+      return;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Logout function
+  const logout = async () => {
+    try {
+      await fetch("/api/voter/logout", { method: "POST" });
+    } catch (e) {
+      console.error("Error logging out:", e);
+    } finally {
+      // Clear cookie client-side as backup
+      document.cookie = "voter_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      // Clear localStorage and redirect
+      localStorage.removeItem("voterData");
+      localStorage.removeItem("mfaFlow");
+      router.push("/voter/login");
+    }
+  };
 
   useEffect(() => {
-    const checkElectionStatus = () => {
-      try {
-        // Get voter data from localStorage
-        const storedData = localStorage.getItem("voterData");
-        
-        if (!storedData) {
-          // If no voter data, redirect back to login
-          router.push("/voter/login");
-          return;
-        }
+    checkSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-        const data = JSON.parse(storedData);
-        setVoterData(data);
+  useEffect(() => {
+    if (isLoading || !voter) return;
 
-        // Check if election is open based on the election data
-        const election = data.election;
-        
-        // Simplified logic: Election is open only if status is ACTIVE
-        const isElectionActive = election.status === "ACTIVE";
-        
-        if (!isElectionActive) {
-          setIsOpen(false);
-          setIsLoading(false);
-          return;
-        }
+    // Check if voter has already voted and redirect to live dashboard
+    if (voter.voted) {
+      console.log("Voter has already voted, redirecting to live dashboard");
+      router.push("/voter/live-dashboard");
+      return;
+    }
 
-        // If election is active, check schedule if available
-        if (election.schedule) {
-          const now = new Date();
-          const startDate = new Date(election.schedule.dateStart);
-          const endDate = new Date(election.schedule.dateFinish);
+    try {
+      const election = voter.election;
+      const active = election?.status === "ACTIVE";
 
-          // Election is open only if we're within the scheduled time
-          setIsOpen(now >= startDate && now <= endDate);
-        } else {
-          // If no schedule but election is active, consider it open
-          setIsOpen(true);
-        }
-
-      } catch (err) {
-        setError("Failed to load election status");
-        console.error(err);
-      } finally {
-        setIsLoading(false);
+      if (!active) {
+        setIsOpen(false);
+        return;
       }
-    };
 
-    checkElectionStatus();
-  }, [router]);
+      if (election?.schedule) {
+        const now = new Date();
+        const startDate = new Date(election.schedule.dateStart);
+        const endDate = new Date(election.schedule.dateFinish);
+        setIsOpen(now >= startDate && now <= endDate);
+      } else {
+        setIsOpen(true);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load election status");
+    }
+  }, [voter, isLoading]);
 
   if (isLoading) {
     return (
@@ -75,19 +111,7 @@ const ElectionStatus = () => {
     );
   }
 
-  if (error) {
-    return (
-      <main className="flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
-        <p className="text-red-500">{error}</p>
-        <Button
-          variant="long_secondary"
-          onClick={() => router.push("/voter/login")}
-        >
-          Return to Login
-        </Button>
-      </main>
-    );
-  }
+  if (!voter) return null; // redirecting
 
   return (
     <main className=" flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
@@ -96,7 +120,7 @@ const ElectionStatus = () => {
           <div className="text-center space-y-2">
             <p className="voterlogin-heading">Voting is Now Open!</p>
             <p className="voterlogin-subheading">
-              You're voting in the {voterData?.election?.name || '2025 Election'}
+              {voter.name}, you're voting in the {voter?.election?.name || '2025 Election'}
             </p>
           </div>
 
@@ -109,14 +133,22 @@ const ElectionStatus = () => {
             >
               Proceed to Voting
             </Button>
+            <Button
+              variant="long_secondary"
+              onClick={logout}
+            >
+              Logout
+            </Button>
           </div>
         </>
       ) : (
         <>
+
+        {/* dapat dito yung clock na magpapakita pag close pa yung election */}
           <div className="text-center space-y-2">
             <p className="voterlogin-heading">Voting is still closed.</p>
             <p className="voterlogin-subheading">
-              The {voterData?.election?.name || '2025 Election'} is not currently active. Please wait for further instructions or check your email for updates regarding the voting process.
+              The {voter?.election?.name || '2025 Election'} is not currently active. Please wait for further instructions or check your email for updates regarding the voting process.
             </p>
           </div>
 

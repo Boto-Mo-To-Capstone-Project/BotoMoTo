@@ -312,9 +312,28 @@ model Voter {
   candidate      Candidate?
   voteResponses  VoteResponse[]
   surveyResponses SurveyResponse[]
+  voterSessions  VoterSession[]
 
   // Add composite unique constraint instead
   @@unique([electionId, email]) // ← Same email can't be used twice in the SAME election
+}
+
+model VoterSession {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  voterId      Int
+  expires      DateTime
+  isActive     Boolean  @default(true)
+  lastActiveAt DateTime @default(now())
+  mfaCompleted Boolean  @default(true) // Default true for backwards compatibility
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  voter        Voter    @relation(fields: [voterId], references: [id], onDelete: Cascade)
+  
+  @@index([sessionToken])
+  @@index([voterId, isActive])
 }
 
 model Position {

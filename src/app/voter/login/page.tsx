@@ -1,6 +1,6 @@
 "use client"; // useRouter needs a client component
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/Button";
 import Image from "next/image";
@@ -13,6 +13,101 @@ const VoterLoginPage = () => {
   const router = useRouter(); // to go to another route
   const [voterCode, setVoterCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+  // Check if voter is already logged in and redirect appropriately
+  useEffect(() => {
+    checkExistingSession();
+  }, []);
+
+  const checkExistingSession = async () => {
+    try {
+      const response = await fetch('/api/voter/session', {
+        method: 'GET',
+        cache: 'no-store'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const voter = data.voter;
+        
+        console.log("Existing session found", { 
+          voted: voter.voted, 
+          mfaCompleted: voter.mfaCompleted,
+          mfaEnabled: voter.election?.mfaSettings?.mfaEnabled 
+        });
+        
+        // If voter has already voted, redirect to live dashboard
+        if (voter.voted) {
+          console.log("Voted user - redirecting to live dashboard");
+          router.replace("/voter/live-dashboard");
+          return;
+        }
+        
+        // Check if MFA is required for this election
+        const mfaRequired = voter.election?.mfaSettings?.mfaEnabled && 
+                           voter.election.mfaSettings.mfaMethods?.length > 0;
+        
+        // If no MFA required OR MFA is completed, redirect to election status
+        if (!mfaRequired || voter.mfaCompleted) {
+          console.log("No MFA required or MFA completed - redirecting to election status");
+          router.replace("/voter/election-status");
+          return;
+        }
+        
+        // MFA is required but not completed - check if there's an active MFA session
+        const mfaFlowData = localStorage.getItem("mfaFlow");
+        if (mfaFlowData) {
+          try {
+            const mfaFlow = JSON.parse(mfaFlowData);
+            
+            // Check if MFA session is still valid
+            const mfaResponse = await fetch(`/api/mfa/session?sessionToken=${mfaFlow.sessionToken}`);
+            if (mfaResponse.ok) {
+              const mfaData = await mfaResponse.json();
+              
+              // Redirect to current MFA step
+              if (!mfaData.isCompleted && mfaData.currentStep < mfaData.totalSteps) {
+                const nextMethod = mfaData.requiredMethods[mfaData.currentStep];
+                console.log(`Resuming MFA flow at step: ${nextMethod}`);
+                
+                switch (nextMethod) {
+                  case 'email-confirmation':
+                    router.replace("/voter/login/mfa-email");
+                    return;
+                  case 'otp-email':
+                    router.replace("/voter/login/mfa-otp");
+                    return;
+                  case 'passphrase-email':
+                    router.replace("/voter/login/mfa-passphrase");
+                    return;
+                  default:
+                    console.error("Unknown MFA method:", nextMethod);
+                    break;
+                }
+              }
+            }
+          } catch (error) {
+            console.log("Invalid MFA flow data, will restart MFA");
+            localStorage.removeItem("mfaFlow");
+          }
+        }
+        
+        // MFA required but no valid session - need to restart MFA flow
+        console.log("MFA required but incomplete - user needs to complete MFA");
+        // Don't redirect, let them restart the login process
+        
+      } else {
+        // No existing session, user can proceed with login
+        console.log("No existing session, allowing login page access");
+      }
+    } catch (error) {
+      console.log("Error checking session:", error);
+      // If session check fails, allow login page access
+    } finally {
+      setIsCheckingSession(false);
+    }
+  };
 
   const handleOtpChange = (value: string) => {
     setVoterCode(value);
@@ -21,14 +116,15 @@ const VoterLoginPage = () => {
   const handleSubmit = async () => {
     if (voterCode.length !== 6) {
       const msg = "Please enter a complete 6-digit code";
-      toast.error(msg); // 👈 show in toast
+      toast.error(msg);
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/voters/verify', {
+      // Single API call that handles verification AND session creation
+      const response = await fetch('/api/voter/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: voterCode })
@@ -37,23 +133,7 @@ const VoterLoginPage = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        toast.success("Voter code verified successfully!"); // 👈 show in toast
-        
-        // Store voter, election, and ballot information in localStorage (without sensitive email)
-        localStorage.setItem("voterData", JSON.stringify({
-          voter: {
-            id: data.data.voter.id,
-            code: data.data.voter.code,
-            firstName: data.data.voter.firstName,
-            middleName: data.data.voter.middleName,
-            lastName: data.data.voter.lastName,
-            voted: data.data.voter.voted,
-            votingScope: data.data.voter.votingScope
-            // Removed email for security
-          },
-          election: data.data.election,
-          ballotData: data.data.ballotData
-        }));
+        toast.success("Login successful!");
 
         // Check if MFA is enabled and has methods
         const mfaSettings = data.data.election.mfaSettings;
@@ -76,11 +156,10 @@ const VoterLoginPage = () => {
             return;
           }
 
-          // Store ONLY the session token and non-sensitive info for MFA flow
+          // Store ONLY the temporary MFA session token for MFA flow (removed voter data storage)
           localStorage.setItem("mfaFlow", JSON.stringify({
             sessionToken: mfaData.sessionToken,
             totalSteps: mfaData.totalSteps,
-            // No sensitive data like email/code stored here anymore
           }));
 
           // Redirect to the first MFA method
@@ -104,13 +183,24 @@ const VoterLoginPage = () => {
           router.push("/voter/election-status");
         }
       } else {
-        const errorMessage = data.message || "Failed to verify voter code";
-        toast.error(errorMessage); // 👈 show in toast
+        // Handle various error types with appropriate messages
+        let errorMessage = data.error || data.message || "Failed to login";
+        
+        if (response.status === 409) {
+          errorMessage = "This voter code is already in use on another device.";
+        } else if (response.status === 403) {
+          // Election status or voter eligibility issues
+          errorMessage = data.error;
+        } else if (response.status === 404) {
+          errorMessage = "Invalid voter code";
+        }
+        
+        toast.error(errorMessage);
       }
 
     } catch (err: any) {
-      toast.error("An error occurred. Please try again."); // 👈 show in toast
-      console.error("Error verifying voter code:", err);
+      toast.error("An error occurred. Please try again.");
+      console.error("Error during login:", err);
     } finally {
       setIsLoading(false);
     }

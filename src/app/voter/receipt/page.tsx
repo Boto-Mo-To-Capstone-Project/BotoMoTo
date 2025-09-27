@@ -15,17 +15,30 @@ const VoteReceipt = () => {
 
   const selections = useSelector((state: RootState) => state.ballot.selections);
 
-  // Get voter data from localStorage
   useEffect(() => {
-    const storedData = localStorage.getItem("voterData");
-    if (storedData) {
-      const data = JSON.parse(storedData);
-      setVoterData(data);
-    }
+    checkSession();
   }, []);
 
+  // Get voter data from session (more secure than localStorage)
+  const checkSession = async () => {
+    try {
+      const res = await fetch("/api/voter/session", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setVoterData(data.voter);
+      } else {
+        router.push("/voter/login");
+        return;
+      }
+    } catch (e) {
+      console.error("Error checking voter session:", e);
+      router.push("/voter/login");
+      return;
+    } 
+  };
+
   const electionName = voterData?.election?.name;
-  const voterScope = voterData?.voter?.votingScope?.name;
+  const voterScope = voterData?.votingScope?.name;
   
   // return this if no votes yet
   if (Object.keys(selections).length === 0) {
