@@ -25,23 +25,29 @@ const SurveyForm = () => {
   const [submissionStatus, setSubmissionStatus] = useState<'none' | 'already_submitted' | 'just_submitted'>('none');
 
   useEffect(() => {
-    // Check for voter data in localStorage
-    const storedData = localStorage.getItem("voterData");
-    if (!storedData) {
-      toast.error("Please log in as a voter first");
+    checkSession();
+  }, []);
+
+  // Get voter data from session (more secure than localStorage)
+  const checkSession = async () => {
+    try {
+      const res = await fetch("/api/voter/session", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setVoterData(data.voter);
+        fetchActiveSurvey();
+      } else {
+        toast.error("Please log in as a voter first");
+        router.push("/voter/login");
+        return;
+      }
+    } catch (e) {
+      console.error("Error checking voter session:", e);
+      toast.error("Invalid voter session data");
       router.push("/voter/login");
       return;
     }
-
-    try {
-      const parsedData = JSON.parse(storedData);
-      setVoterData(parsedData);
-      fetchActiveSurvey();
-    } catch (err) {
-      toast.error("Invalid voter session data");
-      router.push("/voter/login");
-    }
-  }, [router]);
+  };
 
   const fetchActiveSurvey = async () => {
     try {
@@ -62,7 +68,7 @@ const SurveyForm = () => {
   };
 
   const handleSubmitSurvey = async (responses: Record<string, any>) => {
-    if (!survey || !voterData?.voter?.code) {
+    if (!survey || !voterData?.voterCode) {
       toast.error("Unable to submit survey - voter data missing");
       return;
     }
@@ -77,7 +83,7 @@ const SurveyForm = () => {
         body: JSON.stringify({
           formId: survey.id,
           answers: responses,
-          voterCode: voterData.voter.code,
+          voterCode: voterData.voterCode,
         }),
       });
 

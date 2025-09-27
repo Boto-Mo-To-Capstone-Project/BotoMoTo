@@ -8,9 +8,8 @@ import crypto from "crypto";
 // HMAC secret key from environment variables
 const VOTE_SECRET = process.env.VOTE_SECRET;
 
-// Vote submission schema
+// Vote submission schema (removed voterCode requirement as it comes from session)
 const voteSubmissionSchema = z.object({
-  voterCode: z.string().min(1, "Voter code is required"),
   votes: z.array(z.object({
     candidateId: z.number().positive(),
     positionId: z.number().positive()
@@ -29,42 +28,116 @@ export async function POST(request: NextRequest) {
         status: 500
       });
     }
+
+    // Validate session using HttpOnly cookie
+    const sessionToken = request.cookies.get('voter_session')?.value;
+    if (!sessionToken) {
+      return apiResponse({
+        success: false,
+        message: "No active session. Please log in.",
+        data: null,
+        error: "Unauthorized",
+        status: 401
+      });
+    }
+
+    // Find active session in database (cookie-based session validation)
+    const session = await db.voterSession.findFirst({
+      where: { 
+        sessionToken,
+        isActive: true
+      },
+      include: {
+        voter: {
+          include: {
+            election: {
+              select: {
+                id: true,
+                name: true,
+                status: true,
+                isDeleted: true,
+                schedule: {
+                  select: {
+                    dateStart: true,
+                    dateFinish: true
+                  }
+                }
+              }
+            },
+            voteResponses: {
+              where: { electionId: { not: undefined as any } },
+              select: { id: true },
+              take: 1
+            }
+          }
+        }
+      }
+    });
+
+    if (!session || !session.isActive) {
+      return apiResponse({
+        success: false,
+        message: "Invalid or expired session. Please log in again.",
+        data: null,
+        error: "Unauthorized",
+        status: 401
+      });
+    }
+
+    // Check if session has expired
+    if (new Date() > session.expires) {
+      // Deactivate expired session
+      await db.voterSession.update({
+        where: { id: session.id },
+        data: { isActive: false }
+      });
+      
+      return apiResponse({
+        success: false,
+        message: "Session has expired. Please log in again.",
+        data: null,
+        error: "Unauthorized",
+        status: 401
+      });
+    }
+
+    // Race condition protection: Check for multiple active sessions (for non-voted users)
+    if (!session.voter.voteResponses.length) {
+      const activeSessions = await db.voterSession.count({
+        where: {
+          voterId: session.voter.id,
+          isActive: true,
+          id: { not: session.id } // Exclude current session
+        }
+      });
+
+      if (activeSessions > 0) {
+        // Deactivate all sessions for this voter to prevent concurrent voting
+        await db.voterSession.updateMany({
+          where: {
+            voterId: session.voter.id,
+            isActive: true
+          },
+          data: { isActive: false }
+        });
+
+        return apiResponse({
+          success: false,
+          message: "Multiple login sessions detected. Please log in again for security.",
+          data: null,
+          error: "Multiple Sessions",
+          status: 409
+        });
+      }
+    }
     
     // Parse and validate input
     const body = await request.json();
     const validation = validateWithZod(voteSubmissionSchema, body);
     if (!('data' in validation)) return validation;
 
-    const { voterCode, votes } = validation.data;
-
-    // Find voter by code
-    const voter = await db.voter.findUnique({
-      where: {
-        code: voterCode,
-        isDeleted: false
-      },
-      include: {
-        election: {
-          select: {
-            id: true,
-            name: true,
-            status: true,
-            isDeleted: true,
-            schedule: {
-              select: {
-                dateStart: true,
-                dateFinish: true
-              }
-            }
-          }
-        },
-        voteResponses: {
-          where: { electionId: { not: undefined as any } },
-          select: { id: true },
-          take: 1
-        }
-      }
-    });
+    const { votes } = validation.data;
+    const voter = session.voter;
 
     // Check if voter exists and is valid
     if (!voter || voter.isDeleted) {
@@ -222,8 +295,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create vote responses in a transaction
+    // Create vote responses in a transaction with additional race condition protection
     const voteResponses = await db.$transaction(async (tx) => {
+      // Double-check that voter hasn't voted during this request processing (race condition protection)
+      const recentVote = await tx.voteResponse.findFirst({
+        where: { 
+          voterId: voter.id,
+          electionId: voter.election.id
+        },
+        select: { id: true }
+      });
+
+      if (recentVote) {
+        throw new Error("Vote already submitted during processing");
+      }
+
       const responses: any[] = [];
       
       // Get the current chain state for this election

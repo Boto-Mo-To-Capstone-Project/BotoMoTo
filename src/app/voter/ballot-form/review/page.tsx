@@ -18,25 +18,40 @@ const ReviewPage = () => {
 
   const selections = useSelector((state: RootState) => state.ballot.selections);
 
-  // Get voter data from localStorage
+  // Get voter data from session (secure, session-based approach)
   useEffect(() => {
-    const storedData = localStorage.getItem("voterData");
-    if (storedData) {
-      const data = JSON.parse(storedData);
-      setVoterData(data);
-    }
+    checkSession();
   }, []);
 
-  const electionName = voterData?.election?.name;
-  const voterScope = voterData?.voter?.votingScope?.name;
-
-  // Submit vote function
-  const handleSubmitVote = async () => {
-    if (!voterData?.voter?.code) {
-      toast.error("Voter code not found. Please try logging in again.");
+  const checkSession = async () => {
+    try {
+      const res = await fetch("/api/voter/session", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setVoterData(data.voter);
+        
+        // Check if voter has already voted and redirect to live dashboard
+        if (data.voter.voted) {
+          console.log("Voter has already voted, redirecting to live dashboard");
+          router.push("/voter/live-dashboard");
+          return;
+        }
+      } else {
+        router.push("/voter/login");
+        return;
+      }
+    } catch (e) {
+      console.error("Error checking voter session:", e);
+      router.push("/voter/login");
       return;
     }
+  };
 
+  const electionName = voterData?.election?.name;
+  const voterScope = voterData?.votingScope?.name;
+
+  // Submit vote function (now uses session-based authentication)
+  const handleSubmitVote = async () => {
     if (!voterData?.ballotData?.positions) {
       toast.error("Ballot data not found. Please try logging in again."); 
       return;
@@ -77,15 +92,15 @@ const ReviewPage = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          voterCode: voterData.voter.code,
-          votes
+          votes // Removed voterCode - now uses session authentication
         }),
+        credentials: 'include' // Ensure cookies are sent with request
       });
 
       const result = await response.json();
 
       if (response.ok && result.success) {
-        // Store the vote result for the receipt page
+        // Store the vote result for the receipt page (temporary localStorage for receipt)
         localStorage.setItem('voteResult', JSON.stringify(result.data));
         
         // Navigate to receipt page
@@ -94,6 +109,11 @@ const ReviewPage = () => {
         // Handle API errors
         const errorMessage = result.message || result.error || "Failed to submit votes";
         toast.error(errorMessage);
+        
+        // If session expired or unauthorized, redirect to login
+        if (response.status === 401) {
+          router.push("/voter/login");
+        }
       }
     } catch (error) {
       console.error("Error submitting votes:", error);

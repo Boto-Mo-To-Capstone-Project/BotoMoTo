@@ -7,33 +7,41 @@ import BallotComponent from "@/components/BallotComponent";
 const BallotForm = () => {
   const router = useRouter();
   const [voterData, setVoterData] = useState<any>(null);
+  const [ballotData, setBallotData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    // Get voter data from localStorage
-    const storedData = localStorage.getItem("voterData");
-    if (storedData) {
-      const data = JSON.parse(storedData);
-      console.log("Voter Data loaded:", data); // Debug log
-      setVoterData(data);
-    } else {
-      // If no voter data, redirect to login
+    checkSession();
+  }, []);
+
+  // Get voter data and ballot data from session (secure, session-based approach)
+  const checkSession = async () => {
+    try {
+      const res = await fetch("/api/voter/session", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setVoterData(data.voter);
+        
+        // Check if voter has already voted and redirect to live dashboard
+        if (data.voter.voted) {
+          console.log("Voter has already voted, redirecting to live dashboard");
+          router.push("/voter/live-dashboard");
+          return;
+        }
+
+        // Set ballot data from session API response
+        setBallotData(data.voter.ballotData || { positions: [], parties: [] });
+      } else {
+        router.push("/voter/login");
+        return;
+      }
+    } catch (e) {
+      console.error("Error checking voter session:", e);
       router.push("/voter/login");
+      return;
+    } finally {
+      setLoading(false);
     }
-  }, [router]);
-
-  // Get ballot data from localStorage (from voter login API response)
-  const getBallotData = () => {
-    if (!voterData?.ballotData) {
-      // Fallback structure if no ballot data available
-      return {
-        positions: [],
-        parties: []
-      };
-    }
-
-    // Use ballot data from API
-    return voterData.ballotData;
   };
 
   const handleCancel = () => {
@@ -44,10 +52,10 @@ const BallotForm = () => {
     router.push("/voter/ballot-form/review");
   };
 
-  if (!voterData) {
+  if (loading || !voterData) {
     return (
       <main className="flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
-        {/* new loading state baka gawin ko rin sa ibang pages */}
+        {/* Loading state */}
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p>Loading ballot...</p>
@@ -56,10 +64,8 @@ const BallotForm = () => {
     );
   }
 
-  const ballotData = getBallotData();
-
   // Check if ballot data is available
-  if (!ballotData.positions || ballotData.positions.length === 0) {
+  if (!ballotData || !ballotData.positions || ballotData.positions.length === 0) {
     return (
       <main className="flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
         <div className="text-center space-y-4">
@@ -82,8 +88,8 @@ const BallotForm = () => {
     <BallotComponent
       isLoading={loading}
       ballotData={ballotData}
-      electionName={voterData.election?.name || 'Election Name'}
-      voterScope={voterData.voter?.votingScope?.name}
+      electionName={voterData?.election?.name || 'Election Name'}
+      voterScope={voterData?.votingScope?.name}
       mode="voter"
       onCancel={handleCancel}
       onReview={handleReview}

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Button from "@/components/Button";
 import { Vote, Users, BarChart2, Clock } from "lucide-react";
 import KpiCard from "@/components/KpiCard";
@@ -31,6 +32,7 @@ interface ElectionResults {
 }
 
 const LiveDashboard = () => {
+  const router = useRouter();
   const [results, setResults] = useState<ElectionResults | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +41,7 @@ const LiveDashboard = () => {
   const [isAdminContext, setIsAdminContext] = useState(false);
   const [isSuperAdminContext, setIsSuperAdminContext] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isVoterContext, setIsVoterContext] = useState(false);
   
   // Check if we're in admin context
   useEffect(() => {
@@ -50,10 +53,10 @@ const LiveDashboard = () => {
     }
   }, []);
 
-  // Get election ID from voter data or URL params
-  const getElectionId = (): number | null => {
+  // Get election ID from admin context only (no localStorage dependency)
+  const getElectionIdFromAdmin = (): number | null => {
     try {
-      // First check if we're coming from admin context
+      // Only check admin context - no localStorage fallback for security
       if (typeof window !== 'undefined') {
         const adminElectionId = sessionStorage.getItem("adminElectionId");
         if (adminElectionId) {
@@ -61,24 +64,45 @@ const LiveDashboard = () => {
           return parseInt(adminElectionId, 10);
         }
       }
+      return null;
+    } catch (error) {
+      console.error("Error getting admin election ID:", error);
+      return null;
+    }
+  };
 
-      // Try to get from localStorage voter data
-      const voterData = localStorage.getItem("voterData");
-      if (voterData) {
-        const parsed = JSON.parse(voterData);
-        if (parsed?.election?.id) {
-          return parsed.election.id;
+  // Get election ID from voter session (async version)
+  const getElectionIdFromSession = async (): Promise<number | null> => {
+    try {
+      const res = await fetch("/api/voter/session", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.voter?.election?.id) {
+          console.log("✅ Got election ID from session:", data.voter.election.id);
+          setIsVoterContext(true); // Mark as voter context
+          return data.voter.election.id;
         }
       }
-      
-      // Temporary: hardcode election ID for testing
-      // TODO: Remove this when voter authentication is implemented
-      console.log("⚠️ Using hardcoded election ID for testing");
-      return 2; // Change this to an existing election ID in your database
-      
-    } catch (error) {
-      console.error("Error getting election ID:", error);
-      return 1; // Fallback to election ID 1 for testing
+    } catch (e) {
+      console.log("No voter session found");
+    }
+    return null;
+  };
+
+  // Logout function for voters
+  const handleVoterLogout = async () => {
+    try {
+      await fetch("/api/voter/logout", { method: "POST" });
+      toast.success("Logged out successfully!");
+    } catch (e) {
+      console.error("Error logging out:", e);
+    } finally {
+      // Clear cookie client-side as backup
+      document.cookie = "voter_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      // Clear localStorage and redirect
+      localStorage.removeItem("voterData");
+      localStorage.removeItem("mfaFlow");
+      router.push("/voter/login");
     }
   };
 
@@ -223,7 +247,14 @@ const LiveDashboard = () => {
       return;
     }
 
-    const electionId = getElectionId();
+    // First try to get election ID from session (secure method)
+    let electionId = await getElectionIdFromSession();
+    
+    // If no voter session, check if admin context exists  
+    if (!electionId) {
+      electionId = getElectionIdFromAdmin();
+    }
+    
     if (!electionId) {
       toast.error("Unable to determine election ID for export.");
       return;
@@ -284,23 +315,33 @@ const LiveDashboard = () => {
 
   // Initialize data fetching and SSE connection
   useEffect(() => {
-    const electionId = getElectionId();
-    
-    if (electionId) {
-      console.log(`🚀 Initializing live dashboard for election ${electionId}`);
+    const initializeDashboard = async () => {
+      // First try to get election ID from session (secure method)
+      let electionId = await getElectionIdFromSession();
       
-      // First fetch initial data
-      fetchInitialResults(electionId);
+      // If no voter session, check if admin context exists
+      if (!electionId) {
+        electionId = getElectionIdFromAdmin();
+      }
       
-      // Then connect to real-time stream
-      const cleanup = connectToSSE(electionId);
-      
-      // Cleanup on unmount
-      return cleanup;
-    } else {
-      setError("No election ID found. Please ensure you're accessing this page from a valid election context.");
-      setLoading(false);
-    }
+      if (electionId) {
+        console.log(`🚀 Initializing live dashboard for election ${electionId}`);
+        
+        // First fetch initial data
+        fetchInitialResults(electionId);
+        
+        // Then connect to real-time stream
+        const cleanup = connectToSSE(electionId);
+        
+        // Cleanup on unmount
+        return cleanup;
+      } else {
+        setError("Access denied. This page requires an active voter session or admin privileges.");
+        setLoading(false);
+      }
+    };
+
+    initializeDashboard();
   }, []);
 
   // Loading state
@@ -357,7 +398,16 @@ const LiveDashboard = () => {
               {isConnected ? 'Live Dashboard' : 'Disconnected'}
             </span>
           </div>
-          <div className="no-print">
+          <div className="flex items-center gap-3 no-print">
+            {/* Show logout button only for voters, not admin context */}
+            {isVoterContext && (
+              <Button
+                variant="secondary"
+                onClick={handleVoterLogout}
+              >
+                Logout
+              </Button>
+            )}
             <SubmitButton
               variant="action-primary"
               label={isExporting ? "Exporting" : "Export Results"}

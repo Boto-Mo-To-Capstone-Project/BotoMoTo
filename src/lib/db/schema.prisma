@@ -325,6 +325,7 @@ model VoterSession {
   expires      DateTime
   isActive     Boolean  @default(true)
   lastActiveAt DateTime @default(now())
+  mfaCompleted Boolean  @default(true) // Default true for backwards compatibility
   
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
