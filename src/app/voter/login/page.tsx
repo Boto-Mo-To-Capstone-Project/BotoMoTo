@@ -36,7 +36,19 @@ const VoterLoginPage = () => {
           mfaCompleted: voter.mfaCompleted,
           mfaEnabled: voter.election?.mfaSettings?.mfaEnabled 
         });
-        
+
+        // ✅ New condition
+        const election = voter.election;
+        if (election?.status === "ACTIVE") {
+          const now = new Date();
+          const startDate = new Date(election.startDate);
+
+          if (now < startDate) {
+            router.replace("/voter/election-status");
+            return;
+          }
+        }
+
         // If voter has already voted, redirect to live dashboard
         if (voter.voted) {
           console.log("Voted user - redirecting to live dashboard");
