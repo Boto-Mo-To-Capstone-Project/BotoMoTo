@@ -422,21 +422,21 @@ const LiveDashboard = () => {
           <div className="bg-blue-100 rounded-lg overflow-hidden">
             <KpiCard 
               name="Vote Count" 
-              value={results?.overview?.votersWhoVoted || 100} 
+              value={results?.overview?.votersWhoVoted || 0} 
               icon={Vote}
             />
           </div>
           <div className="bg-green-100 rounded-lg overflow-hidden">
             <KpiCard 
               name="Registered Voters" 
-              value={results?.overview?.totalVoters || 100} 
+              value={results?.overview?.totalVoters || 0} 
               icon={Users}
             />
           </div>
           <div className="bg-purple-100 rounded-lg overflow-hidden">
             <KpiCard 
               name="Voter Turnout" 
-              value={`${results?.overview?.voterTurnout || 100}%`} 
+              value={`${results?.overview?.voterTurnout || 0}%`} 
               icon={BarChart2}
             />
           </div>
