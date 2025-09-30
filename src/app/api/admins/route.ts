@@ -3,50 +3,56 @@ import { NextRequest } from "next/server";
 import db from "@/lib/db/db";
 import { ROLES } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
-// import { validateWithZod } from "@/lib/validateWithZod";
-// import { userSchema } from "@/lib/schema";
 import { createAuditLog } from "@/lib/audit";
-// import bcrypt from "bcryptjs";
 import { requireAuth } from "@/lib/helpers/requireAuth";
 
-// Import performance logging middleware
 import { withPerformanceLogging } from "@/lib/performance/middleware";
 
-// Core handler
-async function getAdmins(req: NextRequest) {
+async function getAdmins(request: NextRequest) {
   try {
     const authResult = await requireAuth([ROLES.SUPER_ADMIN]);
     if (!authResult.authorized) return authResult.response;
     const user = authResult.user;
 
-    const admins = await db.user.findMany({
-      where: { role: ROLES.ADMIN },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        emailVerified: true,
-        image: true,
-        isDeleted: true,
-        createdAt: true,
-        updatedAt: true,
-        organization: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            status: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    // Parse query parameters
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = parseInt(url.searchParams.get('limit') || '50');
+
+    // Build query filters
+    const where: any = {
+      role: ROLES.ADMIN
+    };
+
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+
+    // Fetch admins with pagination
+    const [admins, totalCount] = await Promise.all([
+      db.user.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+        include: {
+          organization: {
+            select: {
+              name: true,
+              status: true
+            }
+          }
+        }
+      }),
+      db.user.count({ where })
+    ]);
+
+    // Create pagination info
+    const totalPages = Math.ceil(totalCount / limit) || 1;
 
     const audit = await createAuditLog({
       user,
       action: "READ",
-      request: req,
+      request: request,
       resource: "USER",
       message: "Viewed all admin users (superadmin)",
     });
@@ -54,8 +60,17 @@ async function getAdmins(req: NextRequest) {
     return apiResponse({
       success: true,
       message: "Admins fetched successfully",
-      data: { admins, audit },
-      error: null,
+      data: { 
+        admins, 
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalCount,
+          limit,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1
+        }
+      },
       status: 200,
     });
   } catch (error) {
@@ -70,5 +85,4 @@ async function getAdmins(req: NextRequest) {
   }
 }
 
-// ✅ Wrap in middleware
 export const GET = withPerformanceLogging(getAdmins as any);
