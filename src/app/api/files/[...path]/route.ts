@@ -34,29 +34,33 @@ export async function GET(
     // Format: candidates/USER_ID/fileType/filename
     const pathParts = path;
     let fileOwnerUserId: string | null = null;
-    
-    if (pathParts.length >= 2 && (pathParts[0] === 'organizations' || pathParts[0] === 'candidates')) {
+    const isCandidates = pathParts[0] === 'candidates';
+    const isOrganizations = pathParts[0] === 'organizations';
+    if (pathParts.length >= 2 && (isOrganizations || isCandidates)) {
       fileOwnerUserId = pathParts[1]; // User ID from URL
     }
     
-    // All files served through this route are considered private
-    // Public files should be served directly by Vercel from /public or S3
-    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
-    if (!authResult.authorized) return authResult.response;
-    const user = authResult.user;
-    
-    // Check if user can access this file
-    const canAccess = 
-      user.role === ROLES.SUPER_ADMIN || // Super admin can access any file
-      (fileOwnerUserId && user.id === fileOwnerUserId); // User can only access their own files
-    
-    if (!canAccess) {
-      return NextResponse.json(
-        { error: 'Access denied. You can only access your own files.' },
-        { status: 403 }
-      );
+    if (isCandidates){
+      // Candidate files are public within the election context
+    } else {
+      // All files of organizations are private
+      const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+      if (!authResult.authorized) return authResult.response;
+      const user = authResult.user;
+      
+      // Check if user can access this file
+      const canAccess = 
+        user.role === ROLES.SUPER_ADMIN || // Super admin can access any file
+        (fileOwnerUserId && user.id === fileOwnerUserId); // User can only access their own files
+        
+        if (!canAccess) {
+          return NextResponse.json(
+            { error: 'Access denied. You can only access your own files.' },
+            { status: 403 }
+          );
+        }
     }
-    
+      
     // Try to get the file through the storage service
     try {
       const fileData = await storage.getFile(objectKey);
@@ -88,12 +92,6 @@ export async function DELETE(
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   try {
-    // Require admin authentication for file deletion
-    const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
-    if (!authResult.authorized) {
-      return authResult.response;
-    }
-
     const { path } = await params;
     const objectKey = path.join('/');
     
@@ -109,20 +107,30 @@ export async function DELETE(
     // Format: candidates/USER_ID/fileType/filename
     const pathParts = path;
     let fileOwnerUserId: string | null = null;
-    
-    if (pathParts.length >= 2 && (pathParts[0] === 'organizations' || pathParts[0] === 'candidates')) {
+    const isCandidates = pathParts[0] === 'candidates';
+    const isOrganizations = pathParts[0] === 'organizations';
+    if (pathParts.length >= 2 && (isOrganizations || isCandidates)) {
       fileOwnerUserId = pathParts[1]; // User ID from URL
     }
 
-    const user = authResult.user;
-    
-    // Check if user can delete this file
-    const canDelete = 
-      user.role === ROLES.SUPER_ADMIN || // Super admin can delete any file
-      (fileOwnerUserId && user.id === fileOwnerUserId); // User can only delete their own files
-    
-    if (!canDelete) {
-      return apiResponse({ success: false, message: 'Access denied. You can only delete your own files.', data: null, status: 403 });
+    if (isCandidates) {
+      // Candidate files are public within the election context
+    } else {
+      // Require admin authentication for file deletion
+      const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+      if (!authResult.authorized) {
+        return authResult.response;
+      }
+      const user = authResult.user;
+      
+      // Check if user can delete this file (organizations files)
+      const canDelete = 
+        user.role === ROLES.SUPER_ADMIN || // Super admin can delete any file
+        (fileOwnerUserId && user.id === fileOwnerUserId); // User can only delete their own files
+      
+      if (!canDelete) {
+        return apiResponse({ success: false, message: 'Access denied. You can only delete your own files.', data: null, status: 403 });
+      }
     }
 
     // Delete file through storage service
