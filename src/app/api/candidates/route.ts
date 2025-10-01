@@ -491,16 +491,52 @@ async function handleSingleCandidateCreation(request: NextRequest, user: any) {
     return apiResponse({ success: false, message: "Voter not found in this election or has been deleted", error: "Not Found", status: 404 });
   }
 
-  // Check if voter is already a candidate
+  // Check if voter is already a candidate for this election (soft deleted and not)
   const existingCandidate = await db.candidate.findUnique({
     where: {
       voterId: data.voterId,
-      isDeleted: false
+      electionId: data.electionId
     }
   });
 
-  if (existingCandidate) {
+  // if existing candidate is found and not deleted, return conflict
+  if (existingCandidate && !existingCandidate.isDeleted) {
     return apiResponse({ success: false, message: "This voter is already a candidate", error: "Conflict", status: 409 });
+  }
+
+  // if existing candidate is found and soft deleted restore it with new data
+  if (existingCandidate && existingCandidate.isDeleted) {
+    const restoredCandidate = await db.candidate.update({
+      where: { id: existingCandidate.id },
+      data: {
+        positionId: data.positionId,
+        partyId: data.partyId,
+        imageObjectKey: imageObjectKey,
+        imageProvider: imageProvider,
+        credentialObjectKey: credentialObjectKey,
+        credentialProvider: credentialProvider,
+        isDeleted: false
+      }
+    });
+
+    // Create audit log
+    await createAuditLog({
+      user,
+      action: "RESTORE",
+      request,
+      resource: "CANDIDATE",
+      resourceId: restoredCandidate.id,
+      message: `Restored candidate: ${voter.firstName} ${voter.lastName} for position ID: ${data.positionId}`,
+    });
+
+    return apiResponse({
+      success: true,
+      message: "Candidate restored successfully",
+      data: {
+        candidate: restoredCandidate,
+      },
+      status: 200
+    });
   }
 
   // Verify position exists and belongs to the election
