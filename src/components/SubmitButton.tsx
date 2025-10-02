@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 
 interface SubmitButtonProps {
   label: string;
-  variant?: 'primary' | 'tab' | 'action' | 'small' | 'small-action' | 'action-primary'; // <-- added 'action-primary'
+  variant?: 'primary' | 'tab' | 'action' | 'small' | 'small-action' | 'action-primary'| 'action-primary-2'; // <-- added 'action-primary'
   isActive?: boolean; // for tab highlighting
   isLoading?: boolean;
   className?: string;
@@ -33,6 +33,8 @@ export function SubmitButton({
     styles = `p-2 bg-white border-2 border-gray-200 rounded-[8px] flex items-center justify-center hover:border-gray-800 hover:bg-gray-500 hover:text-white`;
   } else if (variant === 'action-primary') {
     styles = "p-2 bg-white border-2 border-[var(--color-primary,#b91c1c)] text-[var(--color-primary,#b91c1c)] fill-[var(--color-primary,#b91c1c)] rounded-[8px] flex items-center justify-center hover:bg-[var(--color-primary,#b91c1c)] hover:text-white hover:fill-white";
+  } else if (variant === 'action-primary-2') {
+    styles = "p-2 border-2 bg-primary text-white rounded-[8px] flex items-center justify-center hover:bg-white hover:text-primary hover:border-2 hover:border-primary";
   } else if (variant === 'small') {
     styles = `p-2 bg-white border-2 border-[var(--color-primary,#b91c1c)] text-[var(--color-primary,#b91c1c)] text-base rounded-[8px] flex items-center justify-center hover:bg-[var(--color-primary,#b91c1c)] hover:text-white`;
   } else if (variant === 'small-action') {
