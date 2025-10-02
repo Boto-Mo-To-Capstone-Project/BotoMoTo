@@ -1,13 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Pagination } from "swiper/modules";
-import "swiper/css";
-import "swiper/css/navigation";
-import "swiper/css/pagination";
-import Image, { StaticImageData } from "next/image";
+import { StaticImageData } from "next/image";
 import CustomSlider from "./CustomSlider";
 
 interface Detail {
