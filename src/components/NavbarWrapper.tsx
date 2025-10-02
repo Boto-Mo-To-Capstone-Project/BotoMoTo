@@ -39,7 +39,7 @@ const NavbarWrapper = () => {
   }
 
   // Show default navbar for public routes and regular voter routes
-  if (pathname === "/" || pathname === "/public/about-us" || pathname === "/public/contact" || pathname.startsWith("/voter")) {
+  if (pathname === "/" || pathname.startsWith("/public") || pathname.startsWith("/voter")) {
     return <DefaultNavbar />;
   }
 
