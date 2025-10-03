@@ -133,7 +133,9 @@ export async function GET(
               include: {
                 candidates: {
                   where: { isDeleted: false },
-                  include: {
+                  select: {
+                    id: true,
+                    imageObjectKey: true,
                     voter: {
                       select: { firstName: true, middleName: true, lastName: true }
                     },
@@ -209,7 +211,8 @@ export async function GET(
                 name: `${candidate.voter.firstName} ${candidate.voter.middleName || ''} ${candidate.voter.lastName}`.trim(),
                 party: candidate.party,
                 voteCount: candidate._count.voteResponses,
-                percentage: votersWhoVoted > 0 ? Math.round((candidate._count.voteResponses / votersWhoVoted) * 100) : 0
+                percentage: votersWhoVoted > 0 ? Math.round((candidate._count.voteResponses / votersWhoVoted) * 100) : 0,
+                image: candidate.imageObjectKey ? `/api/files/${candidate.imageObjectKey}` : null
               }))
             })),
             demographics: scopeStats.map(scope => ({

@@ -16,7 +16,7 @@ interface Position {
     party: { id: number; name: string; color: string } | null;
     voteCount: number;
     percentage: number;
-    image: string;
+    image: string | null;
   }[];
 }
 
@@ -64,7 +64,7 @@ const PositionSection = ({ positions }: PositionSectionProps) => {
                   <CandidateDashboardCard
                     id={candidate.id}
                     key={candidate.id}
-                    imgSrc={candidate.image}
+                    imgSrc={candidate.image || "/assets/placeholderuser.png"}
                     name={candidate.name}
                     party={candidate.party?.name || "Independent"}
                     partyColor={candidate.party?.color || undefined}
