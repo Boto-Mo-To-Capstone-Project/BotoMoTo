@@ -73,10 +73,9 @@ const DemographicDashboard = () => {
     }
   }, []);
 
-  // Get election ID (same logic as live dashboard)
-  const getElectionId = (): number | null => {
+  // Get election ID from admin context only (same logic as live dashboard)
+  const getElectionIdFromAdmin = (): number | null => {
     try {
-      // First check if we're coming from admin context
       if (typeof window !== 'undefined') {
         const adminElectionId = sessionStorage.getItem("adminElectionId");
         if (adminElectionId) {
@@ -84,118 +83,135 @@ const DemographicDashboard = () => {
           return parseInt(adminElectionId, 10);
         }
       }
+      return null;
+    } catch (error) {
+      console.error("Error getting admin election ID:", error);
+      return null;
+    }
+  };
 
-      // Try to get from localStorage voter data
-      const voterData = localStorage.getItem("voterData");
-      if (voterData) {
-        const parsed = JSON.parse(voterData);
-        if (parsed?.election?.id) {
-          return parsed.election.id;
+  // Get election ID from voter session (async version - same as live dashboard)
+  const getElectionIdFromSession = async (): Promise<number | null> => {
+    try {
+      const res = await fetch("/api/voter/session", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.voter?.election?.id) {
+          console.log("✅ Got election ID from session:", data.voter.election.id);
+          return data.voter.election.id;
         }
       }
-      
-      // Temporary: hardcode election ID for testing
-      console.log("⚠️ Using hardcoded election ID for testing");
-      return 2; // Change this to an existing election ID in your database
-      
-    } catch (error) {
-      console.error("Error getting election ID:", error);
-      return 1; // Fallback to election ID 1 for testing
+    } catch (e) {
+      console.log("No voter session found");
     }
+    return null;
   };
 
   // Fetch initial results and set up real-time updates
   useEffect(() => {
-    const electionId = getElectionId();
-    if (!electionId) {
-      setError("No election ID found");
-      setLoading(false);
-      return;
-    }
-
-    // Fetch initial data
-    const fetchInitialResults = async () => {
-      try {
-        console.log(`🔄 Fetching voting scope data for election ${electionId}, scope ${votingScopeId}`);
-        const response = await fetch(`/api/elections/${electionId}/results`);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data.success) {
-          setResults(data.data);
-          setError(null);
-          console.log("✅ Voting scope data loaded:", data.data);
-        } else {
-          throw new Error(data.message || "Failed to fetch results");
-        }
-      } catch (error) {
-        console.error("❌ Failed to fetch voting scope data:", error);
-        setError(error instanceof Error ? error.message : "Failed to load data");
-      } finally {
-        setLoading(false);
+    const initializeVotingScope = async () => {
+      // First try to get election ID from session (secure method - same as live dashboard)
+      let electionId = await getElectionIdFromSession();
+      
+      // If no voter session, check if admin context exists
+      if (!electionId) {
+        electionId = getElectionIdFromAdmin();
       }
-    };
-
-    // Connect to real-time SSE stream for live updates
-    const connectToSSE = () => {
-      console.log(`📡 Connecting to voting scope SSE stream for election ${electionId}`);
       
-      const eventSource = new EventSource(`/api/elections/${electionId}/results/stream`);
-      
-      eventSource.onopen = () => {
-        console.log("✅ Voting scope SSE connection established");
-        setIsConnected(true);
-      };
+      if (!electionId) {
+        setError("No election ID found");
+        setLoading(false);
+        return;
+      }
 
-      eventSource.addEventListener('results', (event: MessageEvent) => {
+      console.log(`🚀 Initializing voting scope dashboard for election ${electionId}, scope ${votingScopeId}`);
+
+      // Fetch initial data
+      const fetchInitialResults = async () => {
         try {
-          const data = JSON.parse(event.data);
-          console.log("📊 Initial voting scope results from SSE:", data);
-          setResults(data);
+          console.log(`🔄 Fetching voting scope data for election ${electionId}, scope ${votingScopeId}`);
+          const response = await fetch(`/api/elections/${electionId}/results`);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            setResults(data.data);
+            setError(null);
+            console.log("✅ Voting scope data loaded:", data.data);
+          } else {
+            throw new Error(data.message || "Failed to fetch results");
+          }
+        } catch (error) {
+          console.error("❌ Failed to fetch voting scope data:", error);
+          setError(error instanceof Error ? error.message : "Failed to load data");
+        } finally {
           setLoading(false);
-        } catch (error) {
-          console.error("Failed to parse initial voting scope SSE results:", error);
         }
-      });
-
-      eventSource.addEventListener('results-update', (event: MessageEvent) => {
-        try {
-          const data = JSON.parse(event.data);
-          console.log("🔄 Voting scope results updated via SSE:", data);
-          setResults(data);
-        } catch (error) {
-          console.error("Failed to parse voting scope SSE update:", error);
-        }
-      });
-
-      eventSource.addEventListener('heartbeat', (event: MessageEvent) => {
-        console.log("💓 Voting scope SSE heartbeat received");
-        setIsConnected(true);
-      });
-
-      eventSource.onerror = () => {
-        console.log("🔌 Voting scope SSE connection lost, attempting to reconnect...");
-        setIsConnected(false);
-        
-        // Clean up and retry
-        eventSource.close();
-        setTimeout(() => {
-          fetchInitialResults();
-          connectToSSE();
-        }, 5000);
       };
 
-      return eventSource;
+      // Connect to real-time SSE stream for live updates
+      const connectToSSE = () => {
+        console.log(`📡 Connecting to voting scope SSE stream for election ${electionId}`);
+        
+        const eventSource = new EventSource(`/api/elections/${electionId}/results/stream`);
+        
+        eventSource.onopen = () => {
+          console.log("✅ Voting scope SSE connection established");
+          setIsConnected(true);
+        };
+
+        eventSource.addEventListener('results', (event: MessageEvent) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log("📊 Initial voting scope results from SSE:", data);
+            setResults(data);
+            setLoading(false);
+          } catch (error) {
+            console.error("Failed to parse initial voting scope SSE results:", error);
+          }
+        });
+
+        eventSource.addEventListener('results-update', (event: MessageEvent) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log("🔄 Voting scope results updated via SSE:", data);
+            setResults(data);
+          } catch (error) {
+            console.error("Failed to parse voting scope SSE update:", error);
+          }
+        });
+
+        eventSource.addEventListener('heartbeat', (event: MessageEvent) => {
+          console.log("💓 Voting scope SSE heartbeat received");
+          setIsConnected(true);
+        });
+
+        eventSource.onerror = () => {
+          console.log("🔌 Voting scope SSE connection lost, attempting to reconnect...");
+          setIsConnected(false);
+          
+          // Clean up and retry
+          eventSource.close();
+          setTimeout(() => {
+            fetchInitialResults();
+            connectToSSE();
+          }, 5000);
+        };
+
+        return eventSource;
+      };
+
+      // Start with initial fetch, then connect to stream
+      fetchInitialResults().then(() => {
+        connectToSSE();
+      });
     };
 
-    // Start with initial fetch, then connect to stream
-    fetchInitialResults().then(() => {
-      connectToSSE();
-    });
+    initializeVotingScope();
 
     // Cleanup on unmount
     return () => {
