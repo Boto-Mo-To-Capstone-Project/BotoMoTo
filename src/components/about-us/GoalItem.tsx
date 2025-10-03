@@ -16,7 +16,7 @@ export default function GoalItem({ icon: Icon, title, description }: GoalItemPro
 
         {/* Text */}
         <div className="text-center space-y-4">
-            <p className="text-xl font-medium">{title}</p>
+            <p className="text-lg font-semibold">{title}</p>
             <p className="text-gray text-md font-medium">{description}</p>
         </div>
         

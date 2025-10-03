@@ -48,6 +48,12 @@ const LoginNavbar: React.FC<LoginNavbarProps> = ({ buttons }) => {
               <NavLink href="/public/about-us">About Us</NavLink>
             </li>
             <li>
+              <NavLink href="/public/guide">Guide</NavLink>
+            </li>
+            <li>
+              <NavLink href="/public/faqs">FAQs</NavLink>
+            </li>
+            <li>
               <NavLink href="/public/contact">Contact</NavLink>
             </li>
           </ul>
@@ -96,6 +102,12 @@ const LoginNavbar: React.FC<LoginNavbarProps> = ({ buttons }) => {
             </li>
             <li>
               <NavLink href="/public/about-us">About Us</NavLink>
+            </li>
+            <li>
+              <NavLink href="/public/guide">Guide</NavLink>
+            </li>
+            <li>
+              <NavLink href="/public/faqs">FAQs</NavLink>
             </li>
             <li>
               <NavLink href="/public/contact">Contact</NavLink>

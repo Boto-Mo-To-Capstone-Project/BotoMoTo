@@ -213,10 +213,10 @@ export async function POST(req: NextRequest) {
       const startDate = new Date(voter.election.schedule.dateStart);
       const endDate = new Date(voter.election.schedule.dateFinish);
 
+      // this condition can now be deleted
       if (now < startDate) {
-        return NextResponse.json({ 
-          error: `Election starts on ${startDate.toLocaleDateString()} at ${startDate.toLocaleTimeString()}` 
-        }, { status: 403 });
+        console.log(`Election is active but has not started yet. Allowing session creation for voter ${voter.code}`);
+        // 👉 Let the flow continue to session creation
       }
 
       if (now > endDate) {

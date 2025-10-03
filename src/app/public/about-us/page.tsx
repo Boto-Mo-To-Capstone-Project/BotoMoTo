@@ -1,5 +1,4 @@
 import Image from "next/image";
-import logo from "@/app/assets/Logomark.png"
 import aboutUsImage from "@/app/assets/DashboardImageFull.png"
 import GoalItem from "@/components/about-us/GoalItem";
 import { FileCheck, Gauge, GlobeLock, Lock, ShieldCheck, Users } from "lucide-react";
@@ -131,7 +130,10 @@ const AboutPage = () => {
     <main className="min-h-screen flex flex-col items-center mt-20">
       {/* about us */}
       <div className="flex flex-col items-center gap-6 py-20 px-5">
-        <p className="text-dlg font-semibold text-black">About us</p>
+        <div className="text-center">
+          <p className="text-md font-semibold text-primary">About us</p>
+          <p className="text-dlg font-semibold text-black">Get to know us</p>
+        </div>
         <p className="text-xl font-normal text-gray">Learn more about the team behind Boto Mo 'To</p>
       </div>
       {/* our project */}
@@ -183,7 +185,7 @@ const AboutPage = () => {
           </div>
           <p className="text-center text-xl font-normal text-gray">Get to know the passionate individuals behind our project.</p>
         </div>
-        <div className="flex flex-wrap gap-16 justify-center">
+        <div className="flex flex-wrap gap-16 xl:gap-25 justify-center">
           {teamMembers.map((member, index) => (
             <TeamItem key={index} {...member} />
           ))}

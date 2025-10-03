@@ -147,7 +147,7 @@ body {
 }
 
 .kpi-value {
-  @apply text-lg font-semibold text-black xs:text-dsm;
+  @apply text-xl font-semibold text-black 2xl:text-dsm;
 }
 
 .kpi-desc {

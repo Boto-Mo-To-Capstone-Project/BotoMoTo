@@ -227,7 +227,7 @@ const LiveDashboard = () => {
           const seconds = Math.floor((distance % (1000 * 60)) / 1000);
           
           if (hours > 0) {
-            setTimeLeft(`${hours}:${minutes.toString().padStart(2, '0')} hours`);
+            setTimeLeft(`${hours}:${minutes.toString().padStart(2, '0')} hrs`);
           } else {
             setTimeLeft(`${minutes}:${seconds.toString().padStart(2, '0')} mins`);
           }
@@ -421,28 +421,28 @@ const LiveDashboard = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 w-full mb-6">
           <div className="bg-blue-100 rounded-lg overflow-hidden">
             <KpiCard 
-              name="Vote Count" 
-              value={results?.overview?.votersWhoVoted || 100} 
+              name="Votes" 
+              value={results?.overview?.votersWhoVoted || 0} 
               icon={Vote}
             />
           </div>
           <div className="bg-green-100 rounded-lg overflow-hidden">
             <KpiCard 
-              name="Registered Voters" 
-              value={results?.overview?.totalVoters || 100} 
+              name="Voters" 
+              value={results?.overview?.totalVoters || 0} 
               icon={Users}
             />
           </div>
           <div className="bg-purple-100 rounded-lg overflow-hidden">
             <KpiCard 
-              name="Voter Turnout" 
-              value={`${results?.overview?.voterTurnout || 100}%`} 
+              name="Turnout" 
+              value={`${results?.overview?.voterTurnout || 0}%`} 
               icon={BarChart2}
             />
           </div>
-          <div className="bg-orange-100 rounded-lg overflow-hidden">
+          <div className="bg-orange-100 rounded-lg overflow-hidden whitespace-nowrap">
             <KpiCard 
-              name="Voting Ends In" 
+              name="Ending in" 
               value={timeLeft || "Calculating..."} 
               icon={Clock}
             />

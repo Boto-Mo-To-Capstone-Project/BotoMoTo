@@ -6,7 +6,7 @@ import Link from "next/link";
 
 import Image from "next/image";
 
-import BotoMoToLogo from "../app/assets/BotoMoToLogo.png";
+import BotoMoTo from "../app/assets/BotoMoToLogo.png";
 
 import NavLink from "@/components/NavLink";
 
@@ -22,7 +22,7 @@ const DefaultNavbar = () => {
       {/* Logo */}
       <Link href="/">
       <div className="">
-        <Image src={BotoMoToLogo} height={50} alt="BotoMoToLogo" />
+        <Image src={BotoMoTo} height={50} alt="BotoMoToLogo" />
       </div>
       </Link>
 
@@ -34,6 +34,12 @@ const DefaultNavbar = () => {
           </li>
           <li>
             <NavLink href="/public/about-us">About Us</NavLink>
+          </li>
+          <li>
+            <NavLink href="/public/guide">Guide</NavLink>
+          </li>
+          <li>
+            <NavLink href="/public/faqs">FAQs</NavLink>
           </li>
           <li>
             <NavLink href="/public/contact">Contact</NavLink>
@@ -58,6 +64,12 @@ const DefaultNavbar = () => {
             </li>
             <li>
               <NavLink href="/public/about-us">About Us</NavLink>
+            </li>
+            <li>
+              <NavLink href="/public/guide">Guide</NavLink>
+            </li>
+            <li>
+              <NavLink href="/public/faqs">FAQs</NavLink>
             </li>
             <li>
               <NavLink href="/public/contact">Contact</NavLink>
