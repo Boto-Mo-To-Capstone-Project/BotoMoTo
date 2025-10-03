@@ -6,7 +6,7 @@ import Link from "next/link";
 
 import Image from "next/image";
 
-import BotoMoToLogo from "../app/assets/BotoMoToLogo.png";
+import BotoMoTo from "../app/assets/BotoMoToLogo.png";
 
 import NavLink from "@/components/NavLink";
 
@@ -22,7 +22,7 @@ const DefaultNavbar = () => {
       {/* Logo */}
       <Link href="/">
       <div className="">
-        <Image src={BotoMoToLogo} height={50} alt="BotoMoToLogo" />
+        <Image src={BotoMoTo} height={50} alt="BotoMoToLogo" />
       </div>
       </Link>
 
