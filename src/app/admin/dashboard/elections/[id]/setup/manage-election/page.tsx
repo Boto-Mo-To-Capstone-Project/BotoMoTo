@@ -219,6 +219,7 @@ export default function ManageElectionPage() {
                         setShowOpenElectionModal(true);
                       } else if (card.title === 'Live Dashboard') {
                         // Set admin context and election ID before redirecting to voter route
+                        sessionStorage.clear(); // Clear previous session storage to avoid conflicts
                         sessionStorage.setItem("adminContext", "true");
                         sessionStorage.setItem("adminElectionId", electionId.toString());
                         router.push(`/voter/live-dashboard`);
