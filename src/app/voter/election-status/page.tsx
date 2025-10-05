@@ -8,6 +8,7 @@ import VotingClose from "@/app/assets/VotingClose.png";
 import VotingOpen from "@/app/assets/VotingOpen.png";
 
 import { useRouter } from "next/navigation";
+import { SubmitButton } from "@/components/SubmitButton";
 
 interface VoterData {
   id: string;
@@ -160,36 +161,33 @@ const ElectionStatus = () => {
   if (!voter) return null; // redirecting
 
   return (
-    <main className=" flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
+    <main className="min-h-screen px-5 pb-20 pt-40 flex justify-center">
       {isOpen ? (
-        <>
+        <div className="max-w-[380px] flex flex-col items-center gap-5 ">
           <div className="text-center space-y-2">
             <p className="voterlogin-heading">Voting is Now Open!</p>
             <p className="voterlogin-subheading">
-              {voter.name}, you're voting in the {voter?.election?.name || '2025 Election'}
+              {voter.name}, you're voting in the <span className="text-primary">{voter?.election?.name || '2025 Election'}</span>
             </p>
           </div>
 
-          <Image src={VotingOpen} height={300} alt="BotoMoToLogo" />
+          <Image src={VotingOpen} height={250} alt="BotoMoToLogo" />
 
-          <div className="pt-15 flex flex-col gap-4 w-4/5 xs:w-auto">
-            <Button
-              variant="long_primary"
+          <div className="w-full mt-5 space-y-5">
+            <SubmitButton 
+              label="Proceed to Voting"
               onClick={() => router.push("/voter/election-terms-conditions")}
-            >
-              Proceed to Voting
-            </Button>
-            <Button
-              variant="long_secondary"
+            />
+            <SubmitButton 
+              label="Logout"
               onClick={logout}
-            >
-              Logout
-            </Button>
+              variant="outline"
+            />
           </div>
-        </>
+
+        </div>
       ) : (
-        <>
-        
+        <div className="max-w-[380px] flex flex-col items-center gap-5 ">  
           {/* dapat dito yung clock na magpapakita pag close pa yung election */}
           <div className="text-center space-y-2">
             <p className="voterlogin-heading">Voting has not started yet</p>
@@ -226,17 +224,14 @@ const ElectionStatus = () => {
             )}
           </div>
 
-          <Image src={VotingClose} height={300} alt="BotoMoToLogo" />
+          <Image src={VotingClose} height={250} alt="BotoMoToLogo" />
 
-          <div className="pt-10 flex flex-col gap-4 w-4/5 xs:w-auto">
-              <Button
-                variant="long_secondary"
-                onClick={logout}
-              >
-                Logout
-              </Button>
-          </div>
-        </>
+          <SubmitButton 
+            label="Logout"
+            onClick={logout}
+            variant="outline"
+          />
+        </div>
       )}
     </main>
   );

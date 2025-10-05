@@ -221,7 +221,7 @@ export default function Table({
   <div className="w-full px-4 bg-white shadow rounded-xl mt-5">
     {/* Sticky header: title + search + actions */}
     <div className="sticky top-0 z-20 bg-white py-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4">
         <p className="text-lg font-semibold ml-2"> {title}</p>
         {/* Search bar */}
         <SearchBar

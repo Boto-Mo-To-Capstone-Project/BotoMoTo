@@ -126,7 +126,7 @@ const OtpInput = ({
   };
 
   return (
-    <div className="flex gap-4 justify-center w-full max-w-[380px]">
+    <div className="flex gap-2 justify-between w-full max-w-[380px]">
       {Array.from({ length }).map((_, index) => (
         <input
           key={index}
@@ -138,7 +138,7 @@ const OtpInput = ({
           onChange={(e) => handleChange(e, index)}
           onKeyDown={(e) => handleKeyDown(e, index)}
           onPaste={(e) => handlePaste(e, index)}
-          className="w-11 h-11 text-center border border-[var(--color-secondary)] text-[var(--color-secondary)] font-bold rounded-md text-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
+          className="w-9 xs:w-11 h-11 text-center border border-[var(--color-secondary)] text-[var(--color-secondary)] font-bold rounded-md text-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
         />
       ))}
     </div>

@@ -41,10 +41,15 @@ export function FilterToolbar({
   const updateDropdownPosition = () => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
+      const dropdownWidth = 320;
+      const isMd = window.innerWidth >= 768; // Tailwind's md breakpoint
+
       setDropdownPosition({
         top: rect.bottom + window.scrollY + 4,
-        left: rect.right + window.scrollX - 320, // 320px is dropdown width (w-80)
-        width: rect.width
+        left: isMd
+          ? rect.right + window.scrollX - dropdownWidth // align to right 
+          : rect.left + window.scrollX, // align to left when md+
+        width: rect.width,
       });
     }
   };

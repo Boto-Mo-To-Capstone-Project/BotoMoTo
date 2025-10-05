@@ -152,7 +152,7 @@ const ReviewPage = () => {
   } 
 
   return (
-    <main className="flex flex-col items-center px-10 pb-20 pt-30 text-justify pt-8 w-full">
+    <main className="flex flex-col items-center px-5 sm:px-10 pb-20 pt-30 text-justify pt-8 w-full">
       {/*<Toaster position="top-center" />*/}
       <div className="w-full flex flex-col">
         {/* Header and subheading */}
