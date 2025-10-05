@@ -376,8 +376,36 @@ const LiveDashboard = () => {
 
   // Main render with real data
   return (
-    <main className={`flex flex-col items-center gap-6 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-8' : 'pt-30'} text-justify px-10`}>
+    <main className={`flex flex-col items-center gap-6 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-8' : 'pt-30'} text-justify px-5 sm:px-10`}>
       <div className="w-full max-w-7xl flex flex-col items-center" id="pdf-export-content">
+        {/* Live Dashboard Status - Below Header, Left Aligned */}
+        <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between w-full mb-4 gap-2 sticky top-20 bg-white z-50 py-2 rounded px-3">
+          <div className="flex items-center gap-3 bg-green-50 border border-green-200 px-4 py-2 rounded-lg">
+            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
+            <span className={`text-lg font-semibold ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
+              {isConnected ? 'Live Dashboard' : 'Disconnected'}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 no-print justify-end">
+            {/* Show logout button only for voters, not admin context */}
+            {isVoterContext && (
+              <SubmitButton
+                variant="action"
+                onClick={handleVoterLogout}
+                label="Logout"
+                />
+            )}
+            {isAdminContext && (
+              <SubmitButton
+                variant="action-primary"
+                label={isExporting ? "Exporting" : "Export"}
+                onClick={exportToPDF}
+                isLoading={isExporting}
+              />
+            )}
+          </div>
+        </div>
+
         {/* Red Header Card - Full Width */}
         <div className="flex items-center rounded-2xl bg-red-800 px-6 py-4 relative overflow-hidden w-full mb-4">
           <div>
@@ -387,33 +415,6 @@ const LiveDashboard = () => {
             <p className="text-white text-sm">
               {results?.election?.organization || "Loading Organization..."}
             </p>
-          </div>
-        </div>
-        
-        {/* Live Dashboard Status - Below Header, Left Aligned */}
-        <div className="flex items-center justify-between w-full mb-4 gap-2">
-          <div className="flex items-center gap-3 bg-green-50 border border-green-200 px-4 py-2 rounded-lg">
-            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
-            <span className={`text-lg font-semibold ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
-              {isConnected ? 'Live Dashboard' : 'Disconnected'}
-            </span>
-          </div>
-          <div className="flex items-center gap-3 no-print">
-            {/* Show logout button only for voters, not admin context */}
-            {isVoterContext && (
-              <Button
-                variant="secondary"
-                onClick={handleVoterLogout}
-              >
-                Logout
-              </Button>
-            )}
-            <SubmitButton
-              variant="action-primary"
-              label={isExporting ? "Exporting" : "Export Results"}
-              onClick={exportToPDF}
-              isLoading={isExporting}
-            />
           </div>
         </div>
 

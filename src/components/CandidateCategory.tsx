@@ -145,7 +145,7 @@ const CandidateCategory = ({
                 </div>
 
                 {/* Credentials + Vote */}
-                <div className="flex flex-row items-center justify-between gap-3 mt-4 w-full">
+                <div className="flex flex-col xs:flex-row items-center justify-between gap-3 mt-4 w-full">
                   <div className="flex flex-row items-center gap-2">
                     <span className="text-sm text-gray-600 italic">
                       Credentials:

@@ -99,11 +99,11 @@ body {
 }
 
 .voterlogin-heading {
-  @apply text-dxs font-semibold md:text-dsm;
+  @apply text-xl font-semibold md:text-2xl;
 }
 
 .voterlogin-subheading {
-  @apply text-md font-normal text-gray-600 md:text-lg;
+  @apply text-md font-normal text-gray-600 md:text-md;
 }
 
 .voterlogin-label {
@@ -111,11 +111,11 @@ body {
 }
 
 .voter-election-heading {
-  @apply text-dxs font-semibold text-black md:text-dsm;
+  @apply text-xl font-semibold text-black md:text-2xl;
 }
 
 .voter-election-subheading {
-  @apply text-md font-semibold text-primary md:text-lg;
+  @apply text-md font-semibold text-primary md:text-md;
 }
 
 .voter-election-item {
@@ -123,7 +123,7 @@ body {
 }
 
 .voter-election-desc {
-  @apply text-sm font-normal text-gray sm:text-md md:text-lg;
+  @apply text-sm font-normal text-gray sm:text-md md:text-md;
 }
 
 .candidate-category-heading {

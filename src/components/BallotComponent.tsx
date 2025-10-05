@@ -143,7 +143,7 @@ const BallotComponent = ({
       .filter(position => position.candidates.length > 0);
 
   return (
-    <main className={`flex flex-col items-center px-10 pb-20 text-justify ${mode === 'preview' ? 'pt-8' : 'pt-30'}`}>
+    <main className={`flex flex-col items-center px-5 sm:px-10 pb-20 text-justify ${mode === 'preview' ? 'pt-8' : 'pt-30'}`}>
       <div className="w-full flex flex-col">
       {/* Header and subheading */}
       <div className="mb-6 rounded-2xl bg-[#a30d1a] px-8 py-6 flex flex-col items-start w-full">
