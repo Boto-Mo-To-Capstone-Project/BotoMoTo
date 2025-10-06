@@ -46,6 +46,7 @@ interface ElectionResults {
       party: { id: number; name: string; color: string } | null;
       voteCount: number;
       percentage: number;
+      image: string | null;
     }[];
   }[];
   demographics: any[];
@@ -411,7 +412,7 @@ const CandidateDashboard = () => {
                 <CandidateDashboardCard
                   key={candidate.id}
                   id={candidate.id}
-                  imgSrc="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaHfpIhAPZHSbZstaGEgFBIjZZ-Y-K533dag&s" // Default image for now
+                  imgSrc={candidate.image || "/assets/placeholderuser.png"}
                   name={candidate.name}
                   party={candidate.party?.name || "Independent"}
                   partyColor={candidate.party?.color || undefined}
