@@ -51,14 +51,6 @@ async function getAudits(request: NextRequest) {
         orderBy,
         skip,
         take: limit,
-        include: {
-          affectedTables: {
-            select: {
-              tableAffected: true,
-              recordId: true
-            }
-          }
-        }
       }),
       db.audits.count({ where })
     ]);
