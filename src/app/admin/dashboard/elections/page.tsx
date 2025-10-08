@@ -371,16 +371,6 @@ function ElectionDashboardContent() {
                     : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
                 }
               />
-              <SubmitButton
-                label=""
-                variant="action"
-                icon={<MdDownload size={20} />}
-                title="Download"
-                onClick={() => {
-                        /* TODO: handle download */
-                      }
-                }
-              />
             </div>
           </div>
 
