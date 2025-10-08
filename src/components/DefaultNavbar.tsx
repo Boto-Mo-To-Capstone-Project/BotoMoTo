@@ -18,7 +18,7 @@ const DefaultNavbar = () => {
   const toggleMenu = () => setIsOpen(!isOpen);
 
   return (
-    <nav className="fixed top-0 left-0 w-full h-20 bg-white flex justify-between items-center shadow-sm px-4 md:px-15 z-3">
+    <nav className="fixed top-0 left-0 w-full h-20 bg-white flex justify-between items-center shadow-sm px-4 md:px-15 z-99">
       {/* Logo */}
       <Link href="/">
       <div className="">

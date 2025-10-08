@@ -2,11 +2,11 @@ import { FaLinkedin, FaGithubSquare } from "react-icons/fa";
 
 export default function AboutFooter() {
   return (
-    <footer className="flex flex-col items-center h-28 w-full bg-white text-gray-400">
+    <footer className="flex flex-col items-center h-28 w-full bg-white text-gray-400 px-5 xs:px-20">
         {/* Left side */}
-        <div className="border-t border-gray-400 w-4/5 mb-10"></div>
+        <div className="border-t border-gray-400 w-full mb-10"></div>
 
-        <div className="flex justify-between items-center w-4/5 ">
+        <div className="flex justify-between items-center w-full">
             <p className="text-md font-normal">
             © {new Date().getFullYear()} Boto Mo 'To. All rights reserved.
             </p>

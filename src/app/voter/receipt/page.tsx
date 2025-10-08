@@ -66,7 +66,7 @@ const VoteReceipt = () => {
     );
   }
   return (
-    <main className="flex flex-col items-center px-5 sm:px-10 pb-20 pt-30 text-justify pt-8 w-full">
+    <main className="flex flex-col items-center px-5 sm:px-20 pb-20 pt-30 text-justify pt-8 w-full">
       <div className="mb-6 rounded-2xl bg-[#a30d1a] px-8 py-6 flex flex-col items-start w-full">
         <h2 className="text-white text-xl font-semibold mb-2">Vote Receipt</h2>
         <p className="text-white text-base">
