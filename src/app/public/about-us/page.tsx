@@ -129,16 +129,16 @@ const AboutPage = () => {
   return (
     <main className="min-h-screen flex flex-col items-center mt-20">
       {/* about us */}
-      <div className="flex flex-col items-center gap-6 py-20 px-5">
+      <div className="flex flex-col items-center gap-6 pt-20 pb-20 px-5 xs:px-20">
         <div className="text-center">
           <p className="text-md font-semibold text-primary">About us</p>
           <p className="text-dlg font-semibold text-black">Get to know us</p>
         </div>
-        <p className="text-xl font-normal text-gray">Learn more about the team behind Boto Mo 'To</p>
+        <p className="text-xl text-center font-normal text-gray">Learn more about the team behind Boto Mo 'To</p>
       </div>
       {/* our project */}
-      <div className="flex flex-col bg-gray-50 px-5 lg:px-20 py-24 xl:flex-row">
-        <div className="flex basis-[50%] items-center justify-center">
+      <div className="flex flex-col bg-gray-50 px-5 xs:px-20 py-10 xl:flex-row">
+        <div className="flex basis-[50%] justify-center">
           <Image
           src={aboutUsImage}
           width={600}
@@ -148,19 +148,19 @@ const AboutPage = () => {
           />   
         </div>
          
-        <div className="flex flex-col items-start gap-10 xl:gap-12 basis-[50%] py-10">
-          <div className="">
+        <div className="flex flex-col items-center xl:items-start gap-10 xl:gap-12 basis-[50%] py-10">
+          <div className="text-center xl:text-start">
             <p className="text-md font-semibold text-primary ">Vote. Securely. Anywhere.</p>
             <p className="text-dlg font-semibold text-black">Our Project</p>
           </div>
-          <div className="space-y-5 ">
+          <div className="space-y-5 text-center xl:text-start">
             <p className="text-xl font-normal text-gray">Boto Mo To is a secure and user-friendly online voting system for small organizations such as student councils, and community groups. </p>
             <p className="text-xl font-normal text-gray">It streamlines the election process, and ensures fair, accurate results.</p>
           </div>
         </div>
       </div>
       {/* our goals */}
-      <div className="flex flex-col items-center gap-16 py-24 px-5">
+      <div className="flex flex-col items-center gap-16 py-10 px-5 xs:px-20">
 
         <div className="flex flex-col items-center gap-3">
           <div className="text-center">
@@ -169,7 +169,7 @@ const AboutPage = () => {
           </div>
           <p className="text-center text-xl font-normal text-gray">Our shared goals keep us connected and guide us as one team.</p>
         </div>
-        <div className="flex flex-wrap gap-16 justify-center">
+        <div className="flex flex-wrap gap-16 justify-center lg:justify-between">
           {goals.map((goal, index) => (
             <GoalItem key={index} {...goal} />
           ))}
@@ -177,7 +177,7 @@ const AboutPage = () => {
       </div>
     
       {/* our team */}
-      <div className="flex flex-col items-center gap-16 py-24 px-5 bg-gray-50 w-full">
+      <div className="flex flex-col items-center gap-16 py-10 px-5 xs:px-20 bg-gray-50 w-full">
         <div className="flex flex-col items-center gap-3">
           <div className="text-center">
             <p className="text-md font-semibold text-primary ">Get to Know Us</p>
@@ -185,7 +185,7 @@ const AboutPage = () => {
           </div>
           <p className="text-center text-xl font-normal text-gray">Get to know the passionate individuals behind our project.</p>
         </div>
-        <div className="flex flex-wrap gap-16 xl:gap-25 justify-center">
+        <div className="flex flex-wrap gap-16 xl:gap-25 justify-center lg:justify-between w-full">
           {teamMembers.map((member, index) => (
             <TeamItem key={index} {...member} />
           ))}
@@ -194,9 +194,9 @@ const AboutPage = () => {
       </div>
 
       {/* Tech Stack */}
-      <div className="flex flex-col items-center py-24 px-5 gap-2">
-        <p className="text-md font-medium text-gray">Tech Stack</p>
-        <div className="flex flex-wrap justify-center items-center gap-30 p-4">
+      <div className="flex flex-col items-center py-10 px-5 xs:px-20 gap-2">
+        <p className="text-md font-medium text-gray mb-5">Tech Stack</p>
+        <div className="flex flex-wrap justify-center items-center gap-30">
           {images.map((img, index) => (
             <div key={index} className="flex-shrink-0">
               <Image

@@ -26,7 +26,7 @@ const Dropdown = ({ label, options, onSelect, onClear }: DropdownProps) => {
   };
 
   return (
-    <div className="w-64 relative">
+    <div className="w-full xs:w-64 relative">
       <label className="block mb-2 voter-election-desc">
         <strong>{label}</strong>
       </label>

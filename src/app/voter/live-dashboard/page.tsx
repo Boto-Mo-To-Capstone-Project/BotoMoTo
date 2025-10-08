@@ -232,7 +232,7 @@ const LiveDashboard = () => {
             setTimeLeft(`${minutes}:${seconds.toString().padStart(2, '0')} mins`);
           }
         } else {
-          setTimeLeft("Voting has ended");
+          setTimeLeft("Ended");
         }
       }, 1000);
 
@@ -347,11 +347,82 @@ const LiveDashboard = () => {
   // Loading state
   if (loading) {
     return (
-      <main className={`flex flex-col items-center gap-10 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-8' : 'pt-40'} text-justify px-10`}>
-        <div className="w-4/5 flex flex-col items-center">
-          <div className="text-center space-y-4">
-            <p className="text-lg text-gray">Loading live election results...</p>
-            {isConnected && <p className="text-sm text-green-600">📡 Connected to live updates</p>}
+      <main
+        className={`flex flex-col items-center gap-6 pb-20 ${
+          isAdminContext || isSuperAdminContext ? "pt-0" : "pt-20"
+        } text-justify px-5 sm:px-10`}
+      >
+        <div
+          className="w-full max-w-7xl flex flex-col items-center animate-pulse"
+          id="pdf-export-content"
+        >
+          {/* Live Dashboard Status */}
+          <div
+            className={`flex flex-col xs:flex-row xs:items-center xs:justify-between w-full mb-4 gap-2 sticky ${
+              isAdminContext || isSuperAdminContext
+                ? "top-16 pt-8"
+                : "top-20 pt-10"
+            } bg-white z-50 py-2 px-3`}
+          >
+            {/* Left - Status indicator */}
+            <div className="flex items-center gap-3 bg-gray-100 border border-gray-200 px-4 py-2 rounded-lg w-[220px]">
+              <div className="w-3 h-3 rounded-full bg-gray-300"></div>
+              <div className="h-5 bg-gray-200 rounded w-28"></div>
+            </div>
+
+            {/* Right - Buttons */}
+            <div className="flex items-center gap-3 justify-end">
+              <div className="h-10 bg-gray-200 rounded-md w-[100px]"></div>
+              <div className="h-10 bg-gray-200 rounded-md w-[100px]"></div>
+            </div>
+          </div>
+
+          {/* Red Header Card */}
+          <div className="flex items-center rounded-2xl bg-gray-100 px-6 py-4 relative overflow-hidden w-full mb-4">
+            <div className="space-y-2 w-full">
+              <div className="h-5 bg-gray-200 rounded w-64"></div>
+              <div className="h-4 bg-gray-200 rounded w-48"></div>
+            </div>
+          </div>
+
+          {/* KPI Section */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 w-full mb-6">
+            {[...Array(4)].map((_, i) => (
+              <div
+                key={i}
+                className="rounded-lg bg-gray-100 h-28 p-4 flex flex-col justify-center"
+              >
+                <div className="h-5 bg-gray-200 rounded w-24 mb-2"></div>
+                <div className="h-7 bg-gray-300 rounded w-16"></div>
+              </div>
+            ))}
+          </div>
+
+          {/* Two Column Layout */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 w-full">
+            {/* Left - Votes Per Position */}
+            <div className="w-full">
+              <div className="bg-maroon-800 rounded-t-2xl p-3 mb-3">
+                <div className="h-5 bg-gray-300/40 rounded w-3/4"></div>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-b-2xl p-4 space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-6 bg-gray-200 rounded w-full"></div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right - Votes Per Demographic */}
+            <div className="w-full">
+              <div className="bg-maroon-800 rounded-t-2xl p-3 mb-3">
+                <div className="h-5 bg-gray-300/40 rounded w-3/4"></div>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-b-2xl p-4 space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-6 bg-gray-200 rounded w-full"></div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -376,8 +447,36 @@ const LiveDashboard = () => {
 
   // Main render with real data
   return (
-    <main className={`flex flex-col items-center gap-6 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-8' : 'pt-30'} text-justify px-10`}>
-      <div className="w-full max-w-7xl flex flex-col items-center" id="pdf-export-content">
+    <main className={`flex flex-col items-center gap-6 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-0' : 'pt-20'} text-justify px-5 sm:px-20`}>
+      <div className="w-full flex flex-col items-center" id="pdf-export-content">
+        {/* Live Dashboard Status - Below Header, Left Aligned */}
+        <div className={`flex flex-col xs:flex-row xs:items-center xs:justify-between w-full mb-4 gap-2 sticky ${(isAdminContext || isSuperAdminContext) ? 'top-16 pt-8' : 'top-20 pt-10'} bg-white z-50 py-2 px-3`}>
+          <div className="flex items-center gap-3 bg-green-50 border border-green-200 px-4 py-2 rounded-lg">
+            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
+            <span className={`text-lg font-semibold ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
+              {isConnected ? 'Live Dashboard' : 'Disconnected'}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 no-print justify-end">
+            {/* Show logout button only for voters, not admin context */}
+            {isVoterContext && (
+              <SubmitButton
+                variant="action"
+                onClick={handleVoterLogout}
+                label="Logout"
+                />
+            )}
+            {isAdminContext && (
+              <SubmitButton
+                variant="action-primary"
+                label={isExporting ? "Exporting" : "Export"}
+                onClick={exportToPDF}
+                isLoading={isExporting}
+              />
+            )}
+          </div>
+        </div>
+
         {/* Red Header Card - Full Width */}
         <div className="flex items-center rounded-2xl bg-red-800 px-6 py-4 relative overflow-hidden w-full mb-4">
           <div>
@@ -387,33 +486,6 @@ const LiveDashboard = () => {
             <p className="text-white text-sm">
               {results?.election?.organization || "Loading Organization..."}
             </p>
-          </div>
-        </div>
-        
-        {/* Live Dashboard Status - Below Header, Left Aligned */}
-        <div className="flex items-center justify-between w-full mb-4 gap-2">
-          <div className="flex items-center gap-3 bg-green-50 border border-green-200 px-4 py-2 rounded-lg">
-            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
-            <span className={`text-lg font-semibold ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
-              {isConnected ? 'Live Dashboard' : 'Disconnected'}
-            </span>
-          </div>
-          <div className="flex items-center gap-3 no-print">
-            {/* Show logout button only for voters, not admin context */}
-            {isVoterContext && (
-              <Button
-                variant="secondary"
-                onClick={handleVoterLogout}
-              >
-                Logout
-              </Button>
-            )}
-            <SubmitButton
-              variant="action-primary"
-              label={isExporting ? "Exporting" : "Export Results"}
-              onClick={exportToPDF}
-              isLoading={isExporting}
-            />
           </div>
         </div>
 

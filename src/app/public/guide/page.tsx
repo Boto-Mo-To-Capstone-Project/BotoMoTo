@@ -394,17 +394,17 @@ const TutorialPage = () => {
   return (
     <main className="min-h-screen flex flex-col items-center mt-20">
         {/* about us */}
-        <div className="flex flex-col items-center gap-6 py-20 px-5">
+        <div className="flex flex-col items-center gap-6 py-20 px-5 xs:px-20">
             <div className="text-center">
                 <p className="text-md font-semibold text-primary ">Updated 1 Oct 2025</p>
                 <p className="text-dlg font-semibold text-black">Boto Mo &#39;To Tutorial</p>
             </div>
-            <p className="text-xl font-normal text-gray">Simple walkthrough for admins and voters.</p>
+            <p className="text-xl font-normal text-gray text-center">Simple walkthrough for admins and voters.</p>
         </div>
       
         {/* introduction */}
-        <div className="w-full flex justify-center bg-gray-50 py-24">
-            <div className="flex flex-col gap-4 w-9/10 lg:w-3/5 ">
+        <div className="w-full flex justify-start bg-gray-50 py-10 px-5 xs:px-20">
+            <div className="flex flex-col gap-4 text-center xs:text-start">
                 <p className="text-dsm font-semibold">Introduction</p>
                 <p className="text-lg text-gray">Welcome to the Boto Mo To Tutorial Guide. <br/><br/>This document provides a clear and straightforward introduction to using the system, whether you are an <strong>administrator managing elections</strong> or a <strong>voter participating in one</strong>. <br/><br/>It is intended to serve as a starting point for new users, ensuring a simple and accessible learning experience.</p>
             </div>
@@ -412,7 +412,7 @@ const TutorialPage = () => {
 
 
         {/* toggle styled like tabs */}
-        <div className="my-10 w-9/10 text-center">
+        <div className="py-10 w-full text-center px-5 xs:px-20">
             <div className="inline-flex w-full max-w-[500px] md:w-auto rounded-md border border-gray-300 overflow-hidden bg-white ">
                 {tabs.map((t, i) => (
                 <SubmitButton
@@ -431,7 +431,7 @@ const TutorialPage = () => {
         </div>
 
         {/* conditional tutorial content */}
-        <div className="w-9/10 lg:w-3/5 pb-24 px-5">
+        <div className="w-full pb-10 px-5 xs:px-20">
             {tab === "Admin" && (
             <div className="space-y-4">
                 <div className="space-y-12">

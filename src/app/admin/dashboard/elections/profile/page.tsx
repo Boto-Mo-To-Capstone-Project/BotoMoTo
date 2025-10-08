@@ -287,12 +287,93 @@ const ProfilePage = () => {
     }
   };
 
+  // Loading state
   if (loading) {
     return (
       <div className="app h-full flex flex-col min-h-[calc(100vh-4rem)] bg-gray-50">
         <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-gray-500">Loading profile...</div>
+          {/* Toolbar */}
+          <div className="main-toolbar sticky top-16 z-30 bg-white flex flex-col md:flex-row md:items-center md:gap-4 gap-2 mb-6 py-3 px-2 sm:px-5">
+            <div className="flex-1 flex justify-end gap-2 animate-pulse">
+              <div className="h-10 bg-gray-200 rounded-md w-[100px]"></div>
+              <div className="h-10 bg-gray-200 rounded-md w-[100px]"></div>
+            </div>
+          </div>
+
+          {/* Heading */}
+          <div className="animate-pulse">
+            <div className="h-6 bg-gray-200 rounded w-32 mb-2 px-2 sm:px-5"></div>
+            <div className="h-4 bg-gray-200 rounded w-80 mb-6 px-2 sm:px-5"></div>
+          </div>
+
+          {/* Main Card */}
+          <div className="main-content px-2 sm:px-5">
+            <div className="w-full max-w-7xl bg-white rounded-2xl shadow-lg border border-gray-200 p-6 space-y-10 animate-pulse">
+
+              {/* Personal Information Section */}
+              <div>
+                <div className="h-5 bg-gray-200 rounded w-48 mb-6"></div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                  {/* Profile Photo */}
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-gray-200"></div>
+                    <div className="h-4 bg-gray-200 rounded w-20"></div>
+                  </div>
+
+                  {/* Full Name */}
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-28"></div>
+                    <div className="h-10 bg-gray-200 rounded w-full"></div>
+                  </div>
+
+                  {/* Email */}
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-28"></div>
+                    <div className="h-10 bg-gray-200 rounded w-full"></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Organization Section */}
+              <div>
+                <div className="h-5 bg-gray-200 rounded w-60 mb-6"></div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="space-y-2">
+                      <div className="h-4 bg-gray-200 rounded w-32"></div>
+                      <div className="h-10 bg-gray-200 rounded w-full"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Divider */}
+              <hr className="border-gray-200" />
+
+              {/* Account Settings Section */}
+              <div>
+                <div className="h-5 bg-gray-200 rounded w-52 mb-6"></div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+                  {/* Change Password */}
+                  <div className="space-y-3">
+                    <div className="h-4 bg-gray-200 rounded w-24"></div>
+                    <div className="h-10 bg-gray-200 rounded w-[140px]"></div>
+                  </div>
+
+                  {/* Account Created */}
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-40"></div>
+                    <div className="h-10 bg-gray-200 rounded w-full"></div>
+                  </div>
+
+                  {/* Delete Account */}
+                  <div className="space-y-3">
+                    <div className="h-4 bg-gray-200 rounded w-32"></div>
+                    <div className="h-10 bg-gray-200 rounded w-[180px]"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 
 interface SubmitButtonProps {
   label: string;
-  variant?: 'primary' | 'tab' | 'action' | 'small' | 'small-action' | 'action-primary'| 'action-primary-2'; // <-- added 'action-primary'
+  variant?: 'primary' | 'outline' | 'tab' | 'action' | 'small' | 'small-action' | 'action-primary'| 'action-primary-2'; // <-- added 'action-primary'
   isActive?: boolean; // for tab highlighting
   isLoading?: boolean;
   className?: string;
@@ -27,6 +27,8 @@ export function SubmitButton({
   let styles = '';
   if (variant === 'primary') {
     styles = `w-full max-w-[380px] h-[44px] bg-[var(--color-primary)] hover:brightness-90 text-white rounded-[8px] text-sm ${isLoading ? 'opacity-70 cursor-not-allowed' : ''} hover:border-primary-700`;
+  } else if (variant === "outline") {
+    styles = `w-full max-w-[380px] h-[44px] bg-[var(--color-white)] hover:brightness-90 text-gray rounded-[8px] text-sm ${isLoading ? 'opacity-70 cursor-not-allowed' : ''} hover:border-primary-700 border border-gray`;
   } else if (variant === 'tab') {
     styles = `w-[90px] h-[44px] md:h-10 flex items-center justify-center text-base rounded-none ${isActive ? 'text-[var(--color-primary)] bg-white' : 'text-gray-700 bg-gray-50 hover:bg-gray-100'} border-0 hover:border-primary-700`;
   } else if (variant === 'action') {

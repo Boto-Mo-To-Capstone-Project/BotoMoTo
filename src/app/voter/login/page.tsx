@@ -8,6 +8,7 @@ import Image from "next/image";
 import EnterVoterCode from "@/app/assets/EnterVoterCode.png";
 import OtpInput from "@/components/OtpInput";
 import toast, { Toaster } from "react-hot-toast";
+import { SubmitButton } from "@/components/SubmitButton";
 
 const VoterLoginPage = () => {
   const router = useRouter(); // to go to another route
@@ -219,38 +220,35 @@ const VoterLoginPage = () => {
   };
 
   return (
-    <main className=" flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
-      {/*<Toaster position="top-center" />*/} 
-      <div className="text-center space-y-2">
-        <p className="voterlogin-heading">Enter Voter Code</p>
-        <p className="voterlogin-subheading">
-          Enter your Voter Unique Code to continue. Check your{" "}
-          <span className="text-primary">email</span> app to find your unique
-          code.
-        </p>
-      </div>
+    <main className="min-h-screen px-5 pb-20 pt-40 flex justify-center">
+      <div className="max-w-[380px] flex flex-col items-center gap-5 ">
+        <div className="text-center space-y-2">
+          <p className="voterlogin-heading">Enter Voter Code</p>
+          <p className="voterlogin-subheading">
+            Enter your Voter Unique Code to continue. Check your{" "}
+            <span className="text-primary">email</span> app to find your unique
+            code.
+          </p>
+        </div>
 
-      <Image src={EnterVoterCode} height={300} alt="BotoMoToLogo" />
-      <div className="flex flex-col gap-2">
-        <p className="voterlogin-label">Enter Unique Code</p>
-        <OtpInput length={6} onChange={handleOtpChange} />
-        {/* {error && <p className="text-red-500 text-sm mt-1">{error}</p>} */}
-      </div>
+        <Image src={EnterVoterCode} height={250} alt="BotoMoToLogo" />
 
-      <div className="flex flex-col gap-4 w-4/5 xs:w-auto">
-        <Button
-          variant="long_primary"
-          onClick={handleSubmit}
-          disabled={isLoading}
-        >
-          {isLoading ? "Verifying..." : "Submit"}
-        </Button>
-        <Button 
-          variant="long_secondary"
-          onClick={() => router.push("/")}
-        >
-          Cancel
-        </Button>
+        <div className="w-full flex flex-col items-between gap-2">
+          <p className="voterlogin-label">Enter Unique Code</p>
+          <OtpInput length={6} onChange={handleOtpChange} />
+        </div>
+        <div className="w-full mt-5 space-y-5">
+          <SubmitButton 
+            label={`${isLoading ? "Verifying..." : "Submit"}`}
+            onClick={handleSubmit}
+            isLoading={isLoading}
+          />
+          <SubmitButton 
+            label="Cancel"
+            onClick={() => router.push("/")}
+            variant="outline"
+          />
+        </div>
       </div>
     </main>
   );
