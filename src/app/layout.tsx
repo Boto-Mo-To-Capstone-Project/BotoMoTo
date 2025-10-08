@@ -9,6 +9,7 @@ import { useSidebarVisible } from "@/hooks/useSidebarVisible";
 import { useEffect, useState } from "react";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "react-hot-toast";
+import usePageTitle from "@/hooks/usePageTitle";
 
 function useIsHydrated() {
   const [hydrated, setHydrated] = useState(false);
@@ -26,6 +27,9 @@ export default function RootLayout({
   const hydrated = useIsHydrated();
   const sidebarVisibleValue = useSidebarVisible();
   const sidebarVisible = hydrated ? sidebarVisibleValue : false;
+
+  // ✅ Call your custom hook here
+  usePageTitle();
 
   return (
     <html lang="en">
