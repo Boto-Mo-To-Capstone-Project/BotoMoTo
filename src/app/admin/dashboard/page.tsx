@@ -55,16 +55,53 @@ export default function VoterDashboardPage() {
     return (
       <div className="app h-full flex flex-col min-h-[calc-100vh-4rem] bg-gray-50">
         <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
-          <div className="main-content flex-auto py-3 overflow-auto pb-3 px-2 md:gap-4 gap-2 py-3 sm:px-5">
+          <div className="main-content flex-auto py-3 overflow-auto pb-3 px-2 md:gap-4 gap-2 py-3 sm:px-5 pt-8">
             <div className="animate-pulse">
-              <div className="mb-4">
+              {/* Header skeleton */}
+              <div className="mb-6">
                 <div className="h-8 bg-gray-200 rounded w-64 mb-2"></div>
-                <div className="h-6 bg-gray-200 rounded w-96"></div>
+                <div className="h-6 bg-gray-200 rounded w-80"></div>
               </div>
+
+              {/* Summary cards skeleton */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {[...Array(4)].map((_, i) => (
                   <div key={i} className="h-32 bg-gray-200 rounded-2xl"></div>
                 ))}
+              </div>
+
+              {/* Chart and side panels layout */}
+              <div className="flex flex-col lg:flex-row gap-8 w-full">
+                {/* Chart section skeleton */}
+                <div className="flex-1 bg-gray-100 rounded-2xl border-2 border-gray-200 min-w-0 w-full p-4">
+                  <div className="h-6 bg-gray-200 rounded w-48 mb-4"></div>
+                  <div className="w-full h-[180px] bg-gray-200 rounded"></div>
+                </div>
+
+                {/* Right side: Recent + Completed elections */}
+                <div className="w-full lg:w-80 flex flex-col gap-6 min-w-0">
+                  <div className="bg-gray-100 rounded-2xl border-2 border-yellow-200 p-6">
+                    <div className="h-6 bg-gray-200 rounded w-40 mb-4"></div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-6 h-6 rounded-full bg-gray-300"></div>
+                      <div className="flex-1 h-4 bg-gray-200 rounded w-32"></div>
+                    </div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-6 h-6 rounded-full bg-gray-300"></div>
+                      <div className="flex-1 h-4 bg-gray-200 rounded w-32"></div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-100 rounded-2xl border-2 border-green-200 p-6">
+                    <div className="h-6 bg-gray-200 rounded w-48 mb-4"></div>
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="flex items-center gap-3 mb-2">
+                        <div className="w-6 h-6 rounded-full bg-gray-300"></div>
+                        <div className="flex-1 h-4 bg-gray-200 rounded w-32"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -72,7 +109,6 @@ export default function VoterDashboardPage() {
       </div>
     );
   }
-
   // Error state
   if (error) {
     return (
@@ -180,7 +216,7 @@ export default function VoterDashboardPage() {
               <div className="mb-4">
                 <h1 className="text-2xl md:text-3xl font-bold mb-1">Welcome back, {session?.user?.name || 'Username'}!
                 </h1>
-                <p className="text-lg text-gray-600 pl-[2px]">Welcome to BotoMoTo — Your Election Companion</p>
+                <p className="text-lg text-gray-600 pl-[2px]">Welcome to Boto Mo 'To — Your Election Companion</p>
               </div>
 
               {/* Summary Cards */}

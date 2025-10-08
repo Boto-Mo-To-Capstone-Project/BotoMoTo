@@ -7,7 +7,7 @@ interface AppHeaderProps {
 
 export default function AppHeader({ onMenuClick, title }: AppHeaderProps) {
   return (
-    <header className="sticky top-0 left-0 w-full h-16 bg-white shadow z-50 flex items-center">
+    <header className="sticky top-0 left-0 w-full h-16 bg-white shadow z-99 flex items-center">
       <div className="w-full flex items-center px-6 lg:ml-68">
         {/* Hamburger for mobile */}
         <button

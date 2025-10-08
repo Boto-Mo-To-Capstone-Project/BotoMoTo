@@ -60,7 +60,56 @@ const ElectionTermsCondition = () => {
     }
     router.push("/voter/ballot-form");
   };
+  if (isLoading) {
+    return (
+      <main className="flex flex-col items-center gap-10 px-5 pb-20 pt-40 text-justify animate-pulse w-full">
+        {/* Header skeleton */}
+        <div className="text-center space-y-2 w-full sm:w-3/4 md:w-1/2">
+          <div className="h-6 bg-gray-300 rounded w-3/4 mx-auto" />
+          <div className="h-4 bg-gray-200 rounded w-5/6 mx-auto" />
+        </div>
 
+        {/* Content skeleton */}
+        <div className="w-full sm:w-3/4 md:w-1/2 space-y-10">
+          {/* Last updated */}
+          <div>
+            <div className="h-4 bg-gray-300 rounded w-1/2 mb-4" />
+            <div className="space-y-2">
+              <div className="h-3 bg-gray-200 rounded w-full" />
+              <div className="h-3 bg-gray-200 rounded w-5/6" />
+            </div>
+          </div>
+
+          {/* Terms list skeleton */}
+          <div className="space-y-8">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="space-y-3">
+                <div className="h-5 bg-gray-300 rounded w-2/3" />
+                <div className="space-y-2">
+                  <div className="h-3 bg-gray-200 rounded w-full" />
+                  <div className="h-3 bg-gray-200 rounded w-11/12" />
+                  <div className="h-3 bg-gray-200 rounded w-4/5" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Agreement checkbox */}
+          <div className="flex items-center gap-3 mt-10">
+            <div className="h-6 w-6 bg-gray-300 rounded" />
+            <div className="h-4 bg-gray-200 rounded w-3/4" />
+          </div>
+
+          {/* Buttons */}
+          <div className="mt-10 space-y-5 w-full flex flex-col items-center">
+            <div className="h-10 bg-gray-300 rounded w-full max-w-[250px]" />
+            <div className="h-10 bg-gray-200 rounded w-full max-w-[250px]" />
+          </div>
+        </div>
+      </main>
+    )
+
+  }
   if (!voterData) {
     return null; // Will redirect to login
   }
@@ -90,7 +139,6 @@ const ElectionTermsCondition = () => {
           </li>
         </div>
         {/* List of terms loop*/}
-
         <div className="space-y-10">
           {termsAndConditionList.map((term, index) => (
             <div key={index} className="flex flex-col gap-2">

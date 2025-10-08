@@ -152,8 +152,20 @@ const ElectionStatus = () => {
   
   if (isLoading) {
     return (
-      <main className="flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
-        <p>Loading election status...</p>
+      <main className="min-h-screen px-5 pb-20 pt-40 flex justify-center">
+        <div className="max-w-[380px] flex flex-col items-center gap-5 animate-pulse">
+          <div className="text-center space-y-2 w-full">
+            <div className="h-6 bg-gray-300 rounded w-3/4 mx-auto" />
+            <div className="h-4 bg-gray-200 rounded w-5/6 mx-auto" />
+          </div>
+
+          <div className="bg-gray-200 rounded-xl w-[250px] h-[250px]" />
+
+          <div className="w-full mt-5 space-y-5">
+            <div className="h-10 bg-gray-300 rounded" />
+            <div className="h-10 bg-gray-200 rounded" />
+          </div>
+        </div>
       </main>
     );
   }
