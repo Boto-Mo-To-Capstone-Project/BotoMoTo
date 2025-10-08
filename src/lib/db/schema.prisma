@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -37,71 +31,6 @@ model User {
  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-// Enhanced role enum
-enum UserRole {
-  VOTER
-  ADMIN
-  SUPER_ADMIN
-}
-
-enum AuditResource {
-  ORGANIZATION
-  USER
-  ELECTION
-  CANDIDATE
-  PARTY
-  VOTING_SCOPE
-  VOTER
-  POSITION
-  TICKET
-  // Add other resources as needed
-}
-
-// Organization approval status enum
-enum OrganizationStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-// Election status enum
-enum ElectionStatus {
-  DRAFT
-  ACTIVE
-  CLOSED
-}
-
-// Ticket status enum
-enum TicketStatus {
-  PENDING
-  IN_PROGRESS
-  RESOLVED
-}
-
-// Audit action enum
-enum AuditAction {
-  CREATE
-  READ
-  UPDATE
-  DELETE
-  RESTORE
-  SIGNUP
-  LOGIN
-  LOGOUT
-  VOTE
-  APPROVE
-  REJECT
-  UPLOAD
-}
-
-// Code send status enum
-enum CodeSendStatus {
-  PENDING
-  SENDING
-  SENT
-  FAILED
 }
  
 model Account {
@@ -184,8 +113,6 @@ model Organization {
   // contactDetails OrgContactDetails[]
   elections      Election[]
   tickets        Ticket[]
-  emailLogs      EmailLog[]
-  emailSuppressions EmailSuppression[]
   emailTemplates EmailTemplate[]
 }
 
@@ -217,8 +144,6 @@ model Election {
   parties      Party[]
   candidates   Candidate[]
   voteResponses VoteResponse[]
-  broadcasts   Broadcast[]
-  emailLogs    EmailLog[]
   
   // Template relations
   template     Election?  @relation("ElectionTemplate", fields: [templateId], references: [id])
@@ -459,21 +384,6 @@ model Ticket {
   organization Organization @relation(fields: [orgId], references: [id])
 }
 
-model Broadcast {
-  id          Int       @id @default(autoincrement())
-  electionId  Int
-  title       String
-  message     String
-  scheduledAt DateTime
-  sentAt      DateTime?
-  isSent      Boolean   @default(false)
-  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @default(now())
-
-  election Election @relation(fields: [electionId], references: [id])
-}
-
 model Audits {
   id         Int        @id @default(autoincrement())
   actorId    String     // User ID who performed the action
@@ -486,18 +396,6 @@ model Audits {
   details    Json?      // Additional details  // should edit this if i switch to postgres
   
   timestamp  DateTime   @default(now())
-
-  affectedTables AuditTableAffected[]
-}
-
-model AuditTableAffected {
-  id            Int     @id @default(autoincrement())
-  auditId       Int
-  tableAffected String
-  recordId      String
-  changes       Json
-
-  audit Audits @relation(fields: [auditId], references: [id])
 }
 
 // Performance Logging Tables for Analytics Dashboard
@@ -583,113 +481,67 @@ enum TemplateType {
   CUSTOM        // User-uploaded custom templates
 }
 
-model EmailLog {
-  id            String        @id @default(cuid())
-  
-  // Message details
-  messageId     String?       // Provider-specific message ID
-  templateId    String?       // Template used (if any)
-  
-  // Recipients
-  toEmail       String        // Primary recipient email
-  toName        String?       // Primary recipient name
-  ccEmails      String[]      // CC emails (array)
-  bccEmails     String[]      // BCC emails (array)
-  
-  // Content
-  subject       String
-  htmlSize      Int?          // Size of HTML content in bytes
-  textSize      Int?          // Size of text content in bytes
-  attachments   Int?          @default(0) // Number of attachments
-  
-  // Sending details
-  provider      String        // Email provider used (resend, ses, gmail-smtp)
-  status        EmailStatus   @default(PENDING)
-  
-  // Timing
-  queuedAt      DateTime      @default(now())
-  sentAt        DateTime?     // When successfully sent
-  deliveredAt   DateTime?     // When delivered (from webhook)
-  openedAt      DateTime?     // When first opened (from webhook)
-  clickedAt     DateTime?     // When first clicked (from webhook)
-  
-  // Error tracking
-  error         String?       // Error message if failed
-  retryCount    Int           @default(0)
-  lastRetryAt   DateTime?
-  
-  // Metadata
-  tags          Json?         // Custom tags for tracking
-  campaign      String?       // Campaign identifier
-  
-  // Relations
-  organizationId Int?
-  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  
-  electionId     Int?
-  election       Election?     @relation(fields: [electionId], references: [id], onDelete: SetNull)
-  
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  
-  // Indexes for performance
-  @@index([toEmail, createdAt])
-  @@index([provider, status, createdAt])
-  @@index([templateId, createdAt])
-  @@index([organizationId, createdAt])
-  @@index([electionId, createdAt])
-  @@index([status, queuedAt])
+// Enhanced role enum
+enum UserRole {
+  VOTER
+  ADMIN
+  SUPER_ADMIN
 }
 
-model EmailSuppression {
-  id            String              @id @default(cuid())
-  email         String              @unique // Suppressed email address
-  reason        SuppressionReason   
-  source        String?             // Where the suppression came from
-  
-  // Timing
-  suppressedAt  DateTime            @default(now())
-  expiresAt     DateTime?           // When suppression expires (null = permanent)
-  
-  // Metadata
-  bounceType    String?             // Hard bounce, soft bounce, etc.
-  complaintType String?             // Spam complaint type
-  metadata      Json?               // Additional provider-specific data
-  
-  // Relations
-  organizationId Int?
-  organization   Organization?       @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  
-  // Indexes
-  @@index([email])
-  @@index([reason, suppressedAt])
-  @@index([organizationId, email])
-  @@index([expiresAt])
+enum AuditResource {
+  ORGANIZATION
+  USER
+  ELECTION
+  CANDIDATE
+  PARTY
+  VOTING_SCOPE
+  VOTER
+  POSITION
+  TICKET
+  // Add other resources as needed
 }
 
-// Email-related enums
-
-enum EmailStatus {
-  PENDING       // Queued for sending
-  SENDING       // Currently being sent
-  SENT          // Successfully sent to provider
-  DELIVERED     // Delivered to recipient
-  OPENED        // Email was opened
-  CLICKED       // Email was clicked
-  BOUNCED       // Bounced back
-  COMPLAINED    // Marked as spam
-  FAILED        // Failed to send
-  SUPPRESSED    // Blocked due to suppression
+// Organization approval status enum
+enum OrganizationStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
-enum SuppressionReason {
-  BOUNCE        // Email bounced
-  COMPLAINT     // Spam complaint
-  UNSUBSCRIBE   // User unsubscribed
-  MANUAL        // Manually added
-  INVALID       // Invalid email address
-  BLOCKED       // Blocked by provider
+// Election status enum
+enum ElectionStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+// Ticket status enum
+enum TicketStatus {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+}
+
+// Audit action enum
+enum AuditAction {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  RESTORE
+  SIGNUP
+  LOGIN
+  LOGOUT
+  VOTE
+  APPROVE
+  REJECT
+  UPLOAD
+}
+
+// Code send status enum
+enum CodeSendStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
 }
