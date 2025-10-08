@@ -13,12 +13,12 @@ export default function ContactPage() {
   }
   return (
     <main className="min-h-screen flex flex-col items-center pt-20">
-      <div className="flex flex-col items-center py-20 gap-4">
+      <div className="flex flex-col items-center pt-20 pb-10 gap-4 px-5 xs:px-20 text-center">
         <p className="text-dmd font-semibold">Get in touch</p>
         <p className="text-xl font-normal text-gray text-center">Our team would love to hear from you.</p>
       </div>
-      <form className="flex flex-col w-full xs:w-[380px] mb-20 px-5 items-center">
-        <div className="flex gap-2">
+      <form className="flex flex-col w-full xs:w-[380px] mb-10 px-5 items-center">
+        <div className="flex justify-between w-full gap-2">
           <InputField placeholder="First name" label="First name" type="text" />
           <InputField placeholder="Last name" label="Last name" type="text" />
         </div>

@@ -8,8 +8,7 @@ import { useRouter } from "next/navigation";
 
 const FAQsPage = () => {
 
-    const router = useRouter(); // to go to another route
-
+  const router = useRouter(); // to go to another route
 
   const faqs = [
     {
@@ -40,7 +39,7 @@ const FAQsPage = () => {
       icon: BarChart3,
       title: "How are results counted and displayed?",
       description:
-        "Votes are tallied automatically in real-time, and results can be viewed through the dashboard.",
+        "Votes are tallied automatically in real-time, and results can be viewed through the live dashboard.",
     },
     {
       icon: WifiOff,
@@ -54,22 +53,22 @@ const FAQsPage = () => {
   return (
     <main className="min-h-screen flex flex-col items-center mt-20">
       {/* about us */}
-      <div className="flex flex-col items-center gap-6 py-20 px-5">
+      <div className="flex flex-col items-center gap-6 py-20 px-5 xs:px-20">
         <div className="text-center">
             <p className="text-md font-semibold text-primary ">FAQs</p>
             <p className="text-dlg font-semibold text-black">Frequently asked questions</p>
         </div>
-        <p className="text-xl font-normal text-gray">Have questions? We&#39;re here to help.</p>
+        <p className="text-xl font-normal text-gray text-center">Have questions? We&#39;re here to help.</p>
       </div>
       {/* faqs */}
-      <div className="flex flex-col items-center gap-16 py-24 px-5">
-        <div className="flex flex-wrap gap-16 justify-center">
+      <div className="flex flex-col items-center gap-16 py-10 px-5 xs:px-20">
+        <div className="flex flex-wrap gap-16 justify-center lg:justify-between">
           {faqs.map((goal, index) => (
             <GoalItem key={index} {...goal} />
           ))}
         </div>
       </div>
-      <div className="flex flex-col items-center gap-16 py-24 px-5 bg-gray-50 w-full">
+      <div className="flex flex-col items-center gap-16 py-10 px-5 xs:px-20 bg-gray-50 w-full">
         <div className="flex flex-col items-center gap-6">
             <div className="flex-shrink-0 p-5 bg-red-100 rounded-full text-primary">
                 <CircleQuestionMark size={24} />
