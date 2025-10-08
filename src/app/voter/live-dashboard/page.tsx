@@ -22,6 +22,7 @@ interface ElectionResults {
   election: {
     id: number;
     name: string;
+    instanceName?: string | null;
     status: string;
     organization: string;
     schedule: {
@@ -279,8 +280,11 @@ const LiveDashboard = () => {
       
       // Generate filename with election name and timestamp
       const timestamp = new Date().toISOString().slice(0, 16).replace('T', '_').replace(/:/g, '-');
-      const electionName = results.election.name || 'Election_Results';
-      const filename = `${electionName.replace(/[^a-zA-Z0-9]/g, '_')}_Results_${timestamp}.pdf`;
+      const baseName = results.election.name || 'Election_Results';
+      const electionName = results.election.instanceName 
+        ? `${baseName}_${results.election.instanceName}`
+        : baseName;
+      const filename = `${electionName.replace(/[^a-zA-Z0-9_]/g, '_')}_Results_${timestamp}.pdf`;
 
       // Create download link and trigger download
       const url = URL.createObjectURL(blob);
@@ -481,7 +485,10 @@ const LiveDashboard = () => {
         <div className="flex items-center rounded-2xl bg-red-800 px-6 py-4 relative overflow-hidden w-full mb-4">
           <div>
             <h2 className="text-white text-xl font-semibold mb-1">
-              {results?.election?.name || "Loading Election..."}
+              {results?.election?.name && results?.election?.instanceName 
+                ? `${results.election.name} - ${results.election.instanceName}`
+                : results?.election?.name || "Loading Election..."
+              }
             </h2>
             <p className="text-white text-sm">
               {results?.election?.organization || "Loading Organization..."}

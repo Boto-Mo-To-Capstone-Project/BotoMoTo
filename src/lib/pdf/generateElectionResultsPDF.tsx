@@ -181,6 +181,7 @@ interface ElectionResults {
   election: {
     id: number;
     name: string;
+    instanceName?: string | null;
     status: string;
     organization: string;
     schedule: {
@@ -196,7 +197,12 @@ const ElectionResultsPDF = ({ results }: { results: ElectionResults }): ReactEle
     <Page size="A4" style={styles.page} wrap>
       {/* Header */}
       <View style={styles.header} fixed>
-        <Text style={styles.title}>{results.election.name}</Text>
+        <Text style={styles.title}>
+          {results.election.name && results.election.instanceName 
+            ? `${results.election.name} - ${results.election.instanceName}`
+            : results.election.name
+          }
+        </Text>
         <Text style={styles.subtitle}>{results.election.organization}</Text>
       </View>
 
@@ -272,7 +278,11 @@ const ElectionResultsPDF = ({ results }: { results: ElectionResults }): ReactEle
  */
 export async function generateElectionResultsPDF(results: ElectionResults): Promise<Buffer> {
   try {
-    console.log('📊 Generating PDF for election:', results.election.name);
+    console.log('📊 Generating PDF for election:', 
+      results.election.instanceName 
+        ? `${results.election.name} - ${results.election.instanceName}`
+        : results.election.name
+    );
     
     const blob = await pdf(<ElectionResultsPDF results={results} />).toBlob();
     
