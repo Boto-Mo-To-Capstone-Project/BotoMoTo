@@ -1,6 +1,5 @@
 import db from "@/lib/db/db";
 import { SessionTracker } from "./sessionTracker";
-import { SystemMetricsLogger } from "./systemMetrics";
 
 /**
  * PerformanceAnalyzer - Calculates KPI metrics from logged performance data
@@ -63,35 +62,7 @@ export class PerformanceAnalyzer {
    */
   static async calculateSystemUptime(startDate: Date, endDate: Date): Promise<KpiMetric> {
     try {
-      // Get system uptime metrics if they exist
-      const uptimeMetrics = await db.systemMetric.findMany({
-        where: {
-          metricType: 'uptime',
-          recordedAt: {
-            gte: startDate,
-            lte: endDate
-          }
-        },
-        orderBy: { recordedAt: 'desc' }
-      });
-
-      if (uptimeMetrics.length > 0) {
-        // Use recorded uptime metrics
-        const currentUptime = uptimeMetrics[0].value;
-        const sparklineData = await this.getSparklineData(
-          'uptime', 
-          7, 
-          (metrics) => metrics.length > 0 ? metrics[0].value : 99
-        );
-        
-        return {
-          value: currentUptime,
-          trend: await this.calculateTrend('uptime', startDate),
-          sparklineData
-        };
-      }
-
-      // Fallback: Calculate uptime based on API response success rate
+      // Calculate uptime based on API response success rate
       const totalRequests = await db.apiLog.count({
         where: {
           createdAt: { gte: startDate, lte: endDate }
@@ -243,33 +214,7 @@ export class PerformanceAnalyzer {
     }
   }
 
-  // Helper methods for trend calculations and sparkline data
-
-  private static async getSparklineData(
-    metricType: string, 
-    days: number,
-    fallbackCalculator: (metrics: any[]) => number
-  ): Promise<number[]> {
-    const data: number[] = [];
-    
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const nextDate = new Date(date);
-      nextDate.setDate(nextDate.getDate() + 1);
-
-      const metrics = await db.systemMetric.findMany({
-        where: {
-          metricType,
-          recordedAt: { gte: date, lt: nextDate }
-        }
-      });
-
-      data.push(fallbackCalculator(metrics));
-    }
-
-    return data;
-  }
+  // Helper methods for trend calculations
 
   private static async getDailyAverageResponseTimes(days: number): Promise<number[]> {
     const data: number[] = [];

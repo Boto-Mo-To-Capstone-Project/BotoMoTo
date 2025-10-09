@@ -108,30 +108,6 @@ export class ApiLogger {
   }
 
   /**
-   * Log a system metric (like uptime, memory usage)
-   * For broader system health tracking
-   */
-  static async logSystemMetric(
-    metricType: string, 
-    value: number, 
-    metadata?: any
-  ): Promise<void> {
-    try {
-      await db.systemMetric.create({
-        data: {
-          id: `metric_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          metricType,
-          value,
-          metadata: metadata || undefined,
-          recordedAt: new Date()
-        }
-      });
-    } catch (error) {
-      console.error('Failed to log system metric:', error);
-    }
-  }
-
-  /**
    * Clean up old logs to prevent database bloat
    * Should be called periodically (daily/weekly)
    */
@@ -144,15 +120,6 @@ export class ApiLogger {
       await db.apiLog.deleteMany({
         where: {
           createdAt: {
-            lt: cutoffDate
-          }
-        }
-      });
-
-      // Clean up old system metrics
-      await db.systemMetric.deleteMany({
-        where: {
-          recordedAt: {
             lt: cutoffDate
           }
         }

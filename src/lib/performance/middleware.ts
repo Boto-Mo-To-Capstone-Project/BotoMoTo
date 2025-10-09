@@ -131,22 +131,6 @@ export async function endSessionTracking(sessionId: string): Promise<void> {
 }
 
 /**
- * Manual performance logging for custom scenarios
- * Use this when you need more control over what gets logged
- */
-export async function logCustomMetric(
-  metricType: string,
-  value: number,
-  metadata?: Record<string, any>
-): Promise<void> {
-  try {
-    await ApiLogger.logSystemMetric(metricType, value, metadata);
-  } catch (error) {
-    console.error('Failed to log custom metric:', error);
-  }
-}
-
-/**
  * Batch logging for multiple API calls
  * Useful for bulk operations to reduce database calls
  */

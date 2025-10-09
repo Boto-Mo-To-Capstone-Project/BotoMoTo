@@ -418,17 +418,6 @@ model UserSession {
   @@index([userId, startedAt])
 }
 
-model SystemMetric {
-  id         String   @id @default(cuid())
-  metricType String   // Type: 'uptime', 'memory_usage', 'cpu_usage', 'disk_space'
-  value      Float    // Metric value (e.g., 99.5 for 99.5% uptime)
-  metadata   Json?    // Additional metric data (optional)
-  recordedAt DateTime @default(now())
-  
-  // Index for time-series queries
-  @@index([metricType, recordedAt])
-}
-
 // Email System Models
 
 model EmailTemplate {

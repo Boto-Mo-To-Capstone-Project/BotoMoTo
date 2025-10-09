@@ -7,7 +7,6 @@ export {
   withLightweightLogging,
   startSessionTracking,
   endSessionTracking,
-  logCustomMetric,
   BatchLogger
 } from './middleware';
 
