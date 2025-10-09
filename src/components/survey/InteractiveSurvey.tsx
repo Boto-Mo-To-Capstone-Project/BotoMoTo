@@ -47,11 +47,11 @@ export default function InteractiveSurvey({ schema, onSubmit, isSubmitting = fal
     const inputClasses = `w-full border rounded px-2 py-1 ${hasError ? 'border-red-500' : 'border-gray-300'}`;
 
     return (
-      <div key={q.id} className="border rounded-lg p-4 bg-white/80">
-        <div className="font-medium">
+      <div key={q.id} className="shadow-sm rounded-lg p-4 bg-gray-50">
+        <div className="font-medium text-lg">
           {q.label} {q.required && <span className="text-red-600">*</span>}
         </div>
-        {q.description && <div className="text-xs text-gray-500 mt-1">{q.description}</div>}
+        {q.description && <div className="text-base text-gray-500 mt-1">{q.description}</div>}
         <div className="mt-2">
           {q.type === "short_text" && (
             <input 
@@ -82,7 +82,7 @@ export default function InteractiveSurvey({ schema, onSubmit, isSubmitting = fal
                     value={option.id}
                     checked={responses[q.id] === option.id}
                     onChange={(e) => handleInputChange(q.id, e.target.value)}
-                    className="cursor-pointer"
+                    className="cursor-pointer h-4 w-4 accent-primary"
                   />
                   <span>{option.label}</span>
                 </label>
@@ -105,7 +105,7 @@ export default function InteractiveSurvey({ schema, onSubmit, isSubmitting = fal
                         handleInputChange(q.id, currentValues.filter((v: string) => v !== option.id));
                       }
                     }}
-                    className="cursor-pointer"
+                    className="cursor-pointer h-4 w-4 accent-primary"
                   />
                   <span>{option.label}</span>
                 </label>
@@ -145,27 +145,27 @@ export default function InteractiveSurvey({ schema, onSubmit, isSubmitting = fal
           )}
           
           {q.type === "linear_scale" && (
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-gray-500">{(q as any).minLabel || "Low"}</span>
-              <div className="flex gap-2">
+            <div className="flex items-center gap-5 justify-start">
+              <span className="text-base text-gray-500">{(q as any).minLabel || "Low"}</span>
+              <div className="flex gap-5">
                 {Array.from({ length: ((q as any).max ?? 5) - ((q as any).min ?? 1) + 1 }).map((_, i) => {
                   const value = (q as any).min + i;
                   return (
-                    <label key={i} className="flex items-center gap-1 text-xs cursor-pointer">
+                    <label key={i} className="flex flex-col items-center text-base cursor-pointer">
                       <input 
                         type="radio" 
                         name={q.id}
                         value={value}
                         checked={responses[q.id] === value}
                         onChange={(e) => handleInputChange(q.id, parseInt(e.target.value))}
-                        className="cursor-pointer"
+                        className="cursor-pointer h-4 w-4 accent-primary"
                       />
                       {value}
                     </label>
                   );
                 })}
               </div>
-              <span className="text-xs text-gray-500">{(q as any).maxLabel || "High"}</span>
+              <span className="text-base text-gray-500">{(q as any).maxLabel || "High"}</span>
             </div>
           )}
         </div>
@@ -176,9 +176,9 @@ export default function InteractiveSurvey({ schema, onSubmit, isSubmitting = fal
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <h2 className="text-xl font-semibold">{schema.title}</h2>
-        {schema.description && <p className="text-sm text-gray-600 mt-1">{schema.description}</p>}
+      <div className="text-center space-y-2 mb-10">
+        <h2 className="voter-election-heading">{schema.title}</h2>
+        {schema.description && <p className="voter-election-desc">{schema.description}</p>}
       </div>
       
       <div className="space-y-4">

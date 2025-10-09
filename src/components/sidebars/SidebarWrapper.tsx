@@ -152,6 +152,12 @@ export default function SidebarWrapper({
       return "Super Admin Audits";
     if (pathname === "/superadmin/dashboard/survey")
       return "Super Admin Survey";
+    if (pathname === "/superadmin/dashboard/create-survey")
+      return "Super Admin Create Survey";
+    if (pathname.startsWith("/superadmin/dashboard/edit-survey"))
+      return "Super Admin Edit Survey";
+    if (pathname.startsWith("/superadmin/dashboard/survey"))
+      return "Super Admin Survey";
     if (pathname === "/superadmin/dashboard/settings")
       return "Super Admin Settings";
     if (pathname === "/superadmin/dashboard/admins")
