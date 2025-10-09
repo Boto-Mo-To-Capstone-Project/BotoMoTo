@@ -1,22 +1,10 @@
-"use client";
+import { Metadata } from 'next'
+import ClientLayout from './client-layout'
 
-import "./globals.css";
-import { Provider } from "react-redux";
-import { store } from "@/store";
-import NavbarWrapper from "@/components/NavbarWrapper";
-import SidebarWrapper from "@/components/sidebars/SidebarWrapper";
-import { useSidebarVisible } from "@/hooks/useSidebarVisible";
-import { useEffect, useState } from "react";
-import { SessionProvider } from "next-auth/react";
-import { Toaster } from "react-hot-toast";
-import usePageTitle from "@/hooks/usePageTitle";
-
-function useIsHydrated() {
-  const [hydrated, setHydrated] = useState(false);
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
-  return hydrated;
+export const metadata: Metadata = {
+  title: 'Boto Mo To - Secure Online Voting System',
+  description: 'Boto Mo To, Boses Mo To! A secure, fast, and reliable online voting system for small organizations.',
+  keywords: ['online voting', 'filipino voters', 'secure voting', 'boto-mo-to', 'boto mo to', 'election system', 'voting platform', 'boto-mo-to.online', 'boto mo to online', 'BotoMoTo'],
 }
 
 export default function RootLayout({
@@ -24,28 +12,9 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const hydrated = useIsHydrated();
-  const sidebarVisibleValue = useSidebarVisible();
-  const sidebarVisible = hydrated ? sidebarVisibleValue : false;
-
-  // ✅ Call your custom hook here
-  usePageTitle();
-
   return (
     <html lang="en">
-      <body suppressHydrationWarning={true}>
-        <Toaster position="top-center" />
-        <SessionProvider>
-          <Provider store={store}>
-            <NavbarWrapper />
-            {sidebarVisible ? (
-              <SidebarWrapper>{children}</SidebarWrapper>
-            ) : (
-              <main>{children}</main>
-            )}
-          </Provider>
-        </SessionProvider>
-      </body>
+      <ClientLayout>{children}</ClientLayout>
     </html>
   );
 }
