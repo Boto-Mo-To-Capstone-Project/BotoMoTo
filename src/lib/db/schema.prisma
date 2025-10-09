@@ -472,6 +472,19 @@ enum UserRole {
   SUPER_ADMIN
 }
 
+enum AuditResource {
+  ORGANIZATION
+  USER
+  ELECTION
+  CANDIDATE
+  PARTY
+  VOTING_SCOPE
+  VOTER
+  POSITION
+  TICKET
+  // Add other resources as needed
+}
+
 // Organization approval status enum
 enum OrganizationStatus {
   PENDING
