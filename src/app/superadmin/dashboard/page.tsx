@@ -18,13 +18,46 @@ export default function SuperadminDashboard() {
   // Loading state
   if (loading) {
     return (
-      <main className="pt-16 px-8">
+      <main className="pt-16 px-8 animate-pulse">
         <div className="flex flex-col items-start gap-8">
           <div>
             <p className="superadmin-heading">Hi, Chief Administrator!</p>
             <p className="superadmin-subheading mt-2">
-              Loading system performance data...
+              Welcome back, Chief Administrator! <br />
+              You now have access to everything you've missed and full visibility
+              of your database.
             </p>
+          </div>
+
+          {/* Time Range Selector */}
+          <div className="flex gap-2 mb-4">
+            <div className="h-10 w-16 bg-gray-300 rounded"></div>
+            <div className="h-10 w-16 bg-gray-300 rounded"></div>
+            <div className="h-10 w-16 bg-gray-300 rounded"></div>
+          </div>
+
+          {/* System Performance KPIs */}
+          <div className="w-full">
+            <div className="h-6 w-64 bg-gray-300 rounded mb-4"></div>
+
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              {/* Simulate KPI cards */}
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col justify-between p-5 bg-gray-200 rounded-2xl shadow-sm h-36"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 bg-gray-300 rounded-full"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-32 bg-gray-300 rounded"></div>
+                      <div className="h-6 w-24 bg-gray-400 rounded"></div>
+                    </div>
+                  </div>
+                  <div className="h-3 w-40 bg-gray-300 rounded mt-3"></div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </main>

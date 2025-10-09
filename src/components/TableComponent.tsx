@@ -471,12 +471,14 @@ export default function Table({
     </div>
 
     {/* Pagination - moved outside the scrollable table wrapper */}
-    <div className="sticky bottom-0 z-20 bg-white flex items-center gap-2 mt-4 h-10">
+    <div className="sticky bottom-0 z-20 bg-white flex items-center mt-4 h-10">
       <button onClick={props.onFirst} disabled={props.page === 1} title="First"><MdFirstPage size={22} /></button>
       <button onClick={props.onPrev} disabled={props.page === 1} title="Prev"><MdChevronLeft size={22} /></button>
-      <span>{props.page}</span>
-      <span>of </span>
-      <span>{props.totalPages}</span>
+      <div className="space-x-1 whitespace-nowrap">
+        <span>{props.page}</span>
+        <span>of </span>
+        <span>{props.totalPages}</span>
+      </div>
       <button onClick={props.onNext} disabled={props.page === props.totalPages} title="Next"><MdChevronRight size={22} /></button>
       <button onClick={props.onLast} disabled={props.page === props.totalPages} title="Last"><MdLastPage size={22} /></button>
       <span className="text-sm text-gray-500 flex items-center gap-1 sm:ml-auto xxs:w-full xxs:mt-1">

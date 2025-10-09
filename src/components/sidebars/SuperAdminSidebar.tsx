@@ -17,6 +17,7 @@ import {
   LogOut,
   Settings,
   FolderKanban,
+  User,
 } from "lucide-react";
 import { useLogout } from "@/hooks/useLogout";
 import { useEffect } from "react";
@@ -54,6 +55,11 @@ const SuperAdminSidebar = ({
       icon: ListChecks,
     },
     {
+      name: "Manage Admins",
+      href: "/superadmin/dashboard/admins",
+      icon: FolderKanban,
+    },
+    {
       name: "Tickets",
       href: "/superadmin/dashboard/tickets",
       icon: BadgeAlert,
@@ -69,14 +75,9 @@ const SuperAdminSidebar = ({
       icon: ClipboardList,
     },
     {
-      name: "Settings",
+      name: "Profile",
       href: "/superadmin/dashboard/settings",
-      icon: Settings,
-    },
-    {
-      name: "Manage Admins",
-      href: "/superadmin/dashboard/admins",
-      icon: FolderKanban,
+      icon: User,
     },
   ];
 

@@ -779,12 +779,15 @@ export default function VoterDashboardPage() {
                 icon={<MdDownload size={20} />}
                 title="Download"
                 onClick={handleDownloadVoters}
-              />
-            {/* Filter toolbar */}
+              />  
+            </div>
+
+            <div className="flex-shrink-0 flex gap-2">
+              {/* Filter toolbar */}
               <FilterToolbar
                 filters={voterFilters}
                 buttonText='Filters'
-              />    
+              />  
             </div>
           </div>
 

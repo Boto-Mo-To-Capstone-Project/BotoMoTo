@@ -30,7 +30,7 @@ const LoginNavbar: React.FC<LoginNavbarProps> = ({ buttons }) => {
   const handleLogout = useLogout();
 
   return (
-    <nav className="fixed top-0 left-0 w-full h-20 bg-white flex justify-between items-center shadow-sm px-4 md:px-15 z-3">
+    <nav className="fixed top-0 left-0 w-full h-20 bg-white flex justify-between items-center shadow-sm px-4 lg:px-15 z-3">
       <div className="flex gap-10 items-center">
         {/* Logo */}
         <Link href="/">
@@ -40,7 +40,7 @@ const LoginNavbar: React.FC<LoginNavbarProps> = ({ buttons }) => {
         </Link>
         {/* Desktop Menu */}
         <div>
-          <ul className="hidden md:flex gap-6 nav-text">
+          <ul className="hidden lg:flex gap-6 nav-text">
             <li>
               <NavLink href="/">Home</NavLink>
             </li>
@@ -61,7 +61,7 @@ const LoginNavbar: React.FC<LoginNavbarProps> = ({ buttons }) => {
       </div>
       {/* Auth & Logout btns */}
 
-      <div className="hidden md:flex space-x-3">
+      <div className="hidden lg:flex space-x-3">
         {buttons === "auth" && (
           <>
             <Button
@@ -86,7 +86,7 @@ const LoginNavbar: React.FC<LoginNavbarProps> = ({ buttons }) => {
       </div>
       {/* Hamburger Icon */}
       <button
-        className="md:hidden text-gray focus:outline-none"
+        className="lg:hidden text-gray focus:outline-none"
         onClick={toggleMenu}
         aria-label="Toggle Menu"
       >
@@ -95,7 +95,7 @@ const LoginNavbar: React.FC<LoginNavbarProps> = ({ buttons }) => {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="absolute top-20 left-0 w-full bg-white shadow-md md:hidden z-3">
+        <div className="absolute top-20 left-0 w-full bg-white shadow-md lg:hidden z-3">
           <ul className="flex flex-col gap-4 p-4 nav-text">
             <li>
               <NavLink href="/">Home</NavLink>

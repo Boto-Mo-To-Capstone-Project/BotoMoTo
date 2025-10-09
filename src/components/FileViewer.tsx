@@ -500,6 +500,13 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
               >
                 <Menu size={18} />
               </button>
+              <button
+                onClick={onClose}
+                className="p-2 text-gray-600 hover:bg-gray-200 rounded"
+                title="Close"
+              >
+                <X size={18} />
+              </button>
 
               {/* Dropdown */}
               {menuOpen && (
@@ -509,13 +516,6 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
                 >
                   <div className="flex items-center gap-2 px-3 py-2">
                     {renderControls()}
-                    <button
-                    onClick={onClose}
-                    className="p-2 text-gray-600 hover:bg-gray-200 rounded"
-                    title="Close"
-                  >
-                      <X size={18} />
-                    </button>
                   </div>
                   
                 </div>
