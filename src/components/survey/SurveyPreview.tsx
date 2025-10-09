@@ -38,18 +38,18 @@ export default function SurveyPreview({ schema, open, onClose }: Props) {
           </div>
           {/* Modal body */}
           <div className="p-4">
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-base text-gray-500 mb-4">
                 Preview how your survey will appear to respondents.
               </p>
 
             <div className="space-y-4">
               <div>
-                <h2 className="text-xl font-semibold">{schema.title}</h2>
-                {schema.description && <p className="text-sm text-gray-600">{schema.description}</p>}
+                <h2 className="text-2xl font-semibold">{schema.title}</h2>
+                {schema.description && <p className="text-base text-gray-600">{schema.description}</p>}
               </div>
               <div className="space-y-4">
                 {schema.questions.map((q: Question) => (
-                  <div key={q.id} className="border rounded-lg p-4 bg-white/80">
+                  <div key={q.id} className="border-2 border-gray-200 rounded-lg p-4 bg-white/80">
                     <div className="font-medium">
                       {q.label} {q.required && <span className="text-red-600">*</span>}
                     </div>

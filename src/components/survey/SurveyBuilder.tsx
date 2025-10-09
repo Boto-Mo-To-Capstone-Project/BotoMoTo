@@ -6,7 +6,8 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { SortableContext, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import type { FormSchema, Question, QuestionType } from "@/types/survey";
 import { SubmitButton } from "@/components/SubmitButton";
-import { MdAdd, MdVisibility, MdSave, MdPublish } from "react-icons/md";
+import { MdAdd, MdVisibility, MdSave, MdPublish, MdArrowBack } from "react-icons/md";
+import { useRouter } from "next/navigation";
 
 const DEFAULT_SCHEMA: FormSchema = { title: "Untitled Survey", description: "", questions: [] };
 
@@ -34,6 +35,7 @@ type Props = {
 };
 
 export default function SurveyBuilder({ initial, onSave, onPublish, onPreview }: Props) {
+  const router = useRouter();
   const [schema, setSchema] = useState<FormSchema>(initial || DEFAULT_SCHEMA);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const [typeToAdd, setTypeToAdd] = useState<QuestionType>("short_text");
@@ -78,12 +80,12 @@ export default function SurveyBuilder({ initial, onSave, onPublish, onPreview }:
   return (
     <div className="space-y-4">
       {/* Toolbar (Admin Elections style) */}
-      <div className="main-toolbar sticky top-0 z-30 bg-white flex flex-col md:flex-row md:items-center md:gap-4 gap-2 py-3 px-2 sm:px-5 border rounded-lg">
+      <div className="shadow-sm  bg-secondary flex justify-between px-4 py-4 flex-wrap gap-2 rounded-lg">
         {/* Question type dropdown + Add */}
-        <div className="flex-shrink-0 flex items-center gap-2">
-          <label className="text-sm text-gray-600">Question type</label>
+        <div className="flex items-center gap-2 flex-wrap">
+          <label className="text-lg text-gray">Question type</label>
           <select
-            className="h-[44px] md:h-10 rounded-md border border-gray-300 bg-white px-3 text-sm"
+            className="px-5 py-3 rounded-md border border-gray-200 bg-white px-3 text-sm"
             value={typeToAdd}
             onChange={(e) => setTypeToAdd(e.target.value as QuestionType)}
           >
@@ -102,11 +104,8 @@ export default function SurveyBuilder({ initial, onSave, onPublish, onPreview }:
           />
         </div>
 
-        {/* Spacer */}
-        <div className="flex-1" />
-
         {/* Actions */}
-        <div className="flex-shrink-0 flex gap-2">
+        <div className="flex gap-2">
           <SubmitButton
             label=""
             variant="action"
@@ -130,19 +129,24 @@ export default function SurveyBuilder({ initial, onSave, onPublish, onPreview }:
               onClick={() => onPublish?.(schema)}
             />
           )}
+          <SubmitButton
+            label="Back"
+            variant="action"
+            onClick={() => router.push("/superadmin/dashboard/survey")}
+          />
         </div>
       </div>
 
       {/* Canvas: Survey meta */}
-      <div className="border rounded-lg bg-white p-4">
+      <div className="bg-white text-black shadow-sm rounded-lg p-4">
         <input
-          className="w-full text-xl font-semibold outline-none mb-1"
+          className="w-full text-dsm outline-none mb-2 border-2 border-gray-200 rounded-lg px-2"
           value={schema.title}
           onChange={e => setSchema(s => ({ ...s, title: e.target.value }))}
           placeholder="Survey title"
         />
         <textarea
-          className="w-full text-sm outline-none resize-none"
+          className="w-full text-base outline-none resize-none border-2 border-gray-200 rounded-lg px-2"
           rows={2}
           value={schema.description || ""}
           onChange={e => setSchema(s => ({ ...s, description: e.target.value }))}
@@ -155,22 +159,22 @@ export default function SurveyBuilder({ initial, onSave, onPublish, onPreview }:
         <SortableContext items={schema.questions.map(q => q.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-3">
             {schema.questions.map(q => (
-              <div key={q.id} id={q.id} className="border rounded-lg bg-white p-4">
+              <div key={q.id} id={q.id} className="shadow-sm rounded-lg bg-white p-4">
                 <div className="flex justify-between items-center mb-2">
-                  <div className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 capitalize">{q.type.replace("_", " ")}</div>
-                  <div className="space-x-2">
-                    <button className="text-xs px-2 py-1 rounded border" onClick={() => duplicateQuestion(q.id)}>Duplicate</button>
-                    <button className="text-xs px-2 py-1 rounded border" onClick={() => removeQuestion(q.id)}>Remove</button>
+                  <div className="text-sm px-3 py-1 rounded-full bg-secondary text-black capitalize">{q.type.replace("_", " ")}</div>
+                  <div className="space-x-2 flex">
+                    <SubmitButton variant="action" label="Duplicate" onClick={() => duplicateQuestion(q.id)}></SubmitButton>
+                    <SubmitButton variant="action-primary" label="Remove" onClick={() => removeQuestion(q.id)}></SubmitButton>
                   </div>
                 </div>
                 <input
-                  className="w-full font-medium outline-none"
+                  className="w-full font-medium text-lg outline-none border-2 border-gray-200 rounded-lg px-2"
                   value={q.label}
                   onChange={e => updateQuestion(q.id, { label: e.target.value })}
                   placeholder="Question"
                 />
                 <input
-                  className="w-full text-sm outline-none mt-1"
+                  className="w-full text-base outline-none mt-1 border-2 border-gray-200 rounded-lg px-2"
                   value={q.description || ""}
                   onChange={e => updateQuestion(q.id, { description: e.target.value })}
                   placeholder="Description (optional)"
@@ -182,7 +186,7 @@ export default function SurveyBuilder({ initial, onSave, onPublish, onPreview }:
                       <div key={opt.id} className="flex items-center gap-2">
                         <span className="text-xs text-gray-400">{idx + 1}.</span>
                         <input
-                          className="flex-1 text-sm outline-none border rounded px-2 py-1"
+                          className="flex-1 text-base outline-none rounded px-2 py-2 border-2 border-gray-200 rounded-lg px-2"
                           value={opt.label}
                           onChange={e => {
                             const options = [...(q as any).options];
@@ -191,33 +195,32 @@ export default function SurveyBuilder({ initial, onSave, onPublish, onPreview }:
                           }}
                           placeholder={`Option ${idx + 1}`}
                         />
-                        <button
-                          className="text-xs px-2 py-1 rounded border"
+                        <SubmitButton
+                          variant="action-primary"
                           onClick={() => {
                             const options = (q as any).options.filter((o: any) => o.id !== opt.id);
                             updateQuestion(q.id, { ...(q as any), options } as any);
                           }}
-                        >
-                          Remove
-                        </button>
+                          label="Remove"
+                        />
+
                       </div>
                     ))}
-                    <button
-                      className="text-xs px-2 py-1 rounded border"
+                    <SubmitButton
+                      label="Add Option"
+                      variant="action"
                       onClick={() => {
                         const options = [ ...(q as any).options, { id: nanoid(), label: `Option ${(q as any).options.length + 1}` } ];
                         updateQuestion(q.id, { ...(q as any), options } as any);
                       }}
-                    >
-                      Add option
-                    </button>
+                    />
                   </div>
                 )}
 
                 {q.type === "linear_scale" && (
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <input
-                      className="text-sm outline-none border rounded px-2 py-1"
+                      className="text-base outline-none border-2 border-gray-200 rounded-lg px-2 py-1"
                       type="number"
                       min={1}
                       max={10}
@@ -225,7 +228,7 @@ export default function SurveyBuilder({ initial, onSave, onPublish, onPreview }:
                       onChange={e => updateQuestion(q.id, { ...(q as any), min: Number(e.target.value) } as any)}
                     />
                     <input
-                      className="text-sm outline-none border rounded px-2 py-1"
+                      className="text-base outline-none border-2 border-gray-200 rounded-lg px-2 py-1"
                       type="number"
                       min={1}
                       max={10}
@@ -233,13 +236,13 @@ export default function SurveyBuilder({ initial, onSave, onPublish, onPreview }:
                       onChange={e => updateQuestion(q.id, { ...(q as any), max: Number(e.target.value) } as any)}
                     />
                     <input
-                      className="text-sm outline-none border rounded px-2 py-1"
+                      className="text-base outline-none border-2 border-gray-200 rounded-lg px-2 py-1"
                       placeholder="Min label"
                       value={(q as any).minLabel ?? ""}
                       onChange={e => updateQuestion(q.id, { ...(q as any), minLabel: e.target.value } as any)}
                     />
                     <input
-                      className="text-sm outline-none border rounded px-2 py-1"
+                      className="text-base outline-none border-2 border-gray-200 rounded-lg px-2 py-1"
                       placeholder="Max label"
                       value={(q as any).maxLabel ?? ""}
                       onChange={e => updateQuestion(q.id, { ...(q as any), maxLabel: e.target.value } as any)}
@@ -248,8 +251,8 @@ export default function SurveyBuilder({ initial, onSave, onPublish, onPreview }:
                 )}
 
                 <div className="mt-3 flex items-center gap-2">
-                  <label className="text-sm">Required</label>
-                  <input type="checkbox" checked={!!q.required} onChange={() => updateQuestion(q.id, { required: !q.required })} />
+                  <label className="text-base">Required</label>
+                  <input type="checkbox" className="accent-primary" checked={!!q.required} onChange={() => updateQuestion(q.id, { required: !q.required })} />
                 </div>
               </div>
             ))}
