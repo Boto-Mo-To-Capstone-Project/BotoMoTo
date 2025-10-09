@@ -220,7 +220,7 @@ export const ElectionForm = forwardRef<ElectionFormHandle, ElectionFormProps>(
 
             {/* Date fields - required for all elections */}
             <InputField
-              label="Date Time (Begin)*"
+              label="Date Time (Start)*"
               type="datetime-local"
               value={electionData.startDate}
               onChange={(e) =>
@@ -244,7 +244,7 @@ export const ElectionForm = forwardRef<ElectionFormHandle, ElectionFormProps>(
             {showInstanceFields && (
               <>
                 <InputField
-                  label={isTemplate ? "First Instance Year*" : "Instance Year*"}
+                  label={isTemplate ? "First Instance Year*" : "Recurrence Year*"}
                   type="number"
                   value={electionData.instanceYear || ""}
                   onChange={(e) =>
@@ -256,7 +256,7 @@ export const ElectionForm = forwardRef<ElectionFormHandle, ElectionFormProps>(
                   max={new Date().getFullYear() + 10}
                 />
                 <InputField
-                  label={isTemplate ? "First Instance Name*" : "Instance Name*"}
+                  label={isTemplate ? "First Instance Name*" : "Recurrence Name*"}
                   type="text"
                   value={electionData.instanceName || ""}
                   onChange={(e) =>

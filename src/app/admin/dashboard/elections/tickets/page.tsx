@@ -7,6 +7,8 @@ import TicketChatModal from "@/components/TicketChatModal";
 import CreateTicketModal from "@/components/CreateTicketModal";
 import Button from "@/components/Button";
 import { toSentenceCase } from "@/hooks/useSentenceCase";
+import { SubmitButton } from "@/components/SubmitButton";
+import { MdAdd } from "react-icons/md";
 
 export default function AdminTicketsPage() {
   const [tickets, setTickets] = useState<any[]>([]);
@@ -78,13 +80,13 @@ export default function AdminTicketsPage() {
     ...row,
     Actions: (
       <button
-        className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+        className="px-4 py-2 bg-red-800 text-white rounded-lg hover:bg-red-900 transition-colors duration-200 font-medium"
         onClick={() => {
           setSelectedTicket(row._original);
           setModalOpen(true);
         }}
       >
-        View
+        View Details
       </button>
     ),
   });
@@ -92,22 +94,9 @@ export default function AdminTicketsPage() {
   const activeTableData = ongoingTickets.map((r) => buildRow(r));
   const historyTableData = historyTickets.map((r) => buildRow(r));
 
-  // NEW: Pagination state for Active Ticket table
-  const [activePage, setActivePage] = useState(1);
-  const [activePageSize, setActivePageSize] = useState(3);
-  const activeTotalPages = Math.max(1, Math.ceil(activeTableData.length / activePageSize));
-  const activeFirst = () => setActivePage(1);
-  const activePrev = () => setActivePage((p) => Math.max(1, p - 1));
-  const activeNext = () => setActivePage((p) => Math.min(activeTotalPages, p + 1));
-  const activeLast = () => setActivePage(activeTotalPages);
-  const activePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setActivePageSize(Number(e.target.value));
-    setActivePage(1);
-  };
-
-  // NEW: Pagination state for Ticket History table
+  // Pagination state for Ticket History table
   const [historyPage, setHistoryPage] = useState(1);
-  const [historyPageSize, setHistoryPageSize] = useState(3);
+  const [historyPageSize, setHistoryPageSize] = useState(5);
   const historyTotalPages = Math.max(1, Math.ceil(historyTableData.length / historyPageSize));
   const historyFirst = () => setHistoryPage(1);
   const historyPrev = () => setHistoryPage((p) => Math.max(1, p - 1));
@@ -119,81 +108,154 @@ export default function AdminTicketsPage() {
   };
 
   const displayMap: Record<string, string> = {
-      IN_PROGRESS: "IN PROGRESS",
-      IS_DONE: "IS DONE",
-      // add more mappings here...
-    };
+    IN_PROGRESS: "IN PROGRESS",
+    IS_DONE: "IS DONE",
+    PENDING: "PENDING",
+    RESOLVED: "RESOLVED"
+  };
+
+  const getStatusBadge = (status: string) => {
+    const upperStatus = status.toUpperCase();
+    if (upperStatus === "PENDING") {
+      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    } else if (upperStatus === "IN_PROGRESS") {
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    } else if (upperStatus === "RESOLVED") {
+      return "bg-green-100 text-green-800 border-green-200";
+    }
+    return "bg-gray-100 text-gray-800 border-gray-200";
+  };
 
   return (
     <>
-      {/*<Toaster position="top-center" />*/}
-      <div className="app h-full flex flex-col min-h-[calc-100vh-4rem] bg-gray-50">
-        <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
-          <div className="flex items-center justify-between mb-4">
-            <div />
-            <Button
+    <div className="app h-full flex flex-col min-h-[calc(100vh-4rem)] bg-gray-50">
+      <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
+        {/* Toolbar */}
+        <div className="main-toolbar sticky top-16 z-30 bg-white flex flex-col md:flex-row md:items-center md:gap-4 gap-2 mb-6 py-3 px-2 sm:px-5">
+          <div className="flex-1 flex justify-end gap-2">
+            <SubmitButton
+              label="Create New Ticket"
+              variant="action-primary"
+              icon={<MdAdd size={20} className="fill-current" />}
+              title="Create Ticket"
+              className="min-w-[150px]"
               onClick={handleCreateTicket}
-              className="mr-3 mt-4"
-            >
-              Create Ticket
-            </Button>
+            />
           </div>
+        </div>
 
-          {/* Active Ticket (above) */}
-          <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-3 mb-6">
+
+          {/* Active Ticket Section */}
+          <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-3 mb-8">
             {loading ? (
-              <div>Loading...</div>
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-800"></div>
+              </div>
             ) : ongoingTickets.length === 0 ? (
-              <div className="text-gray text-lg">No active ticket</div>
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 rounded-2xl p-12 text-center">
+                <div className="flex flex-col items-center">
+                  <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">No Active Tickets</h3>
+                  <p className="text-gray-500">You don't have any active support tickets at the moment</p>
+                </div>
+              </div>
             ) : (
-              <div className="w-full p-4 shadow rounded-xl mt-5">
-                <p className="text-lg font-semibold mb-2 text-green-700">Active Ticket</p>
-                <div className="flex flex-col gap-4">
-                  <p>
-                    <span className="font-semibold">Organization:</span>{" "}
-                    {ongoingTickets[0].Organization_Name}
-                  </p>
-                  <p>
-                    <span className="font-semibold">Ticket:</span>{" "}
-                    {ongoingTickets[0].Ticket}
-                  </p>
-                  <p>
-                    <span className="font-semibold">Status:</span>{" "}
-                    {toSentenceCase(displayMap[ongoingTickets[0].Status] ?? ongoingTickets[0].Status) }
-                  </p>
-                  <div className="mt-2">
-                    <Button  
-                      className="w-full"         
-                      onClick={() => {
-                        setSelectedTicket(ongoingTickets[0]._original);
-                        setModalOpen(true);
-                      }}
-                    >
-                      View
-                    </Button>
-                  </div>         
+              <div className="bg-gradient-to-br from-white to-gray-50 border-2 border-green-200 rounded-2xl shadow-lg overflow-hidden">
+                <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h2 className="text-lg font-semibold text-white">Active Ticket</h2>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 mt-1">
+                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-500 font-medium">Organization</p>
+                        <p className="text-gray-800 font-semibold text-medium">{ongoingTickets[0].Organization_Name}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 mt-1">
+                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-500 font-medium">Ticket Subject</p>
+                        <p className="text-gray-800 font-semibold">{ongoingTickets[0].Ticket}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 mt-1">
+                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-500 font-medium mb-2">Status</p>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold border ${getStatusBadge(ongoingTickets[0].Status)}`}>
+                          {toSentenceCase(displayMap[ongoingTickets[0].Status] ?? ongoingTickets[0].Status)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 pt-4 border-t border-gray-200">
+                      <Button  
+                        className="w-full bg-red-800 hover:bg-red-900 text-white py-3 rounded-lg font-semibold transition-all duration-200 shadow-md"         
+                        onClick={() => {
+                          setSelectedTicket(ongoingTickets[0]._original);
+                          setModalOpen(true);
+                        }}
+                      >
+                        View Full Details
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Ticket History (resolved) */}
+          {/* Ticket History Section */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-3">
-            <Table
-              loading={loading}
-              title="Ticket History"
-              columns={["Organization_Name", "Ticket", "Status", "Actions"]}
-              data={Array.isArray(historyTableData) ? historyTableData : []}
-              // required pagination props
-              page={historyPage}
-              totalPages={historyTotalPages}
-              onFirst={historyFirst}
-              onPrev={historyPrev}
-              onNext={historyNext}
-              onLast={historyLast}
-              pageSize={historyPageSize}
-              onPageSizeChange={historyPageSizeChange}
-            />
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <h2 className="text-lg font-semibold text-gray-800">Ticket History</h2>
+                </div>
+              </div>
+              <div className="p-4">
+                <Table
+                  loading={loading}
+                  title=""
+                  columns={["Organization_Name", "Ticket", "Status", "Actions"]}
+                  data={Array.isArray(historyTableData) ? historyTableData : []}
+                  page={historyPage}
+                  totalPages={historyTotalPages}
+                  onFirst={historyFirst}
+                  onPrev={historyPrev}
+                  onNext={historyNext}
+                  onLast={historyLast}
+                  pageSize={historyPageSize}
+                  onPageSizeChange={historyPageSizeChange}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>

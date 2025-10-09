@@ -6,6 +6,7 @@ import DashboardLineChart from "@/components/DashboardLineChart";
 interface DashboardStats {
   summary: {
     totalVoters: number;
+    activeVoters: number;
     ongoingElections: number;
     draftElections: number;
     completedElections: number;
@@ -64,8 +65,8 @@ export default function VoterDashboardPage() {
               </div>
 
               {/* Summary cards skeleton */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                {[...Array(4)].map((_, i) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+                {[...Array(5)].map((_, i) => (
                   <div key={i} className="h-32 bg-gray-200 rounded-2xl"></div>
                 ))}
               </div>
@@ -150,6 +151,15 @@ export default function VoterDashboardPage() {
       changeText: ""
     },
     {
+      title: "Active Voters",
+      value: stats.summary.activeVoters?.toLocaleString() || "0",
+      change: "",
+      sub: "",
+      bg: "bg-purple-100",
+      text: "text-purple-900",
+      changeText: ""
+    },
+    {
       title: "Average Turnout",
       value: `${stats.summary.voterTurnout}%`,
       change: "",
@@ -220,7 +230,7 @@ export default function VoterDashboardPage() {
               </div>
 
               {/* Summary Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 w-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8 w-full">
                 {summaryCards.map((card, idx) => (
                   <div key={idx} className={`rounded-2xl shadow-sm p-4 ${card.bg} ${card.text} flex flex-col items-start min-w-0 w-full`}>
                     <div className="text-3xl font-bold mb-1">{card.value}</div>
