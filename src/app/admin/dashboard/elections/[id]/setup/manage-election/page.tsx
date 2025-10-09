@@ -4,9 +4,9 @@ import { SubmitButton } from '@/components/SubmitButton';
 import BallotPreview from "@/app/assets/BallotPreview.png";
 import Email from "@/app/assets/Email.png";
 import Setup from "@/app/assets/Setup.png";
-import OpenElection from "@/app/assets/OpenElection.png";
-import LiveDashboard from "@/app/assets/LiveDashboard.png";
-import Integrity from "@/app/assets/Integrity.png";
+import Open from "@/app/assets/Open.png";
+import Live from "@/app/assets/Live.png";
+import ElecInteg from "@/app/assets/ElecInteg.png";
 
 import { useState, useEffect } from "react";
 import { MFAModal } from '@/components/MFAModal';
@@ -22,44 +22,43 @@ const setupCards = [
       title: "Ballot Preview",
       desc: "Preview the ballot to be used for the election.",
       img: BallotPreview,
-      bg: "bg-pink-100",
-      text: "text-pink-900",
+      bg: "bg-gray-50",
+      text: "text-gray-800",
     },
     {
       title: "Sending of Emails",
       desc: "Setup the email configurations to be sent to voters.",
       img: Email,
-      bg: "bg-yellow-100",
-      text: "text-yellow-900",
+      bg: "bg-gray-50",
+      text: "text-gray-800",
     },
     {
       title: "MFA",
       desc: "Choose a multi-factor authentication method for voters.",
       img: Setup,
-      bg: "bg-violet-100",
-      text: "text-violet-900",
+      bg: "bg-gray-50",
+      text: "text-gray-800",
     },
     {
       title: "Open Election",
       desc: "Start the voting for the election.",
-      img: OpenElection,
-      bg: "bg-blue-100",
-      text: "text-blue-900",
+      img: Open,
+      bg: "bg-gray-50",
+      text: "text-gray-800",
     },
     {
       title: "Live Dashboard",
       desc: "Monitor the real-time updates of election voting.",
-      img: LiveDashboard,
-      bg: "bg-green-100",
-      text: "text-green-900",
+      img: Live,
+      bg: "bg-gray-50",
+      text: "text-gray-800",
     },
     {
       title: "Election Integrity",
       desc: "Verify the integrity of your election process.",
-      img: Integrity,
-      bg: "bg-blue-200",
-      text: "text-blue-900",
-      hover: "hover:border-blue-900",
+      img: ElecInteg,
+      bg: "bg-gray-50",
+      text: "text-gray-800",
     },
 
 ];
@@ -199,13 +198,7 @@ export default function ManageElectionPage() {
                     key={idx}
                     className={`
               ${card.bg} rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200 p-2
-              border-4 border-transparent
-              ${idx === 0 ? "hover:border-red-700" : ""}
-              ${idx === 1 ? "hover:border-yellow-700" : ""}
-              ${idx === 2 ? "hover:border-purple-700" : ""}
-              ${idx === 3 ? "hover:border-blue-700" : ""}
-              ${idx === 4 ? "hover:border-green-700" : ""}
-              ${idx === 5 ? "hover:border-blue-900" : ""}
+              border-4 border-transparent hover:border-red-900
                 flex flex-col items-center text-left w-full h-60 lg:h-auto
             `}
                     onClick={() => {

@@ -17,29 +17,29 @@ const setupCards = [
     title: "Add Voter",
     desc: "Add voters to the election or use the import button for batch upload.",
     img: Voter,
-    bg: "bg-violet-100",
-    text: "text-violet-900",
+    bg: "bg-gray-50",
+    text: "text-gray-800",
   },
   {
     title: "Add Position",
     desc: "Define the election positions (e.g. President, Secretary).",
     img: Position,
-    bg: "bg-pink-100",
-    text: "text-pink-900",
+    bg: "bg-gray-50",
+    text: "text-gray-800",
   },
   {
     title: "Add Candidate",
     desc: "Manage the candidates running for each position.",
     img: Candidate,
-    bg: "bg-yellow-100",
-    text: "text-yellow-900",
+    bg: "bg-gray-50",
+    text: "text-gray-800",
   },
   {
     title: "Manage Election",
     desc: "Setup the election configurations.",
     img: ElectionStatus,
-    bg: "bg-green-100",
-    text: "text-green-900",
+    bg: "bg-gray-50",
+    text: "text-gray-800",
   },
 ];
 
@@ -83,17 +83,7 @@ export default function ElectionSetupOverview() {
                   <li>Click "Add Voter" to add voters to the election.</li>
                   <li>Click "Add Position" to manage the positions that the candidates will run for in the election.</li>
                   <li>Click "Add Candidate" to add candidates, input their details, and assign them to specific positions.</li>
-                  <li>
-                    <span className="flex items-center gap-2">
-                      Note: Import button can be used for easy batch upload.
-                      <SubmitButton
-                        label=""
-                        variant="action"
-                        icon={<MdFileUpload size={20} />}
-                        title="Import"
-                      />
-                    </span>
-                  </li>
+                  <li>Note: Import button can be used for easy batch upload.</li>
                 </ol>
               </div>
             )}
@@ -105,11 +95,7 @@ export default function ElectionSetupOverview() {
                     key={idx}
                     className={`
               ${card.bg} rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200 p-2
-              border-4 border-transparent
-              ${idx === 0 ? "hover:border-violet-700" : ""}
-              ${idx === 1 ? "hover:border-pink-700" : ""}
-              ${idx === 2 ? "hover:border-yellow-700" : ""}
-              ${idx === 3 ? "hover:border-green-700" : ""}
+              border-4 border-transparent hover:border-red-900
               flex flex-col items-center text-center h-full
             `}
                     onClick={() => {
