@@ -5,14 +5,11 @@ export { PerformanceAnalyzer } from './analyzer';
 export { 
   withPerformanceLogging, 
   withLightweightLogging,
-  startSessionTracking,
-  endSessionTracking,
-  logCustomMetric,
   BatchLogger
 } from './middleware';
 
 // Export types
-export type { ApiLogData, SessionData } from './apiLogger';
+export type { ApiLogData } from './apiLogger';
 export type { KpiMetric, SystemPerformanceKpis } from './analyzer';
 
 // Export convenience functions

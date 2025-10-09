@@ -26,7 +26,6 @@ model User {
   
   accounts      Account[]
   sessions      Session[]
-  userSessions  UserSession[] // For performance tracking
  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -402,35 +401,7 @@ model ApiLog {
   @@index([statusCode, createdAt])
 }
 
-model UserSession {
-  id        String    @id @default(cuid())
-  userId    String    // User who started the session
-  startedAt DateTime  @default(now())
-  endedAt   DateTime? // When session ended (null = still active)
-  ipAddress String    // Session IP address
-  userAgent String?   // Browser/device info
-  
-  // Relation to user for data consistency
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Indexes for concurrent user calculations
-  @@index([startedAt, endedAt])
-  @@index([userId, startedAt])
-}
-
-model SystemMetric {
-  id         String   @id @default(cuid())
-  metricType String   // Type: 'uptime', 'memory_usage', 'cpu_usage', 'disk_space'
-  value      Float    // Metric value (e.g., 99.5 for 99.5% uptime)
-  metadata   Json?    // Additional metric data (optional)
-  recordedAt DateTime @default(now())
-  
-  // Index for time-series queries
-  @@index([metricType, recordedAt])
-}
-
 // Email System Models
-
 model EmailTemplate {
   id             String    @id @default(cuid())
   
