@@ -100,37 +100,6 @@ export function withLightweightLogging(handler: ApiHandler): ApiHandler {
 }
 
 /**
- * Session tracking helper for login/logout events
- * Call this when users log in to start session tracking
- */
-export async function startSessionTracking(request: NextRequest, userId: string): Promise<string | null> {
-  try {
-    const ipAddress = extractIpAddress(request);
-    const userAgent = request.headers.get('user-agent') || undefined;
-
-    return await ApiLogger.startUserSession({
-      userId,
-      ipAddress,
-      userAgent
-    });
-  } catch (error) {
-    console.error('Failed to start session tracking:', error);
-    return null;
-  }
-}
-
-/**
- * End session tracking helper for logout events
- */
-export async function endSessionTracking(sessionId: string): Promise<void> {
-  try {
-    await ApiLogger.endUserSession(sessionId);
-  } catch (error) {
-    console.error('Failed to end session tracking:', error);
-  }
-}
-
-/**
  * Batch logging for multiple API calls
  * Useful for bulk operations to reduce database calls
  */
@@ -189,24 +158,4 @@ export class BatchLogger {
   size(): number {
     return this.logs.length;
   }
-}
-
-// Helper function for IP extraction (reused from ApiLogger)
-function extractIpAddress(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) {
-    return forwarded.split(',')[0].trim();
-  }
-
-  const realIp = request.headers.get('x-real-ip');
-  if (realIp) {
-    return realIp;
-  }
-
-  const cfConnectingIp = request.headers.get('cf-connecting-ip');
-  if (cfConnectingIp) {
-    return cfConnectingIp;
-  }
-
-  return 'unknown';
 }

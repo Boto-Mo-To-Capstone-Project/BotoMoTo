@@ -13,12 +13,6 @@ interface ApiLogData {
   error?: string;
 }
 
-interface SessionData {
-  userId: string;
-  ipAddress: string;
-  userAgent?: string;
-}
-
 /**
  * ApiLogger - Handles all performance logging for analytics
  * 
@@ -70,44 +64,6 @@ export class ApiLogger {
   }
 
   /**
-   * Start tracking a user session
-   * Called when user logs in or starts using the system
-   */
-  static async startUserSession(sessionData: SessionData): Promise<string | null> {
-    try {
-      const session = await db.userSession.create({
-        data: {
-          id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          userId: sessionData.userId,
-          startedAt: new Date(),
-          ipAddress: sessionData.ipAddress,
-          userAgent: sessionData.userAgent,
-        }
-      });
-
-      return session.id;
-    } catch (error) {
-      console.error('Failed to start user session:', error);
-      return null;
-    }
-  }
-
-  /**
-   * End tracking a user session
-   * Called when user logs out or session expires
-   */
-  static async endUserSession(sessionId: string): Promise<void> {
-    try {
-      await db.userSession.update({
-        where: { id: sessionId },
-        data: { endedAt: new Date() }
-      });
-    } catch (error) {
-      console.error('Failed to end user session:', error);
-    }
-  }
-
-  /**
    * Clean up old logs to prevent database bloat
    * Should be called periodically (daily/weekly)
    */
@@ -126,10 +82,9 @@ export class ApiLogger {
       });
 
       // Clean up old completed sessions
-      await db.userSession.deleteMany({
+      await db.session.deleteMany({
         where: {
-          endedAt: {
-            not: null,
+          expires: {
             lt: cutoffDate
           }
         }
@@ -223,4 +178,4 @@ export class ApiLogger {
 }
 
 // Export types for use in other files
-export type { ApiLogData, SessionData };
+export type { ApiLogData };
