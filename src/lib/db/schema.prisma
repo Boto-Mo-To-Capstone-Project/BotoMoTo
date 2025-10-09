@@ -93,7 +93,6 @@ model Organization {
   isDeleted     Boolean              @default(false)
 
   admin          User                @relation(fields: [adminId], references: [id])
-  // contactDetails OrgContactDetails[]
   elections      Election[]
   tickets        Ticket[]
   emailTemplates EmailTemplate[]
