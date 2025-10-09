@@ -30,9 +30,13 @@ export async function GET(
         // Allow results for both active and closed elections
         status: { in: [ELECTION_STATUS.ACTIVE, ELECTION_STATUS.CLOSED] }
       },
-      include: {
-        organization: { 
-          select: { id: true, name: true } 
+      select: {
+        id: true,
+        name: true,
+        instanceName: true,
+        status: true,
+        organization: {
+          select: { id: true, name: true }
         },
         schedule: true
       }
@@ -177,6 +181,7 @@ export async function GET(
       election: {
         id: election.id,
         name: election.name,
+        instanceName: election.instanceName,
         status: election.status,
         organization: election.organization.name,
         schedule: election.schedule

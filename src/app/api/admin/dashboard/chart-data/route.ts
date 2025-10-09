@@ -128,14 +128,14 @@ export async function GET(request: NextRequest) {
           if (template.instanceYear === year && template.status === ELECTION_STATUS.CLOSED) {
             const totalVoters = template.voters.length;
             const votersWithResponses = template.voters.filter(v => v.voteResponses.length > 0).length;
-            turnout = totalVoters > 0 ? Math.round((votersWithResponses / totalVoters) * 100) : 0;
+            turnout = totalVoters > 0 ? Number(((votersWithResponses / totalVoters) * 100).toFixed(2)) : 0;
           } else {
             // Check instances for this year
             const instance = template.instances.find(i => i.instanceYear === year);
             if (instance) {
               const totalVoters = instance.voters.length;
               const votersWithResponses = instance.voters.filter(v => v.voteResponses.length > 0).length;
-              turnout = totalVoters > 0 ? Math.round((votersWithResponses / totalVoters) * 100) : 0;
+              turnout = totalVoters > 0 ? Number(((votersWithResponses / totalVoters) * 100).toFixed(2)) : 0;
             }
           }
 

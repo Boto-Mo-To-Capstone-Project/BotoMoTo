@@ -69,25 +69,8 @@ export async function GET(request: NextRequest) {
               return acc;
             }, {} as Record<string, number>);
 
-            // Get recent email logs for this election
-            const recentLogs = await db.emailLog.findMany({
-              where: {
-                electionId: parseInt(electionId),
-                createdAt: {
-                  gte: new Date(Date.now() - 5 * 60 * 1000) // Last 5 minutes
-                }
-              },
-              orderBy: { createdAt: 'desc' },
-              take: 10,
-              select: {
-                id: true,
-                toEmail: true,
-                status: true,
-                createdAt: true,
-                sentAt: true,
-                error: true,
-              }
-            });
+            // Note: Email logging functionality has been removed
+            const recentLogs: any[] = [];
 
             const updateData = JSON.stringify({
               type: "status_update",
