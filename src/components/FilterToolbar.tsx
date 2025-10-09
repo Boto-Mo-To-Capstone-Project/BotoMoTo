@@ -119,12 +119,16 @@ export function FilterToolbar({
       </div>
 
       {open && typeof window !== 'undefined' && createPortal(
-        <div 
+        <div
           ref={dropdownRef}
-          className="fixed w-80 max-h-[500px] overflow-hidden bg-white border border-gray-200 rounded-lg shadow-xl z-[9999] flex flex-col"
+          className={`fixed bg-white border border-gray-200 rounded-lg shadow-xl z-[9999] flex flex-col transition-all duration-200
+            ${window.innerWidth < 414 
+              ? 'w-[90%] max-w-sm left-1/2 -translate-x-1/2' 
+              : 'w-80'}
+          `}
           style={{
             top: `${dropdownPosition.top}px`,
-            left: `${dropdownPosition.left}px`
+            left: window.innerWidth >= 414 ? `${dropdownPosition.left}px` : undefined,
           }}
         >
           {/* Header */}

@@ -349,11 +349,11 @@ const LiveDashboard = () => {
     return (
       <main
         className={`flex flex-col items-center gap-6 pb-20 ${
-          isAdminContext || isSuperAdminContext ? "pt-0" : "pt-20"
-        } text-justify px-5 sm:px-10`}
+          isAdminContext || isSuperAdminContext ? "pt-0 xl:px-10" : "pt-20 sm:px-10"
+        } text-justify px-5`}
       >
         <div
-          className="w-full max-w-7xl flex flex-col items-center animate-pulse"
+          className="w-full flex flex-col items-center animate-pulse"
           id="pdf-export-content"
         >
           {/* Live Dashboard Status */}
@@ -447,7 +447,7 @@ const LiveDashboard = () => {
 
   // Main render with real data
   return (
-    <main className={`flex flex-col items-center gap-6 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-0' : 'pt-20'} text-justify px-5 sm:px-20`}>
+    <main className={`flex flex-col items-center gap-6 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-0 xl:px-10' : 'pt-20 sm:px-10'} text-justify px-5`}>
       <div className="w-full flex flex-col items-center" id="pdf-export-content">
         {/* Live Dashboard Status - Below Header, Left Aligned */}
         <div className={`flex flex-col xs:flex-row xs:items-center xs:justify-between w-full mb-4 gap-2 sticky ${(isAdminContext || isSuperAdminContext) ? 'top-16 pt-8' : 'top-20 pt-10'} bg-white z-50 py-2 px-3`}>
