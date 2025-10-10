@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 
 import EnterEmail from "@/app/assets/EnterEmail.png";
 import { InputField } from "@/components/InputField";
+import { SubmitButton } from "@/components/SubmitButton";
 
 const EmailMFA = () => {
   const router = useRouter();
@@ -211,16 +212,42 @@ const EmailMFA = () => {
 
   if (!sessionData || !sessionToken) {
     return (
-      <main className="flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-800"></div>
-        <p>Loading...</p>
+      <main className="min-h-screen flex flex-col items-center justify-center gap-10 px-5 sm:px-20 pb-20 pt-40 animate-pulse">
+        {/* Heading + Subheading */}
+        <div className="text-center space-y-4 max-w-[380px] w-full">
+          <div className="h-6 bg-gray-300 rounded w-3/4 mx-auto" />
+          <div className="space-y-2">
+            <div className="h-4 bg-gray-300 rounded w-full" />
+            <div className="h-4 bg-gray-300 rounded w-5/6 mx-auto" />
+            <div className="h-4 bg-gray-300 rounded w-4/6 mx-auto" />
+          </div>
+          <div className="h-3 bg-gray-300 rounded w-1/2 mx-auto mt-3" />
+        </div>
+
+        {/* Image placeholder */}
+        <div className="w-[280px] h-[200px] sm:w-[320px] sm:h-[240px] bg-gray-300 rounded-xl" />
+
+        {/* Input + Buttons area */}
+        <div className="flex flex-col w-full max-w-[380px] gap-4">
+          {/* Description / label */}
+          <div className="h-4 bg-gray-300 rounded w-5/6 mx-auto mb-8" />
+
+          {/* Input field */}
+          <div className="h-10 bg-gray-300 rounded-md w-full" />
+
+          {/* Buttons */}
+          <div className="mt-5 space-y-3 w-full flex flex-col">
+            <div className="h-10 bg-gray-300 rounded-md w-full" />
+            <div className="h-10 bg-gray-300 rounded-md w-full" />
+          </div>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
-      <div className="text-center space-y-2">
+    <main className="min-h-screen flex flex-col items-center justify-center gap-10 px-5 sm:px-20 pb-20 pt-40">
+      <div className="text-center space-y-2 max-w-[380px] ">
         <p className="voterlogin-heading">Email Confirmation</p>
         <p className="voterlogin-subheading">
           Please confirm your email address to continue. Enter the email address 
@@ -233,7 +260,7 @@ const EmailMFA = () => {
 
       <Image src={EnterEmail} height={300} alt="Email Confirmation" />
       
-      <div className="flex flex-col gap-2 w-full max-w-md">
+      <div className="flex flex-col gap-2 w-full max-w-[380px]">
         <InputField
           label="Email Address"
           type="email"
@@ -241,23 +268,20 @@ const EmailMFA = () => {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Enter your email address"
         />
-      </div>
-
-      <div className="flex flex-col gap-4 w-4/5 xs:w-auto">
-        <Button
-          variant="long_primary"
-          onClick={handleSubmit}
-          disabled={isLoading}
-        >
-          {isLoading ? "Verifying" : "Confirm Email"}
-        </Button>
-        <Button 
-          variant="long_secondary" 
-          onClick={handleCancel}
-          disabled={isLoading}
-        >
-          Cancel
-        </Button>
+        <div className="flex flex-col gap-4 w-full mt-5">
+          <SubmitButton
+            variant="primary"
+            onClick={handleSubmit}
+            isLoading={isLoading}
+            label="Confirm Email"
+            />
+          <SubmitButton 
+            variant="action" 
+            onClick={handleCancel}
+            isLoading={isLoading}
+            label="Cancel"
+            />
+        </div>
       </div>
     </main>
   );

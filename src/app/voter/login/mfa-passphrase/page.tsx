@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 
 import EnterPassphrase from "@/app/assets/EnterPassphrase.png";
 import { InputField } from "@/components/InputField";
+import { SubmitButton } from "@/components/SubmitButton";
 
 const PassphraseMFA = () => {
   const router = useRouter();
@@ -237,16 +238,42 @@ const PassphraseMFA = () => {
 
   if (!sessionData || !sessionToken) {
     return (
-      <main className="flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-800"></div>
-        <p>Loading...</p>
+      <main className="min-h-screen flex flex-col items-center justify-center gap-10 px-5 sm:px-20 pb-20 pt-40 animate-pulse">
+        {/* Heading + Subheading */}
+        <div className="text-center space-y-4 max-w-[380px] w-full">
+          <div className="h-6 bg-gray-300 rounded w-3/4 mx-auto" />
+          <div className="space-y-2">
+            <div className="h-4 bg-gray-300 rounded w-full" />
+            <div className="h-4 bg-gray-300 rounded w-5/6 mx-auto" />
+            <div className="h-4 bg-gray-300 rounded w-4/6 mx-auto" />
+          </div>
+          <div className="h-3 bg-gray-300 rounded w-1/2 mx-auto mt-3" />
+        </div>
+
+        {/* Image placeholder */}
+        <div className="w-[280px] h-[200px] sm:w-[320px] sm:h-[240px] bg-gray-300 rounded-xl" />
+
+        {/* Input + Buttons area */}
+        <div className="flex flex-col w-full max-w-[380px] gap-4">
+          {/* Description / label */}
+          <div className="h-4 bg-gray-300 rounded w-5/6 mx-auto mb-8" />
+
+          {/* Input field */}
+          <div className="h-10 bg-gray-300 rounded-md w-full" />
+
+          {/* Buttons */}
+          <div className="mt-5 space-y-3 w-full flex flex-col">
+            <div className="h-10 bg-gray-300 rounded-md w-full" />
+            <div className="h-10 bg-gray-300 rounded-md w-full" />
+          </div>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="flex flex-col items-center justify-center gap-10 px-10 pb-20 pt-40">
-      <div className="text-center space-y-2">
+    <main className="min-h-screen flex flex-col items-center justify-center gap-10 px-5 sm:px-20 pb-20 pt-40">
+      <div className="text-center space-y-2 max-w-[380px]">
         <p className="voterlogin-heading">Enter Passphrase</p>
         <p className="voterlogin-subheading">
           Enter your unique passphrase to continue. Check your{" "}
@@ -260,49 +287,48 @@ const PassphraseMFA = () => {
 
       <Image src={EnterPassphrase} height={300} alt="Enter Passphrase" />
       
-      {!passphraseRequested ? (
-        <div className="flex flex-col gap-4 w-4/5 xs:w-auto items-center">
-          <p className="voterlogin-label">
-            Click the button below to request a passphrase to be sent to your registered email address.
-          </p>
-          <Button
-            variant="long_primary"
-            onClick={requestPassphrase}
-            disabled={isRequestingPassphrase}
-          >
-            {isRequestingPassphrase ? "Sending Passphrase..." : "Request Passphrase"}
-          </Button>
-        </div>
-      ) : (
-        <>
-          <div className="flex flex-col gap-2 w-full max-w-md">
-            <InputField
-              label="Passphrase"
-              type="text"
-              value={passphrase}
-              onChange={(e) => setPassphrase(e.target.value)}
-              placeholder="Enter your passphrase"
+      <div className="flex flex-col w-full max-w-[380px] gap-4">
+        {!passphraseRequested ? (
+          <div className="flex flex-col">
+            <p className="voterlogin-label text-center mb-10">
+              Click the button below to request a passphrase to be sent to your registered email address.
+            </p>
+            <SubmitButton
+              variant="primary"
+              onClick={requestPassphrase}
+              isLoading={isRequestingPassphrase}
+              label="Request Passphrase"
             />
           </div>
+        ) : (
+          <>
+            <div className="flex flex-col gap-2 w-full">
+              <InputField
+                label="Passphrase"
+                type="text"
+                value={passphrase}
+                onChange={(e) => setPassphrase(e.target.value)}
+                placeholder="Enter your passphrase"
+              />
+              <div className="mt-5 space-y-3 w-full flex flex-col">
+                <SubmitButton
+                  variant="primary"
+                  onClick={handleSubmit}
+                  isLoading={isLoading}
+                  label="Verify Passphrase"
+                />
+                <SubmitButton 
+                  variant="action" 
+                  onClick={handleCancel}
+                  isLoading={isLoading}
+                  label="Cancel"
+                />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
 
-          <div className="flex flex-col gap-4 w-4/5 xs:w-auto">
-            <Button
-              variant="long_primary"
-              onClick={handleSubmit}
-              disabled={isLoading}
-            >
-              {isLoading ? "Verifying..." : "Verify Passphrase"}
-            </Button>
-            <Button 
-              variant="long_secondary" 
-              onClick={handleCancel}
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
-          </div>
-        </>
-      )}
     </main>
   );
 };
