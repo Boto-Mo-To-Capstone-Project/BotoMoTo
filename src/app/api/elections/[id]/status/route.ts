@@ -149,6 +149,23 @@ export async function PATCH(
       },
     });
 
+    // If closing election, invalidate all active voter sessions
+    if (action === "close") {
+      await db.voterSession.updateMany({
+        where: {
+          voter: {
+            electionId: electionId
+          },
+          isActive: true
+        },
+        data: {
+          isActive: false,
+          lastActiveAt: new Date()
+        }
+      });
+      console.log(`Invalidated all active voter sessions for election ${electionId}`);
+    }
+
     const audit = await createAuditLog({
       user,
       action: "UPDATE",
