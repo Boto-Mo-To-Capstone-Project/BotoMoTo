@@ -2,13 +2,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 import { CompleteTaskModal } from "@/components/CompleteTaskModal";
 import { AuthFooter } from "@/components/AuthFooter";
 import AuthContainer from '@/components/AuthContainer';
 import { SubmitButton } from "@/components/SubmitButton";
-import CustomToast from "@/components/CustomToast";
 import { useOrganizationStatus } from "@/hooks/useOrganizationStatus";
 
 type ApplicationStatus = 'getting_started' | 'pending' | 'approved' | 'rejected';
@@ -270,7 +269,7 @@ export default function OnboardProcessingPage() {
         
         // Validate that required files are provided for new organization
         if (!data.logo || !data.organizationLetter) {
-          showErrorToast('Both logo and letter files are required for new organization');
+          toast.error('Both logo and letter files are required for new organization');
           return;
         }
         
@@ -292,7 +291,8 @@ export default function OnboardProcessingPage() {
       // Update status and refresh data
       setStatus('pending');
       setShouldExpandAwaitingApproval(true); // Auto-expand awaiting approval step
-      showSuccessToast('Organization submitted for review!');
+
+      toast.success('Organization submitted for review!');
       
       // Refresh organization data to show updated files
       setTimeout(async () => {
@@ -301,38 +301,23 @@ export default function OnboardProcessingPage() {
       
     } catch (error) {
       console.error('Error saving organization:', error);
-      showErrorToast('An unexpected error occurred while saving the organization');
+      toast.error('An unexpected error occurred while saving the organization');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Helper functions for toast notifications
-  const showSuccessToast = (message: string) => {
-    toast.custom((t) => <CustomToast t={t} message={message} />);
-  };
-
-  const showErrorToast = (message: string) => {
-    toast.error(message, {
-      duration: 5000,
-      style: {
-        background: '#FEE2E2',
-        border: '1px solid #FECACA',
-        color: '#DC2626',
-      },
-    });
-  };
 
   const handleValidationErrors = (errorData: any) => {
     if (errorData.details && Array.isArray(errorData.details)) {
       // Show each validation error
       errorData.details.forEach((error: any) => {
-        showErrorToast(error.message || error);
+        toast.error(error.message || error);
       });
     } else if (errorData.message) {
-      showErrorToast(errorData.message);
+      toast.error(errorData.message);
     } else {
-      showErrorToast('Validation failed');
+      toast.error('Validation failed');
     }
   };
 
