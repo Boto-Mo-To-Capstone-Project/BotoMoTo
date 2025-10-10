@@ -11,6 +11,8 @@ import { FilterToolbar } from '@/components/FilterToolbar';
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Toaster, toast } from 'react-hot-toast';
 import ConfirmationModal from '@/components/ConfirmationModal';
+import { useElectionStatus } from '@/hooks/useElectionStatus';
+import { ElectionStatusWarning } from '@/components/ElectionStatusWarning';
 
 // Debounce hook
 function useDebouncedValue<T>(value: T, delay = 400) {
@@ -31,6 +33,9 @@ export default function VoterDashboardPage() {
   const electionId = Number(params?.id);
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Add election status check
+  const { electionStatus, isEditingDisabled } = useElectionStatus(electionId);
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -721,19 +726,29 @@ export default function VoterDashboardPage() {
               />
             </div>
             {/* Action Buttons */}
-            <div className="flex-shrink-0 flex gap-2">
-              <SubmitButton
-                label=""
-                variant="action"
-                icon={<MdAdd size={20} />}
-                title="Add"
-                onClick={() => { 
-                  setIsEditMode(false); 
-                  setEditInitialData(undefined); 
-                  setEditingVoterId(null);
-                  setShowVotersModal(true); 
-                }}
-              />
+            {loading && !hasLoaded ? (
+              // Skeleton loading for action buttons
+              <div className="flex-shrink-0 flex gap-2">
+                <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse"></div>
+                <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse"></div>
+                <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse"></div>
+                <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse"></div>
+                <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse"></div>
+              </div>
+            ) : (
+              <div className={`flex-shrink-0 flex gap-2 ${isEditingDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
+                <SubmitButton
+                  label=""
+                  variant="action"
+                  icon={<MdAdd size={20} />}
+                  title="Add"
+                  onClick={() => { 
+                    setIsEditMode(false); 
+                    setEditInitialData(undefined); 
+                    setEditingVoterId(null);
+                    setShowVotersModal(true); 
+                  }}
+                />
               <SubmitButton
                 label=""
                 variant="action"
@@ -781,6 +796,7 @@ export default function VoterDashboardPage() {
                 onClick={handleDownloadVoters}
               />  
             </div>
+            )}
 
             <div className="flex-shrink-0 flex gap-2">
               {/* Filter toolbar */}
@@ -790,6 +806,9 @@ export default function VoterDashboardPage() {
               />  
             </div>
           </div>
+
+          {/* Election Status Warning */}
+          <ElectionStatusWarning electionStatus={electionStatus} context="voter management" />
 
           {/* Table */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-5">

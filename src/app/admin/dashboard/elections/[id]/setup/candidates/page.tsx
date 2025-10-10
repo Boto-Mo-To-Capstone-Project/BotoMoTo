@@ -10,6 +10,8 @@ import FileViewer from "@/components/FileViewer";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from 'react-hot-toast';
 import ConfirmationModal from '@/components/ConfirmationModal';
+import { useElectionStatus } from '@/hooks/useElectionStatus';
+import { ElectionStatusWarning } from '@/components/ElectionStatusWarning';
 
 // Debounce hook
 function useDebouncedValue<T>(value: T, delay = 400) {
@@ -30,6 +32,9 @@ export default function CandidatesDashboardPage() {
   const electionId = Number(params?.id);
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Add election status check
+  const { electionStatus, isEditingDisabled } = useElectionStatus(electionId);
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -563,14 +568,24 @@ export default function CandidatesDashboardPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex-shrink-0 flex gap-2">
-              <SubmitButton
-                label=""
-                variant="action"
-                icon={<MdAdd size={20} />}
-                title="Add"
-                onClick={() => { setIsEditMode(false); setEditInitialData(undefined); setShowCandidatesModal(true); }}
-              />
+            {loading && !hasLoaded ? (
+              // Skeleton loading for action buttons
+              <div className="flex-shrink-0 flex gap-2">
+                <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse"></div>
+                <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse"></div>
+                <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse"></div>
+                <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse"></div>
+                <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse"></div>
+              </div>
+            ) : (
+              <div className={`flex-shrink-0 flex gap-2 ${isEditingDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
+                <SubmitButton
+                  label=""
+                  variant="action"
+                  icon={<MdAdd size={20} />}
+                  title="Add"
+                  onClick={() => { setIsEditMode(false); setEditInitialData(undefined); setShowCandidatesModal(true); }}
+                />
               <SubmitButton
                 label=""
                 variant="action"
@@ -634,7 +649,11 @@ export default function CandidatesDashboardPage() {
                 onClick={handleDownloadCandidates}
               />
             </div>
+            )}
           </div>
+
+          {/* Election Status Warning */}
+          <ElectionStatusWarning electionStatus={electionStatus} context="candidate management" />
 
           {/* Table */}
           <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-5">
