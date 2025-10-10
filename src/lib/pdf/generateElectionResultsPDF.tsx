@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   kpiCard: {
     padding: 12,
     borderRadius: 8,
-    width: '23%',
+    width: '50%',
     alignItems: 'center',
   },
   kpiCardBlue: {
@@ -120,8 +120,24 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
   },
+  winnerCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 8,
+    backgroundColor: '#f0fdf4', // Light green background for winners
+    marginBottom: 4,
+    borderRadius: 4,
+    border: '1px solid #16a34a', // Green border for winners
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
   candidateInfo: {
     flexDirection: 'column',
+    flex: 1,
+    maxWidth: '70%',
   },
   candidateName: {
     fontSize: 11,
@@ -138,6 +154,26 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: 'bold',
     color: '#1f2937',
+    minWidth: 60,
+    textAlign: 'right',
+  },
+  winnerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minWidth: 80,
+  },
+  winnerIcon: {
+    fontSize: 14,
+    color: '#16a34a',
+    fontWeight: 'bold',
+  },
+  winnerVotes: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#16a34a',
+    minWidth: 60,
+    textAlign: 'right',
   },
   demographicItem: {
     flexDirection: 'row',
@@ -220,16 +256,13 @@ const ElectionResultsPDF = ({ results }: { results: ElectionResults }): ReactEle
           <Text style={styles.kpiTitle}>Voter Turnout</Text>
           <Text style={styles.kpiValue}>{results.overview.voterTurnout}%</Text>
         </View>
-        <View style={[styles.kpiCard, styles.kpiCardOrange]}>
-          <Text style={styles.kpiTitle}>Status</Text>
-          <Text style={styles.kpiValue}>{results.election.status}</Text>
-        </View>
       </View>
 
       {/* Positions */}
       <Text style={styles.sectionHeader}>Votes Per Position (Voter Scope)</Text>
       {results.positions.map((position: any) => (
-        <View key={position.id} style={styles.positionContainer} wrap={false} break={position.candidates.length > 3}>
+        // there is a break here before
+        <View key={position.id} style={styles.positionContainer} wrap={false}>
           <View style={styles.positionHeader}>
             <Text style={styles.positionTitle}>
               {position.name}
@@ -238,17 +271,27 @@ const ElectionResultsPDF = ({ results }: { results: ElectionResults }): ReactEle
               )}
             </Text>
           </View>
-          {position.candidates.map((candidate: any) => (
-            <View key={candidate.id} style={styles.candidateCard}>
-              <View style={styles.candidateInfo}>
-                <Text style={styles.candidateName}>{candidate.name}</Text>
-                <Text style={styles.candidateParty}>
-                  {candidate.party?.name || 'Independent'}
-                </Text>
+          {position.candidates.map((candidate: any, index: number) => {
+            const isWinner = index < position.numOfWinners;
+            return (
+              <View key={candidate.id} style={isWinner ? styles.winnerCard : styles.candidateCard}>
+                <View style={styles.candidateInfo}>
+                  <Text style={styles.candidateName}>{candidate.name}</Text>
+                  <Text style={styles.candidateParty}>
+                    {candidate.party?.name || 'Independent'}
+                  </Text>
+                </View>
+                {isWinner ? (
+                  <View style={styles.winnerBadge}>
+                    <Text style={styles.winnerIcon}>WINNER</Text>
+                    <Text style={styles.winnerVotes}>{candidate.voteCount} votes</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.candidateVotes}>{candidate.voteCount} votes</Text>
+                )}
               </View>
-              <Text style={styles.candidateVotes}>{candidate.voteCount} votes</Text>
-            </View>
-          ))}
+            );
+          })}
         </View>
       ))}
 
