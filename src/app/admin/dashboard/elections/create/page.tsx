@@ -10,6 +10,8 @@ import { ScopeTab } from "@/components/ScopeTab";
 import { PartyTab } from "@/components/PartyTab"; // Use PartyTab instead of PartyTable/PartyModal
 import { PartyCandidatesModal } from "@/components/PartyCandidatesModal"; // NEW: Import the modal
 import toast, { Toaster } from 'react-hot-toast';
+import { useElectionStatus } from '@/hooks/useElectionStatus';
+import { ElectionStatusWarning } from '@/components/ElectionStatusWarning';
 
 // Prefer API 'message' over 'error' object to avoid [object Object]
 function getApiErrorMessage(json: any, fallback: string) {
@@ -94,6 +96,9 @@ function CreateElectionContent() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [originalMeta, setOriginalMeta] = useState<{ status?: "DRAFT" | "ACTIVE" | "CLOSED"; }>({});
+
+  // Add election status check
+  const { electionStatus, isEditingDisabled } = useElectionStatus(editId || 0);
 
   // Helper to format ISO -> datetime-local value
   const toDateTimeLocal = (iso?: string | null) => {
@@ -649,24 +654,39 @@ function CreateElectionContent() {
           {/* Election Save Button right aligned at the top */}
           {activeTab === "election" && (
             <div className="flex-1 flex justify-end gap-2">
-              {/* Cancel Button */}
-              <SubmitButton
-                label="Cancel"
-                variant="action"
-                onClick={() => {
-                  router.push('/admin/dashboard/elections');
-                }}
-                className="min-w-[100px]"
-              />
-              {/* Save Button (disabled by default, enable when form is valid) */}
-              <SubmitButton
-                label={isEditing ? "Update" : "Save"}
-                variant="action-primary"
-                icon={<MdSave size={20} className="fill-current" />}
-                title={isEditing ? "Update" : "Save"}
-                onClick={handleSaveElection} // <-- This triggers the form's submit
-                className={`min-w-[100px] ${saving ? 'opacity-70 pointer-events-none' : ''}`}
-              />
+              {loading ? (
+                <div className="flex gap-2">
+                  <div className="h-10 w-[100px] bg-gray-200 rounded-md animate-pulse"></div>
+                  <div className="h-10 w-[100px] bg-gray-200 rounded-md animate-pulse"></div>
+                </div>
+              ) : (
+                <>
+                  {/* Cancel Button - always clickable */}
+                  <SubmitButton
+                    label="Cancel"
+                    variant="action"
+                    onClick={() => {
+                      router.push('/admin/dashboard/elections');
+                    }}
+                    className="min-w-[100px]"
+                  />
+                  {/* Save/Update Button - can be disabled */}
+                  <div className={`${
+                    isEditing && isEditingDisabled 
+                      ? 'opacity-50 pointer-events-none' 
+                      : ''
+                  }`}>
+                    <SubmitButton
+                      label={isEditing ? "Update" : "Save"}
+                      variant="action-primary"
+                      icon={<MdSave size={20} className="fill-current" />}
+                      title={isEditing ? "Update" : "Save"}
+                      onClick={handleSaveElection} // <-- This triggers the form's submit
+                      className={`min-w-[100px] ${saving ? 'opacity-50 pointer-events-none' : ''}`}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           )}
           {activeTab === "scope" && (
@@ -680,14 +700,23 @@ function CreateElectionContent() {
                 />
               </div>
               {/* Action Buttons */}
-              <div className="flex-shrink-0 flex gap-2">
-                <SubmitButton
-                  label=""
-                  variant="action"
-                  icon={<MdAdd size={20} />}
-                  title="Add"
-                  onClick={openCreateScopeModal}
-                />
+              {loading ? (
+                // Skeleton loading for scope action buttons
+                <div className="flex-shrink-0 flex gap-2">
+                  <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse"></div>
+                  <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse"></div>
+                  <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse"></div>
+                  <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse"></div>
+                </div>
+              ) : (
+                <div className={`flex-shrink-0 flex gap-2 ${isEditingDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <SubmitButton
+                    label=""
+                    variant="action"
+                    icon={<MdAdd size={20} />}
+                    title="Add"
+                    onClick={openCreateScopeModal}
+                  />
                 <SubmitButton
                   label=""
                   variant="action"
@@ -725,6 +754,7 @@ function CreateElectionContent() {
                 />
                 {/* Removed Save button: changes are persisted immediately via modal */}
               </div>
+              )}
             </>
           )}
           {/* Party Toolbar */}
@@ -737,14 +767,23 @@ function CreateElectionContent() {
                   placeholder="Search for Party"
                 />
               </div>
-              <div className="flex-shrink-0 flex gap-2">
-                <SubmitButton
-                  label=""
-                  variant="action"
-                  icon={<MdAdd size={20} />}
-                  title="Add"
-                  onClick={openCreatePartyModal}
-                />
+              {loading ? (
+                // Skeleton loading for party action buttons
+                <div className="flex-shrink-0 flex gap-2">
+                  <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse"></div>
+                  <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse"></div>
+                  <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse"></div>
+                  <div className="h-10 w-10 bg-gray-200 rounded-md animate-pulse"></div>
+                </div>
+              ) : (
+                <div className={`flex-shrink-0 flex gap-2 ${isEditingDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <SubmitButton
+                    label=""
+                    variant="action"
+                    icon={<MdAdd size={20} />}
+                    title="Add"
+                    onClick={openCreatePartyModal}
+                  />
                 <SubmitButton
                   label=""
                   variant="action"
@@ -788,9 +827,13 @@ function CreateElectionContent() {
                 />
                 {/* Removed Save button: changes are persisted immediately via modal */}
               </div>
+              )}
             </>
           )}
         </div>
+
+        {/* Election Status Warning */}
+        {isEditing && <ElectionStatusWarning electionStatus={electionStatus} context="election configurations" />}
 
         {/* Election form title and description only for Election tab */}
         {activeTab === "election" && (
@@ -833,7 +876,7 @@ function CreateElectionContent() {
         )}
 
         {/* Card/Form */}
-        <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-5">
+        <div className={`main-content flex-auto overflow-auto pb-3 px-2 sm:px-5 ${isEditingDisabled ? 'pointer-events-none opacity-60' : ''}`}>
           {loading && isEditing ? (
             <div className="w-full p-4 text-center text-gray-500">Loading election…</div>
           ) : (
