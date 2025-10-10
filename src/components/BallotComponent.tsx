@@ -112,12 +112,14 @@ const BallotComponent = ({
   });
 
   // Get unique parties from candidates in current ballot scope (better filtering)
+  // Filter out "Independent" as it shouldn't be available for straight party voting
   const availableParties = [
     ...new Set(
       ballotData.positions
         .flatMap(pos => pos.candidates)
         .map(candidate => candidate.party)
         .filter(Boolean)
+        .filter(party => party.toLowerCase() !== 'independent')
     )
   ];
 
