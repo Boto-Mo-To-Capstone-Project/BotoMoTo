@@ -203,7 +203,6 @@ const ProfilePage = () => {
           <div className="main-toolbar sticky top-16 z-30 bg-white flex flex-col md:flex-row md:items-center md:gap-4 gap-2 mb-6 py-3 px-2 sm:px-5">
             <div className="flex-1 flex justify-end gap-2 animate-pulse">
               <div className="h-10 bg-gray-200 rounded-md w-[100px]"></div>
-              <div className="h-10 bg-gray-200 rounded-md w-[100px]"></div>
             </div>
           </div>
 
@@ -294,16 +293,10 @@ const ProfilePage = () => {
         <div className="main-toolbar sticky top-16 z-30 bg-white flex flex-col md:flex-row md:items-center md:gap-4 gap-2 mb-6 py-3 px-2 sm:px-5">
           <div className="flex-1 flex justify-end gap-2">
             <SubmitButton
-              label="Cancel"
-              variant="action"
-              className="min-w-[100px]"
-            />
-            
-            <SubmitButton
-              label={saving ? "Saving" : "Save"}
+              label={saving ? "Updating" : "Update"}
               variant="action-primary"
               icon={<MdSave size={20} className="fill-current" />}
-              title="Save"
+              title="Update Profile"
               className="min-w-[100px]"
               onClick={handleSaveProfile}
             />

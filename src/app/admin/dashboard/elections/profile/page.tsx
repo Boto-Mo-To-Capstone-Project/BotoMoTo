@@ -41,41 +41,34 @@ const ProfilePage = () => {
   }>({});
   const logout = useLogout();
 
-  // Fetch user profile function
-  const fetchProfile = async (showLoadingState = true) => {
-    if (showLoadingState) {
-      setLoading(true);
-    }
-    
-    try {
-      const response = await fetch('/api/users/profile');
-      if (response.ok) {
-        const result = await response.json();
-        const profile = result.data;
-        setPersonalData({
-          fullName: profile.name || "",
-          email: profile.email || "",
-          accountCreated: profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : "",
-          organizationName: profile.organization?.name || "",
-          organizationEmail: profile.organization?.email || "",
-          numberOfMembers: profile.organization?.membersCount?.toString() || "",
-          profileImage: profile.image || ""
-        });
-      } else {
-        toast.error("Failed to load profile data");
-      }
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-      toast.error("Failed to load profile data");
-    } finally {
-      if (showLoadingState) {
-        setLoading(false);
-      }
-    }
-  };
-
   // Fetch user profile on component mount
   useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch('/api/users/profile');
+        if (response.ok) {
+          const result = await response.json();
+          const profile = result.data;
+          setPersonalData({
+            fullName: profile.name || "",
+            email: profile.email || "",
+            accountCreated: profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : "",
+            organizationName: profile.organization?.name || "",
+            organizationEmail: profile.organization?.email || "",
+            numberOfMembers: profile.organization?.membersCount?.toString() || "",
+            profileImage: profile.image || ""
+          });
+        } else {
+          toast.error("Failed to load profile data");
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        toast.error("Failed to load profile data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (session) {
       fetchProfile();
     }
@@ -116,12 +109,6 @@ const ProfilePage = () => {
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleCancel = async () => {
-    // Refetch the original data to reset form fields
-    await fetchProfile(false); // false means don't show loading state
-    toast.success("Changes discarded");
   };
 
   const handleChangePassword = async (data: { oldPassword: string; newPassword: string; confirmPassword: string }) => {
@@ -309,7 +296,6 @@ const ProfilePage = () => {
           <div className="main-toolbar sticky top-16 z-30 bg-white flex flex-col md:flex-row md:items-center md:gap-4 gap-2 mb-6 py-3 px-2 sm:px-5">
             <div className="flex-1 flex justify-end gap-2 animate-pulse">
               <div className="h-10 bg-gray-200 rounded-md w-[100px]"></div>
-              <div className="h-10 bg-gray-200 rounded-md w-[100px]"></div>
             </div>
           </div>
 
@@ -400,17 +386,10 @@ const ProfilePage = () => {
         <div className="main-toolbar sticky top-16 z-30 bg-white flex flex-col md:flex-row md:items-center md:gap-4 gap-2 mb-6 py-3 px-2 sm:px-5">
           <div className="flex-1 flex justify-end gap-2">
             <SubmitButton
-              label="Cancel"
-              variant="action"
-              className="min-w-[100px]"
-              onClick={handleCancel}
-            />
-            
-            <SubmitButton
-              label={saving ? "Saving" : "Save"}
+              label={saving ? "Updating" : "Update"}
               variant="action-primary"
               icon={<MdSave size={20} className="fill-current" />}
-              title="Save"
+              title="Update Profile"
               className="min-w-[100px]"
               onClick={handleSaveProfile}
             />
