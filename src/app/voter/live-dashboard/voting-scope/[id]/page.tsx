@@ -249,11 +249,15 @@ const DemographicDashboard = () => {
   // Loading state
   if (loading) {
     return (
-      <main className={`flex flex-col items-center gap-10 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-8' : 'pt-40'} text-justify px-10`}>
-        <div className="w-4/5 flex flex-col items-center">
-          <div className="text-center space-y-4">
-            <p className="text-lg text-gray">Loading voting scope results...</p>
-            {isConnected && <p className="text-sm text-secondary">📡 Connected to live updates</p>}
+      <main className={`min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 ${
+        (isAdminContext || isSuperAdminContext) ? 'pt-0' : 'pt-20'
+      }`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse space-y-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <div className="h-8 bg-gray-200 rounded w-96 mb-3"></div>
+              <div className="h-5 bg-gray-200 rounded w-64"></div>
+            </div>
           </div>
         </div>
       </main>
@@ -263,13 +267,13 @@ const DemographicDashboard = () => {
   // Error state
   if (error || !results) {
     return (
-      <main className={`flex flex-col items-center gap-10 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-8' : 'pt-40'} text-justify px-10`}>
-        <div className="w-4/5 flex flex-col items-center">
-          <div className="text-center space-y-4">
-            <div className="bg-primary/10 border border-primary rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-primary mb-2">Unable to Load Voting Scope Results</h3>
-              <p className="text-gray">{error || "Failed to load voting scope data"}</p>
-            </div>
+      <main className={`min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 ${
+        (isAdminContext || isSuperAdminContext) ? 'pt-0' : 'pt-20'
+      }`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-2xl shadow-xl border border-red-100 p-8 text-center">
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Unable to Load Election Results</h3>
+            <p className="text-gray-600">{error || "Failed to load voting scope data"}</p>
           </div>
         </div>
       </main>
@@ -290,97 +294,131 @@ const DemographicDashboard = () => {
   const scopeTotalVoters = Math.round(scopeVotersWhoVoted / (currentScope?.percentage || 1) * 100) || results.overview.totalVoters;
   const scopeVoterTurnout = scopeTotalVoters > 0 ? Math.round((scopeVotersWhoVoted / scopeTotalVoters) * 100) : 0;
   return (
-    <main className={`flex flex-col items-center gap-6 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-8' : 'pt-30'} text-justify px-10`}>
-      <div className="w-full max-w-7xl flex flex-col items-center">
-        {/* Red Header Card - Full Width */}
-        <div className="flex items-center rounded-2xl bg-red-800 px-6 py-4 relative overflow-hidden w-full mb-4">
-          <div>
-            <h2 className="text-white text-xl font-semibold mb-1">
-              {results?.election?.name || "Loading Election..."} ({scopeName})
-            </h2>
-            <p className="text-white text-sm">
-              {results?.election?.organization || "Loading Organization..."} 
-            </p>
-          </div>
-        </div>
-
-        {/* Live Dashboard Status - Below Header, Left Aligned */}
-        <div className="flex items-center justify-between w-full mb-4 gap-2">
-          <div className="flex items-center gap-3 bg-green-50 border border-green-200 px-4 py-2 rounded-lg">
-            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
-            <span className={`text-lg font-semibold ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
-              {isConnected ? 'Live Dashboard' : 'Disconnected'}
+    <main className={`min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 ${
+      (isAdminContext || isSuperAdminContext) ? 'pt-0' : 'pt-20'
+    }`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="pdf-export-content">
+        {/* Live Status Bar - Clean Toolbar */}
+        <div className={`sticky ${
+          (isAdminContext || isSuperAdminContext) ? 'top-16' : 'top-20'
+        } z-50 bg-white flex items-center justify-between gap-4 py-3 px-5 mb-6 transition-all duration-300`}>
+          {/* Connection Status */}
+          <div className={`inline-flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-300 ${
+            isConnected 
+              ? 'bg-emerald-50 border border-emerald-200' 
+              : 'bg-red-50 border border-red-200'
+          }`}>
+            <div className="relative">
+              <div className={`w-2.5 h-2.5 rounded-full ${
+                isConnected ? 'bg-emerald-500' : 'bg-red-500'
+              }`}></div>
+              {isConnected && (
+                <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></div>
+              )}
+            </div>
+            <span className={`text-sm font-semibold ${
+              isConnected ? 'text-emerald-700' : 'text-red-700'
+            }`}>
+              {isConnected ? 'Live Updates Active' : 'Connection Lost'}
             </span>
           </div>
-          <SubmitButton
-            variant="action-primary"
+
+          {/* Return to Dashboard Button */}
+          <button
             onClick={() => router.push("/voter/live-dashboard")}
-            label="Return to Live Dashboard"/>
+            className="px-4 py-2 text-sm font-semibold text-white bg-[#7b1c1c] hover:bg-[#5c0000] rounded-lg border border-[#5c0000] transition-colors"
+          >
+            Return to Dashboard
+          </button>
         </div>
 
-        {/* kpi section */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 w-full mb-6">
-          <div className="bg-blue-100 rounded-lg overflow-hidden">
-            <KpiCard 
-              name="Vote Count" 
-              value={scopeVotersWhoVoted} 
-              icon={Vote} 
-            />
-          </div>
-          <div className="bg-green-100 rounded-lg overflow-hidden">
-            <KpiCard 
-              name="Registered Voters" 
-              value={scopeTotalVoters} 
-              icon={Users} 
-            />
-          </div>
-          <div className="bg-purple-100 rounded-lg overflow-hidden">
-            <KpiCard 
-              name="Voter Turnout" 
-              value={`${scopeVoterTurnout}%`} 
-              icon={BarChart2} 
-            />
-          </div>
-          <div className="bg-orange-100 rounded-lg overflow-hidden">
-            <KpiCard 
-              name="Voting Ends In" 
-              value={timeLeft || "Calculating..."} 
-              icon={Clock} 
-            />
-          </div>
-        </div>
-
-        {/* position section */}
-        {scopePositions.length > 0 ? (
-          <>
-            <div className="w-full">
-              <div className="bg-secondary/10 border border-secondary rounded-lg p-4 mb-4">
-                <h3 className="text-lg font-semibold text-black mb-2">
-                  Positions for {scopeName}
-                </h3>
-                <p className="text-gray">
-                  Showing {scopePositions.length} position{scopePositions.length !== 1 ? 's' : ''} 
-                  {scopePositions.length > 0 && `: ${scopePositions.map(p => p.name).join(', ')}`}
+        {/* Election Header - Professional Gradient */}
+        <div className="relative overflow-hidden rounded-2xl shadow-lg mb-8">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#7b1c1c] via-[#992b2b] to-[#5c0000]"></div>
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
+          <div className="relative px-6 py-6">
+            <div className="flex items-center gap-4">
+              <div>
+                <h1 className="text-lg font-bold text-white mb-1">
+                  {results?.election?.name || "Loading Election..."} - {scopeName}
+                </h1>
+                <p className="text-white/90 text-sm font-medium">
+                  {results?.election?.organization || "Loading Organization..."}
                 </p>
               </div>
             </div>
-            <PositionSection positions={scopePositions} />
-          </>
-        ) : (
-          <div className="mt-10 w-full">
-            <div className="bg-white border border-gray/20 rounded-lg p-6 text-center">
-              <h3 className="text-lg font-semibold text-gray mb-2">
-                No Positions Available
-              </h3>
-              <p className="text-gray">
-                There are no positions configured for {scopeName} in this election.
+          </div>
+        </div>
+
+        {/* KPI Cards - Modern Design with Badges */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <KpiCard
+            name="Total Votes"
+            value={scopeVotersWhoVoted}
+            icon={Vote}
+            variant="default"
+            badge="CAST"
+            color="blue"
+          />
+          
+          <KpiCard
+            name="Registered Voters"
+            value={scopeTotalVoters}
+            icon={Users}
+            variant="default"
+            badge="TOTAL"
+            color="purple"
+          />
+          
+          <KpiCard
+            name="Voter Turnout"
+            value={`${scopeVoterTurnout}%`}
+            icon={BarChart2}
+            variant="default"
+            badge="RATE"
+            color="pink"
+          />
+          
+          <KpiCard
+            name="Remaining"
+            value={timeLeft || "Calculating..."}
+            icon={Clock}
+            variant="default"
+            badge="TIME"
+            color="emerald"
+          />
+        </div>
+
+        {/* Position Results */}
+        {scopePositions.length > 0 ? (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-300">
+            <div className="bg-gradient-to-r from-[#7b1c1c] to-[#5c0000] px-6 py-4">
+              <h2 className="text-white text-sm font-semibold flex items-center gap-2">
+                Positions for {scopeName}
+              </h2>
+              <p className="text-white/80 text-xs mt-1">
+                Showing {scopePositions.length} position{scopePositions.length !== 1 ? 's' : ''} 
+                {scopePositions.length > 0 && `: ${scopePositions.map(p => p.name).join(', ')}`}
               </p>
             </div>
+            <div className="p-6">
+              <PositionSection positions={scopePositions} />
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-300 p-6 text-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              No Positions Available
+            </h3>
+            <p className="text-gray-600">
+              There are no positions configured for {scopeName} in this election.
+            </p>
           </div>
         )}
+
       </div>
     </main>
   );
-};
+}
 
 export default DemographicDashboard;

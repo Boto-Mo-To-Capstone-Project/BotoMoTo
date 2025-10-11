@@ -42,15 +42,15 @@ const CandidateDashboardCard = ({
   return (
     <div
       onClick={handleClick}
-      className={`bg-white rounded-lg border p-4 ${
+      className={`bg-white rounded-lg border p-3 ${
         highlight
           ? "border-secondary shadow-lg ring-2 ring-secondary"
           : "border-gray-200"
       } cursor-pointer hover:bg-gray-50 transition-colors`}
     >
-      <div className={`flex flex-col ${isAdminContext ? 'xl:flex-row xl:items-start': 'lg:flex-row lg:items-start'} items-center justify-between gap-4`}>
-        <div className={`flex flex-col ${isAdminContext ? 'xl:flex-row ':'lg:flex-row '} gap-4 items-center`}>
-          <div className="w-28 h-28 flex items-center justify-center rounded-xl border-2 border-gray-200 overflow-hidden">
+      <div className={`flex flex-col ${isAdminContext ? 'xl:flex-row xl:items-start': 'lg:flex-row lg:items-start'} items-center justify-between gap-3`}>
+        <div className={`flex flex-col ${isAdminContext ? 'xl:flex-row ':'lg:flex-row '} gap-3 items-center`}>
+          <div className="w-24 h-24 flex items-center justify-center rounded-xl border-2 border-gray-200 overflow-hidden">
             <img
               src={imgSrc ? imgSrc : "/assets/placeholderuser.png"}
               alt={name ? `${name} photo` : "Placeholder user"}
@@ -64,10 +64,10 @@ const CandidateDashboardCard = ({
           </div>
 
           <div className="space-y-4 mt-2">
-            <h3 className="font-bold text-xl text-gray-900 text-center lg:text-left">{name}</h3>
+            <h3 className="font-bold text-md text-gray-900 text-center lg:text-left">{name}</h3>
             {party && (
               <p
-                className="px-4 py-1 rounded-full font-semibold text-white text-sm mt-2 lg:mt-0 text-center self-center lg:self-auto"
+                className="px-4 py-1 rounded-full font-semibold text-white text-xs mt-2 lg:mt-0 text-center self-center lg:self-auto"
                 style={{
                   backgroundColor: partyColor || "#6B7280", // fallback gray
                 }}
@@ -86,7 +86,7 @@ const CandidateDashboardCard = ({
               style={{ width: `${percentage}%` }}
             >-------------------------</div>
           </div>
-          <span className="text-lg whitespace-nowrap">
+          <span className="text-xs font-bold whitespace-nowrap">
             {votes} votes
           </span>
         </div>

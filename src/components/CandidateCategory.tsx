@@ -79,7 +79,7 @@ const CandidateCategory = ({
     <div className="w-full my-3">
       <SectionHeaderContainer variant="yellow">
         {position}{" "}
-        <span className="bg-primary/5 text-sm align-center font-bold ml-2 rounded-xl py-1 px-2 text-primary">
+        <span className="bg-primary/5 text-xs font-medium rounded-lg py-0.5 px-2 text-primary border border-primary/10">
           Select up to {selectCount}
         </span>
         {/* 👇 Show scope name only if found */}
@@ -88,14 +88,14 @@ const CandidateCategory = ({
             (s) => Number(s.id) === Number(candidateList[0].scopeId)
           );
           return scope ? (
-            <span className="bg-primary/5 text-sm align-center font-bold ml-2 rounded-xl py-1 px-2 text-primary">
+            <span className="bg-primary/5 text-xs font-medium rounded-lg py-0.5 px-2 text-primary border border-primary/10">
               Scope: {scope.name}
             </span>
           ) : null;
         })()}
       </SectionHeaderContainer>
 
-      <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[auto-fit,minmax(320px,1fr)] gap-6 mt-4">
+      <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
       {candidateList.length === 0 ? (
         <div className="text-gray-600 italic text-center py-6 col-span-full">
           No candidates assigned for this position
@@ -109,14 +109,15 @@ const CandidateCategory = ({
           return (
             <div
               key={candidate.id}
-              className={`flex flex-col lg:flex-row items-center lg:items-start gap-5 rounded-2xl border-2 p-6 bg-white shadow transition-all duration-200 ${
+              onClick={() => !disabled && handleSelect(candidate)}
+              className={`flex flex-col lg:flex-row items-center lg:items-start gap-6 rounded-2xl border-2 p-6 bg-white shadow-sm transition-all duration-200 ${
                 isSelected
-                  ? "border-primary bg-primary/10"
-                  : "border-gray-200"
-              } hover:shadow-lg w-full h-full`}
+                  ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20"
+                  : "border-gray-200 hover:border-primary/30 hover:bg-primary/5"
+              } hover:shadow-md w-full h-full cursor-pointer select-none`}
             >
               {/* Candidate Image */}
-              <div className="w-28 h-28 flex items-center justify-center rounded-xl border-2 border-gray-200 overflow-hidden">
+              <div className="w-28 h-28 flex-shrink-0 flex items-center justify-center rounded-xl border-2 border-gray-200 overflow-hidden">
                 <img
                   src={candidate.img ? candidate.img : "/assets/placeholderuser.png"}
                   alt={candidate.img ? `${candidate.name} photo` : "Placeholder user"}
@@ -132,7 +133,7 @@ const CandidateCategory = ({
               {/* Candidate Info */}
               <div className="flex flex-col flex-1 w-full">
                 {/* Name + Party pill */}
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between w-full">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between w-full mb-4">
                   <span className="font-bold text-xl text-gray-900 text-center lg:text-left">
                     {candidate.name}
                   </span>
@@ -145,25 +146,31 @@ const CandidateCategory = ({
                 </div>
 
                 {/* Credentials + Vote */}
-                <div className="flex flex-col xs:flex-row items-center justify-between gap-3 mt-4 w-full">
+                <div className="flex flex-col xs:flex-row items-center justify-between gap-3 mt-2 w-full">
                   <div className="flex flex-row items-center gap-2">
                     <span className="text-sm text-gray-600 italic">
                       Credentials:
                     </span>
                     <button
-                      onClick={() => handleViewCredentials(candidate)}
-                      className="p-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewCredentials(candidate);
+                      }}
+                      className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                       title={`View ${candidate.name}'s credentials`}
                       aria-label={`View ${candidate.name}'s credentials`}
                       type="button"
                     >
-                      <Eye size={20} />
+                      <Eye size={18} />
                     </button>
                   </div>
 
                   <button
-                    onClick={() => handleSelect(candidate)}
-                    className={`px-5 py-2 rounded-full font-bold text-sm transition-colors ${
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelect(candidate);
+                    }}
+                    className={`px-5 py-2 rounded-md font-bold text-sm transition-colors ${
                       isSelected
                         ? "bg-primary text-white border-2 border-primary"
                         : "bg-gray-100 text-primary border-2 border-gray-200 hover:bg-primary/10 hover:border-primary"

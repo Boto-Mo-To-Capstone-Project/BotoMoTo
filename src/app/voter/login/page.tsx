@@ -220,7 +220,7 @@ const VoterLoginPage = () => {
   };
 
   return (
-    <main className="min-h-screen px-5 pb-20 pt-40 flex justify-center">
+    <main className="min-h-screen px-5 pb-20 pt-30 flex justify-center">
       <div className="max-w-[380px] flex flex-col items-center gap-5 ">
         <div className="text-center space-y-2">
           <p className="voterlogin-heading">Enter Voter Code</p>

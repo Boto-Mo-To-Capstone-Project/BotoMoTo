@@ -289,26 +289,31 @@ const CandidateDashboard = () => {
   // Loading state
   if (loading) {
     return (
-      <main className={`flex flex-col items-center gap-10 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-8' : 'pt-40'} text-justify px-10`}>
-        <div className="w-4/5 flex flex-col items-center">
-          <div className="text-center space-y-4">
-            <p className="text-lg text-gray-600">Loading live election results...</p>
-            {isConnected && <p className="text-sm text-green-600">📡 Connected to live updates</p>}
+      <main className={`min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 ${
+        (isAdminContext || isSuperAdminContext) ? 'pt-0' : 'pt-20'
+      }`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse space-y-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <div className="h-8 bg-gray-200 rounded w-96 mb-3"></div>
+              <div className="h-5 bg-gray-200 rounded w-64"></div>
+            </div>
           </div>
         </div>
       </main>
     );
   }
 
+  // Error state
   if (error) {
     return (
-      <main className={`flex flex-col items-center gap-10 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-8' : 'pt-40'} text-justify px-10`}>
-        <div className="w-4/5 flex flex-col items-center">
-          <div className="text-center space-y-4">
-            <div className="bg-primary/10 border border-primary rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-primary mb-2">Unable to Load Election Results</h3>
-              <p className="text-gray">{error}</p>
-            </div>
+      <main className={`min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 ${
+        (isAdminContext || isSuperAdminContext) ? 'pt-0' : 'pt-20'
+      }`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-2xl shadow-xl border border-red-100 p-8 text-center">
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Unable to Load Election Results</h3>
+            <p className="text-gray-600">{error || "Failed to load candidate data"}</p>
           </div>
         </div>
       </main>
@@ -371,30 +376,60 @@ const CandidateDashboard = () => {
   };
 
   return (
-    <main className={`flex flex-col items-center gap-6 pb-20 ${(isAdminContext || isSuperAdminContext) ? 'pt-8' : 'pt-30'} text-justify px-10`}>
-      <div className="w-full max-w-7xl flex flex-col items-center">
-        <div className="flex items-center rounded-2xl bg-red-800 px-6 py-4 relative overflow-hidden w-full mb-4">
-          <div>
-            <h2 className="text-white text-xl font-semibold mb-1">
-              {results?.election?.name || "Loading Election..."}
-            </h2>
-            <p className="text-white text-sm">
-              {results?.election?.organization || "Loading Organization..."}
-            </p>
-          </div>
-        </div>
-        {/* Live Dashboard Status - Below Header, Left Aligned */}
-        <div className="flex items-center justify-between w-full mb-4 gap-2">
-          <div className="flex items-center gap-3 bg-green-50 border border-green-200 px-4 py-2 rounded-lg">
-            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></div>
-            <span className={`text-lg font-semibold ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
-              {isConnected ? 'Live Dashboard' : 'Disconnected'}
+    <main className={`min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 ${
+      (isAdminContext || isSuperAdminContext) ? 'pt-0' : 'pt-20'
+    }`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="pdf-export-content">
+        {/* Live Status Bar - Clean Toolbar */}
+        <div className={`sticky ${
+          (isAdminContext || isSuperAdminContext) ? 'top-16' : 'top-20'
+        } z-50 bg-white flex items-center justify-between gap-4 py-3 px-5 mb-6 transition-all duration-300`}>
+          {/* Connection Status */}
+          <div className={`inline-flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-300 ${
+            isConnected 
+              ? 'bg-emerald-50 border border-emerald-200' 
+              : 'bg-red-50 border border-red-200'
+          }`}>
+            <div className="relative">
+              <div className={`w-2.5 h-2.5 rounded-full ${
+                isConnected ? 'bg-emerald-500' : 'bg-red-500'
+              }`}></div>
+              {isConnected && (
+                <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></div>
+              )}
+            </div>
+            <span className={`text-sm font-semibold ${
+              isConnected ? 'text-emerald-700' : 'text-red-700'
+            }`}>
+              {isConnected ? 'Live Updates Active' : 'Connection Lost'}
             </span>
           </div>
-          <SubmitButton
-            variant="action-primary"
+
+          {/* Return to Dashboard Button */}
+          <button
             onClick={() => router.push("/voter/live-dashboard")}
-            label="Return to Live Dashboard"/>
+            className="px-4 py-2 text-sm font-semibold text-white bg-[#7b1c1c] hover:bg-[#5c0000] rounded-lg border border-[#5c0000] transition-colors"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+
+        {/* Election Header - Professional Gradient */}
+        <div className="relative overflow-hidden rounded-2xl shadow-lg mb-8">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#7b1c1c] via-[#992b2b] to-[#5c0000]"></div>
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
+          <div className="relative px-6 py-6">
+            <div className="flex items-center gap-4">
+              <div>
+                <h1 className="text-md font-bold text-white mb-1">
+                  {results?.election?.name || "Loading Election..."} - {selectedCandidate?.name}
+                </h1>
+                <p className="text-white/90 text-sm font-medium">
+                  {results?.election?.organization || "Loading Organization..."}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
         <div className="flex flex-col-reverse items-start w-full gap-10 xl:flex-row">
           {/* candidate list */}
