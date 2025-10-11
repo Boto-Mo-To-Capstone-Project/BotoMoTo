@@ -53,13 +53,17 @@ export default function ElectionSetupOverview() {
   return (
       <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8 pt-4">
 
-        {/* Red Header Card */}
-        <div className="flex items-center rounded-2xl bg-red-800 mb-6 px-6 py-6 relative overflow-hidden mt-8">
-          <div>
-            <h2 className="text-white text-xl font-semibold mb-2">Hi, {session?.user?.name || 'User'}!</h2>
-            <p className="text-white text-base">
-              Follow the steps below to complete election setup.
-            </p>
+        {/* Election Header - Professional Gradient */}
+        <div className="relative overflow-hidden rounded-2xl shadow-lg mb-8 mt-4">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#7b1c1c] via-[#992b2b] to-[#5c0000]"></div>
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
+          <div className="relative px-6 py-6">
+            <div className="flex flex-col gap-2">
+              <h2 className="text-md font-bold text-white mb-1">Hi, {session?.user?.name || 'User'}!</h2>
+              <p className="text-white/90 text-sm">
+                Follow the steps below to complete election setup.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -67,23 +71,23 @@ export default function ElectionSetupOverview() {
         <div className="mb-6 px-2 sm:px-5">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100">
             <div className="flex items-center justify-between rounded-t-xl">
-              <span className="font-semibold text-base py-4 pl-5">Steps for Election Setup</span>
+              <span className="font-semibold text-sm py-4 pl-5">Steps for Election Setup</span>
               <button
                 className="p-2 rounded-full hover:bg-gray-200 transition mr-3"
                 onClick={() => setShowSteps((prev) => !prev)}
                 aria-label="Show steps"
               >
-                <FiMoreHorizontal size={22} className="text-gray-400" />
+                <FiMoreHorizontal size={20} className="text-gray-400" />
               </button>
             </div>
             <div className="border-b border-gray-200 shadow-sm" />
             {showSteps && (
               <div className="border border-red-400 rounded-lg m-4 p-4 text-gray-700 text-sm bg-white">
                 <ol className="space-y-2 list-decimal ml-4">
-                  <li>Click "Add Voter" to add voters to the election.</li>
-                  <li>Click "Add Position" to manage the positions that the candidates will run for in the election.</li>
-                  <li>Click "Add Candidate" to add candidates, input their details, and assign them to specific positions.</li>
-                  <li>Note: Import button can be used for easy batch upload.</li>
+                  <li className="text-sm">Click "Add Voter" to add voters to the election.</li>
+                  <li className="text-sm">Click "Add Position" to manage the positions that the candidates will run for in the election.</li>
+                  <li className="text-sm">Click "Add Candidate" to add candidates, input their details, and assign them to specific positions.</li>
+                  <li className="text-sm">Note: Import button can be used for easy batch upload.</li>
                 </ol>
               </div>
             )}
@@ -120,8 +124,8 @@ export default function ElectionSetupOverview() {
                           className="w-full h-40 object-contain rounded-xl p-2 bg-[# ]"
                         />
                     </div>
-                    <h3 className={`text-[14px] font-semibold mb-2 px-0 sm:px-0 ${card.text} text-left w-full`}>{card.title}</h3>
-                    <p className={`text-[12px] ${card.text} text-left w-full`}>{card.desc}</p>
+                    <h3 className={`text-sm font-semibold mb-2 px-0 sm:px-0 ${card.text} text-left w-full`}>{card.title}</h3>
+                    <p className={`text-sm ${card.text} text-left w-full opacity-80`}>{card.desc}</p>
                   </button>
                 ))}
               </div>

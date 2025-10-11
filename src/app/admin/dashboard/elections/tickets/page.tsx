@@ -152,23 +152,23 @@ export default function AdminTicketsPage() {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-800"></div>
               </div>
             ) : ongoingTickets.length === 0 ? (
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 rounded-2xl p-12 text-center">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center">
                 <div className="flex flex-col items-center">
-                  <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-12 h-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">No Active Tickets</h3>
-                  <p className="text-gray-500">You don't have any active support tickets at the moment</p>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-1">No Active Tickets</h3>
+                  <p className="text-sm text-gray-500">You don't have any active support tickets at the moment</p>
                 </div>
               </div>
             ) : (
               <div className="bg-gradient-to-br from-white to-gray-50 border-2 border-green-200 rounded-2xl shadow-lg overflow-hidden">
                 <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <h2 className="text-lg font-semibold text-white">Active Ticket</h2>
+                    <h2 className="text-sm font-semibold text-white">Active Ticket</h2>
                   </div>
                 </div>
                 <div className="p-6">
@@ -180,8 +180,8 @@ export default function AdminTicketsPage() {
                         </svg>
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm text-gray-500 font-medium">Organization</p>
-                        <p className="text-gray-800 font-semibold text-medium">{ongoingTickets[0].Organization_Name}</p>
+                        <p className="text-xs text-gray-500 font-medium">Organization</p>
+                        <p className="text-sm text-gray-800 font-semibold">{ongoingTickets[0].Organization_Name}</p>
                       </div>
                     </div>
 
@@ -192,8 +192,8 @@ export default function AdminTicketsPage() {
                         </svg>
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm text-gray-500 font-medium">Ticket Subject</p>
-                        <p className="text-gray-800 font-semibold">{ongoingTickets[0].Ticket}</p>
+                        <p className="text-xs text-gray-500 font-medium">Ticket Subject</p>
+                        <p className="text-sm text-gray-800 font-semibold">{ongoingTickets[0].Ticket}</p>
                       </div>
                     </div>
 
@@ -204,8 +204,8 @@ export default function AdminTicketsPage() {
                         </svg>
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm text-gray-500 font-medium mb-2">Status</p>
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold border ${getStatusBadge(ongoingTickets[0].Status)}`}>
+                        <p className="text-xs text-gray-500 font-medium mb-2">Status</p>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusBadge(ongoingTickets[0].Status)}`}>
                           {toSentenceCase(displayMap[ongoingTickets[0].Status] ?? ongoingTickets[0].Status)}
                         </span>
                       </div>
@@ -213,7 +213,7 @@ export default function AdminTicketsPage() {
 
                     <div className="mt-6 pt-4 border-t border-gray-200">
                       <Button  
-                        className="w-full bg-red-800 hover:bg-red-900 text-white py-3 rounded-lg font-semibold transition-all duration-200 shadow-md"         
+                        className="w-full bg-red-800 hover:bg-red-900 text-white py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 shadow-md"         
                         onClick={() => {
                           setSelectedTicket(ongoingTickets[0]._original);
                           setModalOpen(true);
@@ -233,10 +233,10 @@ export default function AdminTicketsPage() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center gap-3">
-                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <h2 className="text-lg font-semibold text-gray-800">Ticket History</h2>
+                  <h2 className="text-sm font-semibold text-gray-800">Ticket History</h2>
                 </div>
               </div>
               <div className="p-4">
