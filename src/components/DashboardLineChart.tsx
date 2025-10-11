@@ -46,8 +46,8 @@ export default function DashboardLineChart() {
       <div className="flex items-center justify-center h-60 w-full bg-gray-50 rounded-lg border border-gray-200">
         <div className="text-center px-4">
           <HiChartBar className="text-gray-400 text-5xl mb-3 mx-auto" />
-          <div className="text-gray-600 font-medium text-lg mb-2">No Election Data Available</div>
-          <div className="text-gray-500 text-sm">
+          <div className="text-gray-600 text-sm text-lg mb-2">No Election Data Available</div>
+          <div className="text-gray-600 text-sm">
             Create repeating elections to see turnout trends
           </div>
         </div>
