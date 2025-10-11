@@ -138,7 +138,7 @@ const OtpInput = ({
           onChange={(e) => handleChange(e, index)}
           onKeyDown={(e) => handleKeyDown(e, index)}
           onPaste={(e) => handlePaste(e, index)}
-          className="w-9 xs:w-11 h-11 text-center border border-[var(--color-secondary)] text-[var(--color-secondary)] font-bold rounded-md text-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
+          className="w-9 xs:w-11 h-11 text-center border border-[var(--color-secondary)] text-gray font-bold rounded-md text-xl focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)]"
         />
       ))}
     </div>
