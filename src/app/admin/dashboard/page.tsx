@@ -1,7 +1,11 @@
 "use client";
-import React, { useState, useEffect } from "react";
+
 import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { Users, BarChart2, FileCheck, FilePlus } from "lucide-react";
+import KpiCard from "@/components/KpiCard";
 import DashboardLineChart from "@/components/DashboardLineChart";
+
 
 interface DashboardStats {
   summary: {
@@ -139,52 +143,42 @@ export default function VoterDashboardPage() {
 
   if (!stats) return null;
 
-  // Generate summary cards with meaningful admin metrics
+  // Generate summary cards with meaningful admin metrics using KpiCard component
   const summaryCards = [
     {
-      title: "Total Voters",
+      name: "Total Voters",
       value: stats.summary.totalVoters.toLocaleString(),
-      change: "",
-      sub: "",
-      bg: "bg-blue-100",
-      text: "text-blue-900",
-      changeText: ""
+      icon: Users,
+      badge: "TOTAL",
+      color: "blue" as const
     },
     {
-      title: "Active Voters",
+      name: "Active Voters",
       value: stats.summary.activeVoters?.toLocaleString() || "0",
-      change: "",
-      sub: "",
-      bg: "bg-purple-100",
-      text: "text-purple-900",
-      changeText: ""
+      icon: Users,
+      badge: "ACTIVE",
+      color: "purple" as const
     },
     {
-      title: "Average Turnout",
+      name: "Average Turnout",
       value: `${stats.summary.voterTurnout}%`,
-      change: "",
-      sub: "",
-      bg: "bg-pink-100",
-      text: "text-pink-900",
-      changeText: ""
+      icon: BarChart2,
+      badge: "RATE",
+      color: "pink" as const
     },
     {
-      title: "Active Elections",
+      name: "Active Elections",
       value: stats.summary.ongoingElections.toString(),
-      change: "",
-      sub: "",
-      bg: "bg-green-100",
-      text: "text-green-900",
-      changeText: ""
+      icon: FileCheck,
+      badge: "ACTIVE",
+      color: "green" as const
     },
     {
-      title: "Draft Elections",
+      name: "Draft Elections",
       value: stats.summary.draftElections.toString(),
-      change: "",
-      sub: "",
-      bg: "bg-yellow-100",
-      text: "text-yellow-900",
-      changeText: ""
+      icon: FilePlus,
+      badge: "DRAFT",
+      color: "amber" as const
     },
   ];
 
@@ -224,22 +218,22 @@ export default function VoterDashboardPage() {
           <div className="main-content flex-auto py-3 overflow-auto pb-3 px-2 md:gap-4 gap-2 py-3 sm:px-5 pt-8">
             <div>
               <div className="mb-4">
-                <h1 className="text-2xl md:text-3xl font-bold mb-1">Welcome back, {session?.user?.name || 'Username'}!
+                <h1 className="text-xl md:text-3xl font-bold mb-1">Welcome back, {session?.user?.name || 'Username'}!
                 </h1>
-                <p className="text-lg text-gray-600 pl-[2px]">Welcome to Boto Mo 'To — Your Election Companion</p>
+                <p className="text-sm font-bold text-gray-600 pl-[2px]">Welcome to Boto Mo 'To — Your Election Companion</p>
               </div>
 
               {/* Summary Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8 w-full">
                 {summaryCards.map((card, idx) => (
-                  <div key={idx} className={`rounded-2xl shadow-sm p-4 ${card.bg} ${card.text} flex flex-col items-start min-w-0 w-full`}>
-                    <div className="text-3xl font-bold mb-1">{card.value}</div>
-                    <div className="text-base font-semibold mb-2 whitespace-nowrap">{card.title}</div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-sm font-bold ${card.changeText}`}>{card.change}</span>
-                      <span className="text-xs text-gray-500">{card.sub}</span>
-                    </div>
-                  </div>
+                  <KpiCard
+                    key={idx}
+                    name={card.name}
+                    value={card.value}
+                    icon={card.icon}
+                    badge={card.badge}
+                    color={card.color}
+                  />
                 ))}
               </div>
 
@@ -247,7 +241,7 @@ export default function VoterDashboardPage() {
                 {/* Chart Section */}
                 <div className="flex-1 bg-white rounded-2xl shadow-sm p-4 border-2 border-gray-200 min-w-0 w-full overflow-visible">
                   <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-lg font-semibold">Election Turnout Trends</h2>
+                    <h2 className="text-sm font-semibold">Election Turnout Trends</h2>
                   </div>
                   {/* Line Chart */}
                   <div className="w-full min-h-[180px] flex overflow-x-auto">
@@ -258,21 +252,21 @@ export default function VoterDashboardPage() {
                 {/* Recent/Completed Elections */}
                 <div className="w-full lg:w-80 flex flex-col gap-6 min-w-0">
                   <div className="bg-white rounded-2xl shadow-sm p-6 border-2 border-yellow-200">
-                    <h3 className="text-base font-semibold mb-3">Recent Election</h3>
+                    <h3 className="text-sm font-semibold mb-3">Recent Election</h3>
                     <div className="flex items-center gap-3 mb-2">
                       <span className={`w-6 h-6 rounded-full ${recentElection.color} flex items-center justify-center text-white font-bold flex-shrink-0`}></span>
-                      <span className="font-semibold text-gray-700">{recentElection.name}</span>
-                      <span className="text-xs text-gray-500">{recentElection.status}</span>
+                      <span className="text-sm font-semibold text-gray-700">{recentElection.name}</span>
+                      <span className="text-sm text-gray-500">{recentElection.status}</span>
                     </div>
                   </div>
                   <div className="bg-white rounded-2xl shadow-sm p-6 border-2 border-green-200">
-                    <h3 className="text-base font-semibold mb-3">Completed Elections</h3>
+                    <h3 className="text-sm font-semibold mb-3">Completed Elections</h3>
                     <div className="flex flex-col gap-3">
                       {completedElections.map((e, idx) => (
                         <div key={idx} className="flex items-center gap-3">
                           <span className={`w-6 h-6 rounded-full ${e.color} flex items-center justify-center text-white font-bold flex-shrink-0`}></span>
-                          <span className="font-semibold text-gray-700">{e.name}</span>
-                          <span className="text-xs text-gray-500">{e.status}</span>
+                          <span className="text-sm font-semibold text-gray-700">{e.name}</span>
+                          <span className="text-sm text-gray-500">{e.status}</span>
                         </div>
                       ))}
                     </div>

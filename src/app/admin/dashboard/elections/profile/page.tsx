@@ -397,8 +397,8 @@ const ProfilePage = () => {
         </div>
 
         {/* Heading */}
-        <h2 className="text-lg font-semibold mb-2 px-2 sm:px-5">Profile</h2>
-        <p className="text-gray-600 mb-6 px-2 sm:px-5">
+        <h2 className="text-md font-bold mb-2 px-2 sm:px-5">Profile</h2>
+        <p className="text-sm font-bold text-gray-600 pl-[2px] mb-6 px-2 sm:px-5">
           View and update your personal information and account settings.
         </p>
 
@@ -408,7 +408,7 @@ const ProfilePage = () => {
             
             {/* Personal Information Section */}
             <div>
-              <h3 className="text-md font-semibold mb-4">Personal Information</h3>
+              <h3 className="text-sm font-semibold mb-4">Personal Information</h3>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                 
                 {/* Profile Photo */}
@@ -426,7 +426,7 @@ const ProfilePage = () => {
                       type="button"
                       onClick={handleChangePhoto}
                       disabled={uploading}
-                      className="text-sm text-blue-600 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-xs text-blue-600 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {uploading ? "Uploading..." : "Change"}
                     </button>
@@ -472,7 +472,7 @@ const ProfilePage = () => {
 
             {/* Organization Section */}
             <div>
-              <h3 className="text-md font-semibold mb-4">Organization Information</h3>
+              <h3 className="text-sm font-semibold mb-4">Organization Information</h3>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <InputField
                   label="Organization Name"
@@ -507,7 +507,7 @@ const ProfilePage = () => {
 
             {/* Account Settings Section */}
             <div>
-              <h3 className="text-md font-semibold mb-4">Account Settings</h3>
+              <h3 className="text-sm font-semibold mb-4">Account Settings</h3>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
                 
                 {/* Change Password */}
