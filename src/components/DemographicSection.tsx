@@ -21,7 +21,7 @@ const demographicColors = [
   { bg: 'bg-indigo-100', hover: 'hover:bg-indigo-200 hover:border-indigo-400' },   // Level 1
   { bg: 'bg-pink-100', hover: 'hover:bg-pink-200 hover:border-pink-400' },         // Level 2
   { bg: 'bg-cyan-100', hover: 'hover:bg-cyan-200 hover:border-cyan-400' },         // Level 3
-  { bg: 'bg-yellow-100', hover: 'hover:bg-yellow-200 hover:border-yellow-400' },   // Level 4
+  { bg: 'bg-slate-100', hover: 'hover:bg-slate-200 hover:border-slate-400' },      // Level 4
   { bg: 'bg-rose-100', hover: 'hover:bg-rose-200 hover:border-rose-400' },         // Level 5
   { bg: 'bg-emerald-100', hover: 'hover:bg-emerald-200 hover:border-emerald-400' }, // Level 6
   { bg: 'bg-violet-100', hover: 'hover:bg-violet-200 hover:border-violet-400' },   // Level 7

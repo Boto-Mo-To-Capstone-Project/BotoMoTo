@@ -147,90 +147,148 @@ const BallotComponent = ({
   return (
     <main className={`flex flex-col items-center px-5 pb-20 text-justify ${mode === 'preview' ? 'pt-8 xl:px-20' : 'pt-30 sm:px-20 '}`}>
       <div className="w-full flex flex-col">
-        {/* Header and subheading */}
-        <div className="mb-6 rounded-2xl bg-[#a30d1a] px-8 py-6 flex flex-col items-start w-full">
-          <h2 className="text-white text-xl font-semibold mb-2">
-            {mode === 'preview' ? 'Ballot Preview' : 'Official Ballot Form'}
-          </h2>
-          <p className="text-white text-base">
-            {mode === 'preview' ? 'Preview for your' : "You're voting in the"} {isLoading ? "election" : electionName}
-          </p>
+        {/* Header and subheading - Professional Gradient */}
+        <div className="relative overflow-hidden rounded-2xl shadow-lg mb-6">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#7b1c1c] via-[#992b2b] to-[#5c0000]"></div>
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
+          <div className="relative px-8 py-6">
+            <div className="flex flex-col items-start">
+              <h2 className="text-2xl font-bold text-white mb-2">
+                {mode === 'preview' ? 'Ballot Preview' : 'Official Ballot Form'}
+              </h2>
+              <p className="text-white text-base font-medium opacity-90">
+                {mode === 'preview' ? 'Preview for your' : "You're voting in the"} {isLoading ? "election" : electionName}
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Instructions box */}
-        <div className="mb-6">
-          <div className="border rounded-md p-4 bg-white" style={{ borderColor: '#c62828' }}>
-            <h3 className="text-base font-semibold mb-2">
-              {mode === 'preview' ? 'Ballot Information' : 'Instructions for Voting'}
-            </h3>
-            <ul className="text-sm space-y-2 list-none">
+        {/* Main information grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Instructions box */}
+          <div className="bg-white rounded-lg shadow-sm border border-[#7b1c1c]/20 p-3">
+            <div className="flex items-center border-b border-[#7b1c1c]/10 pb-2 mb-2">
+              <div className="w-1 h-4 bg-[#7b1c1c] rounded mr-2"></div>
+              <h3 className="text-sm font-semibold text-gray-900">
+                {mode === 'preview' ? 'Ballot Information' : 'Instructions for Voting'}
+              </h3>
+            </div>
+            <ul className="text-sm space-y-1 list-none text-gray-600">
               {mode === 'preview' ? (
                 <>
-                  <li>This is how the ballot will appear to voters.</li>
-                  <li>Candidates are grouped by position with selection limits applied.</li>
-                  <li>Preview mode - interactions are disabled.</li>
+                  <li className="flex items-center gap-1.5">
+                    <div className="w-1 h-1 rounded-full bg-[#7b1c1c]/70 mt-0.5"></div>
+                    <span>This is how the ballot will appear to voters.</span>
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <div className="w-1 h-1 rounded-full bg-[#7b1c1c]/70 mt-0.5"></div>
+                    <span>Candidates are grouped by position with selection limits applied.</span>
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <div className="w-1 h-1 rounded-full bg-[#7b1c1c]/70 mt-0.5"></div>
+                    <span>Preview mode - interactions are disabled.</span>
+                  </li>
                 </>
               ) : (
                 <>
-                  <li>1. Select the circle next to your chosen candidate's name.</li>
-                  <li>2. Do not select more candidates than the allowed number for each position.</li>
-                  <li>3. Click 'Check Credentials' to review the background and details of each candidates.</li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="font-medium text-[#7b1c1c] min-w-[12px]">1.</span>
+                    <span>Select the circle next to your chosen candidate's name.</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="font-medium text-[#7b1c1c] min-w-[12px]">2.</span>
+                    <span>Do not select more candidates than the allowed number for each position.</span>
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="font-medium text-[#7b1c1c] min-w-[12px]">3.</span>
+                    <span>Click 'Check Credentials' to review the background and details of each candidates.</span>
+                  </li>
                 </>
               )}
             </ul>
           </div>
+
+          {/* Voter scope and Party selection */}
+          <div className="space-y-4">
+            {/* Voter scope information */}
+            {voterScope && (
+              <div className="bg-white rounded-lg shadow-sm border border-[#7b1c1c]/20 p-3">
+                <div className="flex items-center border-b border-[#7b1c1c]/10 pb-2 mb-2">
+                  <div className="w-1 h-4 bg-[#7b1c1c] rounded mr-2"></div>
+                  <h3 className="text-sm font-semibold text-gray-900">Your Voting Scope</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm bg-[#7b1c1c]/5 text-[#7b1c1c] px-2 py-1 rounded font-medium">
+                    {voterScope}
+                  </span>
+                  <span className="text-xs font-bold text-gray-500">
+                    (You can only vote within this scope)
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Party dropdown - only show in voter mode */}
+            {!isLoading && mode === 'voter' && availableParties.length > 0 && (
+              <div className="bg-white rounded-lg shadow-sm border border-[#7b1c1c]/20 p-3">
+                <div className="flex items-center border-b border-[#7b1c1c]/10 pb-2 mb-2">
+                  <div className="w-1 h-4 bg-[#7b1c1c] rounded mr-2"></div>
+                  <h3 className="text-sm font-semibold text-gray-900">Vote Straight by Party</h3>
+                </div>
+                <Dropdown
+                  label=""
+                  options={availableParties}
+                  onSelect={handleVoteStraight}
+                  onClear={handleClearAllSelections}
+                />
+              </div>
+            )}
+          </div>
         </div>
-
-        {/* Voter scope information */}
-        {voterScope && (
-          <div className="mb-5 p-3 border rounded-md bg-blue-50 border-blue-200">
-            <p className="text-base text-blue-800 font-semibold">
-              Your Voting Scope: <span className="font-normal">{voterScope}</span>
-            </p>
-            <p className="text-sm text-blue-600 mt-1">
-              You can only vote for candidates within your assigned scope.
-            </p>
-          </div>
-        )}
-
-        {/* Party dropdown - only show in voter mode */}
-        {!isLoading && mode === 'voter' && availableParties.length > 0 && (
-          <div className="mb-6">
-            <Dropdown
-              label="Vote Straight (Party)"
-              options={availableParties}
-              onSelect={handleVoteStraight}
-              onClear={handleClearAllSelections}
-            />
-          </div>
-        )}
 
         {/* Combined box for parties and voting scope in preview mode */}
         {!isLoading && mode === 'preview' && (
-          <div className="mb-5 p-4 border border-[#c62828] rounded-md bg-transparent w-full">
-            {availableParties.length > 0 && (
-              <>
-                <p className="font-semibold text-base mb-1">Available Parties:</p>
-                <p className="text-sm text-gray-700 mb-4">{availableParties.join(', ')}</p>
-              </>
-            )}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-6 mb-4">
+          <div className="mb-6">
+            <div className="bg-white rounded-lg shadow-sm border border-[#7b1c1c]/20 p-4">
+              {availableParties.length > 0 && (
+                <div className="mb-4">
+                  <div className="border-l-4 border-[#7b1c1c] pl-3 mb-3">
+                    <h3 className="text-base font-semibold text-gray-900">Available Parties</h3>
+                  </div>
+                  <div className="text-sm text-gray-600 pl-3 flex flex-wrap gap-1.5">
+                    {availableParties.map((party, index) => (
+                      <span key={index} className="inline-flex items-center px-3 py-1 rounded-full bg-[#7b1c1c]/5 text-[#7b1c1c] font-medium">
+                        {party}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div>
-                <p className="font-semibold text-base mb-1">Available Voting Scope:</p>
-                <p className="text-sm text-gray-700">Select Voting Scope:</p>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 rounded-full bg-[#7b1c1c]/10 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-[#7b1c1c]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h.5A2.5 2.5 0 0020 5.5V3.935M3.055 11a7 7 0 0113.89 0M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-base font-semibold text-gray-900">Voting Scope Selection</h3>
+                </div>
+                <div className="pl-11">
+                  <div className="text-sm text-gray-600 mb-3">Select the scope to filter candidates:</div>
+                  <Dropdown
+                    options={["All Voting Scope", ...(ballotData.scopes || []).map(s => s.name)]}
+                    onSelect={(scope) => {
+                      if (scope === "All Voting Scope") {
+                        setSelectedScopeId("all");
+                      } else {
+                        const scopeObj = ballotData.scopes?.find((s) => s.name === scope);
+                        if (scopeObj) setSelectedScopeId(scopeObj.id);
+                      }
+                    }}
+                    label={""}
+                  />
+                </div>
               </div>
-              <Dropdown
-                options={["All Voting Scope", ...(ballotData.scopes || []).map(s => s.name)]}
-                onSelect={(scope) => {
-                  if (scope === "All Voting Scope") {
-                    setSelectedScopeId("all");
-                  } else {
-                    const scopeObj = ballotData.scopes?.find((s) => s.name === scope);
-                    if (scopeObj) setSelectedScopeId(scopeObj.id); // ✅ directly use number
-                  }
-                }}
-                label={""}
-              />
             </div>
           </div>
         )}
