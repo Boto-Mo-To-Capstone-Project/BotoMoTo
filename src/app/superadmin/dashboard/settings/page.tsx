@@ -304,7 +304,7 @@ const ProfilePage = () => {
         </div>
 
         {/* Heading */}
-        <h2 className="text-lg font-semibold mb-2 px-2 sm:px-5">Profile</h2>
+        <h2 className="text-md font-bold mb-2 px-2 sm:px-5">Profile</h2>
         <p className="text-gray-600 mb-6 px-2 sm:px-5">
           View and update your personal information and account settings.
         </p>

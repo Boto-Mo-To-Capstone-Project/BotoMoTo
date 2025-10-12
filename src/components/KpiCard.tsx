@@ -97,39 +97,43 @@ const KpiCard: React.FC<KpiCardProps> = ({
 
   const colors = colorClasses[color];
 
-  // Superadmin variant with trend indicators (original design)
+  // Superadmin variant with trend indicators (modern design)
   if (variant === "superadmin") {
+    const trendColor = trend === "up" ? "green" : "red";
+    const colors = colorClasses[trendColor];
+
     return (
       <div
-        className={`flex justify-between items-center gap-4 rounded-xl p-4 shadow border border-gray-200 h-32 w-full  
-          ${trend === "up" ? "border-2 border-green-600" : ""}
-          ${trend === "down" ? "border-2 border-red-600" : ""}
+        className={`group bg-white rounded-xl p-6 shadow-sm border-2 transition-all duration-300 h-full
+          ${trend === "up" ? "border-green-600 hover:border-green-700" : ""}
+          ${trend === "down" ? "border-red-600 hover:border-red-700" : ""}
+          ${!trend ? "border-gray-200 hover:border-gray-300" : ""}
+          hover:shadow-md
         `}
         onClick={handleClick}
       >
-        <div className="flex flex-col gap-2">
-          <span className="kpi-label">{name}</span>
-          <span className="kpi-value">{value}</span>
-          <div className="flex items-center gap-2">
-            <span className={trend === "up" ? "text-green-700" : "text-red-700"}>
-              {trend === "up" ? (
-                <ArrowUp className="h-4 w-4" />
-              ) : (
-                <ArrowDown className="h-4 w-4" />
-              )}
-            </span>
-            <span
-              className={`kpi-desc ${
-                trend === "up" ? "text-green-700" : "text-red-700"
-              }`}
-            >
-              {desc}
-            </span>
+        <div className="flex items-start justify-between mb-4">
+          <div className={`w-12 h-12 ${colors?.iconBg || 'bg-gray-100'} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+            <Icon className={`w-6 h-6 ${colors?.iconText || 'text-gray-600'}`} />
           </div>
+          {trend && (
+            <div className={`flex items-center gap-1 ${colors?.badgeBg || 'bg-gray-50'} ${colors?.badgeText || 'text-gray-600'} px-2.5 py-1 rounded-full text-xs font-semibold`}>
+              {trend === "up" ? (
+                <ArrowUp className="h-3 w-3" />
+              ) : (
+                <ArrowDown className="h-3 w-3" />
+              )}
+              <span>Trend</span>
+            </div>
+          )}
         </div>
-        <div className="flex items-center justify-center rounded-full bg-secondary h-20 w-20">
-          <Icon className="h-10 w-10 text-primary" />
-        </div>
+        <p className={`text-3xl font-bold mb-1 ${colors?.valueBg || 'text-gray-700'}`}>{value}</p>
+        <p className="text-sm text-gray-600 font-medium">{name}</p>
+        {desc && (
+          <p className={`text-xs mt-2 ${colors?.badgeText || 'text-gray-500'}`}>
+            {desc}
+          </p>
+        )}
       </div>
     );
   }
