@@ -18,43 +18,40 @@ export default function SuperadminDashboard() {
   // Loading state
   if (loading) {
     return (
-      <main className="pt-16 px-8 animate-pulse">
+      <main className="pt-8 px-8 animate-pulse">
         <div className="flex flex-col items-start gap-8">
           <div>
-            <p className="superadmin-heading">Hi, Chief Administrator!</p>
-            <p className="superadmin-subheading mt-2">
-              Welcome back, Chief Administrator! <br />
-              You now have access to everything you've missed and full visibility
-              of your database.
-            </p>
+            <p className="text-xl md:text-3xl font-bold mb-1 bg-gray-200 h-8 w-64 rounded"></p>
+            <p className="text-sm font-bold text-gray-600 pl-[2px] bg-gray-200 h-12 w-full max-w-2xl rounded mt-2"></p>
           </div>
 
           {/* Time Range Selector */}
           <div className="flex gap-2 mb-4">
-            <div className="h-10 w-16 bg-gray-300 rounded"></div>
-            <div className="h-10 w-16 bg-gray-300 rounded"></div>
-            <div className="h-10 w-16 bg-gray-300 rounded"></div>
+            <div className="h-10 w-16 bg-gray-200 rounded"></div>
+            <div className="h-10 w-16 bg-gray-200 rounded"></div>
+            <div className="h-10 w-16 bg-gray-200 rounded"></div>
           </div>
 
           {/* System Performance KPIs */}
           <div className="w-full">
-            <div className="h-6 w-64 bg-gray-300 rounded mb-4"></div>
+            <div className="mb-6 bg-gray-200 h-7 w-64 rounded"></div>
 
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
               {/* Simulate KPI cards */}
               {Array.from({ length: 5 }).map((_, i) => (
                 <div
                   key={i}
-                  className="flex flex-col justify-between p-5 bg-gray-200 rounded-2xl shadow-sm h-36"
+                  className="group bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-all duration-300"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 bg-gray-300 rounded-full"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 w-32 bg-gray-300 rounded"></div>
-                      <div className="h-6 w-24 bg-gray-400 rounded"></div>
-                    </div>
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-12 h-12 bg-gray-100 rounded-lg"></div>
+                    <div className="bg-gray-50 px-2.5 py-1 rounded-full w-20"></div>
                   </div>
-                  <div className="h-3 w-40 bg-gray-300 rounded mt-3"></div>
+                  <div className="space-y-3">
+                    <div className="h-9 bg-gray-100 rounded w-24"></div>
+                    <div className="h-5 bg-gray-100 rounded w-32"></div>
+                    <div className="h-4 bg-gray-50 rounded w-40"></div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -87,13 +84,12 @@ export default function SuperadminDashboard() {
   }
 
   return (
-    <main className="pt-16 px-8">
+    <main className="pt-8 px-8">
       <div className="flex flex-col items-start gap-8">
         <div>
-          <p className="superadmin-heading">Hi, Chief Administrator!</p>
-          <p className="superadmin-subheading mt-2">
-            Welcome back, Chief Administrator! <br />
-            You now have access to everything you've missed and full visibility
+          <p className="text-xl md:text-3xl font-bold mb-1">Hi, Chief Administrator!</p>
+          <p className="text-sm font-bold text-gray-600 pl-[2px]">
+            Welcome back, Chief Administrator! You now have access to everything you've missed and full visibility
             of your database.
           </p>
         </div>
@@ -123,7 +119,7 @@ export default function SuperadminDashboard() {
         {/* System Performance KPIs */}
         <div className="w-full">
           <SectionHeaderContainer>System Performance KPIs</SectionHeaderContainer>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {data?.overview && (
               <>
                 <KpiCard
