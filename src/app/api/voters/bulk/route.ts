@@ -204,27 +204,27 @@ export async function POST(request: NextRequest) {
             console.log(`[Bulk Send] Processing chunk ${i + 1}/${chunks.length} (${chunk.length} voters)`);
 
             try {
-              // Send individual template emails for each voter in this chunk
-              const sendPromises = chunk.map(voter => 
-                emailService.sendTemplate(
-                  templateId || 'voting-code',
-                  {
-                    voterName: `${voter.firstName} ${voter.lastName}`.trim(),
-                    electionTitle: voter.election.name,
-                    votingCode: voter.code,
-                    organizationName: voter.election.organization.name,
-                    startDate: scheduleData.startDate || 'TBD',
-                    endDate: scheduleData.endDate || 'TBD', 
-                    expiryDate: scheduleData.expiryDate || 'End of voting period',
-                    contactEmail: 'support@boto-mo-to.online'
-                  },
-                  { email: voter.email!, name: `${voter.firstName} ${voter.lastName}`.trim() },
-                  { organizationId: voter.election.organization.id }
-                )
-              );
+              // Use bulk template sending with proper rate limiting
+              const recipients = chunk.map(voter => ({
+                to: { email: voter.email!, name: `${voter.firstName} ${voter.lastName}`.trim() },
+                variables: {
+                  voterName: `${voter.firstName} ${voter.lastName}`.trim(),
+                  electionTitle: voter.election.name,
+                  votingCode: voter.code,
+                  organizationName: voter.election.organization.name,
+                  startDate: scheduleData.startDate || 'TBD',
+                  endDate: scheduleData.endDate || 'TBD', 
+                  expiryDate: scheduleData.expiryDate || 'End of voting period',
+                  contactEmail: 'support@boto-mo-to.online'
+                }
+              }));
 
-              // Execute all sends for this chunk
-              const chunkResults = await Promise.all(sendPromises);
+              // Execute bulk send with proper rate limiting
+              const chunkResults = await emailService.sendBulkTemplate(
+                templateId || 'voting-code',
+                recipients,
+                { organizationId: chunk[0].election.organization.id }
+              );
               
               // Update successful voters
               await db.voter.updateMany({
@@ -366,27 +366,27 @@ export async function POST(request: NextRequest) {
             console.log(`[Bulk Resend] Processing chunk ${i + 1}/${chunks.length} (${chunk.length} voters)`);
 
             try {
-              // Send individual template emails for each voter in this chunk
-              const sendPromises = chunk.map(voter => 
-                emailService.sendTemplate(
-                  templateId || 'voting-code',
-                  {
-                    voterName: `${voter.firstName} ${voter.lastName}`.trim(),
-                    electionTitle: voter.election.name,
-                    votingCode: voter.code,
-                    organizationName: voter.election.organization.name,
-                    startDate: scheduleData.startDate || 'TBD',
-                    endDate: scheduleData.endDate || 'TBD', 
-                    expiryDate: scheduleData.expiryDate || 'End of voting period',
-                    contactEmail: 'support@boto-mo-to.online'
-                  },
-                  { email: voter.email!, name: `${voter.firstName} ${voter.lastName}`.trim() },
-                  { organizationId: voter.election.organization.id }
-                )
-              );
+              // Use bulk template sending with proper rate limiting
+              const recipients = chunk.map(voter => ({
+                to: { email: voter.email!, name: `${voter.firstName} ${voter.lastName}`.trim() },
+                variables: {
+                  voterName: `${voter.firstName} ${voter.lastName}`.trim(),
+                  electionTitle: voter.election.name,
+                  votingCode: voter.code,
+                  organizationName: voter.election.organization.name,
+                  startDate: scheduleData.startDate || 'TBD',
+                  endDate: scheduleData.endDate || 'TBD', 
+                  expiryDate: scheduleData.expiryDate || 'End of voting period',
+                  contactEmail: 'support@boto-mo-to.online'
+                }
+              }));
 
-              // Execute all sends for this chunk
-              const chunkResults = await Promise.all(sendPromises);
+              // Execute bulk send with proper rate limiting
+              const chunkResults = await emailService.sendBulkTemplate(
+                templateId || 'voting-code',
+                recipients,
+                { organizationId: chunk[0].election.organization.id }
+              );
               
               // Update successful voters
               await db.voter.updateMany({
@@ -529,27 +529,27 @@ export async function POST(request: NextRequest) {
             console.log(`[Bulk Retry] Processing chunk ${i + 1}/${chunks.length} (${chunk.length} voters)`);
 
             try {
-              // Send individual template emails for each voter in this chunk
-              const sendPromises = chunk.map(voter => 
-                emailService.sendTemplate(
-                  templateId || 'voting-code',
-                  {
-                    voterName: `${voter.firstName} ${voter.lastName}`.trim(),
-                    electionTitle: voter.election.name,
-                    votingCode: voter.code,
-                    organizationName: voter.election.organization.name,
-                    startDate: scheduleData.startDate || 'TBD',
-                    endDate: scheduleData.endDate || 'TBD', 
-                    expiryDate: scheduleData.expiryDate || 'End of voting period',
-                    contactEmail: 'support@boto-mo-to.online'
-                  },
-                  { email: voter.email!, name: `${voter.firstName} ${voter.lastName}`.trim() },
-                  { organizationId: voter.election.organization.id }
-                )
-              );
+              // Use bulk template sending with proper rate limiting
+              const recipients = chunk.map(voter => ({
+                to: { email: voter.email!, name: `${voter.firstName} ${voter.lastName}`.trim() },
+                variables: {
+                  voterName: `${voter.firstName} ${voter.lastName}`.trim(),
+                  electionTitle: voter.election.name,
+                  votingCode: voter.code,
+                  organizationName: voter.election.organization.name,
+                  startDate: scheduleData.startDate || 'TBD',
+                  endDate: scheduleData.endDate || 'TBD', 
+                  expiryDate: scheduleData.expiryDate || 'End of voting period',
+                  contactEmail: 'support@boto-mo-to.online'
+                }
+              }));
 
-              // Execute all sends for this chunk
-              const chunkResults = await Promise.all(sendPromises);
+              // Execute bulk send with proper rate limiting
+              const chunkResults = await emailService.sendBulkTemplate(
+                templateId || 'voting-code',
+                recipients,
+                { organizationId: chunk[0].election.organization.id }
+              );
               
               // Update successful voters
               await db.voter.updateMany({

@@ -206,7 +206,7 @@ export class ResendEmailProvider implements EmailProvider {
 
   getRateLimit() {
     return {
-      requestsPerSecond: 14, // Resend default rate limit
+      requestsPerSecond: 2, // Resend free tier actual limit (not 14)
     };
   }
 
