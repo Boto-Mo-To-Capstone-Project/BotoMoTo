@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     
     // Always use our custom variables for preview, even if system template has previewProps
     variables = {
-      voterName: 'Juan Dela Cruzlsakfjl',
+      voterName: 'Christine Marieking Sebastian',
       votingCode: '260422',
       electionTitle: 'Student Council Elections 2024',
       organizationName: 'Sample University',
