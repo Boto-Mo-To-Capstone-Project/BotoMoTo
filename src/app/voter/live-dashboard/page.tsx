@@ -435,7 +435,7 @@ const LiveDashboard = () => {
                 Logout
               </button>
             )}
-            {isAdminContext && (
+            {(isAdminContext || isSuperAdminContext) && (
               <button
                 onClick={exportToPDF}
                 disabled={isExporting}
