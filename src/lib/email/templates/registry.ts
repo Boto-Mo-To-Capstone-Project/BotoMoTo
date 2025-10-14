@@ -32,22 +32,35 @@ export const votingCodeTemplate: RawHtmlTemplate = {
       <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #2563eb; color: white; padding: 20px; text-align: center; }
+        .header { line-height: 0; }
+        .header img { width: 100%; height: auto; display: block; }
         .content { padding: 20px; background: #f9f9f9; }
-        .code { background: #e5e7eb; padding: 15px; font-size: 24px; font-weight: bold; text-align: center; margin: 20px 0; letter-spacing: 3px; }
+        .code { background: #f0f0f0; color: maroon; padding: 15px; font-size: 24px; font-weight: bold; text-align: center; margin: 20px 0; letter-spacing: 3px; }
         .footer { padding: 20px; text-align: center; color: #666; font-size: 14px; }
       </style>
     </head>
     <body>
       <div class="container">
         <div class="header">
-          <h1>Your Voting Code</h1>
+          <img src="/assets/HeaderFinal.png" alt="BOTO MO 'TO, BOSES MO 'TO!" style="width: 100%; height: auto; display: block;">
         </div>
         <div class="content">
-          <p>Dear {{voterName}},</p>
-          <p>Your voting code for the <strong>{{electionTitle}}</strong> election is:</p>
+          <p>Dear <b>{{voterName}},</b></p>
+          <p>You are now casting your vote for the <strong>{{electionTitle}}</strong>. Please keep your voting code private and ensure that you vote correctly and responsibly. Your vote matters! <b>Boto Mo 'To, Boses Mo 'To!</b></p>
+          <p style="margin-top: 25px;"><strong>To submit your ballot, please follow these steps carefully:</strong></p>
+          <ol style="margin: 20px 0; padding-left: 25px;">
+            <li style="margin-bottom: 15px;">Access the voting portal by clicking the button below:</li>
+            <div style="text-align: center; margin: 30px 0;">
+            <a href="https://boto-mo-to.online/" style="background-color: #800000; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+              Access Voting Portal
+            </a>
+            </div>
+            <li style="margin-bottom: 15px;">Enter your unique voting code when prompted</li>
+          </ol>
           <div class="code">{{votingCode}}</div>
-          <p>Please keep this code secure and use it to cast your vote. The voting period is from {{startDate}} to {{endDate}}.</p>
+
+          </div>
+          <p>Please keep this code secure. The voting period is from <b>{{startDate}}</b> to <b>{{endDate}}</b>.</p>
           <p>If you have any questions, please contact the election administrator.</p>
         </div>
         <div class="footer">
