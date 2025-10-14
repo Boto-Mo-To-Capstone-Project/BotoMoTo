@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AdminSidebar from "./AdminSidebar";
 import SuperAdminSidebar from "./SuperAdminSidebar"; // use real component
 import AppHeader from "../AppHeader";
@@ -16,6 +16,57 @@ export default function SidebarWrapper({
   const searchParams = useSearchParams();
   const eidParam = searchParams.get("eid") ?? undefined;
   const parts = pathname.split("/");
+
+  // Simple state for election number
+  const [electionNumber, setElectionNumber] = useState<number | null>(null);
+
+  // Get current election ID
+  const currentElectionId = (() => {
+    // For URL parameter
+    if (eidParam) return parseInt(eidParam);
+    
+    // For path-based election ID (e.g., /admin/dashboard/elections/44/setup)
+    if (parts[4] && !["create", "tickets", "profile"].includes(parts[4]?.toLowerCase())) {
+      const id = parseInt(parts[4]);
+      return isNaN(id) ? undefined : id;
+    }
+    
+    // For admin context in voter routes
+    if (typeof window !== 'undefined' && 
+        (sessionStorage.getItem("adminContext") === "true" || 
+         sessionStorage.getItem("superAdminContext") === "true")) {
+      const adminElectionId = sessionStorage.getItem("adminElectionId");
+      return adminElectionId ? parseInt(adminElectionId) : undefined;
+    }
+    
+    return undefined;
+  })();
+
+  // Simple direct fetch
+  useEffect(() => {
+    if (currentElectionId) {
+      fetch(`/api/elections/${currentElectionId}/admin-number`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setElectionNumber(data.data.electionNumber);
+          } else {
+            setElectionNumber(null);
+          }
+        })
+        .catch(() => setElectionNumber(null));
+    } else {
+      setElectionNumber(null);
+    }
+  }, [currentElectionId]);
+
+  // Simple format function
+  const formatElectionTitle = (number: number | null, suffix?: string): string => {
+    if (number === null) {
+      return suffix ? `Election - ${suffix}` : "Election";
+    }
+    return suffix ? `Election ${number} - ${suffix}` : `Election ${number}`;
+  };
 
   // === OLD LOGIC MERGED ===
 
@@ -70,15 +121,15 @@ export default function SidebarWrapper({
   const pageTitle = (() => {
     if (pathname === "/admin/dashboard") return "Admin Dashboard";
     if (pathname === "/admin/dashboard/elections")
-      return eidParam ? `Election ${eidParam}` : "Admin Elections";
+      return eidParam ? formatElectionTitle(electionNumber) : "Admin Elections";
     if (pathname === "/admin/dashboard/elections/create")
-      return eidParam ? `Election ${eidParam} - Edit` : "Election Form";
+      return eidParam ? formatElectionTitle(electionNumber, "Edit") : "Election Form";
     if (pathname === "/admin/dashboard/elections/tickets")
       return "Admin Tickets";
     if (pathname === "/admin/dashboard/elections/profile")
       return "Admin Profile";
     if (pathname === "/admin/dashboard/elections/manage")
-      return `Election ${sidebarElectionId} - Manage`;
+      return formatElectionTitle(electionNumber, "Manage");
     // matches: /admin/dashboard/elections/[id]/setup/[section]
 
     // === ADMIN: ELECTION VERIFY INTEGRITY ===
@@ -92,8 +143,7 @@ export default function SidebarWrapper({
       parts[6] === "manage-election" &&
       parts[7] === "verify-integrity"
     ) {
-      const electionId = parts[4];
-      return `Election ${electionId} - Verify Integrity`;
+      return formatElectionTitle(electionNumber, "Verify Integrity");
     }
 
     // === ADMIN: ELECTION SETUP ===
@@ -106,11 +156,10 @@ export default function SidebarWrapper({
       parts[5] === "setup" &&
       parts.length >= 7
     ) {
-      const electionId = parts[4];
       const section = parts[6]
         ?.replace(/-/g, " ") // replace hyphens with spaces
         .replace(/\b\w/g, (l) => l.toUpperCase()); // capitalize each word
-      return `Election ${electionId} - Setup ${section}`;
+      return formatElectionTitle(electionNumber, `Setup ${section}`);
     }
 
     // === ADMIN: MANAGE ELECTION ===
@@ -123,21 +172,19 @@ export default function SidebarWrapper({
       parts[5] === "manage" &&
       parts.length >= 7
     ) {
-      const electionId = parts[4];
       const section = parts[6]
         ?.replace(/-/g, " ")
         .replace(/\b\w/g, (l) => l.toUpperCase());
-      return `Election ${electionId} - Manage ${section}`;
+      return formatElectionTitle(electionNumber, `Manage ${section}`);
     }
 
     // Handle voter routes when coming from admin context to set title
     if (pathname.startsWith("/voter/live-dashboard") && typeof window !== 'undefined' && 
     ((sessionStorage.getItem("adminContext") === "true") ||
     (sessionStorage.getItem("superAdminContext") === "true"))) {
-      const electionId = sessionStorage.getItem("adminElectionId");
-      if (pathname === "/voter/live-dashboard") return `Election ${electionId} - Live Dashboard`;
-      if (pathname.includes("/candidate/")) return `Election ${electionId} - Candidate Dashboard`;
-      if (pathname.includes("/voting-scope/")) return `Election ${electionId} - Voting Scope Dashboard`;
+      if (pathname === "/voter/live-dashboard") return formatElectionTitle(electionNumber, "Live Dashboard");
+      if (pathname.includes("/candidate/")) return formatElectionTitle(electionNumber, "Candidate Dashboard");
+      if (pathname.includes("/voting-scope/")) return formatElectionTitle(electionNumber, "Voting Scope Dashboard");
       return `Live Dashboard`;
     }
 
