@@ -55,10 +55,25 @@ export const VotingCodeTemplate: React.FC<VotingCodeTemplateProps> = ({
               padding-bottom: 20px;
               margin-bottom: 30px;
             }
+            .headerlogocontainer { 
+              width: 100%; 
+              background-color: #f3f4f6; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              overflow: hidden; 
+              margin: 0 auto;
+            }
+            .headerlogo { 
+              max-width: 100%; 
+              max-height: 100%; 
+              object-fit: contain; 
+              display: block;
+            }
             .logo {
               font-size: 24px;
               font-weight: bold;
-              color: #2563eb;
+              color: #800000;
               margin-bottom: 10px;
             }
             .election-title {
@@ -81,7 +96,7 @@ export const VotingCodeTemplate: React.FC<VotingCodeTemplateProps> = ({
             }
             .voting-code-label {
               font-size: 14px;
-              color: #6b7280;
+              color: #800000;
               margin-bottom: 10px;
               text-transform: uppercase;
               letter-spacing: 1px;
@@ -89,7 +104,7 @@ export const VotingCodeTemplate: React.FC<VotingCodeTemplateProps> = ({
             .voting-code {
               font-size: 32px;
               font-weight: bold;
-              color: #2563eb;
+              color: #800000;
               letter-spacing: 8px;
               font-family: 'Courier New', monospace;
             }
@@ -124,12 +139,12 @@ export const VotingCodeTemplate: React.FC<VotingCodeTemplateProps> = ({
               text-align: center;
             }
             .important {
-              color: #dc2626;
+              color: #800000;
               font-weight: 600;
             }
             .button {
               display: inline-block;
-              background-color: #2563eb;
+              background-color: #800000;
               color: white;
               padding: 12px 24px;
               text-decoration: none;
@@ -137,15 +152,27 @@ export const VotingCodeTemplate: React.FC<VotingCodeTemplateProps> = ({
               font-weight: 600;
               margin: 10px 0;
             }
+            .code { 
+              background: #f0f0f0; 
+              color: maroon; 
+              padding: 15px; 
+              font-size: 24px; 
+              font-weight: bold; 
+              text-align: center; 
+              margin: 20px 0; 
+              letter-spacing: 3px; 
+            }
           `
         }} />
       </head>
       <body>
         <div className="container">
-          <div className="header">
-            <div className="logo">{organizationName}</div>
-            <h1 className="election-title">{electionTitle}</h1>
+        <div className="header">
+          <div className='headerlogocontainer'>
+            <img src="https://www.boto-mo-to.online/assets/HeaderFinal.png" alt="BOTO MO 'TO, BOSES MO 'TO!" className='headerlogo'/>
           </div>
+          
+        </div>
 
           <div className="greeting">
             Dear {voterName},
@@ -156,9 +183,8 @@ export const VotingCodeTemplate: React.FC<VotingCodeTemplateProps> = ({
             that you will need to cast your vote.
           </p>
 
-          <div className="voting-code-section">
-            <div className="voting-code-label">Your Voting Code</div>
-            <div className="voting-code">{votingCode}</div>
+          <div className="code">
+            <div>{votingCode}</div>
           </div>
 
           <p className="important">
@@ -182,7 +208,7 @@ export const VotingCodeTemplate: React.FC<VotingCodeTemplateProps> = ({
           )}
 
           <div style={{ textAlign: 'center', margin: '30px 0' }}>
-            <a href="#" className="button">
+            <a href="https://www.boto-mo-to.online/voter/login" className="button">
               Access Voting Portal
             </a>
           </div>

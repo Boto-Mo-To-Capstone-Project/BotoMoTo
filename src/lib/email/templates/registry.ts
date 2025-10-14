@@ -51,7 +51,7 @@ export const votingCodeTemplate: RawHtmlTemplate = {
           <ol style="margin: 20px 0; padding-left: 25px;">
             <li style="margin-bottom: 15px;">Access the voting portal by clicking the button below:</li>
             <div style="text-align: center; margin: 30px 0;">
-            <a href="https://boto-mo-to.online/" style="background-color: #800000; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
+            <a href="https://www.boto-mo-to.online/voter/login" style="background-color: #800000; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">
               Access Voting Portal
             </a>
             </div>
