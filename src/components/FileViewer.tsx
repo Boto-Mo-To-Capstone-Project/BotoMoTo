@@ -466,11 +466,11 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
       <div className="bg-white w-full h-full max-w-6xl max-h-[90vh] flex flex-col rounded-lg overflow-hidden">
         {/* Header */}
         <div className="bg-gray-100 px-4 py-3 flex items-center justify-between border-b">
-          <div className="flex items-center space-x-4">
-            <h3 className="text-lg font-semibold text-gray-800">
+          <div className="flex flex-col xs:flex-row items-start xs:items-center space-x-4 max-w-[240px] xs:max-w-full">
+            <h3 className="sm:text-lg font-semibold text-gray-800 mx-0">
               {title || getDisplayFileName()}
             </h3>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-500 ">
               {fileType.toUpperCase()}
             </span>
           </div>
@@ -526,8 +526,10 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
 
         {/* Content Viewer */}
         <div className="flex-1 bg-gray-200 overflow-auto">
-          <div className="flex justify-center p-4">
-            {renderContent()}
+          <div className="p-4 overflow-x-auto">
+            <div className="inline-block min-w-full">
+              {renderContent()}
+            </div>
           </div>
         </div>
       </div>

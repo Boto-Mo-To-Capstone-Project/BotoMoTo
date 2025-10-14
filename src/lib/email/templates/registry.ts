@@ -42,7 +42,7 @@ export const votingCodeTemplate: RawHtmlTemplate = {
     <body>
       <div class="container">
         <div class="header">
-          <img src="/assets/HeaderFinal.png" alt="BOTO MO 'TO, BOSES MO 'TO!" style="width: 100%; height: auto; display: block;">
+          <img src="https://www.boto-mo-to.online/assets/HeaderFinal.png" alt="BOTO MO 'TO, BOSES MO 'TO!" style="width: 100%; height: auto; display: block;">
         </div>
         <div class="content">
           <p>Dear <b>{{voterName}},</b></p>
