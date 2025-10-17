@@ -62,59 +62,6 @@ interface ElectionResults {
   timestamp: string;
 }
 
-// -- Hardcoded positions from your code:
-const positions = [
-  {
-    position: "President",
-    candidates: [
-      {
-        id: 1,
-        name: "Jane Doe",
-        party: "Party A",
-        votes: 250,
-        imgSrc:
-          "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaHfpIhAPZHSbZstaGEgFBIjZZ-Y-K533dag&s",
-      },
-      {
-        id: 2,
-        name: "John Smith",
-        party: "Party B",
-        votes: 250,
-        imgSrc:
-          "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaHfpIhAPZHSbZstaGEgFBIjZZ-Y-K533dag&s",
-      },
-      {
-        id: 3,
-        name: "Alice Johnson",
-        party: "Party C",
-        votes: 150,
-        imgSrc:
-          "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaHfpIhAPZHSbZstaGEgFBIjZZ-Y-K533dag&s",
-      },
-    ],
-  },
-  {
-    position: "Vice President",
-    candidates: [
-      {
-        id: 4,
-        name: "Bob Lee",
-        party: "Party D",
-        votes: 300,
-        imgSrc:
-          "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaHfpIhAPZHSbZstaGEgFBIjZZ-Y-K533dag&s",
-      },
-      {
-        id: 5,
-        name: "Sara Kim",
-        party: "Party E",
-        votes: 100,
-        imgSrc:
-          "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaHfpIhAPZHSbZstaGEgFBIjZZ-Y-K533dag&s",
-      },
-    ],
-  },
-];
 
 const CandidateDashboard = () => {
   const params = useParams();
@@ -431,45 +378,57 @@ const CandidateDashboard = () => {
             </div>
           </div>
         </div>
-        <div className="flex flex-col-reverse items-start w-full gap-10 xl:flex-row">
-          {/* candidate list */}
-          <div className="w-full xl:w-1/2">
-            <SectionHeaderContainer variant="yellow">
-              {position.name}
-              {position.votingScope ? (
-                <span className="bg-primary/5 text-sm align-center font-bold ml-2 rounded-xl py-1 px-2 text-primary">
-                  Scope: {position.votingScope.name}
-                </span>
-              ) : null}
-            </SectionHeaderContainer>
-            <div className="w-full grid grid-cols-1 xs:grid-cols-2 xl:grid-cols-1 gap-6 mt-4">
-              {position.candidates.map((candidate) => (
-                <CandidateDashboardCard
-                  key={candidate.id}
-                  id={candidate.id}
-                  imgSrc={candidate.image || "/assets/placeholderuser.png"}
-                  name={candidate.name}
-                  party={candidate.party?.name || "Independent"}
-                  partyColor={candidate.party?.color || undefined}
-                  votes={candidate.voteCount}
-                  maxVotes={maxVotes}
-                  highlight={candidate.id === candidateId}
-                />
-              ))}
+        {results?.election?.status === "ENDED" ||
+          (isAdminContext ||
+          isSuperAdminContext) ? (
+          <div className="flex flex-col-reverse items-start w-full gap-10 xl:flex-row">
+            {/* candidate list */}
+            <div className="w-full xl:w-1/2">
+              <SectionHeaderContainer variant="yellow">
+                {position.name}
+                {position.votingScope ? (
+                  <span className="bg-primary/5 text-sm align-center font-bold ml-2 rounded-xl py-1 px-2 text-primary">
+                    Scope: {position.votingScope.name}
+                  </span>
+                ) : null}
+              </SectionHeaderContainer>
+              <div className="w-full grid grid-cols-1 xs:grid-cols-2 xl:grid-cols-1 gap-6 mt-4">
+                {position.candidates.map((candidate) => (
+                  <CandidateDashboardCard
+                    key={candidate.id}
+                    id={candidate.id}
+                    imgSrc={candidate.image || "/assets/placeholderuser.png"}
+                    name={candidate.name}
+                    party={candidate.party?.name || "Independent"}
+                    partyColor={candidate.party?.color || undefined}
+                    votes={candidate.voteCount}
+                    maxVotes={maxVotes}
+                    highlight={candidate.id === candidateId}
+                  />
+                ))}
+              </div>
+            </div>
+            {/* Bar Chart */}
+            <div className="w-full xl:w-1/2">
+              <SectionHeaderContainer variant="yellow">
+                Vote Comparison for <b>{selectedCandidate?.name}</b>
+                <span className="bg-primary/5 text-sm align-center font-bold ml-2 rounded-xl py-1 px-2 text-primary">{position.name}</span>
+              </SectionHeaderContainer>
+              <div className="w-full h-[400px]">
+                <Bar data={barData} options={barOptions} />
+              </div>
+              {/* Fixed height container */}
             </div>
           </div>
-          {/* Bar Chart */}
-          <div className="w-full xl:w-1/2">
-            <SectionHeaderContainer variant="yellow">
-              Vote Comparison for <b>{selectedCandidate?.name}</b>
-              <span className="bg-primary/5 text-sm align-center font-bold ml-2 rounded-xl py-1 px-2 text-primary">{position.name}</span>
-            </SectionHeaderContainer>
-            <div className="w-full h-[400px]">
-              <Bar data={barData} options={barOptions} />
+        ) : (
+          results?.election?.status === "ACTIVE" && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center text-gray-600">
+              <p className="text-lg font-medium italic">
+                Votes per position will be revealed after the election.
+              </p>
             </div>
-            {/* Fixed height container */}
-          </div>
-        </div>
+          )
+        )}
       </div>
     </main>
   );
