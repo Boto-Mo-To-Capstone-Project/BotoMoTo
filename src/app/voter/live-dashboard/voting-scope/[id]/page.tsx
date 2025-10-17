@@ -402,7 +402,18 @@ const DemographicDashboard = () => {
               </p>
             </div>
             <div className="p-6">
-              <PositionSection positions={scopePositions} />
+              {results?.election?.status === "ENDED" ||
+              (isAdminContext || isSuperAdminContext) ? (
+                <PositionSection positions={scopePositions} />
+              ) : (
+                results?.election?.status === "ACTIVE" && (
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center text-gray-600">
+                    <p className="text-lg font-medium italic">
+                      Votes per position will be revealed after the election.
+                    </p>
+                  </div>
+                )
+              )}
             </div>
           </div>
         ) : (

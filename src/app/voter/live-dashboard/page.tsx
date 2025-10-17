@@ -512,7 +512,7 @@ const LiveDashboard = () => {
         
         {/* Results Grid - Professional Layout */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          {/* Position Results */}
+        {/* Position Results (Hidden for non-admins during OPEN elections) */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-300">
             <div className="bg-gradient-to-r from-[#7b1c1c] to-[#5c0000] px-4 py-3">
               <h2 className="text-white text-sm font-semibold flex items-center gap-2">
@@ -522,7 +522,18 @@ const LiveDashboard = () => {
               <p className="text-white/80 text-xs mt-1">Voter Position Analysis</p>
             </div>
             <div className="p-6">
-              <PositionSection positions={results?.positions} />
+              {results?.election?.status === "ENDED" ||
+              (isAdminContext || isSuperAdminContext) ? (
+                <PositionSection positions={results?.positions} />
+              ) : (
+                results?.election?.status === "ACTIVE" && (
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center text-gray-600">
+                    <p className="text-lg font-medium italic">
+                      Votes per position will be revealed after the election.
+                    </p>
+                  </div>
+                )
+              )}
             </div>
           </div>
 
