@@ -113,7 +113,6 @@ export default function ManageAdminsPage() {
 
         const mapped = list.map((a: any) => ({
             id: String(a.id),
-            Admin_ID: a.id,
             Name: a.name || "—",
             Email: a.email || "—",
             Role: a.role || "—",
@@ -146,7 +145,6 @@ export default function ManageAdminsPage() {
 
   // table column keys (must match object keys)
   const columns = useMemo(() => [
-    "Admin_ID",
     "Name",
     "Email",
     "Role",
