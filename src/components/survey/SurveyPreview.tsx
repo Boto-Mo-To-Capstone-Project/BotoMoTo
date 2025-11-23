@@ -12,6 +12,7 @@ type Props = {
 export default function SurveyPreview({ schema, open, onClose }: Props) {
   if (!open) return null;
 
+  const clickableDescription = useClickableLinks(schema.description);
   return (
     <div
       className="fixed inset-0 z-[100] flex justify-center items-center bg-black/30 backdrop-blur-sm lg:ml-68"
@@ -46,7 +47,7 @@ export default function SurveyPreview({ schema, open, onClose }: Props) {
             <div className="space-y-4">
               <div>
                 <h2 className="text-2xl font-semibold">{schema.title}</h2>
-                {schema.description && <p className="text-base text-gray-600">{useClickableLinks(schema.description)}</p>}
+                {schema.description && <p className="text-base text-gray-600">{clickableDescription}</p>}
               </div>
               <div className="space-y-4">
                 {schema.questions.map((q: Question) => (
