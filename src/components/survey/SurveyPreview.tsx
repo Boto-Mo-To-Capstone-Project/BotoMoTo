@@ -10,9 +10,10 @@ type Props = {
 };
 
 export default function SurveyPreview({ schema, open, onClose }: Props) {
+  const clickableDescription = useClickableLinks(schema.description);
+
   if (!open) return null;
 
-  const clickableDescription = useClickableLinks(schema.description);
   return (
     <div
       className="fixed inset-0 z-[100] flex justify-center items-center bg-black/30 backdrop-blur-sm lg:ml-68"
