@@ -390,42 +390,36 @@ const DemographicDashboard = () => {
         </div>
 
         {/* Position Results */}
-        {scopePositions.length > 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-300">
-            <div className="bg-gradient-to-r from-[#7b1c1c] to-[#5c0000] px-6 py-4">
-              <h2 className="text-white text-sm font-semibold flex items-center gap-2">
-                Positions for {scopeName}
-              </h2>
-              <p className="text-white/80 text-xs mt-1">
-                Showing {scopePositions.length} position{scopePositions.length !== 1 ? 's' : ''} 
-                {scopePositions.length > 0 && `: ${scopePositions.map(p => p.name).join(', ')}`}
+        {(isAdminContext || isSuperAdminContext) && (
+        <div>
+          {scopePositions.length > 0 ? (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-300">
+              <div className="bg-gradient-to-r from-[#7b1c1c] to-[#5c0000] px-6 py-4">
+                <h2 className="text-white text-sm font-semibold flex items-center gap-2">
+                  Positions for {scopeName}
+                </h2>
+                <p className="text-white/80 text-xs mt-1">
+                  Showing {scopePositions.length} position{scopePositions.length !== 1 ? 's' : ''} 
+                  {scopePositions.length > 0 && `: ${scopePositions.map(p => p.name).join(', ')}`}
+                </p>
+              </div>
+              <div className="p-6">
+                <PositionSection positions={scopePositions} />
+              </div>
+            </div>
+            ) : (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-300 p-6 text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                No Positions Available
+              </h3>
+              <p className="text-gray-600">
+                There are no positions configured for {scopeName} in this election.
               </p>
             </div>
-            <div className="p-6">
-              {results?.election?.status === "ENDED" ||
-              (isAdminContext || isSuperAdminContext) ? (
-                <PositionSection positions={scopePositions} />
-              ) : (
-                results?.election?.status === "ACTIVE" && (
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center text-gray-600">
-                    <p className="text-lg font-medium italic">
-                      Votes per position will be revealed after the election.
-                    </p>
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-300 p-6 text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              No Positions Available
-            </h3>
-            <p className="text-gray-600">
-              There are no positions configured for {scopeName} in this election.
-            </p>
-          </div>
+          )}
+        </div>
         )}
+
 
       </div>
     </main>
