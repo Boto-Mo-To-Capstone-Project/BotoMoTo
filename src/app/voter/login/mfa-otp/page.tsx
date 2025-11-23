@@ -299,10 +299,10 @@ const OTPMFA = () => {
               Click the button below to request an OTP to be sent to your registered email address.
             </p>
             <SubmitButton
-              variant="primary"
+              variant="action"
               onClick={requestOtp}
               isLoading={isRequestingOtp}
-              label="Submit OTP"
+              label="Send OTP"
             />
           </div>
         ) : (
