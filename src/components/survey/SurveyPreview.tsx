@@ -1,5 +1,6 @@
 "use client";
 
+import { useClickableLinks } from "@/hooks/useMakeLinksClickable";
 import { FormSchema, Question } from "@/types/survey";
 
 type Props = { 
@@ -9,6 +10,8 @@ type Props = {
 };
 
 export default function SurveyPreview({ schema, open, onClose }: Props) {
+  const clickableDescription = useClickableLinks(schema.description);
+
   if (!open) return null;
 
   return (
@@ -45,7 +48,7 @@ export default function SurveyPreview({ schema, open, onClose }: Props) {
             <div className="space-y-4">
               <div>
                 <h2 className="text-2xl font-semibold">{schema.title}</h2>
-                {schema.description && <p className="text-base text-gray-600">{schema.description}</p>}
+                {clickableDescription && <p className="text-base text-gray-600">{clickableDescription}</p>}
               </div>
               <div className="space-y-4">
                 {schema.questions.map((q: Question) => (

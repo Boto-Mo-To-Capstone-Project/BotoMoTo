@@ -3,6 +3,7 @@
 import { FormSchema, Question } from "@/types/survey";
 import { useState } from "react";
 import Button from "@/components/Button";
+import { useClickableLinks } from "@/hooks/useMakeLinksClickable";
 
 type Props = { 
   schema: FormSchema;
@@ -174,11 +175,12 @@ export default function InteractiveSurvey({ schema, onSubmit, isSubmitting = fal
     );
   };
 
+  const clickableDescription = useClickableLinks(schema.description);
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="text-center space-y-2 mb-10">
         <h2 className="voter-election-heading">{schema.title}</h2>
-        {schema.description && <p className="voter-election-desc">{schema.description}</p>}
+        {schema.description && <p className="voter-election-desc">{clickableDescription}</p>}
       </div>
       
       <div className="space-y-4">

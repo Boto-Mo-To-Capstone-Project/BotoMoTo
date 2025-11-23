@@ -378,9 +378,7 @@ const CandidateDashboard = () => {
             </div>
           </div>
         </div>
-        {results?.election?.status === "ENDED" ||
-          (isAdminContext ||
-          isSuperAdminContext) ? (
+        {(isAdminContext || isSuperAdminContext) && (
           <div className="flex flex-col-reverse items-start w-full gap-10 xl:flex-row">
             {/* candidate list */}
             <div className="w-full xl:w-1/2">
@@ -420,14 +418,6 @@ const CandidateDashboard = () => {
               {/* Fixed height container */}
             </div>
           </div>
-        ) : (
-          results?.election?.status === "ACTIVE" && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center text-gray-600">
-              <p className="text-lg font-medium italic">
-                Votes per position will be revealed after the election.
-              </p>
-            </div>
-          )
         )}
       </div>
     </main>
