@@ -3,6 +3,7 @@ import { FileNotFoundError, getStorageService } from '@/lib/storage';
 import { requireAuth } from '@/lib/helpers/requireAuth';
 import { ROLES } from '@/lib/constants';
 import { apiResponse } from '@/lib/apiResponse';
+import { LocalStorageProvider } from '@/lib/storage/providers/local';
 
 /**
  * Private file serving API endpoint for local storage provider
@@ -28,7 +29,27 @@ export async function GET(
 
     // Get the storage service
     const storage = getStorageService();
-    
+
+    // Check for signed URL token (LOCAL provider) and validate it. If valid, allow access without requiring auth.
+    const urlObj = new URL(request.url);
+    const token = urlObj.searchParams.get('token');
+    const expiresParam = urlObj.searchParams.get('expires');
+    let hasValidToken = false;
+    if (token && expiresParam) {
+      const expiry = parseInt(expiresParam, 10);
+      // Validate the token using LocalStorageProvider's helper (static method)
+      try {
+        if (LocalStorageProvider.validateToken(objectKey, token, expiry)) {
+          hasValidToken = true;
+        } else {
+          return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
+        }
+      } catch (e) {
+        console.error('Error validating signed URL token:', e);
+        return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      }
+    }
+
     // Extract user ID from path based on the file category
     // Format: organizations/USER_ID/fileType/filename
     // Format: candidates/USER_ID/fileType/filename
@@ -43,22 +64,25 @@ export async function GET(
     if (isCandidates){
       // Candidate files are public within the election context
     } else {
-      // All files of organizations are private
-      const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
-      if (!authResult.authorized) return authResult.response;
-      const user = authResult.user;
-      
-      // Check if user can access this file
-      const canAccess = 
-        user.role === ROLES.SUPER_ADMIN || // Super admin can access any file
-        (fileOwnerUserId && user.id === fileOwnerUserId); // User can only access their own files
+      // If we already validated a signed token, skip auth checks
+      if (!hasValidToken) {
+        // All files of organizations are private
+        const authResult = await requireAuth([ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+        if (!authResult.authorized) return authResult.response;
+        const user = authResult.user;
         
-        if (!canAccess) {
-          return NextResponse.json(
-            { error: 'Access denied. You can only access your own files.' },
-            { status: 403 }
-          );
-        }
+        // Check if user can access this file
+        const canAccess = 
+          user.role === ROLES.SUPER_ADMIN || // Super admin can access any file
+          (fileOwnerUserId && user.id === fileOwnerUserId); // User can only access their own files
+          
+          if (!canAccess) {
+            return NextResponse.json(
+              { error: 'Access denied. You can only access your own files.' },
+              { status: 403 }
+            );
+          }
+      }
     }
       
     // Try to get the file through the storage service
