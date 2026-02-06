@@ -1,0 +1,501 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Enhanced User model for RBAC system
+model User {
+  id            String          @id @default(cuid())
+  name          String?
+  email         String?         @unique
+  password      String?  // For credentials login
+  role          UserRole        @default(ADMIN) // Enhanced role system
+  emailVerified DateTime?
+  image         String?
+  isDeleted     Boolean         @default(false)
+
+  deletedAt     DateTime?
+
+  // Organization relationship for admins
+  organization  Organization?
+  
+  accounts      Account[]
+  sessions      Session[]
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+ 
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+ 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@unique([provider, providerAccountId])
+}
+ 
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+ 
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+ 
+  @@unique([identifier, token])
+}
+
+// Enhanced Organization model
+model Organization {
+  id            Int                  @id @default(autoincrement())
+  adminId       String               @unique // Changed to String to match User.id
+  name          String
+  email         String               // <--- Added email field
+  membersCount  Int
+  status        OrganizationStatus   @default(PENDING)
+  
+  // New storage system fields - store object keys, generate URLs dynamically
+  logoObjectKey     String?  // S3/local object key for logo
+  letterObjectKey   String?  // S3/local object key for letter
+  logoProvider      String?  // Which provider stored the logo (s3, local)
+  letterProvider    String?  // Which provider stored the letter (s3, local)
+
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  deletedAt     DateTime?
+  isDeleted     Boolean              @default(false)
+
+  admin          User                @relation(fields: [adminId], references: [id])
+  elections      Election[]
+  tickets        Ticket[]
+  emailTemplates EmailTemplate[]
+}
+
+model Election {
+  id          Int            @id @default(autoincrement())
+  orgId       Int
+  name        String
+  description String
+  status      ElectionStatus @default(DRAFT)
+  
+  // Repeating election fields
+  isTemplate      Boolean   @default(false)  // Is this a template?
+  templateId      Int?                       // Reference to template
+  instanceYear    Int?                      // Year for this instance
+  instanceName    String?                   // Display name for instance
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  deletedAt   DateTime?
+  isDeleted   Boolean        @default(false)
+
+  organization Organization @relation(fields: [orgId], references: [id])
+  schedule     ElectionSched?
+  mfaSettings  MfaSettings?
+  mfaSessions  MfaSession[]
+  votingScopes VotingScope[]
+  voters       Voter[]
+  positions    Position[]
+  parties      Party[]
+  candidates   Candidate[]
+  voteResponses VoteResponse[]
+  
+  // Template relations
+  template     Election?  @relation("ElectionTemplate", fields: [templateId], references: [id])
+  instances    Election[] @relation("ElectionTemplate")
+}
+
+model ElectionSched {
+  id          Int       @id @default(autoincrement())
+  electionId  Int       @unique
+  dateStart   DateTime
+  dateFinish  DateTime
+
+  election Election @relation(fields: [electionId], references: [id])
+}
+
+model MfaSettings {
+  id          Int       @id @default(autoincrement())
+  electionId  Int       @unique
+  mfaEnabled  Boolean   @default(false)
+  mfaMethods  String[]  @default([]) // Array of MFA methods: ["email-confirmation", "otp-email", "passphrase-email"]
+
+  election Election @relation(fields: [electionId], references: [id])
+}
+
+// Server-side MFA session tracking - prevents localStorage manipulation
+model MfaSession {
+  id                String    @id @default(cuid())
+  electionId        Int
+  voterEmail        String
+  voterCode         String
+  
+  // MFA flow state (server-side source of truth)
+  requiredMethods   String[]  // Methods required for this election
+  completedMethods  String[]  @default([]) // Methods user has actually completed
+  currentStep       Int       @default(0)
+  isCompleted       Boolean   @default(false)
+  
+  // Security and expiry
+  sessionToken      String    @unique // Random token to identify session
+  expiresAt         DateTime  // Session expiry (e.g., 30 minutes)
+  
+  // Audit trail
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  lastActiveAt      DateTime  @default(now())
+  
+  election Election @relation(fields: [electionId], references: [id])
+  
+  // Indexes for performance and security
+  @@index([sessionToken])
+  @@index([electionId, voterEmail])
+  @@index([expiresAt])
+  @@unique([electionId, voterEmail]) // One active session per voter per election
+}
+
+model VotingScope {
+  id          Int             @id @default(autoincrement())
+  electionId  Int
+  name        String
+  description String
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
+
+  election   Election  @relation(fields: [electionId], references: [id])
+  voters     Voter[]
+  positions  Position[]
+}
+
+model Voter {
+  id              Int       @id @default(autoincrement())
+  electionId      Int
+  code            String    @unique // Globally unique voter code (also serves as voting code)
+  email           String
+  firstName       String
+  middleName      String?
+  lastName        String
+  codeSendStatus  CodeSendStatus @default(PENDING)
+  votingScopeId   Int?
+  isActive        Boolean   @default(true)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+  isDeleted       Boolean   @default(false)
+
+  election       Election    @relation(fields: [electionId], references: [id])
+  votingScope    VotingScope? @relation(fields: [votingScopeId], references: [id])
+  candidate      Candidate?
+  voteResponses  VoteResponse[]
+  surveyResponses SurveyResponse[]
+  voterSessions  VoterSession[]
+
+  // Add composite unique constraint instead
+  @@unique([electionId, email]) // ← Same email can't be used twice in the SAME election
+}
+
+model VoterSession {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  voterId      Int
+  expires      DateTime
+  isActive     Boolean  @default(true)
+  lastActiveAt DateTime @default(now())
+  mfaCompleted Boolean  @default(true) // Default true for backwards compatibility
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  voter        Voter    @relation(fields: [voterId], references: [id], onDelete: Cascade)
+  
+  @@index([sessionToken])
+  @@index([voterId, isActive])
+}
+
+model Position {
+  id             Int          @id @default(autoincrement())
+  electionId     Int
+  name           String
+  voteLimit      Int          @default(1)
+  numOfWinners   Int          @default(1)
+  votingScopeId  Int?
+  order          Int          @default(0) // For ballot ordering
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+  isDeleted      Boolean      @default(false)
+
+  election      Election      @relation(fields: [electionId], references: [id])
+  votingScope   VotingScope?  @relation(fields: [votingScopeId], references: [id])
+  candidates    Candidate[]
+  voteResponses VoteResponse[]
+}
+
+model Candidate {
+  id          Int       @id @default(autoincrement())
+  electionId  Int
+  voterId     Int       @unique
+  positionId  Int
+  partyId     Int?
+  // Storage-agnostic fields for candidate files
+  imageObjectKey     String?
+  imageProvider      String?
+  credentialObjectKey String?
+  credentialProvider  String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
+
+  election     Election   @relation(fields: [electionId], references: [id])
+  voter        Voter      @relation(fields: [voterId], references: [id])
+  position     Position   @relation(fields: [positionId], references: [id])
+  party        Party?     @relation(fields: [partyId], references: [id])
+  voteResponses VoteResponse[]
+}
+
+model Party {
+  id          Int       @id @default(autoincrement())
+  electionId  Int
+  name        String
+  color       String
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now())
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
+
+  election   Election    @relation(fields: [electionId], references: [id])
+  candidates Candidate[]
+
+  @@unique([electionId, name])
+}
+
+
+model VoteResponse {
+  id          Int       @id @default(autoincrement())
+  electionId  Int
+  voterId     Int
+  candidateId Int
+  positionId  Int
+  voteHash    String    // For vote integrity
+  prevHash    String    // For vote integrity
+  chainOrder  Int       // Order in the chain
+  signature   String    // hmac signature of the vote using a server secret
+  timestamp   DateTime  @default(now())
+
+  election   Election   @relation(fields: [electionId], references: [id])
+  voter      Voter      @relation(fields: [voterId], references: [id])
+  candidate  Candidate  @relation(fields: [candidateId], references: [id])
+  position   Position   @relation(fields: [positionId], references: [id])
+
+  @@index([electionId, voterId])
+  @@index([electionId, timestamp])
+}
+
+model SurveyForm {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String
+  formSchema  Json
+  isActive    Boolean   @default(true)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  isDeleted   Boolean   @default(false)
+
+  surveyResponses SurveyResponse[]
+}
+
+model SurveyResponse {
+  id         Int       @id @default(autoincrement())
+  formId     Int
+  voterId    Int
+  answers    Json
+  submittedAt DateTime @default(now())
+
+  surveyForm SurveyForm @relation(fields: [formId], references: [id])
+  voter      Voter      @relation(fields: [voterId], references: [id])
+}
+
+model Ticket {
+  id          Int           @id @default(autoincrement())
+  orgId       Int
+  subject     String        // Ticket title/subject serves as the description
+  status      TicketStatus  @default(PENDING)
+  messages    Json        // Array to store chat messages: [{senderId, content, timestamp}]
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  closedAt    DateTime?
+
+  organization Organization @relation(fields: [orgId], references: [id])
+}
+
+model Audits {
+  id         Int        @id @default(autoincrement())
+  actorId    String     // User ID who performed the action
+  actorRole  UserRole   // Role of the actor
+  action     AuditAction
+  ipAddress  String
+  userAgent  String
+  resource   String?    // What resource was affected
+  resourceId String?    // ID of the affected resource
+  details    Json?      // Additional details  // should edit this if i switch to postgres
+  
+  timestamp  DateTime   @default(now())
+}
+
+// Performance Logging Tables for Analytics Dashboard
+model ApiLog {
+  id           String   @id @default(cuid())
+  endpoint     String   // The API endpoint called (e.g., "/api/organizations")
+  method       String   // HTTP method (GET, POST, PUT, DELETE)
+  statusCode   Int      // HTTP status code (200, 404, 500, etc.)
+  responseTime Int      // Response time in milliseconds
+  userId       String?  // ID of user who made the request (if authenticated)
+  ipAddress    String   // Client IP address
+  userAgent    String?  // Browser/client user agent
+  error        String?  // Error message if request failed
+  
+  createdAt    DateTime @default(now())
+  
+  // Index for fast queries on recent data and performance analysis
+  @@index([createdAt])
+  @@index([endpoint, createdAt])
+  @@index([statusCode, createdAt])
+}
+
+// Email System Models
+model EmailTemplate {
+  id             String    @id @default(cuid())
+  
+  // Template details
+  name           String    // User-friendly name
+  description    String?   // Optional description
+  templateId     String    // Unique identifier for template engine
+  type           TemplateType @default(CUSTOM)
+  
+  // Content
+  htmlContent    String    @db.Text // HTML template content
+  textContent    String?   @db.Text // Optional text version
+  defaultSubject String?   // Default subject line
+  
+  // Organization isolation
+  organizationId Int
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Audit fields
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  createdBy      String?
+  
+  // Ensure unique template IDs per organization
+  @@unique([organizationId, templateId])
+  @@index([organizationId, type])
+  @@index([templateId])
+}
+
+enum TemplateType {
+  SYSTEM        // Built-in system templates
+  CUSTOM        // User-uploaded custom templates
+}
+
+// Enhanced role enum
+enum UserRole {
+  VOTER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum AuditResource {
+  ORGANIZATION
+  USER
+  ELECTION
+  CANDIDATE
+  PARTY
+  VOTING_SCOPE
+  VOTER
+  POSITION
+  TICKET
+  // Add other resources as needed
+}
+
+// Organization approval status enum
+enum OrganizationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Election status enum
+enum ElectionStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+// Ticket status enum
+enum TicketStatus {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+}
+
+// Audit action enum
+enum AuditAction {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  RESTORE
+  SIGNUP
+  LOGIN
+  LOGOUT
+  VOTE
+  APPROVE
+  REJECT
+  UPLOAD
+}
+
+// Code send status enum
+enum CodeSendStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+}

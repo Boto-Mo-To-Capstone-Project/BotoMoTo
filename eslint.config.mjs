@@ -10,7 +10,72 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  // 👇 Add ignores here
+  {
+    ignores: [
+      "src/generated/**",
+      ".next/**",
+      "node_modules/**",
+      "dist/**",
+      "build/**",
+      "out/**",
+      "prisma/migrations/**",
+      "*.tsbuildinfo",
+      ".env*",
+      "!.env.example",
+      "*.log",
+      "npm-debug.log*",
+      "yarn-debug.log*",
+      "yarn-error.log*",
+      "pids",
+      "*.pid",
+      "*.seed",
+      "*.pid.lock",
+      "coverage/**",
+      "*.lcov",
+      ".nyc_output",
+      "jspm_packages/**",
+      ".npm",
+      ".eslintcache",
+      ".rpt2_cache/**",
+      ".rts2_cache_cjs/**",
+      ".rts2_cache_es/**",
+      ".rts2_cache_umd/**",
+      ".node_repl_history",
+      "*.tgz",
+      ".yarn-integrity",
+      ".cache",
+      ".parcel-cache",
+      ".nuxt/**",
+      ".out/**",
+      ".storybook-out/**",
+      "tmp/**",
+      "temp/**",
+    ],
+  },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    rules: {
+      // 🟡 Warnings instead of errors
+      "no-unused-vars": ["warn", { args: "none", ignoreRestSiblings: true }],
+      "@typescript-eslint/no-unused-vars": ["warn", { args: "none" }],
+
+      // 🟢 Allow temporary use of `any` — good for early dev
+      "@typescript-eslint/no-explicit-any": "warn",
+
+      // 🔵 You may want to turn this off during early dev
+      "react/no-unescaped-entities": "off",
+
+      // 🟢 Allow use of <img> if not optimizing yet
+      "@next/next/no-img-element": "off",
+
+      // 🔵 Allow vars like `let` for readability
+      "prefer-const": "warn",
+
+      // 🔵 Turn off empty interface rule if needed
+      "@typescript-eslint/no-empty-object-type": "off",
+    },
+  },
 ];
 
 export default eslintConfig;

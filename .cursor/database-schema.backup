@@ -1,0 +1,485 @@
+# Database Schema Rules
+
+## Database Overview
+
+### Technology Stack
+- **Prisma ORM** for database operations
+- **SQLite** for development (file:./prisma/dev.db)
+- **PostgreSQL** recommended for production
+- **Migration-based** schema management
+
+### Design Principles
+- **Relational design** with proper relationships
+- **Data integrity** through constraints
+- **Performance optimization** with indexes
+- **Scalability** considerations for multi-tenancy
+
+## Core Models
+
+### 1. User Model
+```prisma
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  password      String
+  role          UserRole
+  isApproved    Boolean  @default(false)
+  organizationId Int?
+  organization  Organization? @relation(fields: [organizationId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  sessions      Session[]
+  tickets       Ticket[]
+  audits        Audit[]
+
+  @@index([email])
+  @@index([role])
+  @@index([organizationId])
+}
+```
+
+### 2. Organization Model
+```prisma
+model Organization {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  status      OrganizationStatus @default(PENDING)
+  logo        String?
+  website     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users       User[]
+  elections   Election[]
+  tickets     Ticket[]
+
+  @@index([status])
+  @@index([name])
+}
+```
+
+### 3. Election Model
+```prisma
+model Election {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  status      ElectionStatus @default(DRAFT)
+  startDate   DateTime?
+  endDate     DateTime?
+  organizationId Int
+  organization Organization @relation(fields: [organizationId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  votingScopes    VotingScope[]
+  parties         Party[]
+  positions       Position[]
+  candidates      Candidate[]
+  voters          Voter[]
+  votes           Vote[]
+  surveys         Survey[]
+  tickets         Ticket[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([startDate, endDate])
+}
+```
+
+### 4. VotingScope Model
+```prisma
+model VotingScope {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  parentId    String?
+  parent      VotingScope? @relation("ScopeHierarchy", fields: [parentId], references: [id])
+  children    VotingScope[] @relation("ScopeHierarchy")
+  electionId  String
+  election    Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  voters      Voter[]
+  votes       Vote[]
+
+  @@index([electionId])
+  @@index([parentId])
+}
+```
+
+### 5. Party Model
+```prisma
+model Party {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  logo        String?
+  color       String?
+  electionId  String
+  election    Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  candidates  Candidate[]
+
+  @@index([electionId])
+  @@unique([name, electionId])
+}
+```
+
+### 6. Position Model
+```prisma
+model Position {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  requirements String?
+  maxCandidates Int    @default(1)
+  electionId  String
+  election    Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  candidates  Candidate[]
+
+  @@index([electionId])
+  @@unique([title, electionId])
+}
+```
+
+### 7. Candidate Model
+```prisma
+model Candidate {
+  id          String   @id @default(cuid())
+  name        String
+  bio         String?
+  image       String?
+  manifesto   String?
+  positionId  String
+  position    Position @relation(fields: [positionId], references: [id], onDelete: Cascade)
+  partyId     String?
+  party       Party? @relation(fields: [partyId], references: [id])
+  electionId  String
+  election    Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  votes       Vote[]
+
+  @@index([positionId])
+  @@index([partyId])
+  @@index([electionId])
+}
+```
+
+### 8. Voter Model
+```prisma
+model Voter {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  email       String?
+  phone       String?
+  votingScopeId String
+  votingScope VotingScope @relation(fields: [votingScopeId], references: [id])
+  electionId  String
+  election    Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  hasVoted    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  votes       Vote[]
+  surveys     Survey[]
+
+  @@index([code])
+  @@index([electionId])
+  @@index([votingScopeId])
+  @@unique([email, electionId])
+}
+```
+
+### 9. Vote Model
+```prisma
+model Vote {
+  id          String   @id @default(cuid())
+  voterId     String
+  voter       Voter @relation(fields: [voterId], references: [id], onDelete: Cascade)
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  electionId  String
+  election    Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  votingScopeId String
+  votingScope VotingScope @relation(fields: [votingScopeId], references: [id])
+  hash        String   @unique
+  previousHash String?
+  createdAt   DateTime @default(now())
+
+  @@index([voterId])
+  @@index([candidateId])
+  @@index([electionId])
+  @@index([votingScopeId])
+  @@unique([voterId, candidateId])
+}
+```
+
+### 10. Survey Model
+```prisma
+model Survey {
+  id          String   @id @default(cuid())
+  voterId     String
+  voter       Voter @relation(fields: [voterId], references: [id], onDelete: Cascade)
+  electionId  String
+  election    Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+  responses   Json
+  createdAt   DateTime @default(now())
+
+  @@index([voterId])
+  @@index([electionId])
+  @@unique([voterId, electionId])
+}
+```
+
+### 11. Session Model
+```prisma
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([sessionToken])
+  @@index([userId])
+}
+```
+
+### 12. Ticket Model
+```prisma
+model Ticket {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  status      TicketStatus @default(OPEN)
+  priority    TicketPriority @default(MEDIUM)
+  userId      String
+  user        User @relation(fields: [userId], references: [id])
+  organizationId Int?
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  electionId  String?
+  election    Election? @relation(fields: [electionId], references: [id])
+  assignedTo  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  messages    TicketMessage[]
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([electionId])
+  @@index([status])
+}
+```
+
+### 13. TicketMessage Model
+```prisma
+model TicketMessage {
+  id        String   @id @default(cuid())
+  content   String
+  ticketId  String
+  ticket    Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+  @@index([userId])
+}
+```
+
+### 14. Audit Model
+```prisma
+model Audit {
+  id          String   @id @default(cuid())
+  action      String
+  entityType  String
+  entityId    String
+  userId      String
+  user        User @relation(fields: [userId], references: [id])
+  details     Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+}
+```
+
+## Enums
+
+### UserRole
+```prisma
+enum UserRole {
+  ADMIN
+  VOTER
+  SUPER_ADMIN
+}
+```
+
+### OrganizationStatus
+```prisma
+enum OrganizationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+```
+
+### ElectionStatus
+```prisma
+enum ElectionStatus {
+  DRAFT
+  SETUP
+  ACTIVE
+  PAUSED
+  CLOSED
+  ARCHIVED
+}
+```
+
+### TicketStatus
+```prisma
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+```
+
+### TicketPriority
+```prisma
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+```
+
+## Database Relationships
+
+### One-to-Many Relationships
+- **Organization → Users**: One organization can have many users
+- **Organization → Elections**: One organization can have many elections
+- **Election → VotingScopes**: One election can have many voting scopes
+- **Election → Parties**: One election can have many parties
+- **Election → Positions**: One election can have many positions
+- **Election → Candidates**: One election can have many candidates
+- **Election → Voters**: One election can have many voters
+- **Election → Votes**: One election can have many votes
+- **Position → Candidates**: One position can have many candidates
+- **Party → Candidates**: One party can have many candidates
+- **VotingScope → Voters**: One voting scope can have many voters
+- **VotingScope → Votes**: One voting scope can have many votes
+- **User → Sessions**: One user can have many sessions
+- **User → Tickets**: One user can have many tickets
+- **User → Audits**: One user can have many audit entries
+
+### Many-to-One Relationships
+- **Users → Organization**: Many users can belong to one organization
+- **Elections → Organization**: Many elections can belong to one organization
+- **Candidates → Position**: Many candidates can run for one position
+- **Candidates → Party**: Many candidates can belong to one party
+- **Voters → VotingScope**: Many voters can belong to one voting scope
+- **Votes → Candidate**: Many votes can be cast for one candidate
+- **Votes → Voter**: Many votes can be cast by one voter
+
+### Self-Referential Relationships
+- **VotingScope → VotingScope**: Hierarchical voting scopes (parent-child)
+
+### Unique Constraints
+- **User.email**: Unique email per user
+- **Voter.code**: Unique voter code globally
+- **Voter.email + electionId**: Unique email per election
+- **Party.name + electionId**: Unique party name per election
+- **Position.title + electionId**: Unique position title per election
+- **Vote.voterId + candidateId**: One vote per voter per candidate
+- **Survey.voterId + electionId**: One survey per voter per election
+
+## Indexing Strategy
+
+### Performance Indexes
+- **User.email**: For authentication lookups
+- **User.role**: For role-based queries
+- **User.organizationId**: For organization-based queries
+- **Election.organizationId**: For organization-based queries
+- **Election.status**: For status-based filtering
+- **Voter.code**: For voter code lookups
+- **Vote.electionId**: For election result queries
+- **Audit.createdAt**: For chronological queries
+
+### Composite Indexes
+- **Election.startDate + endDate**: For date range queries
+- **Vote.electionId + votingScopeId**: For scope-based results
+- **Audit.entityType + entityId**: For entity-specific audits
+
+## Data Integrity
+
+### Foreign Key Constraints
+- **Cascade deletes** for dependent records
+- **Restrict deletes** for critical relationships
+- **Proper null handling** for optional relationships
+
+### Validation Rules
+- **Email format** validation
+- **Phone number** format validation
+- **Date range** validation for elections
+- **Voter code** uniqueness validation
+- **Vote integrity** validation
+
+## Migration Strategy
+
+### Development Migrations
+- **Incremental migrations** for schema changes
+- **Data seeding** for development
+- **Rollback support** for failed migrations
+- **Migration testing** before deployment
+
+### Production Migrations
+- **Zero-downtime** migrations where possible
+- **Backup strategy** before migrations
+- **Rollback plan** for critical migrations
+- **Performance impact** assessment
+
+## Security Considerations
+
+### Data Protection
+- **Password hashing** with bcrypt
+- **Sensitive data** encryption
+- **Audit logging** for all changes
+- **Access control** at database level
+
+### Multi-Tenancy
+- **Organization isolation** through foreign keys
+- **Row-level security** considerations
+- **Data partitioning** strategies
+- **Cross-organization** access prevention 

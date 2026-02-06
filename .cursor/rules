@@ -1,0 +1,190 @@
+# BotoMoTo - RBAC Voting System Rules
+
+## Core Principles
+
+1. **Consistency First**: All code, documentation, and configurations must be consistent across the entire system
+2. **Security by Design**: Every feature must prioritize security and data integrity
+3. **User Experience**: Intuitive interfaces for all user types (SuperAdmin, Admin, Voter)
+4. **Scalability**: Architecture must support growth and multiple organizations
+5. **Maintainability**: Clean, well-documented code with clear separation of concerns
+
+## Documentation Synchronization
+
+- **README.md MUST be updated** whenever rules change
+- **No redundant information** between README and rules
+- **Consistent terminology** across all documentation
+- **Version control** all documentation changes
+
+## Multi-Page Response Guidelines
+
+- **Split long responses** across multiple pages when content exceeds reasonable length
+- **Maintain context** between pages with clear section references
+- **Use page numbers** and navigation hints
+- **Prioritize readability** over single-page responses
+
+## Database Flexibility
+
+- **SQLite for development** (file:./prisma/dev.db)
+- **Freedom for production** (PostgreSQL, MySQL, etc.)
+- **Environment-based configuration**
+- **Migration safety** with proper rollback support
+
+## System Architecture
+
+### Technology Stack
+- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes, Prisma ORM
+- **Authentication**: NextAuth.js v4
+- **Database**: SQLite (dev), PostgreSQL (prod)
+- **Real-time**: WebSocket / Server-Sent Events
+
+### User Types
+- **SuperAdmin**: Global oversight, organization approval, system management
+- **Admin**: Organization management, election creation, voter registration
+- **Voter**: Election participation, secure voting, 2FA authentication
+
+### Critical Commands
+- **SuperAdmin Creation**: `node scripts/create-superadmin.mjs`
+- **Database Setup**: `npx prisma migrate dev`
+- **Development**: `npm run dev`
+- **Type Generation**: `npx prisma generate`
+
+## Development Standards
+
+### Code Organization
+- **Feature-based** folder structure
+- **Clear separation** of concerns
+- **Consistent naming** conventions
+- **Type-safe** development with TypeScript
+
+### Security Requirements
+- **Input validation** for all user inputs
+- **Authentication** and authorization checks
+- **SQL injection** prevention via Prisma
+- **XSS prevention** through proper encoding
+
+### API Standards
+- **RESTful design** principles
+- **Consistent response** format across endpoints
+- **Proper HTTP status** codes
+- **Error handling** without information leakage
+
+### Database Standards
+- **Prisma ORM** for all database operations
+- **Migration-based** schema changes
+- **Proper relationships** and constraints
+- **Performance optimization** with indexes
+
+## Rule Categories
+
+This system is governed by comprehensive rules organized into the following categories:
+
+1. **system-overview** - Core architecture and principles
+2. **user-roles** - Role definitions and permissions
+3. **authentication** - Auth flows and security
+4. **routes** - Frontend routing structure
+5. **api-endpoints** - Backend API organization
+6. **database-schema** - Data modeling and relationships
+7. **security** - Security measures and best practices
+8. **development** - Coding standards and workflows
+9. **deployment** - Production deployment guidelines
+
+## Implementation Guidelines
+
+### When Creating New Features
+1. **Follow established patterns** from existing code
+2. **Implement proper validation** and error handling
+3. **Add appropriate tests** for new functionality
+4. **Update documentation** for any changes
+5. **Ensure security** measures are in place
+
+### When Modifying Existing Code
+1. **Maintain backward compatibility** where possible
+2. **Update related documentation** and tests
+3. **Follow existing naming** conventions
+4. **Preserve security** measures
+5. **Test thoroughly** before deployment
+
+### When Reviewing Code
+1. **Check for security** vulnerabilities
+2. **Verify type safety** with TypeScript
+3. **Ensure consistent** coding style
+4. **Validate API** response formats
+5. **Confirm proper error** handling
+
+## Quality Assurance
+
+### Testing Requirements
+- **Unit tests** for utility functions
+- **Integration tests** for API endpoints
+- **E2E tests** for critical user flows
+- **Security tests** for vulnerabilities
+
+### Code Quality
+- **ESLint** compliance for all code
+- **TypeScript** strict mode enabled
+- **Prettier** formatting applied
+- **No console.log** in production code
+
+### Performance Standards
+- **Optimized database** queries
+- **Efficient component** rendering
+- **Proper caching** strategies
+- **Bundle size** optimization
+
+## Security Compliance
+
+### Authentication Security
+- **bcrypt hashing** for passwords
+- **Session-based** authentication
+- **2FA support** for sensitive operations
+- **Rate limiting** for auth endpoints
+
+### Data Protection
+- **Input sanitization** for all data
+- **SQL injection** prevention
+- **XSS protection** measures
+- **CSRF protection** enabled
+
+### Access Control
+- **Role-based** authorization
+- **Organization isolation** for admins
+- **Election-specific** access for voters
+- **Audit logging** for all actions
+
+## Deployment Standards
+
+### Environment Management
+- **Environment-specific** configurations
+- **Secure secret** management
+- **Database migration** safety
+- **Rollback procedures** for issues
+
+### Production Requirements
+- **HTTPS enforcement** for all connections
+- **Security headers** configuration
+- **Performance monitoring** setup
+- **Error tracking** and alerting
+
+### Maintenance
+- **Regular security** updates
+- **Dependency vulnerability** scanning
+- **Performance optimization** monitoring
+- **Backup and recovery** procedures
+
+## Frontend Styling Change Policy
+
+- Do not revise, add, or remove frontend styling (CSS classes, inline styles, etc.) unless explicitly requested by the frontend team or user. This is to avoid interfering with frontend design decisions.
+
+## Authentication & Session Management Policy
+
+- Use a custom/manual API for credentials (email/password) login and signup.
+- Use NextAuth for OAuth providers (Google, Facebook, etc.) only.
+- Both authentication systems must use JWT stored in HTTP-only cookies for session management.
+- Do not use database sessions for either system; all session data should be managed via JWTs in cookies.
+
+---
+
+**BotoMoTo** - Secure, Scalable, and Modern Voting Solutions
+
+*These rules ensure consistent, secure, and maintainable development across the entire BotoMoTo RBAC voting system.* 

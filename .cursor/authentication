@@ -1,0 +1,220 @@
+# Authentication Rules
+
+## Authentication Overview
+
+### Multi-Provider System
+- **NextAuth.js v4** as the core authentication framework for OAuth providers
+- **Custom/manual API** for credentials (email/password) authentication
+- **Multiple authentication methods** for different user types
+- **Role-based authentication** flows
+- **Secure session management** with JWTs in HTTP-only cookies
+
+## Authentication Flows by User Type
+
+### 1. SuperAdmin Authentication
+
+#### Creation Process
+- **Script-based creation** only: `node scripts/create-superadmin.mjs`
+- **Direct database insertion** for security
+- **No OAuth providers** allowed
+- **Predefined credentials**: `superadmin@botomoto.com` / `superadmin123`
+
+#### Login Flow
+```
+1. Navigate to /superadmin/dashboard
+2. Enter email and password
+3. Direct access to SuperAdmin dashboard
+4. No additional verification required
+```
+
+#### Security Features
+- **Password hashing** with bcrypt
+- **Session-based** authentication
+- **Database-stored** sessions
+- **Automatic logout** on session expiry
+
+### 2. Admin Authentication
+
+#### Registration Flow
+```
+1. Navigate to /auth/signup
+2. Choose: Email/Password OR OAuth (Google, Facebook)
+3. Complete registration form
+4. Redirect to onboarding process
+5. Create organization
+6. Wait for organization approval by SuperAdmin
+7. Access granted after approval
+```
+
+#### Authentication Methods
+- **Google OAuth**: Optional OAuth provider (if configured)
+- **Facebook OAuth**: Optional OAuth provider (if configured)
+- **Email/Password**: Primary authentication method (always available)
+
+#### Login Flow
+```
+1. Navigate to /auth/login
+2. Choose authentication method:
+   - Email/Password (always available)
+   - Google OAuth (if configured)
+   - Facebook OAuth (if configured)
+3. Complete authentication
+4. Check user account status (isActive)
+5. Check organization approval status
+5. Redirect to appropriate dashboard
+```
+
+#### Onboarding Process
+- **One-time process** for new admins
+- **Organization creation** required
+- **Organization approval** by SuperAdmin (single approval point)
+- **Account suspension** via User.isActive (granular control)
+- **Access restriction** until approved
+
+### 3. Voter Authentication
+
+#### Code-Based Access
+- **6-digit alphanumeric codes** (globally unique)
+- **Election-specific** codes
+- **One-time use** per voting session
+- **Secure generation** and distribution
+
+#### Authentication Flow
+```
+1. Navigate to /voter/login
+2. Enter 6-digit voter code
+3. Verify code validity
+4. Complete election-specific 2FA
+5. Access voting interface
+```
+
+#### 2FA Methods (Per Election)
+- **Email 2FA**: `/voter/login/2fa-email`
+- **SMS 2FA**: `/voter/login/2fa-text`
+- **OTP 2FA**: `/voter/login/2fa-otp`
+- **Passphrase 2FA**: `/voter/login/2fa-passphrase`
+
+#### 2FA Configuration
+- **Admin configurable** per election
+- **Applies to all voters** in that election
+- **Multiple options** available
+- **Secure verification** process
+
+## Session Management
+
+### Session Storage
+- **JWT-based sessions** (not database sessions)
+- **No Prisma session model**
+- **JWTs stored in HTTP-only cookies**
+- **Automatic cleanup** by JWT expiry
+- **Cross-tab** session synchronization via JWT
+
+### Session Security
+- **HTTPS-only** in production
+- **Secure cookies** with proper flags
+- **CSRF protection** enabled
+- **Session rotation** on privilege escalation (by issuing new JWT)
+
+### Session Lifecycle
+- **Creation**: On successful authentication, JWT is issued
+- **Validation**: On each request, JWT is verified
+- **Refresh**: Automatic token refresh if implemented
+- **Destruction**: On logout or expiry, JWT is removed from cookie
+
+## Security Measures
+
+### Password Security
+- **bcrypt hashing** with salt rounds
+- **Minimum password** requirements
+- **Password strength** validation
+- **Secure password** reset flow
+
+### Input Validation
+- **Server-side validation** for all inputs
+- **Type checking** with TypeScript
+- **Sanitization** of user inputs
+- **SQL injection** prevention via Prisma
+
+### Rate Limiting
+- **Login attempt** rate limiting
+- **API endpoint** rate limiting
+- **Brute force** protection
+- **DDoS mitigation** strategies
+
+### Audit Logging
+- **Authentication events** logged
+- **Failed login attempts** tracked
+- **Session creation/destruction** recorded
+- **Security incidents** monitored
+
+## API Authentication
+
+### Protected Routes
+- **Middleware-based** protection
+- **Role-specific** access control
+- **Session validation** on each request
+- **Automatic redirect** for unauthorized access
+
+### API Security
+- **CORS configuration** for cross-origin requests
+- **Request validation** with proper schemas
+- **Error handling** without information leakage
+- **Secure headers** implementation
+
+## Environment Configuration
+
+### Required Variables
+```env
+# NextAuth Configuration
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret-key-here"
+
+# Database
+DATABASE_URL_SQLITE="file:./prisma/dev.db"
+
+# OAuth Providers (Optional)
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
+FACEBOOK_CLIENT_ID="your-facebook-client-id"
+FACEBOOK_CLIENT_SECRET="your-facebook-client-secret"
+```
+
+### Production Considerations
+- **Strong NEXTAUTH_SECRET** generation
+- **HTTPS enforcement** for all connections
+- **Secure cookie** configuration
+- **Environment-specific** database URLs
+
+## Error Handling
+
+### Authentication Errors
+- **User-friendly** error messages
+- **No sensitive information** in error responses
+- **Proper HTTP status** codes
+- **Logging** for debugging purposes
+
+### Session Errors
+- **Automatic redirect** to login
+- **Session recovery** mechanisms
+- **Graceful degradation** for expired sessions
+- **Clear error** communication
+
+## Development Guidelines
+
+### Testing Authentication
+- **Unit tests** for authentication logic
+- **Integration tests** for auth flows
+- **Security tests** for vulnerabilities
+- **E2E tests** for complete workflows
+
+### Code Organization
+- **NextAuth configuration** in dedicated file
+- **Authentication middleware** for route protection
+- **Type-safe** authentication hooks
+- **Clear separation** of auth concerns
+
+### Best Practices
+- **Never store** sensitive data in client-side storage
+- **Use secure** session management
+- **Implement proper** logout functionality
+- **Regular security** audits and updates 

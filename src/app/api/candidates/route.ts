@@ -1,0 +1,1044 @@
+import { NextRequest } from "next/server";
+import { apiResponse } from "@/lib/apiResponse";
+import { validateWithZod } from "@/lib/validateWithZod";
+import { createAuditLog } from "@/lib/audit";
+import { candidateSchema } from "@/lib/schema";
+import db from "@/lib/db/db";
+import { ROLES, ORGANIZATION_STATUS, FILE_LIMITS, ALLOWED_FILE_TYPES } from "@/lib/constants";
+import { extname } from 'path';
+import { requireAuth } from "@/lib/helpers/requireAuth";
+
+// Import storage system (replaces fs operations)
+import { uploadFile, generatePublicUrl, generatePresignedUrl, generateObjectKey } from "@/lib/storage";
+
+
+// Handle GET request to fetch candidates
+export async function GET(request: NextRequest) {
+  try {
+    // Authenticate the user
+    const authResult = await requireAuth([ROLES.ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
+
+    // Get query parameters
+    const url = new URL(request.url);
+    const electionId = url.searchParams.get('electionId');
+    const positionId = url.searchParams.get('positionId');
+    const partyId = url.searchParams.get('partyId');
+    const votingScopeId = url.searchParams.get('votingScopeId');
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(url.searchParams.get('limit') || '10'), 50);
+    const search = url.searchParams.get('search');
+    const all = url.searchParams.get('all') === 'true';
+
+    if (!electionId) {
+      return apiResponse({ success: false, message: "Election ID is required", error: "Bad Request", status: 400 });
+    }
+
+    const electionIdInt = parseInt(electionId);
+    if (isNaN(electionIdInt)) {
+      return apiResponse({ success: false, message: "Invalid election ID", error: "Bad Request", status: 400 });
+    }
+
+    // Verify election exists and user has access
+    const election = await db.election.findUnique({
+      where: {
+        id: electionIdInt,
+        isDeleted: false
+      },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        organization: {
+          select: {
+            id: true,
+            adminId: true,
+            name: true,
+            status: true
+          }
+        }
+      }
+    });
+
+    if (!election) {
+      return apiResponse({ success: false, message: "Election not found or has been deleted", error: "Not Found", status: 404 });
+    }
+
+    // Check if admin owns this election or if it's a voter with access
+    if (user.role === ROLES.ADMIN && election.organization.adminId !== user.id) {
+      return apiResponse({ success: false, message: "You can only view candidates from your organization's elections", error: "Forbidden", status: 403 });
+    }
+
+    // Normalize search like positions API
+    const searchTerm = search ? search.trim() : undefined;
+
+    // Build query filters
+    const where: any = {
+      electionId: electionIdInt,
+      isDeleted: false,
+      ...(positionId && !isNaN(parseInt(positionId)) && { positionId: parseInt(positionId) }),
+      ...(partyId && !isNaN(parseInt(partyId)) && { partyId: parseInt(partyId) }),
+      ...(votingScopeId && !isNaN(parseInt(votingScopeId)) && {
+        position: { is: { votingScopeId: parseInt(votingScopeId) } }
+      })
+    };
+
+    // Add search filter if provided
+    if (searchTerm) {
+      where.OR = [
+        {
+          voter: {
+            is: {
+              OR: [
+                { firstName: { contains: searchTerm, mode: 'insensitive' } },
+                { middleName: { contains: searchTerm, mode: 'insensitive' } },
+                { lastName: { contains: searchTerm, mode: 'insensitive' } },
+                { email: { contains: searchTerm, mode: 'insensitive' } }
+              ]
+            }
+          }
+        },
+        {
+          position: {
+            is: {
+              name: { contains: searchTerm, mode: 'insensitive' }
+            }
+          }
+        },
+        {
+          party: {
+            is: {
+              name: { contains: searchTerm, mode: 'insensitive' }
+            }
+          }
+        }
+      ];
+    }
+
+    // Get total count for pagination
+    const totalCount = await db.candidate.count({ where });
+
+    // Calculate pagination
+    const totalPages = all ? 1 : Math.ceil(totalCount / limit);
+    const offset = all ? 0 : (page - 1) * limit;
+    const take = all ? undefined : limit;
+
+    // Fetch candidates with related data (no backend sorting; frontend handles it)
+    const candidates = await db.candidate.findMany({
+      where,
+      select: all ? {
+        // Minimal select for all=true queries to reduce data transfer
+        id: true,
+        createdAt: true,
+        voter: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            votingScope: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        },
+        position: {
+          select: {
+            id: true,
+            name: true,
+            votingScope: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        },
+        party: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      } : {
+        // Full select for regular queries
+        id: true,
+        imageObjectKey: true,
+        imageProvider: true,
+        credentialObjectKey: true,
+        credentialProvider: true,
+        createdAt: true,
+        updatedAt: true,
+        voter: {
+          select: {
+            id: true,
+            firstName: true,
+            middleName: true,
+            lastName: true,
+            email: true,
+            votingScope: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        },
+        position: {
+          select: {
+            id: true,
+            name: true,
+            voteLimit: true,
+            numOfWinners: true,
+            order: true,
+            votingScope: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        },
+        party: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          }
+        },
+        _count: {
+          select: {
+            voteResponses: true
+          }
+        }
+      },
+      skip: offset,
+      ...(take !== undefined && { take })
+    });
+
+    // Create audit log
+    const audit = await createAuditLog({
+      user,
+      action: "READ",
+      request,
+      resource: "CANDIDATE",
+      resourceId: electionIdInt,
+      message: `Viewed candidates for election: ${election.name}${all ? ' (all candidates)' : ''}`,
+    });
+
+    // Prepare response data
+    const responseData: any = {
+      candidates,
+      election: {
+        id: election.id,
+        name: election.name,
+        status: election.status
+      },
+      audit
+    };
+
+    // Only include pagination when not fetching all
+    if (!all) {
+      responseData.pagination = {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      };
+    } else {
+      responseData.totalCount = totalCount;
+    }
+
+    return apiResponse({
+      success: true,
+      message: "Candidates fetched successfully",
+      data: responseData,
+      status: 200
+    });
+
+  } catch (error) {
+    console.error("Candidates fetch error:", error);
+    return apiResponse({ success: false, message: "Failed to fetch candidates", error: typeof error === "string" ? error : "Internal server error", status: 500 });
+  }
+}
+
+// Handle POST request to create a candidate
+export async function POST(request: NextRequest) {
+  try {
+    // Authenticate the user
+    const authResult = await requireAuth([ROLES.ADMIN]);
+    if (!authResult.authorized) return authResult.response;
+    const user = authResult.user;
+
+    // Parse request body - check if it's JSON (batch) or FormData (single)
+    const contentType = request.headers.get('content-type') || '';
+    
+    if (contentType.includes('application/json')) {
+      // JSON request - handle batch import
+      const body = await request.json();
+      
+      // Check if this is batch creation (candidates array) 
+      if (body.candidates && Array.isArray(body.candidates)) {
+        return handleBatchCandidateImport(body.candidates, body.electionId, user, request);
+      } else {
+        return apiResponse({ 
+          success: false, 
+          message: "JSON requests must include candidates array for batch import", 
+          error: "Bad Request", 
+          status: 400 
+        });
+      }
+    } else {
+      // FormData request - handle single candidate creation
+      return handleSingleCandidateCreation(request, user);
+    }
+
+  } catch (error) {
+    console.error("Candidate creation error:", error);
+    return apiResponse({ success: false, message: "Failed to create candidate", error: typeof error === "string" ? error : "Internal server error", status: 500 });
+  }
+}
+
+// Handle single candidate creation via FormData
+async function handleSingleCandidateCreation(request: NextRequest, user: any) {
+  const formData = await request.formData();
+  
+  // Extract form fields
+  const electionId = formData.get('electionId') as string;
+  const voterId = formData.get('voterId') as string;
+  const positionId = formData.get('positionId') as string;
+  const partyId = formData.get('partyId') as string;
+
+  // Handle file uploads
+  const imageFile = formData.get('image') as File | null;
+  const credentialsFile = formData.get('credentials') as File | null;
+
+  // Validate required fields
+  if (!electionId || !voterId || !positionId) {
+    return apiResponse({ 
+      success: false, 
+      message: "Election ID, Voter ID, and Position ID are required", 
+      error: "Bad Request", 
+      status: 400 
+    });
+  }
+
+  // Convert string values to appropriate types
+  const candidateData = {
+    electionId: parseInt(electionId),
+    voterId: parseInt(voterId),
+    positionId: parseInt(positionId),
+    partyId: partyId && partyId !== 'null' ? parseInt(partyId) : null,
+  };
+
+  // Validate numeric conversions
+  if (isNaN(candidateData.electionId) || isNaN(candidateData.voterId) || isNaN(candidateData.positionId)) {
+    return apiResponse({ 
+      success: false, 
+      message: "Invalid ID format provided", 
+      error: "Bad Request", 
+      status: 400 
+    });
+  }
+
+  if (candidateData.partyId && isNaN(candidateData.partyId)) {
+    return apiResponse({ 
+      success: false, 
+      message: "Invalid party ID format", 
+      error: "Bad Request", 
+      status: 400 
+    });
+  }
+
+  // File upload handling with new storage system
+  let imageObjectKey: string | null = null;
+  let imageProvider: string | null = null;
+  let credentialObjectKey: string | null = null;
+  let credentialProvider: string | null = null;
+
+  if (imageFile && imageFile.size > 0) {
+    // Validate image file
+    if (!(ALLOWED_FILE_TYPES.IMAGES as readonly string[]).includes(imageFile.type)) {
+      return apiResponse({
+        success: false,
+        message: "Invalid image file type. Only images are allowed.",
+        error: "Bad Request",
+        status: 400
+      });
+    }
+
+    if (imageFile.size > FILE_LIMITS.IMAGE_MAX_SIZE) {
+      return apiResponse({
+        success: false,
+        message: `Image file too large. Maximum size: ${FILE_LIMITS.IMAGE_MAX_SIZE / (1024 * 1024)}MB`,
+        error: "Bad Request",
+        status: 400
+      });
+    }
+
+    // Generate standardized object key for image using organization owner's user ID
+    const imageKey = generateObjectKey('candidates', user.id, 'image', imageFile.name);
+    
+    // Convert file to buffer
+    const imageBuffer = await imageFile.arrayBuffer();
+    
+    // Upload image with automatic S3 + local fallback (no metadata stored)
+    const imageUpload = await uploadFile(Buffer.from(imageBuffer), imageKey, {
+      contentType: imageFile.type,
+      isPublic: true // Candidate images are public
+    });
+
+    imageObjectKey = imageUpload.key;
+    imageProvider = imageUpload.provider;
+  }
+
+  if (credentialsFile && credentialsFile.size > 0) {
+    // Validate credentials file
+    if (credentialsFile.type !== ALLOWED_FILE_TYPES.PDF[0]) {
+      return apiResponse({
+        success: false,
+        message: "Invalid credentials file type. Only PDF files are allowed.",
+        error: "Bad Request",
+        status: 400
+      });
+    }
+
+    if (credentialsFile.size > FILE_LIMITS.PDF_MAX_SIZE) {
+      return apiResponse({
+        success: false,
+        message: `Credentials file too large. Maximum size: ${FILE_LIMITS.PDF_MAX_SIZE / (1024 * 1024)}MB`,
+        error: "Bad Request",
+        status: 400
+      });
+    }
+
+    // Generate standardized object key for credentials using organization owner's user ID
+    const credentialKey = generateObjectKey('candidates', user.id, 'credentials', credentialsFile.name);
+    
+    // Convert file to buffer
+    const credentialBuffer = await credentialsFile.arrayBuffer();
+    
+    // Upload credentials with automatic S3 + local fallback (no metadata stored)
+    const credentialUpload = await uploadFile(Buffer.from(credentialBuffer), credentialKey, {
+      contentType: credentialsFile.type,
+      isPublic: false // Credentials are private
+    });
+
+    credentialObjectKey = credentialUpload.key;
+    credentialProvider = credentialUpload.provider;
+  }
+
+  // Log which provider was used (for monitoring)
+  if (imageObjectKey || credentialObjectKey) {
+    console.log(`📤 Candidate files uploaded - Image: ${imageProvider || 'none'}, Credentials: ${credentialProvider || 'none'}`);
+  }
+
+  // Validate request body
+  const validation = validateWithZod(candidateSchema, candidateData);
+  if (!('data' in validation)) return validation;
+
+  const data = validation.data;
+
+  // Verify election exists and user has access
+  const election = await db.election.findUnique({
+    where: {
+      id: data.electionId,
+      isDeleted: false
+    },
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      organization: {
+        select: {
+          id: true,
+          adminId: true,
+          status: true
+        }
+      }
+    }
+  });
+
+  if (!election) {
+    return apiResponse({ success: false, message: "Election not found or has been deleted", error: "Not Found", status: 404 });
+  }
+
+  // Check if admin owns this election
+  if (user.role === ROLES.ADMIN && election.organization.adminId !== user.id) {
+    return apiResponse({ success: false, message: "You can only create candidates for your organization's elections", error: "Forbidden", status: 403 });
+  }
+
+  // Check organization status
+  if (election.organization.status !== ORGANIZATION_STATUS.APPROVED) {
+    return apiResponse({ success: false, message: "Organization must be approved to manage candidates", error: "Forbidden", status: 403 });
+  }
+
+  // Verify voter exists and belongs to the election
+  const voter = await db.voter.findUnique({
+    where: {
+      id: data.voterId,
+      electionId: data.electionId,
+      isDeleted: false
+    }
+  });
+
+  if (!voter) {
+    return apiResponse({ success: false, message: "Voter not found in this election or has been deleted", error: "Not Found", status: 404 });
+  }
+
+  // Check if voter is already a candidate for this election (soft deleted and not)
+  const existingCandidate = await db.candidate.findUnique({
+    where: {
+      voterId: data.voterId,
+      electionId: data.electionId
+    }
+  });
+
+  // if existing candidate is found and not deleted, return conflict
+  if (existingCandidate && !existingCandidate.isDeleted) {
+    return apiResponse({ success: false, message: "This voter is already a candidate", error: "Conflict", status: 409 });
+  }
+
+  // if existing candidate is found and soft deleted restore it with new data
+  if (existingCandidate && existingCandidate.isDeleted) {
+    const restoredCandidate = await db.candidate.update({
+      where: { id: existingCandidate.id },
+      data: {
+        positionId: data.positionId,
+        partyId: data.partyId,
+        imageObjectKey: imageObjectKey,
+        imageProvider: imageProvider,
+        credentialObjectKey: credentialObjectKey,
+        credentialProvider: credentialProvider,
+        isDeleted: false
+      }
+    });
+
+    // Create audit log
+    await createAuditLog({
+      user,
+      action: "RESTORE",
+      request,
+      resource: "CANDIDATE",
+      resourceId: restoredCandidate.id,
+      message: `Restored candidate: ${voter.firstName} ${voter.lastName} for position ID: ${data.positionId}`,
+    });
+
+    return apiResponse({
+      success: true,
+      message: "Candidate restored successfully",
+      data: {
+        candidate: restoredCandidate,
+      },
+      status: 200
+    });
+  }
+
+  // Verify position exists and belongs to the election
+  const position = await db.position.findUnique({
+    where: {
+      id: data.positionId,
+      electionId: data.electionId,
+      isDeleted: false
+    }
+  });
+
+  if (!position) {
+    return apiResponse({ success: false, message: "Position not found in this election or has been deleted", error: "Not Found", status: 404 });
+  }
+
+  // Verify party exists if provided
+  if (data.partyId) {
+    const party = await db.party.findUnique({
+      where: {
+        id: data.partyId,
+        electionId: data.electionId,
+        isDeleted: false
+      }
+    });
+
+    if (!party) {
+      return apiResponse({ success: false, message: "Party not found in this election or has been deleted", error: "Not Found", status: 404 });
+    }
+  }
+
+  // Create candidate with related experiences
+  const candidate = await db.$transaction(async (tx) => {
+    // Persist storage-agnostic fields (object keys + provider)
+    const newCandidate = await tx.candidate.create({
+      data: {
+        electionId: data.electionId,
+        voterId: data.voterId,
+        positionId: data.positionId,
+        partyId: data.partyId || null,
+        imageObjectKey: imageObjectKey,
+        imageProvider: imageProvider,
+        credentialObjectKey: credentialObjectKey,
+        credentialProvider: credentialProvider,
+      }
+    });
+
+    return newCandidate;
+  });
+
+  // Fetch the complete candidate data
+  const completeCandidate = await db.candidate.findUnique({
+    where: { id: candidate.id },
+    select: {
+      id: true,
+      imageObjectKey: true,
+      imageProvider: true,
+      credentialObjectKey: true,
+      credentialProvider: true,
+      createdAt: true,
+      updatedAt: true,
+      voter: {
+        select: {
+          id: true,
+          firstName: true,
+          middleName: true,
+          lastName: true,
+          email: true,
+        }
+      },
+      position: {
+        select: {
+          id: true,
+          name: true
+        }
+      },
+      party: {
+        select: {
+          id: true,
+          name: true,
+          color: true
+        }
+      }
+    }
+  });
+
+  // Create audit log
+  const audit = await createAuditLog({
+    user,
+    action: "CREATE",
+    request,
+    resource: "CANDIDATE",
+    resourceId: candidate.id,
+    message: `Created candidate: ${voter.firstName} ${voter.lastName} for position: ${position.name}`,
+  });
+
+  return apiResponse({
+    success: true,
+    message: "Candidate created successfully",
+    data: {
+      candidate: completeCandidate,
+      audit
+    },
+    status: 201
+  });
+}
+
+// Handle batch candidate import from CSV data
+async function handleBatchCandidateImport(candidatesData: any[], electionId: number, user: any, request: NextRequest) {
+  if (!candidatesData || !Array.isArray(candidatesData) || candidatesData.length === 0) {
+    return apiResponse({ 
+      success: false, 
+      message: "Candidates data is required for batch import", 
+      error: "Bad Request", 
+      status: 400 
+    });
+  }
+
+  if (!electionId) {
+    return apiResponse({ 
+      success: false, 
+      message: "Election ID is required", 
+      error: "Bad Request", 
+      status: 400 
+    });
+  }
+
+  const electionIdInt = parseInt(String(electionId));
+  if (isNaN(electionIdInt)) {
+    return apiResponse({ 
+      success: false, 
+      message: "Invalid election ID", 
+      error: "Bad Request", 
+      status: 400 
+    });
+  }
+
+  // Verify election exists and user has access
+  const election = await db.election.findUnique({
+    where: {
+      id: electionIdInt,
+      isDeleted: false,
+    },
+    include: {
+      organization: {
+        select: {
+          id: true,
+          adminId: true,
+          status: true,
+          name: true,
+        },
+      },
+    },
+  });
+
+  if (!election) {
+    return apiResponse({ 
+      success: false, 
+      message: "Election not found or has been deleted", 
+      error: "Not Found", 
+      status: 404 
+    });
+  }
+
+  // Check if admin owns this election
+  if (user.role === ROLES.ADMIN && election.organization.adminId !== user.id) {
+    return apiResponse({ 
+      success: false, 
+      message: "You can only create candidates for your organization's elections", 
+      error: "Forbidden", 
+      status: 403 
+    });
+  }
+
+  // Check organization status
+  if (election.organization.status !== ORGANIZATION_STATUS.APPROVED) {
+    return apiResponse({ 
+      success: false, 
+      message: "Only approved organizations can create candidates", 
+      error: "Forbidden", 
+      status: 403 
+    });
+  }
+
+  // Validate that each candidate has required fields
+  const invalidCandidates = candidatesData.filter((c, idx) => 
+    !c.email || !c.position
+  );
+
+  if (invalidCandidates.length > 0) {
+    return apiResponse({ 
+      success: false, 
+      message: "All candidates must have email and position", 
+      error: "Bad Request", 
+      status: 400 
+    });
+  }
+
+  // Extract unique emails and position names to query the database
+  const emails = [...new Set(candidatesData.map(c => c.email.toLowerCase().trim()))];
+  const positionNames = [...new Set(candidatesData.map(c => c.position.toLowerCase().trim()))];
+  const partyNames = [...new Set(candidatesData.map(c => c.partylist?.toLowerCase().trim()).filter(Boolean))];
+
+  // Find voters by email in this election
+  const voters = await db.voter.findMany({
+    where: {
+      electionId: electionIdInt,
+      email: { in: emails, mode: 'insensitive' },
+      isDeleted: false
+    },
+    select: { id: true, firstName: true, lastName: true, email: true, votingScopeId: true }
+  });
+
+  // Find positions by name in this election
+  const positions = await db.position.findMany({
+    where: {
+      electionId: electionIdInt,
+      name: { in: positionNames, mode: 'insensitive' },
+      isDeleted: false
+    },
+    select: { 
+      id: true, 
+      name: true, 
+      votingScopeId: true,
+      votingScope: {
+        select: {
+          id: true,
+          name: true
+        }
+      }
+    }
+  });
+
+  // Find parties by name in this election (if any)
+  const parties = partyNames.length > 0 ? await db.party.findMany({
+    where: {
+      electionId: electionIdInt,
+      name: { in: partyNames, mode: 'insensitive' },
+      isDeleted: false
+    },
+    select: { id: true, name: true }
+  }) : [];
+
+  // Create lookup maps
+  const voterByEmail = new Map(voters.filter(v => v.email).map(v => [v.email!.toLowerCase(), v]));
+  // Note: Don't create positionByName map anymore, we'll use smart lookup logic
+  const partyByName = new Map(parties.map(p => [p.name.toLowerCase(), p]));
+
+  // Helper function for smart position assignment (same logic as frontend)
+  const findPositionForCandidate = (positionName: string, voter: any) => {
+    // First try exact match for positions without scopes
+    let position = positions.find(p => 
+      p.name.toLowerCase() === positionName.toLowerCase() && 
+      !p.votingScope
+    );
+    
+    // If not found, try to match with voter's scope for scoped positions
+    if (!position && voter.votingScopeId) {
+      position = positions.find(p => 
+        p.name.toLowerCase() === positionName.toLowerCase() &&
+        p.votingScopeId === voter.votingScopeId
+      );
+    }
+    
+    return position;
+  };
+
+  // Process candidates and collect errors
+  const validatedCandidates: any[] = [];
+  const errors: Array<{ index: number; error: string; candidateEmail?: string }> = [];
+
+  for (let i = 0; i < candidatesData.length; i++) {
+    const candidate = candidatesData[i];
+    const candidateEmail = candidate.email;
+    
+    // Find voter by email
+    const voter = voterByEmail.get(candidate.email.toLowerCase().trim());
+    if (!voter) {
+      errors.push({
+        index: i,
+        candidateEmail,
+        error: `Voter with email "${candidate.email}" not found in this election`
+      });
+      continue;
+    }
+
+    // Find position using smart assignment logic (or use positionId if already provided by frontend)
+    let position;
+    if (candidate.positionId) {
+      // Frontend already computed the correct positionId, use it
+      position = positions.find(p => p.id === candidate.positionId);
+    } else {
+      // Fallback to smart assignment logic
+      position = findPositionForCandidate(candidate.position, voter);
+    }
+    
+    if (!position) {
+      // Check if there are scoped positions with this name but no match with voter's scope
+      const scopedPositionsWithSameName = positions.filter(p => 
+        p.name.toLowerCase() === candidate.position.toLowerCase() && p.votingScope
+      );
+      
+      if (scopedPositionsWithSameName.length > 0) {
+        const availableScopes = scopedPositionsWithSameName.map(p => p.votingScope?.name).join(', ');
+        errors.push({
+          index: i,
+          candidateEmail,
+          error: `Position "${candidate.position}" exists with scopes [${availableScopes}], but voter is not in any of these scopes or has no scope assigned.`
+        });
+      } else {
+        errors.push({
+          index: i,
+          candidateEmail,
+          error: `Position "${candidate.position}" not found in this election`
+        });
+      }
+      continue;
+    }
+
+    // Find party by name (optional)
+    let party = null;
+    if (candidate.partylist && candidate.partylist.trim()) {
+      party = partyByName.get(candidate.partylist.toLowerCase().trim());
+      // Party not found is not an error, we'll make them independent
+    }
+
+    validatedCandidates.push({
+      electionId: electionIdInt,
+      voterId: voter.id,
+      positionId: position.id,
+      partyId: party?.id || null,
+      voterEmail: voter.email, // For logging
+      candidateEmail,
+      positionName: position.name,
+      partyName: party?.name || 'Independent'
+    });
+  }
+
+  if (errors.length > 0) {
+    return apiResponse({ 
+      success: false, 
+      message: "Some candidates could not be processed", 
+      data: { errors }, 
+      error: "Bad Request", 
+      status: 400 
+    });
+  }
+
+  // Check for duplicate voterIds within the validated batch
+  const voterIds = validatedCandidates.map(c => c.voterId);
+  const duplicateVoterIds = voterIds.filter((id, i) => voterIds.indexOf(id) !== i);
+  if (duplicateVoterIds.length > 0) {
+    return apiResponse({ 
+      success: false, 
+      message: "Duplicate candidates found in CSV (same voter assigned to multiple positions)", 
+      data: { duplicateVoterIds: Array.from(new Set(duplicateVoterIds)) }, 
+      error: "Bad Request", 
+      status: 400 
+    });
+  }
+
+  // Check for existing candidates (both active and soft-deleted)
+  const existingCandidates = await db.candidate.findMany({
+    where: {
+      electionId: electionIdInt,
+      voterId: { in: voterIds },
+    },
+    select: { 
+      voterId: true,
+      isDeleted: true,
+      voter: { select: { firstName: true, lastName: true, email: true } }
+    },
+  });
+
+  // Separate active candidates from soft-deleted ones
+  const activeCandidates = existingCandidates.filter(c => !c.isDeleted);
+  const softDeletedCandidates = existingCandidates.filter(c => c.isDeleted);
+
+  if (activeCandidates.length > 0) {
+    return apiResponse({
+      success: false,
+      message: "Some voters are already active candidates in this election",
+      data: { 
+        existingCandidates: activeCandidates.map(c => ({
+          voterId: c.voterId,
+          name: `${c.voter.firstName} ${c.voter.lastName}`.trim(),
+          email: c.voter.email
+        }))
+      },
+      error: "Conflict",
+      status: 409,
+    });
+  }
+
+  // Create lookup for soft-deleted candidates
+  const softDeletedVoterIds = new Set(softDeletedCandidates.map(c => c.voterId));
+
+  // Create candidates in a transaction
+  const createdCandidates = await db.$transaction(async (tx) => {
+    let restoredCount = 0;
+    let createdCount = 0;
+
+    // First, restore soft-deleted candidates
+    if (softDeletedVoterIds.size > 0) {
+      const candidatesToRestore = validatedCandidates.filter(c => softDeletedVoterIds.has(c.voterId));
+      
+      for (const candidate of candidatesToRestore) {
+        await tx.candidate.updateMany({
+          where: {
+            electionId: electionIdInt,
+            voterId: candidate.voterId,
+            isDeleted: true
+          },
+          data: {
+            positionId: candidate.positionId,
+            partyId: candidate.partyId,
+            isDeleted: false,
+            deletedAt: null,
+            updatedAt: new Date()
+          }
+        });
+        restoredCount++;
+      }
+    }
+
+    // Then, create new candidates for voters who were never candidates
+    const newCandidates = validatedCandidates.filter(c => !softDeletedVoterIds.has(c.voterId));
+    if (newCandidates.length > 0) {
+      const toCreate = newCandidates.map(c => ({
+        electionId: c.electionId,
+        voterId: c.voterId,
+        positionId: c.positionId,
+        partyId: c.partyId,
+        imageObjectKey: null,
+        credentialObjectKey: null,
+        imageProvider: null,
+        credentialProvider: null,
+      }));
+
+      const created = await tx.candidate.createMany({ data: toCreate });
+      createdCount = created.count;
+    }
+
+    // Fetch all candidates for response (both restored and newly created)
+    const allCandidates = await tx.candidate.findMany({
+      where: { 
+        electionId: electionIdInt, 
+        voterId: { in: voterIds }, 
+        isDeleted: false 
+      },
+      select: {
+        id: true,
+        electionId: true,
+        voter: { select: { id: true, firstName: true, lastName: true, email: true } },
+        position: { select: { id: true, name: true } },
+        party: { select: { id: true, name: true, color: true } },
+      },
+    });
+
+    return { 
+      count: restoredCount + createdCount, 
+      candidates: allCandidates,
+      restoredCount,
+      createdCount
+    };
+  });
+
+  const audit = await createAuditLog({
+    user,
+    action: "CREATE",
+    request,
+    resource: "CANDIDATE",
+    resourceId: electionIdInt,
+    newData: { 
+      totalCount: createdCandidates.count,
+      createdCount: createdCandidates.createdCount,
+      restoredCount: createdCandidates.restoredCount,
+      importType: 'CSV',
+      candidateEmails: validatedCandidates.map(c => c.candidateEmail)
+    },
+    message: `Batch imported ${createdCandidates.count} candidates for election: ${election.name} (${createdCandidates.createdCount} new, ${createdCandidates.restoredCount} restored)`,
+  });
+
+  return apiResponse({
+    success: true,
+    message: `Successfully imported ${createdCandidates.count} candidates (${createdCandidates.createdCount} new, ${createdCandidates.restoredCount} restored)`,
+    data: { 
+      candidates: createdCandidates.candidates,
+      summary: {
+        total: createdCandidates.count,
+        created: createdCandidates.createdCount,
+        restored: createdCandidates.restoredCount,
+        byPosition: validatedCandidates.reduce((acc, c) => {
+          acc[c.positionName] = (acc[c.positionName] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>),
+        byParty: validatedCandidates.reduce((acc, c) => {
+          acc[c.partyName] = (acc[c.partyName] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>)
+      },
+      audit,
+    },
+    status: 201,
+  });
+}

@@ -1,0 +1,243 @@
+# Routes Rules
+
+## Route Structure Overview
+
+### App Router Organization
+- **Next.js 15 App Router** for modern routing
+- **Role-based route** organization
+- **Protected routes** with middleware
+- **Public routes** for general access
+
+## Route Categories
+
+### 1. Authentication Routes
+**Base path: `/auth`**
+
+#### Login Routes
+- `/auth/login` - Admin login page
+- `/auth/signup` - Admin registration page
+- `/auth/forgot-password` - Password reset request
+- `/auth/forgot-password/otp` - Password reset OTP verification
+
+#### Route Protection
+- **Public access** for login/signup
+- **Redirect logic** for authenticated users
+- **Role-based** redirects after authentication
+- **Error handling** for invalid credentials
+
+### 2. Admin Routes
+**Base path: `/admin`**
+
+#### Onboarding Routes
+- `/admin/onboard/` - Onboarding landing page
+- `/admin/onboard/add-org` - Organization creation
+- `/admin/onboard/processing` - Approval pending status
+
+#### Dashboard Routes
+- `/admin/dashboard/elections` - Main elections dashboard
+- `/admin/dashboard/elections/create` - Create new election
+- `/admin/dashboard/tickets` - Support tickets management
+
+#### Election Setup Routes
+**Base path: `/admin/dashboard/elections/[id]/setup`**
+
+- `/admin/dashboard/elections/[id]/setup/scope` - Voting scope setup
+- `/admin/dashboard/elections/[id]/setup/party` - Party management
+- `/admin/dashboard/elections/[id]/setup/voter` - Voter registration
+- `/admin/dashboard/elections/[id]/setup/position` - Position definition
+- `/admin/dashboard/elections/[id]/setup/candidates` - Candidate management
+
+#### Election Management Routes
+**Base path: `/admin/dashboard/elections/[id]/manage`**
+
+- `/admin/dashboard/elections/[id]/manage/ballot-preview` - Ballot customization
+- `/admin/dashboard/elections/[id]/manage/email-send` - Email distribution
+- `/admin/dashboard/elections/[id]/manage/live-dashboard` - Real-time monitoring
+- `/admin/dashboard/elections/[id]/manage/2fa-settings` - 2FA method selection
+
+#### Route Protection
+- **Admin authentication** required
+- **Organization approval** check
+- **Election ownership** validation
+- **Session validation** on each request
+
+### 3. SuperAdmin Routes
+**Base path: `/superadmin`**
+
+#### Dashboard Routes
+- `/superadmin/dashboard` - Main dashboard with sidebar navigation
+- `/superadmin/dashboard/org-request` - Organization approval
+- `/superadmin/dashboard/elections` - Election oversight
+- `/superadmin/dashboard/tickets` - Support ticket management
+- `/superadmin/dashboard/audits` - System audit logs
+- `/superadmin/dashboard/survey-form` - Survey management
+
+#### Route Protection
+- **SuperAdmin authentication** required
+- **Global access** to all organizations
+- **System-wide** permissions
+- **Audit logging** for all actions
+
+### 4. Voter Routes
+**Base path: `/voter`**
+
+#### Authentication Routes
+- `/voter/login` - Voter code entry
+- `/voter/login/2fa-email` - Email 2FA verification
+- `/voter/login/2fa-otp` - OTP 2FA verification
+- `/voter/login/2fa-text` - SMS 2FA verification
+- `/voter/login/2fa-passphrase` - Passphrase 2FA verification
+
+#### Election Routes
+- `/voter/election-status` - Election status check
+- `/voter/election-terms-conditions` - Terms and conditions
+- `/voter/ballot-form` - Voting interface
+- `/voter/receipt` - Vote receipt
+- `/voter/survey-form` - Post-vote survey
+- `/voter/live-dashboard` - Live results (requires authentication)
+
+#### Route Protection
+- **Voter code** validation required
+- **2FA completion** check
+- **Election-specific** access control
+- **Session-based** authentication
+
+### 5. Public Routes
+**Base path: `/` and `/public`**
+
+#### Landing Pages
+- `/` - Main landing page
+- `/public/about-us` - About page
+- `/public/contact` - Contact page
+
+#### Route Protection
+- **Public access** allowed
+- **No authentication** required
+- **SEO optimization** for public pages
+- **Performance optimization** for public access
+
+## Route Protection Rules
+
+### Middleware Implementation
+- **Next.js middleware** for route protection
+- **Role-based** access control
+- **Session validation** on each request
+- **Automatic redirects** for unauthorized access
+
+### Authentication Checks
+- **Session existence** validation
+- **Role verification** for protected routes
+- **Organization approval** status check
+- **Election access** permissions
+
+### Error Handling
+- **404 pages** for invalid routes
+- **Unauthorized** redirects
+- **Error boundaries** for route errors
+- **Graceful degradation** for route failures
+
+## Route Organization Principles
+
+### 1. Role Separation
+- **Clear separation** between user types
+- **No cross-role** route access
+- **Isolated navigation** for each role
+- **Role-specific** layouts and components
+
+### 2. Nested Routing
+- **Logical grouping** of related routes
+- **Dynamic segments** for IDs and parameters
+- **Consistent URL** patterns
+- **SEO-friendly** route structure
+
+### 3. Route Naming
+- **Descriptive names** for all routes
+- **Consistent naming** conventions
+- **URL-friendly** route names
+- **Clear hierarchy** in route structure
+
+## Navigation Structure
+
+### Admin Navigation
+```
+Dashboard
+├── Elections
+│   ├── Create Election
+│   ├── Election Setup
+│   └── Election Management
+├── Voters
+├── Reports
+└── Support Tickets
+```
+
+### SuperAdmin Navigation
+```
+Dashboard
+├── Organization Requests
+├── Elections Overview
+├── Support Tickets
+├── Audit Logs
+└── System Settings
+```
+
+### Voter Navigation
+```
+Login
+├── 2FA Verification
+├── Election Status
+├── Voting Interface
+├── Receipt
+└── Survey
+```
+
+## Route Parameters
+
+### Dynamic Segments
+- `[id]` - Election ID
+- `[scopeId]` - Voting scope ID
+- `[partyId]` - Party ID
+- `[voterId]` - Voter ID
+- `[positionId]` - Position ID
+- `[candidateId]` - Candidate ID
+- `[ticketId]` - Support ticket ID
+
+### Query Parameters
+- `status` - Filter by status
+- `page` - Pagination
+- `limit` - Results per page
+- `search` - Search term
+- `sort` - Sort order
+
+## Route Performance
+
+### Optimization Strategies
+- **Code splitting** for route components
+- **Lazy loading** for heavy components
+- **Image optimization** for route assets
+- **Caching strategies** for static routes
+
+### Loading States
+- **Skeleton loading** for dynamic routes
+- **Progress indicators** for navigation
+- **Error boundaries** for route failures
+- **Fallback UI** for loading states
+
+## Development Guidelines
+
+### Route Creation
+- **Consistent file** naming conventions
+- **Type-safe** route parameters
+- **Proper error** handling
+- **Accessibility** considerations
+
+### Testing Routes
+- **Route accessibility** testing
+- **Navigation flow** testing
+- **Error handling** testing
+- **Performance** testing
+
+### Documentation
+- **Route purpose** documentation
+- **Parameter requirements** documented
+- **Access control** requirements
+- **Dependencies** and requirements 

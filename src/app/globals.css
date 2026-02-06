@@ -1,26 +1,190 @@
+/*import inter font*/
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap");
+
+/*import tailwindcss*/
 @import "tailwindcss";
+
+/*
+--background is Default background color.
+--foreground is Default text color
+
+These are your light mode colors.
+*/
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
+/*
+--color-background => --background.
+--color-foreground => --foreground.
+--font-sans => Inter font
+
+→ Purpose: This block basically maps base variables like --background into a theme-specific naming system (e.g. --color-background) for consistency.
+*/
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Inter", sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
+/* design system */
+@theme {
+  /* Color palette */
+  --color-primary: oklch(0.3767 0.154577 29.2339); /* red */
+  --color-secondary: oklch(0.8968 0.0755 76.37); /* yellow */
+  --color-black: oklch(0.2304 0.0209 264.04); /* gray-900 */
+  --color-gray: oklch(0.4596 0.0174 264.39); /* gray-600*/
+  --color-white: oklch(1 0 0);
+
+  /* Typography sizes */
+  --text-xs: 0.75rem; /* 12px */
+  --text-sm: 0.875rem; /* 14px */
+  --text-md: 1rem; /* 16px */
+  --text-lg: 1.125rem; /* 18px */
+  --text-xl: 1.25rem; /* 20px */
+  --text-dxs: 1.5rem; /* 24px */
+  --text-dsm: 1.875rem; /* 30px */
+  --text-dmd: 2.25rem; /* 36px */
+  --text-dlg: 3rem; /* 48px */
+  --text-dxl: 3.75rem; /* 60px */
+  --text-d2xl: 4.5rem; /* 72px */
+
+  /* Breakpoints */
+  --breakpoint-xs: 475px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+}
+
+/*
+These are the colors when user is in dark mode, the default is overwriten:
+
+--background becomes near black (#0a0a0a).
+--foreground becomes light gray (#ededed).
+*/
+/* @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
-}
+} */
 
+/* 
+Styles for page body
+*/
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+.landing-title {
+  @apply text-dmd font-semibold md:text-dlg xl:text-dxl;
+}
+
+.landing-description {
+  @apply text-lg font-normal text-gray-600 xl:text-xl;
+}
+
+.nav-text {
+  @apply text-md font-semibold text-gray-600;
+}
+
+.btn-text {
+  @apply text-md font-semibold xl:text-md;
+}
+
+.voterlogin-heading {
+  @apply text-xl font-semibold md:text-2xl;
+}
+
+.voterlogin-subheading {
+  @apply text-md font-normal text-gray-600 md:text-md;
+}
+
+.voterlogin-label {
+  @apply text-sm font-medium text-gray-700 md:text-md;
+}
+
+.voter-election-heading {
+  @apply text-xl font-semibold text-black md:text-2xl;
+}
+
+.voter-election-subheading {
+  @apply text-md font-semibold text-primary md:text-md;
+}
+
+.voter-election-item {
+  @apply text-md font-semibold text-black md:text-lg;
+}
+
+.voter-election-desc {
+  @apply text-sm font-normal text-gray sm:text-md md:text-md;
+}
+
+.candidate-category-heading {
+  @apply text-sm font-medium text-black md:text-lg;
+}
+
+.candidate-category-name {
+  @apply text-sm font-medium text-gray md:text-lg;
+}
+
+.candidate-category-desc {
+  @apply text-sm font-medium text-gray;
+}
+
+.survey-section {
+  @apply text-md font-medium text-black md:text-lg;
+}
+
+.kpi-label {
+  @apply text-md font-semibold text-black;
+}
+
+.kpi-value {
+  @apply text-xl font-semibold text-black 2xl:text-dsm;
+}
+
+.kpi-desc {
+  @apply text-sm font-medium;
+}
+
+.dashboard-candidate-name {
+  @apply text-md font-medium text-black;
+}
+
+.dashboard-candidate-desc {
+  @apply text-sm font-medium text-black;
+}
+
+.sidebar-items {
+  @apply text-md font-semibold;
+}
+
+.superadmin-heading {
+  @apply text-dxs font-semibold text-black md:text-dsm;
+}
+
+.superadmin-subheading {
+  @apply text-md font-normal text-gray md:text-lg;
+}
+
+/* styles/globals.css or in your global stylesheet */
+.scrollbar-hidden {
+  scrollbar-width: none; /* Firefox */
+}
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+/* Print and PDF export styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
 }

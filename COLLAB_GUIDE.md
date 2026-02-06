@@ -17,14 +17,29 @@ We use developer-based branching to avoid conflicts and keep our repository orga
 
 Clone the repository:
 ```bash
-git clone url-to-repo.git
-cd repo-name
+git clone https://github.com/Boto-Mo-To-Capstone-Project/BotoMoTo.git
+cd BotoMoTo
 ``` 
 
 Check existing branches:
 ```bash
-# this will show you all remote branches that are already connected to your local repository
 git branch -r
+```
+
+Switch to `dev` branch:
+```bash
+git checkout dev
+git pull origin dev
+```
+
+Install project dependencies:
+```bash
+npm install
+```
+
+Run the project locally:
+```bash
+npm run dev
 ```
 
 ---
@@ -37,29 +52,40 @@ git checkout dev
 git pull origin dev
 ```
 
+Install latest dependencies (if package updates happened):
+```bash
+npm install
+```
+
+Run the project:
+```bash
+npm run dev
+```
+
 ---
 
 ### 3️⃣ Create or Switch to Your Personal Branch
 
-If your branch doesn’t exist yet, create it:
+If your branch doesn’t exist yet on the remote repository, create it:
 ```bash
 git checkout -b dev-<your-name>
-git pull origin dev-<your-name>
+git push origin dev-<your-name>
 ```
+
 If your branch already exists, switch to it:
 ```bash
 git checkout dev-<your-name>
 git pull origin dev-<your-name>
 ```
+
 **Example for Ayumi:**
 ```bash
-# this creates a new branch if it doesn't exist and switches to it
+# we push the branch to remote only once
 git checkout -b dev-ayumi
-git pull origin dev-ayumi
+git push origin dev-ayumi
 ```
 OR
 ```bash
-# this switches to an existing branch and pulls latest changes
 git checkout dev-ayumi
 git pull origin dev-ayumi
 ```
@@ -72,10 +98,12 @@ Make your changes, then check modified files:
 ```bash
 git status
 ```
+
 Add files to commit:
 ```bash
 git add .
 ```
+
 Make a clear, descriptive commit:
 ```bash
 git commit -m "added login form component"
@@ -87,6 +115,7 @@ git commit -m "added login form component"
 ```bash
 git push origin dev-<your-name>
 ```
+
 **Example:**
 ```bash
 git push origin dev-ayumi
@@ -110,22 +139,28 @@ git push origin dev-ayumi
 ```bash
 git checkout dev  
 git pull origin dev  
+npm install  
+npm run dev  
 ```
+
 **Create personal branch:**
 ```bash
 git checkout -b dev-<your-name>  
 git pull origin dev-<your-name>  
 ```
+
 **Switch to personal branch:**
 ```bash
 git checkout dev-<your-name>  
 git pull origin dev-<your-name>  
 ```
+
 **Add and commit changes:**
 ```bash
 git add .  
 git commit -m "short but clear description"  
 ```
+
 **Push changes to remote:**
 ```bash
 git push origin dev-<your-name>  

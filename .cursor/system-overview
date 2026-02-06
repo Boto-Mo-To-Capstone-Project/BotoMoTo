@@ -1,0 +1,156 @@
+# System Overview Rules
+
+## Architecture Principles
+
+### 1. Role-Based Access Control (RBAC)
+- **Three distinct user types**: SuperAdmin, Admin, Voter
+- **Complete isolation** between organizations
+- **Hierarchical permissions** with clear boundaries
+- **No cross-organization access** for admins
+
+### 2. Multi-Tenant Design
+- **Organization-based isolation** for all data
+- **Shared infrastructure** with tenant separation
+- **Scalable architecture** supporting multiple organizations
+- **Independent election management** per organization
+
+### 3. Security-First Approach
+- **Encrypted data storage** for sensitive information
+- **Chain hashing** for vote integrity
+- **Audit trails** for all system activities
+- **Input validation** at all entry points
+
+## System Components
+
+### Frontend Architecture
+- **Next.js 15 App Router** for modern routing
+- **React 19** with latest features
+- **TypeScript** for type safety
+- **Tailwind CSS** for styling
+- **Component-based** architecture
+
+### Backend Architecture
+- **Next.js API Routes** for backend logic
+- **Prisma ORM** for database operations
+- **NextAuth.js v4** for authentication
+- **Server-side rendering** for performance
+- **API-first design** for scalability
+
+### Database Design
+- **Relational database** with proper relationships
+- **Migration-based** schema management
+- **Environment-specific** configurations
+- **Backup and recovery** strategies
+
+## Core Workflows
+
+### 1. Organization Onboarding
+```
+Admin Registration → Organization Creation → SuperAdmin Approval → Access Granted
+```
+
+### 2. Election Lifecycle
+```
+Draft → Setup → Active → Paused → Closed → Archived
+```
+
+### 3. Voter Authentication
+```
+Voter Code → 2FA Verification → Election Access → Voting → Receipt
+```
+
+## Technology Stack
+
+### Frontend
+- **Next.js 15**: React framework with App Router
+- **React 19**: Latest React features and hooks
+- **TypeScript**: Type-safe development
+- **Tailwind CSS**: Utility-first CSS framework
+- **NextAuth.js**: Authentication library
+
+### Backend
+- **Next.js API Routes**: Backend API endpoints
+- **Prisma ORM**: Database toolkit
+- **bcrypt**: Password hashing
+- **JWT**: Token-based authentication
+- **WebSocket/SSE**: Real-time communication
+
+### Database
+- **SQLite**: Development database
+- **PostgreSQL**: Production database (recommended)
+- **Prisma Migrate**: Schema migrations
+- **Prisma Client**: Type-safe database access
+
+### Infrastructure
+- **Vercel**: Deployment platform (recommended)
+- **Supabase**: File storage and additional services
+- **Environment Variables**: Configuration management
+- **Git**: Version control
+
+## Performance Considerations
+
+### 1. Real-time Updates
+- **WebSocket connections** for live data
+- **Server-Sent Events** for fallback
+- **Optimistic updates** for better UX
+- **Connection pooling** for scalability
+
+### 2. Database Optimization
+- **Indexed queries** for fast access
+- **Connection pooling** for efficiency
+- **Query optimization** for complex operations
+- **Caching strategies** where appropriate
+
+### 3. Frontend Performance
+- **Code splitting** for faster loading
+- **Image optimization** for assets
+- **Lazy loading** for components
+- **Service workers** for offline support
+
+## Scalability Guidelines
+
+### 1. Horizontal Scaling
+- **Stateless design** for easy scaling
+- **Load balancing** ready architecture
+- **Database sharding** considerations
+- **CDN integration** for static assets
+
+### 2. Vertical Scaling
+- **Resource optimization** for efficiency
+- **Memory management** best practices
+- **CPU optimization** for heavy operations
+- **Storage optimization** for large datasets
+
+## Monitoring and Logging
+
+### 1. Application Monitoring
+- **Error tracking** for debugging
+- **Performance monitoring** for optimization
+- **User analytics** for insights
+- **System health** checks
+
+### 2. Security Monitoring
+- **Authentication logs** for security
+- **Access pattern** analysis
+- **Anomaly detection** for threats
+- **Audit trail** maintenance
+
+## Development Guidelines
+
+### 1. Code Organization
+- **Feature-based** folder structure
+- **Clear separation** of concerns
+- **Consistent naming** conventions
+- **Documentation** for all components
+
+### 2. Testing Strategy
+- **Unit tests** for components
+- **Integration tests** for APIs
+- **E2E tests** for workflows
+- **Security tests** for vulnerabilities
+
+### 3. Deployment Pipeline
+- **Automated testing** before deployment
+- **Environment-specific** configurations
+- **Rollback strategies** for issues
+- **Health checks** post-deployment 

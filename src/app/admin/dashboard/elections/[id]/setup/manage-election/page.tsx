@@ -1,0 +1,260 @@
+"use client";
+import { SubmitButton } from '@/components/SubmitButton';
+
+import BallotPreview from "@/app/assets/BallotPreview.png";
+import Email from "@/app/assets/Email.png";
+import Setup from "@/app/assets/Setup.png";
+import Open from "@/app/assets/Open.png";
+import Live from "@/app/assets/Live.png";
+import ElecInteg from "@/app/assets/ElecInteg.png";
+
+import { useState, useEffect } from "react";
+import { MFAModal } from '@/components/MFAModal';
+import { OpenElectionModal } from '@/components/OpenElectionModal';
+import { FiMoreHorizontal } from "react-icons/fi";
+import { MdFileUpload } from 'react-icons/md';
+import { useParams, useRouter } from 'next/navigation';
+import { useSession } from "next-auth/react";
+import { toast, Toaster } from "react-hot-toast";
+
+const setupCards = [
+    {
+      title: "Ballot Preview",
+      desc: "Preview the ballot to be used for the election.",
+      img: BallotPreview,
+      bg: "bg-gray-50",
+      text: "text-gray-800",
+    },
+    {
+      title: "Sending of Emails",
+      desc: "Setup the email configurations to be sent to voters.",
+      img: Email,
+      bg: "bg-gray-50",
+      text: "text-gray-800",
+    },
+    {
+      title: "MFA",
+      desc: "Choose a multi-factor authentication method for voters.",
+      img: Setup,
+      bg: "bg-gray-50",
+      text: "text-gray-800",
+    },
+    {
+      title: "Open Election",
+      desc: "Start the voting for the election.",
+      img: Open,
+      bg: "bg-gray-50",
+      text: "text-gray-800",
+    },
+    {
+      title: "Live Dashboard",
+      desc: "Monitor the real-time updates of election voting.",
+      img: Live,
+      bg: "bg-gray-50",
+      text: "text-gray-800",
+    },
+    {
+      title: "Election Integrity",
+      desc: "Verify the integrity of your election process.",
+      img: ElecInteg,
+      bg: "bg-gray-50",
+      text: "text-gray-800",
+    },
+
+];
+
+export default function ManageElectionPage() {
+  const params = useParams<{ id: string }>();
+  const electionId = Number(params?.id);
+  const router = useRouter();
+  const { data: session } = useSession();
+  const [showSteps, setShowSteps] = useState(false);
+  const [showMFAModal, setShowMFAModal] = useState(false);
+  const [showOpenElectionModal, setShowOpenElectionModal] = useState(false);
+  const [electionData, setElectionData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch election data
+  useEffect(() => {
+    const fetchElectionData = async () => {
+      try {
+        const response = await fetch(`/api/elections/${electionId}`);
+        const result = await response.json();
+        
+        if (response.ok) {
+          setElectionData(result.data.election);
+        } else {
+          toast.error(result.message || "Failed to fetch election data");
+        }
+      } catch (error) {
+        console.error("Error fetching election data:", error);
+        toast.error("Failed to fetch election data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (electionId) {
+      fetchElectionData();
+    }
+  }, [electionId]);
+
+  // Prepare modal data from real election data
+  const openElectionInitialData = electionData ? {
+    electionId: electionData.id,
+    isOpen: electionData.status === 'ACTIVE',
+    dateStart: electionData.schedule?.dateStart || "",
+    dateEnd: electionData.schedule?.dateFinish || "",
+    electionName: electionData.name,
+    description: electionData.description,
+  } : {
+    electionId: electionId,
+    isOpen: false,
+    dateStart: "",
+    dateEnd: "",
+    electionName: "Loading...",
+    description: "",
+  };
+
+  // Handle election status update
+  const handleElectionStatusUpdate = async (data: { electionId: number; isOpen: boolean }) => {
+    try {
+      const action = data.isOpen ? "open" : "close";
+      const response = await fetch(`/api/elections/${data.electionId}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to update election status");
+      }
+
+      toast.success(result.message || `Election ${action}d successfully`);
+      
+      // Update local election data
+      if (electionData) {
+        setElectionData({
+          ...electionData,
+          status: data.isOpen ? 'ACTIVE' : 'CLOSED'
+        });
+      }
+      
+      setShowOpenElectionModal(false);
+    } catch (error) {
+      console.error("Error updating election status:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to update election status");
+    }
+  };
+
+  return (
+    <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8 pt-4">
+      <>
+        {/* Election Header - Professional Gradient */}
+        <div className="relative overflow-hidden rounded-2xl shadow-lg mb-8 mt-4">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#7b1c1c] via-[#992b2b] to-[#5c0000]"></div>
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
+          <div className="relative px-6 py-6">
+            <div className="flex flex-col gap-2">
+              <h2 className="text-md font-bold text-white mb-1">Hi, {session?.user?.name || 'User'}!</h2>
+              <p className="text-white/90 text-sm">
+                Follow the steps below to complete election setup for {electionData?.name || 'your election'}.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Election Setup Steps Dropdown */}
+        <div className="mb-6 px-2 sm:px-5">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="flex items-center rounded-t-xl px-5 py-4">
+              <span className="font-semibold text-sm">Steps for Manage Election</span>
+              <div className="flex-1" />
+              <button
+                className="p-2 rounded-full hover:bg-gray-200 transition"
+                onClick={() => setShowSteps((prev) => !prev)}
+                aria-label="Show steps"
+              >
+                <FiMoreHorizontal size={20} className="text-gray-400" />
+              </button>
+            </div>
+            <div className="border-b border-gray-200 shadow-sm" />
+            {showSteps && (
+              <div className="border border-red-400 rounded-lg m-4 p-4 text-gray-700 text-sm bg-white">
+                <ol className="space-y-2 list-decimal ml-4">
+                  <li className="text-sm">Click "MFA" to setup the multi-factor authentication for voters.</li>
+                  <li className="text-sm">Click "Ballot Preview" to see the initial ballot.</li>
+                  <li className="text-sm">Click "Sending of Emails" to configure email notifications for voters.</li>
+                  <li className="text-sm">Click "Open Election" to start the election.</li>
+                  <li className="text-sm">Click "Live Dashboard" to view the live updates of the election.</li>
+                </ol>
+              </div>
+            )}
+            {/* Setup Cards/Buttons inside the card */}
+            <div className="main-content pb-3 px-2 sm:px-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 mt-2 sm:mt-0 p-4">
+                {setupCards.map((card, idx) => (
+                  <button
+                    key={idx}
+                    className={`
+              ${card.bg} rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200 p-2
+              border-4 border-transparent hover:border-red-900
+                flex flex-col items-center text-left w-full h-60 lg:h-auto
+            `}
+                    onClick={() => {
+                      if (card.title === 'Ballot Preview') {
+                        router.push(`/admin/dashboard/elections/${electionId}/setup/manage-election/ballot-preview`);
+                      } else if (card.title === 'Sending of Emails') {
+                        router.push(`/admin/dashboard/elections/${electionId}/setup/manage-election/send-email`);
+                      } else if (card.title === 'MFA') {
+                        setShowMFAModal(true);
+                      } else if (card.title === 'Open Election') {
+                        setShowOpenElectionModal(true);
+                      } else if (card.title === 'Live Dashboard') {
+                        // Set admin context and election ID before redirecting to voter route
+                        sessionStorage.clear(); // Clear previous session storage to avoid conflicts
+                        sessionStorage.setItem("adminContext", "true");
+                        sessionStorage.setItem("adminElectionId", electionId.toString());
+                        router.push(`/voter/live-dashboard`);
+                      } else if (card.title === 'Election Integrity') {
+                        router.push(`/admin/dashboard/elections/${electionId}/setup/manage-election/verify-integrity`);
+                      }
+                    }}
+                  >
+                    <div className="w-full mb-2">
+                        <img
+                          src={card.img.src}
+                          alt={card.title}
+                          className="w-full h-32 object-contain rounded-xl p-2 bg-[#890806]"
+                        />
+                    </div>
+                    <h3 className={`text-sm font-semibold mb-2 px-0 sm:px-0 ${card.text} text-left w-full`}>{card.title}</h3>
+                    <p className={`text-sm ${card.text} text-left w-full opacity-80`}>{card.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* MFA Modal */}
+        <MFAModal
+          open={showMFAModal}
+          onClose={() => setShowMFAModal(false)}
+          electionId={electionId}
+        />
+        {/* Open Election Modal */}
+        <OpenElectionModal
+          open={showOpenElectionModal}
+          onClose={() => setShowOpenElectionModal(false)}
+          onSave={handleElectionStatusUpdate}
+          initialData={openElectionInitialData}
+        />
+      </>
+      {/*<Toaster position="top-center" />*/}
+    </div>
+  );
+}

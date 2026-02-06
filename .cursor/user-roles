@@ -1,0 +1,240 @@
+# User Roles Rules
+
+## Role Hierarchy
+
+### 1. SuperAdmin (SUPER_ADMIN)
+**Highest level of system access and control**
+
+#### Permissions
+- **Global System Oversight**
+  - View all organizations, elections, and users
+  - Access comprehensive system analytics
+  - Monitor all system activities
+  - View audit logs across all organizations
+
+- **Organization Management**
+  - Approve/reject organization registrations
+  - Suspend or delete organizations
+  - Override organization settings
+  - Access organization-specific data
+
+- **User Management**
+  - Create, modify, or delete any user
+  - Change user roles and permissions
+  - Reset user passwords
+  - Manage user status (active/inactive)
+
+- **Election Oversight**
+  - View all elections across organizations
+  - Access election results and analytics
+  - Override election settings
+  - Monitor election integrity
+
+- **Support System**
+  - Access all support tickets
+  - Assign tickets to appropriate teams
+  - Escalate critical issues
+  - Provide system-wide support
+
+- **System Configuration**
+  - Modify system-wide settings
+  - Configure global security policies
+  - Manage system integrations
+  - Update system parameters
+
+#### Authentication
+- **Script-based creation** only (no OAuth)
+- **Direct database insertion** for security
+- **No onboarding process** required
+- **Immediate access** to all features
+
+#### Access Restrictions
+- **Cannot participate** in elections as voter
+- **Cannot create** organizations (approval role only)
+- **Cannot vote** in any election
+- **Cannot access** voter-specific features
+
+### 2. Admin (ADMIN)
+**Organization-level management and election control**
+
+#### Permissions
+- **Organization Management**
+  - Create and manage their organization
+  - Update organization profile and settings
+  - Manage organization branding
+  - Configure organization-specific features
+
+- **Election Management**
+  - Create multiple elections for their organization
+  - Configure election settings and parameters
+  - Manage election lifecycle (draft → active → closed)
+  - Set up voting scopes and hierarchical areas
+
+- **Voter Management**
+  - Register voters individually or via CSV
+  - Generate unique 6-digit voter codes
+  - Manage voter lists and access
+  - Send voter codes via email/SMS
+
+- **Election Setup**
+  - Create positions and requirements
+  - Manage candidates and their profiles
+  - Configure political parties and affiliations
+  - Set up ballot forms and configurations
+
+- **2FA Configuration**
+  - Choose 2FA method per election
+  - Configure email, SMS, or passphrase 2FA
+  - Apply 2FA settings to all voters in election
+  - Manage 2FA enforcement policies
+
+- **Real-time Monitoring**
+  - Access live election dashboards
+  - Monitor vote counts and participation
+  - View real-time analytics
+  - Track voter engagement
+
+- **Communication**
+  - Send emails to voters
+  - Manage notification systems
+  - Configure automated messages
+  - Handle voter communications
+
+- **Support**
+  - Submit support tickets
+  - Access help documentation
+  - Request system assistance
+  - Report issues and bugs
+
+#### Authentication
+- **Email/password** or **OAuth** (Google, Facebook)
+- **One-time onboarding** process required
+- **Organization approval** by SuperAdmin (single approval point)
+- **Account suspension** via User.isActive (granular control)
+- **Session-based** authentication
+
+#### Access Restrictions
+- **Cannot access** other organizations' data
+- **Cannot modify** system-wide settings
+- **Cannot approve** other organizations
+- **Cannot access** SuperAdmin features
+- **Cannot participate** in elections as voter
+
+#### Organization Isolation
+- **Complete data separation** from other organizations
+- **No cross-organization** access or visibility
+- **Independent election** management
+- **Isolated user** management
+
+### 3. Voter (VOTER)
+**Election participation and voting access**
+
+#### Permissions
+- **Election Access**
+  - Access elections via unique 6-digit codes
+  - View election information and candidates
+  - Access terms and conditions
+  - Check election status
+
+- **Voting Process**
+  - Submit votes through secure ballot forms
+  - Access voting interface
+  - View ballot preview
+  - Complete voting process
+
+- **2FA Authentication**
+  - Complete election-specific 2FA
+  - Use email, SMS, or passphrase verification
+  - Secure access to voting interface
+  - Maintain session security
+
+- **Post-Voting**
+  - Access vote receipts
+  - Complete post-vote surveys
+  - View confirmation messages
+  - Access voting history
+
+- **Results Access**
+  - View live results (if enabled by admin)
+  - Access election outcomes
+  - View participation statistics
+  - Access result summaries
+
+#### Authentication
+- **6-digit alphanumeric codes** (globally unique)
+- **Election-based 2FA** (configurable per election)
+- **Session-based** access
+- **Time-limited** access tokens
+
+#### Access Restrictions
+- **Cannot create** or manage elections
+- **Cannot access** admin features
+- **Cannot modify** election settings
+- **Cannot access** other organizations' elections
+- **Cannot view** other voters' data
+
+#### Code Management
+- **Unique codes** per voter per election
+- **One-time use** for each voting session
+- **Secure generation** and distribution
+- **Audit trail** for code usage
+
+## Role Transitions
+
+### Admin to SuperAdmin
+- **Manual promotion** by existing SuperAdmin
+- **Database role update** required
+- **Immediate access** to all features
+- **No additional** onboarding required
+
+### Voter to Admin
+- **Not supported** - separate registration required
+- **Different authentication** systems
+- **No role elevation** from voter to admin
+- **Independent user** accounts
+
+### SuperAdmin to Admin
+- **Role demotion** possible
+- **Organization assignment** required
+- **Access restriction** to organization scope
+- **Onboarding process** may be required
+
+## Security Considerations
+
+### Role-Based Access Control
+- **Strict permission** enforcement
+- **API-level** authorization checks
+- **Frontend route** protection
+- **Database-level** access control
+
+### Session Management
+- **Role-specific** session data
+- **Automatic logout** on role changes
+- **Session validation** on each request
+- **Secure token** handling
+
+### Audit Logging
+- **All role changes** logged
+- **Permission access** tracked
+- **Authentication events** recorded
+- **Security incidents** monitored
+
+## Development Guidelines
+
+### Role Implementation
+- **Type-safe** role definitions
+- **Middleware-based** authorization
+- **Component-level** permission checks
+- **API route** protection
+
+### Testing Requirements
+- **Role-specific** test cases
+- **Permission boundary** testing
+- **Cross-role** access prevention
+- **Security vulnerability** testing
+
+### Documentation
+- **Clear role** definitions
+- **Permission matrices** documented
+- **Access control** procedures
+- **Security guidelines** maintained 

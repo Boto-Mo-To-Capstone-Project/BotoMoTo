@@ -1,0 +1,433 @@
+"use client";
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { MdAdd, MdDownload, MdFilterList, MdDelete, MdEdit } from "react-icons/md";
+import { SubmitButton } from '@/components/SubmitButton';
+import { CreateElectionModal } from '@/components/CreateElectionModal';
+import ConfirmationModal from '@/components/ConfirmationModal';
+import SearchBar from '@/components/SearchBar';
+import ElectionTable from '@/components/ElectionTable';
+import toast, { Toaster } from 'react-hot-toast';
+
+// Define the shape expected by ElectionTable
+interface UiElection {
+  id: number;
+  name: string;
+  description: string;
+  status: "Draft" | "Active" | "Closed";
+  votingDate: string;
+  time: string;
+  isTemplate?: boolean;
+  templateId?: number | null;
+  instanceYear?: number | null;
+  instanceName?: string | null;
+}
+
+// Wrapper component that provides the Suspense boundary required by Next.js
+export default function ElectionDashboardPage() {
+  return (
+    <Suspense fallback={<div className="w-full p-4 text-center text-gray-500">Loading…</div>}>
+      <ElectionDashboardContent />
+    </Suspense>
+  );
+}
+
+function ElectionDashboardContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const eidParam = searchParams.get('eid');
+  const [tab, setTab] = useState<"All" | "Draft" | "Active" | "Closed">("All");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [search, setSearch] = useState("");
+  const [sortCol, setSortCol] = useState<
+    "name" | "status" | "votingDate" | "time" | null
+  >(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [electionsList, setElectionsList] = useState<UiElection[]>([]);
+  const totalPages = Math.ceil(Math.max(1, electionsList.length) / pageSize);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  // Sidebar open state for mobile
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+  // Create modal state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  
+  // Delete confirmation modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Keep selection in sync with ?eid=
+  useEffect(() => {
+    if (!eidParam) return; // don't clear selection when eid is removed
+    const id = Number(eidParam);
+    if (!Number.isNaN(id)) {
+      setSelectedIds([id]);
+    }
+  }, [eidParam]);
+
+  // Fetch elections from backend
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch('/api/elections?all=true', { cache: 'no-store' });
+        const json = await res.json();
+        if (!res.ok || !json?.success) {
+          throw new Error(json?.error || json?.message || 'Failed to fetch elections');
+        }
+        const elections = (json?.data?.elections ?? []) as any[];
+        // Map API elections to UI shape with proper status mapping
+        const mapped: UiElection[] = elections.map((e) => {
+          const start = e?.schedule?.dateStart ? new Date(e.schedule.dateStart) : null;
+          const finish = e?.schedule?.dateFinish ? new Date(e.schedule.dateFinish) : null;
+          const fmtDate = (d: Date | null) => d?.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) ?? '—';
+          const fmtTime = (d: Date | null) => d?.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) ?? '—';
+          
+          // Status mapping - templates are shown as Draft but marked with isTemplate
+          let status: UiElection['status'];
+          switch (e?.status) {
+            case 'ACTIVE':
+              status = 'Active';
+              break;
+            case 'CLOSED':
+              status = 'Closed';
+              break;
+            case 'DRAFT':
+              status = 'Draft';
+              break;
+            default:
+              status = 'Draft'; // fallback
+          }
+          
+          // Name display logic
+          let displayName = e.name;
+          if (e.isTemplate) {
+            displayName = `${e.name} (Template)`;
+          } else if (e.instanceName) {
+            displayName = `${e.name} - ${e.instanceName}`;
+          }
+          
+          return {
+            id: e.id,
+            name: displayName,
+            description: e.description || '',
+            status,
+            votingDate: start && finish ? `${fmtDate(start)} - ${fmtDate(finish)}` : '—',
+            time: start && finish ? `${fmtTime(start)} - ${fmtTime(finish)}` : '—',
+            isTemplate: e.isTemplate,
+            templateId: e.templateId,
+            instanceYear: e.instanceYear,
+            instanceName: e.instanceName,
+          } as UiElection;
+        });
+        if (!cancelled) setElectionsList(mapped);
+      } catch (err) {
+        console.error(err);
+        if (!cancelled) {
+          toast.error('Failed to load elections');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleFirst = () => setPage(1);
+  const handlePrev = () => setPage((p) => Math.max(1, p - 1));
+  const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
+  const handleLast = () => setPage(totalPages);
+  const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setPageSize(Number(e.target.value));
+    setPage(1); // reset to first page when page size changes
+  };
+
+  const handleSort = (col: "name" | "status" | "votingDate" | "time") => {
+    if (sortCol === col) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortCol(col);
+      setSortDir("asc");
+    }
+  };
+
+  // For multi-select: allow multiple checkboxes and reflect single selection in URL
+  const handleCheckboxChange = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = prev.includes(id)
+        ? prev.filter((x) => x !== id)
+        : [...prev, id];
+      return next;
+    });
+  };
+
+  // Reflect selection in URL (side-effect moved out of state updater)
+  useEffect(() => {
+    if (selectedIds.length === 1) {
+      router.replace(`/admin/dashboard/elections?eid=${selectedIds[0]}`, { scroll: false });
+    } else {
+      router.replace(`/admin/dashboard/elections`, { scroll: false });
+    }
+  }, [selectedIds, router]);
+
+  // Filter by search and tab
+  let filteredElections = electionsList.filter((e) =>
+    e.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Updated filtering logic for new tabs
+  if (tab === 'Draft') {
+    filteredElections = filteredElections.filter(e => e.status === 'Draft');
+  } else if (tab === 'Active') {
+    filteredElections = filteredElections.filter(e => e.status === 'Active');
+  } else if (tab === 'Closed') {
+    filteredElections = filteredElections.filter(e => e.status === 'Closed');
+  }
+  // 'All' tab shows everything, no additional filtering needed
+
+  if (sortCol) {
+    filteredElections = [...filteredElections].sort((a, b) => {
+      if (sortCol === "votingDate") {
+        const getStartDate = (val: string) => new Date(val.split(" - ")[0]);
+        const aDate = getStartDate(a[sortCol]);
+        const bDate = getStartDate(b[sortCol]);
+        if (aDate < bDate) return sortDir === "asc" ? -1 : 1;
+        if (aDate > bDate) return sortDir === "asc" ? 1 : -1;
+        return 0;
+      }
+      let aVal: any = a[sortCol];
+      let bVal: any = b[sortCol];
+      // For time, sort by start time (assume format '10:00 AM - 2:00 PM')
+      if (sortCol === "time") {
+        aVal = aVal.split(" - ")[0];
+        bVal = bVal.split(" - ")[0];
+      }
+      if (aVal < bVal) return sortDir === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }
+
+  // Create modal handlers
+  const handleCreateNew = () => {
+    setShowCreateModal(false);
+    router.push('/admin/dashboard/elections/create');
+  };
+
+  const handleCreateInstance = async (templateId: number, instanceYear: number, instanceName: string) => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/elections/instances', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateId, instanceYear, instanceName })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        toast.success('Election instance created successfully!');
+        setShowCreateModal(false);
+        // Refresh elections list
+        window.location.reload();
+      } else {
+        toast.error(result.message || 'Failed to create election instance');
+      }
+    } catch (error) {
+      console.error('Error creating instance:', error);
+      toast.error('Failed to create election instance');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteElections = async () => {
+    if (selectedIds.length === 0) return;
+
+    try {
+      setLoading(true);
+      const deletePromises = selectedIds.map(async (id) => {
+        const response = await fetch(`/api/elections/${id}`, {
+          method: 'DELETE',
+        });
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.message || `Failed to delete election ${id}`);
+        }
+        
+        return result;
+      });
+
+      await Promise.all(deletePromises);
+      
+      toast.success(`${selectedIds.length === 1 ? 'Election' : 'Elections'} deleted successfully!`);
+      
+      // Clear selection and refresh the list
+      setSelectedIds([]);
+      
+      // Refresh elections list
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('Error deleting elections:', error);
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Failed to delete elections');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const paginatedElections = filteredElections.slice(
+    (page - 1) * pageSize,
+    page * pageSize
+  );
+
+  return (
+    <>
+      {/*<Toaster position="top-center" />*/}
+      <div
+        id="main-window-template-component"
+        className="app h-full flex flex-col min-h-[calc-100vh-4rem] bg-gray-50"
+      >
+        {/* Universal App Header */}
+
+        <div className="flex-1 bg-white w-full min-w-0 pt-0 md:pt-0 p-4 md:p-8">
+          {/* Search and actions */}
+          <div className="main-toolbar sticky top-16 z-30 bg-white flex flex-col md:flex-row md:items-center md:gap-4 gap-2 mb-6 py-3 px-2 sm:px-5">
+            {/* Tabs */}
+            <div className="flex-shrink-0">
+              <div className="inline-flex w-full max-w-[500px] md:w-auto rounded-md border border-gray-300 overflow-hidden bg-white">
+                {["All", "Draft", "Active", "Closed"].map((t, i) => (
+                  <SubmitButton
+                    key={t}
+                    label={t}
+                    variant="tab"
+                    isActive={tab === (t as any)}
+                    onClick={() => { setTab(t as any); setPage(1); }}
+                    className={`w-full h-[44px] md:w-[80px] md:h-10 ${
+                      i !== 0 ? "border-l border-gray-200" : ""
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+            {/* Search bar */}
+            <div className="flex-1 md:mx-4">
+              <SearchBar
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            {/* Action Buttons */}
+            <div className="flex-shrink-0 flex gap-2">
+              <SubmitButton
+                label=""
+                variant="action"
+                icon={<MdAdd size={20} />}
+                title="Add"
+                onClick={() => setShowCreateModal(true)}
+              />
+              <SubmitButton
+                label=""
+                variant="action"
+                icon={<MdEdit size={20} />}
+                title="Edit"
+                onClick={
+                  selectedIds.length === 1
+                    ? () => {
+                        const id = selectedIds[0];
+                        router.push(`/admin/dashboard/elections/create?eid=${id}`);
+                      }
+                    : undefined
+                }
+                className={
+                  selectedIds.length === 1
+                    ? ""
+                    : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
+                }
+              />
+              <SubmitButton
+                label=""
+                variant="action"
+                icon={<MdDelete size={20} />}
+                title="Delete"
+                onClick={
+                  selectedIds.length >= 1
+                    ? () => setShowDeleteModal(true)
+                    : undefined
+                }
+                className={
+                  selectedIds.length >= 1
+                    ? ""
+                    : "text-gray-400 bg-gray-100 cursor-not-allowed pointer-events-none"
+                }
+              />
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="main-content flex-auto overflow-auto pb-3 px-2 sm:px-3">
+            <ElectionTable
+              loading={loading}
+              elections={paginatedElections}
+              sortCol={sortCol}
+              sortDir={sortDir}
+              onSort={handleSort}
+              page={page}
+              totalPages={Math.max(1, Math.ceil(filteredElections.length / pageSize))}
+              onFirst={handleFirst}
+              onPrev={handlePrev}
+              onNext={handleNext}
+              onLast={handleLast}
+              pageSize={pageSize}
+              onPageSizeChange={handlePageSizeChange}
+              onRowClick={(election) => handleCheckboxChange(election.id)}
+              selectedIds={selectedIds}
+              onCheckboxChange={handleCheckboxChange}
+            />
+          </div>
+        </div>
+        
+        {/* Create Election Modal */}
+        {showCreateModal && (
+          <CreateElectionModal
+            open={showCreateModal}
+            onClose={() => setShowCreateModal(false)}
+            onCreateNew={handleCreateNew}
+            onCreateInstance={handleCreateInstance}
+            templates={electionsList.filter(e => e.isTemplate)}
+            loading={loading}
+          />
+        )}
+
+        {/* Delete Confirmation Modal */}
+        <ConfirmationModal
+          open={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          title={`Delete ${selectedIds.length === 1 ? 'Election' : 'Elections'}`}
+          description={`Are you sure you want to delete ${
+            selectedIds.length === 1 
+              ? 'this election' 
+              : `these ${selectedIds.length} elections`
+          }? This action cannot be undone.`}
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onConfirm={async () => {
+            await handleDeleteElections();
+            setShowDeleteModal(false);
+          }}
+          variant="delete"
+        />
+      </div>
+    </>
+  );
+}

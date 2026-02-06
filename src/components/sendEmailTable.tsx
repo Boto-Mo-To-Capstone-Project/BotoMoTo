@@ -1,0 +1,280 @@
+import { MdFirstPage, MdLastPage, MdChevronLeft, MdChevronRight } from 'react-icons/md';
+import { FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+
+interface Voter {
+  id: number;
+  name: string;
+  status: string;
+  scope: string;
+  email: string;
+  birthdate: string;
+  codeSendStatus: string; // Required field from database: "PENDING", "SENT", "FAILED", etc.
+  code: string; // Add voting code field
+}
+
+interface VoterTableProps {
+  voters: Voter[];
+  sortCol: 'name' | 'status' | 'scope' | 'email' | 'birthdate' | 'codeSendStatus' | 'code' | null;
+  sortDir: 'asc' | 'desc';
+  onSort: (col: 'name' | 'status' | 'scope' | 'email' | 'birthdate' | 'codeSendStatus' | 'code') => void;
+  page: number;
+  totalPages: number;
+  onFirst: () => void;
+  onPrev: () => void;
+  onNext: () => void;
+  onLast: () => void;
+  pageSize: number;
+  onPageSizeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  onRowClick?: (voter: Voter) => void;
+  title?: string;
+  selectedIds?: number[];
+  onCheckboxChange?: (id: number) => void;
+  loading: boolean;
+  hasLoaded: boolean;
+}
+
+export default function VoterTable({
+  title = 'All Voters',
+  selectedIds = [],
+  onCheckboxChange,
+  loading,
+  hasLoaded,
+  ...props
+}: VoterTableProps) {
+  // Helper for header checkbox
+  const allChecked = props.voters.length > 0 && props.voters.every(v => selectedIds.includes(v.id));
+  const someChecked = props.voters.some(v => selectedIds.includes(v.id));
+
+  const handleHeaderCheckbox = () => {
+    if (allChecked) {
+      // Uncheck all
+      props.voters.forEach(v => onCheckboxChange && onCheckboxChange(v.id));
+    } else {
+      // Check all
+      props.voters.forEach(v => {
+        if (!selectedIds.includes(v.id)) {
+          if (onCheckboxChange) {
+            onCheckboxChange(v.id);
+          }
+        }
+      });
+    }
+  };
+
+  return (
+    <div>
+      {title && <h2 className="text-lg font-semibold mb-2">{title}</h2>}
+      <div className="bg-white rounded-lg shadow border border-gray-200 overflow-x-auto">
+        <table className="w-full text-sm border-separate border-spacing-0">
+          <thead className="bg-gray-50">
+            <tr className="text-left text-gray-700 border-b font-semibold text-base">
+              <th className="py-2 px-3 border-b border-gray-200">
+                <input
+                  type="checkbox"
+                  checked={allChecked}
+                  ref={el => { if (el) {el.indeterminate = !allChecked && someChecked;} }}
+                  onChange={handleHeaderCheckbox}
+                />
+              </th>
+              <th
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
+                onClick={() => props.onSort("name")}
+              >
+                Name{" "}
+                {props.sortCol === "name" ? (
+                  props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
+                ) : (
+                  <FaSort className="inline opacity-50" />
+                )}
+              </th>
+              <th
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
+                onClick={() => props.onSort("status")}
+              >
+                Status{" "}
+                {props.sortCol === "status" ? (
+                  props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
+                ) : (
+                  <FaSort className="inline opacity-50" />
+                )}
+              </th>
+              <th
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
+                onClick={() => props.onSort("scope")}
+              >
+                Scope{" "}
+                {props.sortCol === "scope" ? (
+                  props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
+                ) : (
+                  <FaSort className="inline opacity-50" />
+                )}
+              </th>
+              <th
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
+                onClick={() => props.onSort("email")}
+              >
+                Email{" "}
+                {props.sortCol === "email" ? (
+                  props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
+                ) : (
+                  <FaSort className="inline opacity-50" />
+                )}
+              </th>
+              <th
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
+                onClick={() => props.onSort("code")}
+              >
+                Code{" "}
+                {props.sortCol === "code" ? (
+                  props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
+                ) : (
+                  <FaSort className="inline opacity-50" />
+                )}
+              </th>
+              <th
+                className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
+                onClick={() => props.onSort("codeSendStatus")}
+              >
+                Send Status{" "}
+                {props.sortCol === "codeSendStatus" ? (
+                  props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
+                ) : (
+                  <FaSort className="inline opacity-50" />
+                )}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {(!hasLoaded && loading) ? (
+              // Loading skeleton
+              [...Array(5)].map((_, idx) => (
+                <tr key={idx} className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="w-4 h-4 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-6 w-24 bg-gray-200 rounded-full animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-4 w-36 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-6 w-16 bg-gray-200 rounded animate-pulse" />
+                  </td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-6 w-20 bg-gray-200 rounded-full animate-pulse" />
+                  </td>
+                </tr>
+              ))
+            ) : (!loading && hasLoaded && props.voters.length === 0) ? (
+              // Empty state
+              <tr>
+                <td colSpan={9} className="px-4 py-4 text-center text-gray-400">
+                  No voters found.
+                </td>
+              </tr>
+            ) : (
+              // Actual data
+              props.voters.map((voter, idx) => (
+                <tr
+                  key={voter.id + '-' + idx}
+                  className={`border-b border-gray-200 hover:bg-gray-50 transition ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} cursor-pointer`}
+                  onClick={e => {
+                    if ((e.target as HTMLElement).tagName.toLowerCase() === 'input') return;
+                    if (onCheckboxChange) {
+                      onCheckboxChange(voter.id);
+                    }
+                    if (props.onRowClick) {
+                      props.onRowClick(voter);
+                    }
+                  }}
+                >
+                  <td className="py-2 px-3 align-middle">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(voter.id)}
+                      onChange={() => onCheckboxChange && onCheckboxChange(voter.id)}
+                    />
+                  </td>
+                  <td className="py-2 px-3 align-middle truncate max-w-[150px]">{voter.name}</td>
+                  <td className="py-2 px-3 align-middle">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                        {voter.status}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="py-2 px-3 align-middle truncate max-w-[120px]">{voter.scope}</td>
+                  <td className="py-2 px-3 align-middle truncate max-w-[180px]">{voter.email}</td>
+                  <td className="py-2 px-3 align-middle truncate max-w-[100px]">
+                    <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                      {voter.code || '—'}
+                    </span>
+                  </td>
+                  <td className="py-2 px-3 align-middle truncate max-w-[120px]">
+                    {(() => {
+                      const codeSendStatus = (voter.codeSendStatus || 'PENDING').toLowerCase();
+                      let bgColor = 'bg-gray-100';
+                      let textColor = 'text-gray-700';
+                      let displayText = voter.codeSendStatus || 'Pending';
+
+                      // Handle different status variations based on actual database enum values
+                      if (codeSendStatus === 'sent') {
+                        bgColor = 'bg-green-100';
+                        textColor = 'text-green-700';
+                        displayText = 'Sent';
+                      } else if (codeSendStatus === 'failed') {
+                        bgColor = 'bg-red-100';
+                        textColor = 'text-red-700';
+                        displayText = 'Failed';
+                      } else if (codeSendStatus === 'pending') {
+                        bgColor = 'bg-yellow-100';
+                        textColor = 'text-yellow-700';
+                        displayText = 'Pending';
+                      }
+
+                      return (
+                        <span className={`px-2 py-1 ${bgColor} ${textColor} rounded-full text-xs font-medium`}>
+                          {displayText}
+                        </span>
+                      );
+                    })()}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+      {/* Pagination - moved outside the scrollable table wrapper */}
+      <div className="flex items-center gap-2 mt-4 w-full relative xxs:flex-wrap">
+        <button onClick={props.onFirst} disabled={props.page === 1} title="First"><MdFirstPage size={22} /></button>
+        <button onClick={props.onPrev} disabled={props.page === 1} title="Prev"><MdChevronLeft size={22} /></button>
+        <span>{props.page}</span>
+        <span>of {props.totalPages}</span>
+        <button onClick={props.onNext} disabled={props.page === props.totalPages} title="Next"><MdChevronRight size={22} /></button>
+        <button onClick={props.onLast} disabled={props.page === props.totalPages} title="Last"><MdLastPage size={22} /></button>
+        <span className="text-sm text-gray-500 flex items-center gap-1 sm:ml-auto xxs:w-full xxs:mt-1">
+          Page Size:
+          <select
+            value={props.pageSize}
+            onChange={props.onPageSizeChange}
+            className="border rounded px-1 py-0.5 text-sm ml-1 min-w-[64px] w-auto"
+          >
+            <option>10</option>
+            <option>20</option>
+            <option>50</option>
+            <option>100</option>
+          </select>
+        </span>
+      </div>
+    </div>
+  );
+}
