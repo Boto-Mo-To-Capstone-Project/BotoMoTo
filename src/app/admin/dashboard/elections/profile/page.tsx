@@ -307,7 +307,7 @@ const ProfilePage = () => {
 
           {/* Main Card */}
           <div className="main-content px-2 sm:px-5">
-            <div className="w-full max-w-7xl bg-white rounded-2xl shadow-lg border border-gray-200 p-6 space-y-10 animate-pulse">
+            <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-6 space-y-10 animate-pulse">
 
               {/* Personal Information Section */}
               <div>
@@ -404,7 +404,7 @@ const ProfilePage = () => {
 
         {/* Main Card */}
         <div className="main-content px-2 sm:px-5">
-          <div className="w-full max-w-7xl bg-white rounded-2xl shadow-lg border border-gray-200 p-6 space-y-10">
+          <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-6 space-y-10">
             
             {/* Personal Information Section */}
             <div>
