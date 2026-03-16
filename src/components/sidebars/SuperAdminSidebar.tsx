@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import BotoMoToLogo from "@/app/assets/BotoMoToLogo_light.png";
 import LogomarkHD from "@/app/assets/LogomarkHD.png"
+import SidebarAccountCard from "@/components/sidebars/SidebarAccountCard";
 import {
   LayoutDashboard,
   ListChecks,
@@ -14,14 +15,11 @@ import {
   X,
   Users,
   BadgeAlert,
-  LogOut,
-  Settings,
   FolderKanban,
   User,
 } from "lucide-react";
 import { useLogout } from "@/hooks/useLogout";
 import { useEffect } from "react";
-import { Avatar } from "@/components/Avatar";
 
 type SuperAdminSidebarProps = {
   variant?: "default";
@@ -154,36 +152,13 @@ const SuperAdminSidebar = ({
             );
           })}
         </nav>
-        {/* Logout Section */}
-        <div className="flex items-start justify-between mt-auto">
-          <div className="flex items-center gap-2">
-            <Avatar
-              name={displayName}
-              image={displayPic}
-              defaultImage={LogomarkHD.src}
-              size="w-10 h-10"
-              className="shrink-0"
-            />
-            <div>
-              <p className="text-white text-sm">{displayName}</p>
-              {/* Mobile / small screens → truncated */}
-              <p className="text-white text-sm block hidden lg:block">
-                {displayEmail.length > 15 
-                  ? displayEmail.slice(0, 15) + "..." 
-                  : displayEmail}
-              </p>
-
-              {/* Large screens → full text */}
-              <p className="text-white text-sm lg:hidden ">
-                {displayEmail}
-              </p>
-            </div>   
-          </div>  
-
-          <button onClick={handleLogout} className="cursor-pointer text-white">
-            <LogOut className="w-6 h-6" />
-          </button>
-        </div>
+        <SidebarAccountCard
+          name={displayName}
+          email={displayEmail}
+          image={displayPic}
+          defaultImage={LogomarkHD.src}
+          onLogout={handleLogout}
+        />
       </aside>
     </>
   );

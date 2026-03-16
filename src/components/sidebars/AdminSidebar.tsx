@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Avatar } from "@/components/Avatar";
+import SidebarAccountCard from "@/components/sidebars/SidebarAccountCard";
 
 import BotoMoToLogo from "@/app/assets/BotoMoToLogo_light.png";
 import {
@@ -18,7 +18,6 @@ import {
   ChevronDown,
   ChevronUp,
   Settings,
-  LogOut,
 } from "lucide-react";
 import { useLogout } from "@/hooks/useLogout";
 
@@ -41,7 +40,6 @@ const AdminSidebar = ({
   const searchParams = useSearchParams();
   const eidParam = searchParams.get("eid");
   const [showSetup, setShowSetup] = useState(false);
-  const [showManage, setShowManage] = useState(false);
 
   const handleLogout = useLogout();
 
@@ -239,35 +237,12 @@ const AdminSidebar = ({
           })}
         </nav>
 
-        {/* Logout Section */}
-        <div className="flex items-start justify-between mt-auto">
-          <div className="flex items-center gap-2">
-            <Avatar
-              name={displayName}
-              image={displayPic}
-              size="w-10 h-10"
-              className="shrink-0"
-            />
-            <div>
-              <p className="text-white text-sm">{displayName}</p>
-              {/* Mobile / small screens → truncated */}
-              <p className="text-white text-sm block hidden lg:block">
-                {displayEmail.length > 15 
-                  ? displayEmail.slice(0, 15) + "..." 
-                  : displayEmail}
-              </p>
-
-              {/* Large screens → full text */}
-              <p className="text-white text-sm lg:hidden ">
-                {displayEmail}
-              </p>
-            </div>   
-          </div>
-
-          <button onClick={handleLogout} className="cursor-pointer text-white">
-            <LogOut className="w-6 h-6" />
-          </button>
-        </div>
+        <SidebarAccountCard
+          name={displayName}
+          email={displayEmail}
+          image={displayPic}
+          onLogout={handleLogout}
+        />
       </aside>
     </>
   );
