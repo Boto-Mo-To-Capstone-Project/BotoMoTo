@@ -243,7 +243,7 @@ export async function POST(req: NextRequest) {
 
       // Check if there are any active sessions while holding the lock
       if (lockedVoter.voterSessions.length > 0) {
-        throw new Error("CONCURRENT_SESSION_DETECTED");
+        throw new Error("SESSION_CONFLICT");
       }
 
       // Deactivate any existing sessions (cleanup)
@@ -415,11 +415,14 @@ export async function POST(req: NextRequest) {
       }, { status: 409 });
     }
     
-    if (e.message === "CONCURRENT_SESSION_DETECTED") {
+    if (e.message === "CONCURRENT_SESSION_DETECTED" || e.message === "SESSION_CONFLICT") {
       console.log(`🚫 Concurrent session attempt blocked for voter ${voter?.code}`);
-      return NextResponse.json({ 
-        error: "This voter code is already logged in on another device. Please try again in a moment." 
-      }, { status: 409 });
+      return NextResponse.json({
+        success: false,
+        errorCode: "SESSION_CONFLICT",
+        error: "This account is currently logged in on another device.",
+        message: "Session conflict detected"
+      }, { status: 403 });
     }
     
     if (e.message === "SESSION_CREATION_CONFLICT") {

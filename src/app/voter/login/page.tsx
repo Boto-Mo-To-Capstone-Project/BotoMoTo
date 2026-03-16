@@ -2,19 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Button from "@/components/Button";
 import Image from "next/image";
 
 import EnterVoterCode from "@/app/assets/EnterVoterCode.png";
 import OtpInput from "@/components/OtpInput";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import { SubmitButton } from "@/components/SubmitButton";
+import ConfirmationModal from "@/components/ConfirmationModal";
 
 const VoterLoginPage = () => {
   const router = useRouter(); // to go to another route
   const [voterCode, setVoterCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [showSessionConflictModal, setShowSessionConflictModal] = useState(false);
+  const [isTerminatingSession, setIsTerminatingSession] = useState(false);
 
   // Check if voter is already logged in and redirect appropriately
   useEffect(() => {
@@ -126,7 +128,7 @@ const VoterLoginPage = () => {
     setVoterCode(value);
   };
 
-  const handleSubmit = async () => {
+  const loginWithCode = async () => {
     if (voterCode.length !== 6) {
       const msg = "Please enter a complete 6-digit code";
       toast.error(msg);
@@ -196,6 +198,11 @@ const VoterLoginPage = () => {
           router.push("/voter/election-status");
         }
       } else {
+        if (response.status === 403 && data?.errorCode === "SESSION_CONFLICT") {
+          setShowSessionConflictModal(true);
+          return;
+        }
+
         // Handle various error types with appropriate messages
         let errorMessage = data.error || data.message || "Failed to login";
         
@@ -219,6 +226,39 @@ const VoterLoginPage = () => {
     }
   };
 
+  const handleSubmit = async () => {
+    await loginWithCode();
+  };
+
+  const handleTerminateAndLogin = async () => {
+    if (voterCode.length !== 6) {
+      throw new Error("Please enter a complete 6-digit code");
+    }
+
+    setIsTerminatingSession(true);
+
+    try {
+      const terminateResponse = await fetch("/api/voter/session/terminate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: voterCode }),
+      });
+
+      const terminateData = await terminateResponse.json();
+      if (!terminateResponse.ok || terminateData?.success === false) {
+        throw new Error(terminateData?.error || terminateData?.message || "Failed to terminate previous session");
+      }
+
+      toast.success("Previous session terminated. Logging in on this device...");
+      await loginWithCode();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to terminate previous session");
+      throw err;
+    } finally {
+      setIsTerminatingSession(false);
+    }
+  };
+
   return (
     <main className="min-h-screen px-5 pb-20 pt-30 flex justify-center">
       <div className="max-w-[380px] flex flex-col items-center gap-5 ">
@@ -238,10 +278,14 @@ const VoterLoginPage = () => {
           <OtpInput length={6} onChange={handleOtpChange} />
         </div>
         <div className="w-full mt-5 space-y-5">
+          {/*
+            Keep the submit button disabled while checking existing session
+            or while a login/termination request is in progress.
+          */}
           <SubmitButton 
-            label={`${isLoading ? "Verifying..." : "Submit"}`}
+            label={`${isCheckingSession ? "Checking Session" : isLoading ? "Verifying" : "Submit"}`}
             onClick={handleSubmit}
-            isLoading={isLoading}
+            isLoading={isLoading || isCheckingSession || isTerminatingSession}
           />
           <SubmitButton 
             label="Cancel"
@@ -250,6 +294,16 @@ const VoterLoginPage = () => {
           />
         </div>
       </div>
+      <ConfirmationModal
+        open={showSessionConflictModal}
+        onClose={() => setShowSessionConflictModal(false)}
+        title="Session Conflict"
+        description="This account is currently logged in on another device. Would you like to terminate the other session and log in here?"
+        confirmLabel="Yes, Continue"
+        cancelLabel="No, Cancel"
+        onConfirm={handleTerminateAndLogin}
+        variant="info"
+      />
     </main>
   );
 };
