@@ -41,6 +41,7 @@ export async function PATCH(
         status: 400
       });
     }
+    const actionPastTense = action === "open" ? "opened" : "closed";
 
     const election = await db.election.findUnique({
       where: {
@@ -175,12 +176,12 @@ export async function PATCH(
       changedFields: {
         status: { old: election.status, new: newStatus }
       },
-      message: `${action.charAt(0).toUpperCase() + action.slice(1)}d election: ${election.name}`,
+      message: `${actionPastTense.charAt(0).toUpperCase() + actionPastTense.slice(1)} election: ${election.name}`,
     });
 
     return apiResponse({
       success: true,
-      message: `Election ${action}d successfully`,
+      message: `Election ${actionPastTense} successfully`,
       data: {
         election: {
           id: updatedElection.id,
