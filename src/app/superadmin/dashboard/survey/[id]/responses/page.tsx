@@ -85,7 +85,7 @@ export default function SurveyResponsesPage() {
         Submitted_At: new Date(response.submittedAt).toLocaleString(),
         Answers_Count: Object.keys(response.answers).length,
         View: (
-          <div className="flex justify-center gap-2">
+          <div className="flex justify-start gap-2">
             <button
               className="inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
               onClick={(e) => {
