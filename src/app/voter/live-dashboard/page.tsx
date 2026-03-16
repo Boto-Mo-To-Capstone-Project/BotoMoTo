@@ -6,7 +6,7 @@ import KpiCard from "@/components/KpiCard";
 import PositionSection from "@/components/PositionSection";
 import DemographicSection from "@/components/DemographicSection";
 import toast from "react-hot-toast";
-import ConfirmationModal from "@/components/ConfirmationModal";
+import UserHeader from "@/components/voter/UserHeader";
 
 interface ElectionResults {
   overview: {
@@ -61,7 +61,7 @@ const LiveDashboard = () => {
   const [isSuperAdminContext, setIsSuperAdminContext] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isVoterContext, setIsVoterContext] = useState(false);
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [voterProfile, setVoterProfile] = useState<any>(null);
   
   // Check if we're in admin context
   useEffect(() => {
@@ -99,28 +99,14 @@ const LiveDashboard = () => {
         if (data.voter?.election?.id) {
           console.log("✅ Got election ID from session:", data.voter.election.id);
           setIsVoterContext(true);
+          setVoterProfile(data.voter);
           return data.voter.election.id;
         }
       }
-    } catch (e) {
+    } catch {
       console.log("No voter session found");
     }
     return null;
-  };
-
-  // Logout function for voters
-  const handleVoterLogout = async () => {
-    try {
-      await fetch("/api/voter/logout", { method: "POST" });
-      toast.success("Logged out successfully!");
-    } catch (e) {
-      console.error("Error logging out:", e);
-    } finally {
-      document.cookie = "voter_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-      localStorage.removeItem("voterData");
-      localStorage.removeItem("mfaFlow");
-      router.push("/voter/login");
-    }
   };
 
   // Fetch initial results
@@ -334,12 +320,8 @@ const LiveDashboard = () => {
     let isUnmounted = false;
 
     const initializeDashboard = async () => {
-      let electionId = await getElectionIdFromSession();
-      
-      if (!electionId) {
-        electionId = getElectionIdFromAdmin();
-      }
-      
+      const electionId = await getElectionIdFromSession();
+
       if (electionId) {
         console.log(`🚀 Initializing live dashboard for election ${electionId}`);
 
@@ -359,9 +341,10 @@ const LiveDashboard = () => {
           }, intervalMs);
         }
       } else {
-        setError("Access denied. This page requires an active voter session or admin privileges.");
+        setError("Access denied. This page requires an active voter session.");
         setIsConnected(false);
         setLoading(false);
+        router.push("/voter/login");
       }
     };
 
@@ -383,6 +366,9 @@ const LiveDashboard = () => {
       }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse space-y-6">
+            {!(isAdminContext || isSuperAdminContext) && (
+              <UserHeader isLoading className="mb-4" />
+            )}
             <div className={`sticky ${
               isAdminContext || isSuperAdminContext ? "top-16" : "top-20"
             } bg-white z-50 py-3 px-5`}>
@@ -478,14 +464,6 @@ const LiveDashboard = () => {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3 no-print">
-            {isVoterContext && !isAdminContext && !isSuperAdminContext && (
-              <button
-                onClick={() => setShowLogoutModal(true)}
-                className="px-4 py-2 text-sm font-semibold text-[#7b1c1c] border border-[#7b1c1c] rounded-lg hover:bg-[#7b1c1c] hover:text-white transition-colors"
-              >
-                Logout
-              </button>
-            )}
             {(isAdminContext || isSuperAdminContext) && (
               <button
                 onClick={exportToPDF}
@@ -497,6 +475,15 @@ const LiveDashboard = () => {
             )}
           </div>
         </div>
+
+        {isVoterContext && (
+          <UserHeader
+            name={voterProfile?.name}
+            organization={voterProfile?.organizationName}
+            showLogout={isVoterContext && !isAdminContext && !isSuperAdminContext}
+            className="mb-4"
+          />
+        )}
 
         {/* Election Header - Professional Gradient */}
         <div className="relative overflow-hidden rounded-2xl shadow-lg mb-8">
@@ -595,16 +582,6 @@ const LiveDashboard = () => {
         </div>
       </div>
 
-      <ConfirmationModal
-        open={showLogoutModal}
-        onClose={() => setShowLogoutModal(false)}
-        title="Confirm Logout"
-        description="Are you sure you want to log out of your voter session?"
-        confirmLabel="Logout"
-        cancelLabel="Cancel"
-        onConfirm={handleVoterLogout}
-        variant="delete"
-      />
     </main>
   );
 };

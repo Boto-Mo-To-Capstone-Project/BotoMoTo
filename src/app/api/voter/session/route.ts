@@ -17,7 +17,17 @@ export async function GET() {
       include: {
         voter: {
           include: {
-            election: { include: { schedule: true, mfaSettings: true } },
+            election: {
+              include: {
+                schedule: true,
+                mfaSettings: true,
+                organization: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
             votingScope: true,
           },
         },
@@ -133,6 +143,7 @@ export async function GET() {
       voterId: String(v.id),
       voterCode: v.code,
       name: `${v.firstName} ${v.lastName}`,
+      organizationName: v.election.organization?.name ?? null,
       email: v.email,
       election: v.election,
       votingScope: v.votingScope,

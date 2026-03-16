@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { Candidate } from "@/types";
 import Dropdown from "@/components/Dropdown";
 import CandidateCategory from "@/components/CandidateCategory";
+import UserHeader from "@/components/voter/UserHeader";
 
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
@@ -32,6 +33,8 @@ interface BallotComponentProps {
   electionName: string;
   mode: 'voter' | 'preview';
   voterScope?: string; // Add scope information
+  voterName?: string;
+  organizationName?: string;
   onCancel?: () => void;
   onReview?: () => void;
   onBack?: () => void;
@@ -46,6 +49,8 @@ const BallotComponent = ({
   electionName, 
   mode, 
   voterScope,
+  voterName,
+  organizationName,
   onCancel, 
   onReview,
   onBack,
@@ -147,6 +152,14 @@ const BallotComponent = ({
   return (
     <main className={`flex flex-col items-center px-5 pb-20 text-justify ${mode === 'preview' ? 'pt-8 xl:px-20' : 'pt-30 sm:px-20 '}`}>
       <div className="w-full flex flex-col">
+        {mode === "voter" && (
+          <UserHeader
+            name={voterName}
+            organization={organizationName}
+            showLogout
+            className="mb-4"
+          />
+        )}
         {/* Header and subheading - Professional Gradient */}
         <div className="relative overflow-hidden rounded-2xl shadow-lg mb-6">
           <div className="absolute inset-0 bg-gradient-to-r from-[#7b1c1c] via-[#992b2b] to-[#5c0000]"></div>
