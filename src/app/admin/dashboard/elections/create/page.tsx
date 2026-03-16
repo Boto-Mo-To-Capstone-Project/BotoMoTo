@@ -575,18 +575,16 @@ function CreateElectionContent() {
     switch (activeTab) {
       case "election":
         return (
-          <div className="flex justify-center">
-            <div className="w-full max-w-7xl bg-white rounded-2xl shadow-lg border border-gray-200 p-4">
-              <ElectionForm
-                ref={electionFormRef}
-                electionData={electionData}
-                setElectionData={setElectionData}
-                addParty={addParty}
-                setAddParty={setAddParty}
-                hideSaveButton
-                onSave={handleFormSave}
-              />
-            </div>
+          <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-4">
+            <ElectionForm
+              ref={electionFormRef}
+              electionData={electionData}
+              setElectionData={setElectionData}
+              addParty={addParty}
+              setAddParty={setAddParty}
+              hideSaveButton
+              onSave={handleFormSave}
+            />
           </div>
         );
       case "scope":
