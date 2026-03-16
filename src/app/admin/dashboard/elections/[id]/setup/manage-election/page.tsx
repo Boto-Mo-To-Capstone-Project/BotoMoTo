@@ -120,6 +120,7 @@ export default function ManageElectionPage() {
   const handleElectionStatusUpdate = async (data: { electionId: number; isOpen: boolean }) => {
     try {
       const action = data.isOpen ? "open" : "close";
+      const actionPastTense = data.isOpen ? "opened" : "closed";
       const response = await fetch(`/api/elections/${data.electionId}/status`, {
         method: "PATCH",
         headers: {
@@ -134,7 +135,7 @@ export default function ManageElectionPage() {
         throw new Error(result.message || "Failed to update election status");
       }
 
-      toast.success(result.message || `Election ${action}d successfully`);
+      toast.success(result.message || `Election ${actionPastTense} successfully`);
       
       // Update local election data
       if (electionData) {
