@@ -79,13 +79,15 @@ export default function CustomSlider({ images }: SliderProps) {
                 className="w-full cursor-zoom-in"
                 aria-label={`Open image ${idx + 1} in viewer`}
               >
-                <Image
-                  src={img.src}
-                  alt={img.alt}
-                  width={800}
-                  height={400}
-                  className="object-cover w-full h-auto"
-                />
+                <div className="relative w-full h-[240px] sm:h-[340px] md:h-[440px] lg:h-[520px] bg-gray-300">
+                  <Image
+                    src={img.src}
+                    alt={img.alt}
+                    fill
+                    sizes="100vw"
+                    className="object-contain"
+                  />
+                </div>
               </button>
             </div>
           ))}
