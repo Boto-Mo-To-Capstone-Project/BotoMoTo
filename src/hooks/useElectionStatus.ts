@@ -1,31 +1,33 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export function useElectionStatus(electionId: number) {
   const [electionStatus, setElectionStatus] = useState<'DRAFT' | 'ACTIVE' | 'CLOSED' | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const refreshStatus = useCallback(async () => {
     if (!electionId) {
+      setElectionStatus(null);
       setLoading(false);
       return;
     }
 
-    const fetchStatus = async () => {
-      try {
-        const res = await fetch(`/api/elections/${electionId}`);
-        const data = await res.json();
-        if (data.success) {
-          setElectionStatus(data.data.election.status);
-        }
-      } catch (error) {
-        console.error('Failed to fetch election status:', error);
-      } finally {
-        setLoading(false);
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/elections/${electionId}`);
+      const data = await res.json();
+      if (data.success) {
+        setElectionStatus(data.data.election.status);
       }
-    };
-
-    fetchStatus();
+    } catch (error) {
+      console.error('Failed to fetch election status:', error);
+    } finally {
+      setLoading(false);
+    }
   }, [electionId]);
+
+  useEffect(() => {
+    refreshStatus();
+  }, [refreshStatus]);
 
   const canEdit = electionStatus === 'DRAFT' || electionStatus === 'CLOSED';
   const isActive = electionStatus === 'ACTIVE';
@@ -37,6 +39,7 @@ export function useElectionStatus(electionId: number) {
     isActive, 
     isDraft, 
     loading,
-    isEditingDisabled: !canEdit && electionStatus !== null
+    isEditingDisabled: !canEdit && electionStatus !== null,
+    refreshStatus
   };
 }

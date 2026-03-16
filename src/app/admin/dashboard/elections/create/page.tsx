@@ -12,6 +12,7 @@ import { PartyCandidatesModal } from "@/components/PartyCandidatesModal"; // NEW
 import toast, { Toaster } from 'react-hot-toast';
 import { useElectionStatus } from '@/hooks/useElectionStatus';
 import { ElectionStatusWarning } from '@/components/ElectionStatusWarning';
+import ConfirmationModal from "@/components/ConfirmationModal";
 
 // Prefer API 'message' over 'error' object to avoid [object Object]
 function getApiErrorMessage(json: any, fallback: string) {
@@ -95,10 +96,12 @@ function CreateElectionContent() {
   const isEditing = !!editId && !Number.isNaN(editId);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showCloseElectionModal, setShowCloseElectionModal] = useState(false);
+  const [isClosingElection, setIsClosingElection] = useState(false);
   const [originalMeta, setOriginalMeta] = useState<{ status?: "DRAFT" | "ACTIVE" | "CLOSED"; }>({});
 
   // Add election status check
-  const { electionStatus, isEditingDisabled } = useElectionStatus(editId || 0);
+  const { electionStatus, isEditingDisabled, refreshStatus } = useElectionStatus(editId || 0);
 
   // Helper to format ISO -> datetime-local value
   const toDateTimeLocal = (iso?: string | null) => {
@@ -201,6 +204,34 @@ function CreateElectionContent() {
   // Save handler for top Save button
   const handleSaveElection = () => {
     electionFormRef.current?.submitForm();
+  };
+
+  // Close an ACTIVE election so admins can update configurations in-place
+  const handleCloseElectionForEditing = async () => {
+    if (!isEditing || !editId) return;
+
+    try {
+      setIsClosingElection(true);
+      const res = await fetch(`/api/elections/${editId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "close" }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json?.success) {
+        throw new Error(getApiErrorMessage(json, "Failed to close election"));
+      }
+
+      setOriginalMeta((prev) => ({ ...prev, status: "CLOSED" }));
+      await refreshStatus();
+      toast.success(json.message || "Election closed. You can now edit configurations.");
+    } catch (err) {
+      console.error(err);
+      toast.error((err as Error)?.message || "Failed to close election");
+    } finally {
+      setIsClosingElection(false);
+      setShowCloseElectionModal(false);
+    }
   };
 
   // Perform actual save (create or update)
@@ -831,7 +862,17 @@ function CreateElectionContent() {
         </div>
 
         {/* Election Status Warning */}
-        {isEditing && <ElectionStatusWarning electionStatus={electionStatus} context="election configurations" />}
+        {isEditing && (
+          <div className="px-2 sm:px-5">
+            <ElectionStatusWarning
+              electionStatus={electionStatus}
+              context="election configurations"
+              actionLabel={electionStatus === "ACTIVE" ? "Close Election to Edit" : undefined}
+              onAction={electionStatus === "ACTIVE" ? () => setShowCloseElectionModal(true) : undefined}
+              actionLoading={isClosingElection}
+            />
+          </div>
+        )}
 
         {/* Election form title and description only for Election tab */}
         {activeTab === "election" && (
@@ -898,6 +939,17 @@ function CreateElectionContent() {
           loading={loadingCandidates}
         />
       )}
+
+      <ConfirmationModal
+        open={showCloseElectionModal}
+        onClose={() => setShowCloseElectionModal(false)}
+        title="Close Election First?"
+        description="Closing this election will stop voter access immediately and let you edit election configurations. You can reopen it after saving your changes."
+        confirmLabel="Yes, Close Election"
+        cancelLabel="Keep It Open"
+        onConfirm={handleCloseElectionForEditing}
+        variant="delete"
+      />
     </div>
   );
 }
