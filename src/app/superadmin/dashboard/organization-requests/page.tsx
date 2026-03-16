@@ -316,6 +316,8 @@ export default function SuperAdminOrgRequestPage() {
           onClose={handleCloseFileViewer}
           title={fileViewerData.title}
           fileType={fileViewerData.fileType}
+          backdropVariant="blur"
+          sidebarAwareCenter
         />
       )}
     </>
