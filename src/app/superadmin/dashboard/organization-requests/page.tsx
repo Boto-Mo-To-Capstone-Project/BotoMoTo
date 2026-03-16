@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { MdVisibility } from "react-icons/md";
 
 import Table from "@/components/TableComponent";
 import FileViewer from "@/components/FileViewer";
@@ -79,32 +80,42 @@ export default function SuperAdminOrgRequestPage() {
     Email: org.email,
     Members: org.membersCount,
     Photo: org.logoObjectKey ? (
-      <button
-        onClick={() => {
-          const fileUrl = `/api/files/${org.logoObjectKey}`;
-          const fileName = extractFilename(org.logoObjectKey) || `${org.name}_logo`;
-          handleViewFile(fileUrl, fileName, `${org.name} - Logo`, "image");
-        }}
-        className="text-blue-600 underline hover:text-blue-800 cursor-pointer bg-transparent border-none"
-        type="button"
-      >
-        View Photo
-      </button>
+      <div className="flex justify-start">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const fileUrl = `/api/files/${org.logoObjectKey}`;
+            const fileName = extractFilename(org.logoObjectKey) || `${org.name}_logo`;
+            handleViewFile(fileUrl, fileName, `${org.name} - Logo`, "image");
+          }}
+          className="inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+          title={`View ${org.name} logo`}
+          aria-label={`View ${org.name} logo`}
+          type="button"
+        >
+          <MdVisibility size={18} />
+        </button>
+      </div>
     ) : (
       "N/A"
     ),
     Letter: org.letterObjectKey ? (
-      <button
-        onClick={() => {
-          const fileUrl = `/api/files/${org.letterObjectKey}`;
-          const fileName = extractFilename(org.letterObjectKey) || `${org.name}_letter.pdf`;
-          handleViewFile(fileUrl, fileName, `${org.name} - Organization Letter`, "pdf");
-        }}
-        className="text-blue-600 underline hover:text-blue-800 cursor-pointer bg-transparent border-none"
-        type="button"
-      >
-        View Letter
-      </button>
+      <div className="flex justify-start">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const fileUrl = `/api/files/${org.letterObjectKey}`;
+            const fileName = extractFilename(org.letterObjectKey) || `${org.name}_letter.pdf`;
+            handleViewFile(fileUrl, fileName, `${org.name} - Organization Letter`, "pdf");
+          }}
+          className="inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+          title={`View ${org.name} letter`}
+          aria-label={`View ${org.name} letter`}
+          type="button"
+        >
+          <MdVisibility size={18} />
+        </button>
+      </div>
     ) : (
       "N/A"
     ),
