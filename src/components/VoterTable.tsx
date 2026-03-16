@@ -170,8 +170,8 @@ export default function VoterTable({
                   <td className="py-2 px-3 align-middle">
                     <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
                   </td>
-                  <td className="py-2 px-3 align-middle text-center">
-                    <div className="h-6 w-12 bg-gray-200 rounded-full mx-auto animate-pulse" />
+                  <td className="py-2 px-3 align-middle">
+                    <div className="h-6 w-12 bg-gray-200 rounded-full animate-pulse" />
                   </td>
                 </tr>
               ))
@@ -222,7 +222,7 @@ export default function VoterTable({
                   <td className="py-2 px-3 align-middle truncate max-w-[120px]">{voter.scope}</td>
                   <td className="py-2 px-3 align-middle truncate max-w-[180px]">{voter.email}</td>
                   <td className="py-2 px-3 align-middle truncate max-w-[120px] font-mono text-xs">{voter.code}</td>
-                  <td className="py-2 px-3 align-middle text-center">
+                  <td className="py-2 px-3 align-middle">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       voter.voted 
                         ? 'bg-green-100 text-green-700' 
