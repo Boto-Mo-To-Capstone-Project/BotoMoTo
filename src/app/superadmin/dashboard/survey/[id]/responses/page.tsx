@@ -61,6 +61,11 @@ const toLocalDateKey = (value: string | Date): string => {
   return `${year}-${month}-${day}`;
 };
 
+const toCsvCell = (value: unknown): string => {
+  const normalized = value === null || value === undefined ? "" : String(value);
+  return `"${normalized.replace(/"/g, '""')}"`;
+};
+
 export default function SurveyResponsesPage() {
   const params = useParams();
   const router = useRouter();
@@ -183,25 +188,25 @@ export default function SurveyResponsesPage() {
       }
       
       const csvContent = [
-        headers.join(","),
+        headers.map(toCsvCell).join(","),
         ...responses.map(response => {
           const averageAnswer = calculateAverageAnswer(response.answers);
           const row = [
-            `"${response.voterCode}"`,
-            `"${response.voterName || 'N/A'}"`,
-            `"${new Date(response.submittedAt).toLocaleString()}"`,
-            `"${averageAnswer === null ? "N/A" : averageAnswer.toFixed(2)}"`
+            response.voterCode,
+            response.voterName || "N/A",
+            new Date(response.submittedAt).toLocaleString(),
+            averageAnswer === null ? "N/A" : averageAnswer.toFixed(2)
           ];
           
           // Add answers
           if (survey?.formSchema?.questions) {
             survey.formSchema.questions.forEach((q: any) => {
               const answer = response.answers[q.id] || "";
-              row.push(`"${String(answer).replace(/"/g, '""')}"`);
+              row.push(Array.isArray(answer) ? answer.join(", ") : String(answer));
             });
           }
           
-          return row.join(",");
+          return row.map(toCsvCell).join(",");
         })
       ].join("\n");
       
