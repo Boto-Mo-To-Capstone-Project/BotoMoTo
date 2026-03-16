@@ -7,9 +7,11 @@ import { useRouter } from "next/navigation";
 import CandidateRow from "@/components/CandidateRow";
 import SectionHeaderContainer from "@/components/SectionHeaderContainer";
 import { useState, useEffect } from "react";
+import UserHeader from "@/components/voter/UserHeader";
 
 const VoteReceipt = () => {
   const [voterData, setVoterData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const router = useRouter(); // to go to another route
 
@@ -34,6 +36,8 @@ const VoteReceipt = () => {
       console.error("Error checking voter session:", e);
       router.push("/voter/login");
       return;
+    } finally {
+      setIsLoading(false);
     } 
   };
 
@@ -45,6 +49,13 @@ const VoteReceipt = () => {
     return (
       <main className="flex flex-col items-center px-5 pb-20 text-justify pt-30 sm:px-20 w-full">
         <div className="w-full flex flex-col">
+          <UserHeader
+            name={voterData?.name}
+            organization={voterData?.organizationName}
+            showLogout
+            isLoading={isLoading}
+            className="mb-4"
+          />
           {/* Header and subheading - Professional Gradient */}
           <div className="relative overflow-hidden rounded-2xl shadow-lg mb-6">
             <div className="absolute inset-0 bg-gradient-to-r from-[#7b1c1c] via-[#992b2b] to-[#5c0000]"></div>
@@ -90,6 +101,13 @@ const VoteReceipt = () => {
   return (
     <main className="flex flex-col items-center px-5 pb-20 text-justify pt-20 sm:px-20 w-full">
       <div className="w-full flex flex-col">
+        <UserHeader
+          name={voterData?.name}
+          organization={voterData?.organizationName}
+          showLogout
+          isLoading={isLoading}
+          className="mb-4"
+        />
         {/* Header and subheading - Professional Gradient */}
         <div className="relative overflow-hidden rounded-2xl shadow-lg mb-6">
           <div className="absolute inset-0 bg-gradient-to-r from-[#7b1c1c] via-[#992b2b] to-[#5c0000]"></div>

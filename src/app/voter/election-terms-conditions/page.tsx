@@ -5,7 +5,7 @@ import termsAndConditionList from "@/app/assets/termsAndConditionList";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { SubmitButton } from "@/components/SubmitButton";
+import UserHeader from "@/components/voter/UserHeader";
 
 const ElectionTermsCondition = () => {
   const [isChecked, setIsChecked] = useState(false);
@@ -60,6 +60,9 @@ const ElectionTermsCondition = () => {
   if (isLoading) {
     return (
       <main className="flex flex-col items-center gap-10 px-5 pb-20 pt-40 text-justify animate-pulse w-full">
+        <div className="w-full sm:w-3/4 md:w-1/2">
+          <UserHeader isLoading className="mb-4" />
+        </div>
         {/* Header skeleton */}
         <div className="text-center space-y-2 w-full sm:w-3/4 md:w-1/2">
           <div className="h-6 bg-gray-300 rounded w-3/4 mx-auto" />
@@ -114,6 +117,12 @@ const ElectionTermsCondition = () => {
   return (
     <main className="flex flex-col items-center px-5 pb-20 pt-30 text-justify w-full">
       <div className="w-full flex flex-col max-w-6xl mx-auto">
+        <UserHeader
+          name={voterData?.name}
+          organization={voterData?.organizationName}
+          showLogout
+          className="mb-4"
+        />
         {/* Header and subheading - Professional Gradient */}
         <div className="relative overflow-hidden rounded-2xl shadow-lg mb-6">
           <div className="absolute inset-0 bg-gradient-to-r from-[#7b1c1c] via-[#992b2b] to-[#5c0000]"></div>

@@ -5,6 +5,7 @@ import InteractiveSurvey from "@/components/survey/InteractiveSurvey";
 import Button from "@/components/Button";
 import { FormSchema } from "@/types/survey";
 import { toast } from "react-hot-toast";
+import UserHeader from "@/components/voter/UserHeader";
 
 interface Survey {
   id: number;
@@ -115,6 +116,15 @@ const SurveyForm = () => {
     return (
     <main className="flex flex-col items-center gap-10 px-5 md:px-20 pb-20 pt-40">
       <div className="w-full sm:w-4/5 lg:w-3/5 max-w-4xl">
+        <UserHeader
+          name={voterData?.name}
+          organization={voterData?.organizationName}
+          showLogout
+          isLoading={loading}
+          className="mb-4"
+        />
+      </div>
+      <div className="w-full sm:w-4/5 lg:w-3/5 max-w-4xl">
         <div className="space-y-4 animate-pulse">
           {/* Header */}
           <div className="text-center space-y-2 mb-10">
@@ -159,6 +169,14 @@ const SurveyForm = () => {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-10 px-5 md:px-10 pb-20 pt-40">
         <div className="text-center space-y-4 flex flex-col items-center">
+          <div className="w-full max-w-md">
+            <UserHeader
+              name={voterData?.name}
+              organization={voterData?.organizationName}
+          showLogout
+              className="mb-4"
+            />
+          </div>
           <h1 className="voter-election-heading">Survey</h1>
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 max-w-md mx-auto">
             <p className="text-yellow-800">
@@ -180,6 +198,14 @@ const SurveyForm = () => {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-10 px-5 md:px-10 pb-20 pt-40">
         <div className="text-center space-y-4 flex flex-col items-center">
+          <div className="w-full max-w-md">
+            <UserHeader
+              name={voterData?.name}
+              organization={voterData?.organizationName}
+          showLogout
+              className="mb-4"
+            />
+          </div>
           <h1 className="voter-election-heading">
             {submissionStatus === 'just_submitted' ? 'Survey Submitted' : 'Survey Already Submitted'}
           </h1>
@@ -204,6 +230,14 @@ const SurveyForm = () => {
 
   return (
     <main className="flex flex-col items-center gap-10 px-5 md:px-20 pb-20 pt-40">
+      <div className="w-full sm:w-4/5 lg:w-3/5 max-w-4xl">
+        <UserHeader
+          name={voterData?.name}
+          organization={voterData?.organizationName}
+          showLogout
+          className="mb-4"
+        />
+      </div>
 
       <div className="w-full sm:w-4/5 lg:w-3/5 max-w-4xl">
         <InteractiveSurvey

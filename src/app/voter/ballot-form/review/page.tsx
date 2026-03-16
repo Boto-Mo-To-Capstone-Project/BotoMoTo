@@ -8,10 +8,12 @@ import CandidateRow from "@/components/CandidateRow";
 import SectionHeaderContainer from "@/components/SectionHeaderContainer";
 import { useState, useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
+import UserHeader from "@/components/voter/UserHeader";
 
 const ReviewPage = () => {
   const [isChecked, setIsChecked] = useState(false);
   const [voterData, setVoterData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const router = useRouter();
@@ -44,6 +46,8 @@ const ReviewPage = () => {
       console.error("Error checking voter session:", e);
       router.push("/voter/login");
       return;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -129,6 +133,14 @@ const ReviewPage = () => {
   if (Object.keys(selections).length === 0) {
     return (
       <div className="flex flex-col items-center mt-40 gap-10">
+        <div className="w-full max-w-6xl px-5 sm:px-20">
+          <UserHeader
+            name={voterData?.name}
+            organization={voterData?.organizationName}
+            showLogout
+            isLoading={isLoading}
+          />
+        </div>
         <div className="text-center space-y-2">
           <h2 className="text-sm font-semibold mb-1">Ballot Form Review</h2>
           <p className="text-xs text-red-800 mb-2">
@@ -155,6 +167,13 @@ const ReviewPage = () => {
     <main className="flex flex-col items-center px-5 pb-20 text-justify pt-30 sm:px-20 w-full">
       {/*<Toaster position="top-center" />*/}
       <div className="w-full flex flex-col">
+        <UserHeader
+          name={voterData?.name}
+          organization={voterData?.organizationName}
+          showLogout
+          isLoading={isLoading}
+          className="mb-4"
+        />
         {/* Header and subheading - Professional Gradient */}
         <div className="relative overflow-hidden rounded-2xl shadow-lg mb-6">
           <div className="absolute inset-0 bg-gradient-to-r from-[#7b1c1c] via-[#992b2b] to-[#5c0000]"></div>

@@ -179,7 +179,7 @@ const ElectionStatus = () => {
           <div className="text-center space-y-2">
             <p className="voterlogin-heading">Voting is Now Open!</p>
             <p className="voterlogin-subheading">
-              {voter.name}, you're voting in the <span className="text-primary">{voter?.election?.name || '2025 Election'}</span>
+              <span className="text-primary">{voter.name}</span>, you're voting in the <span className="text-primary">{voter?.election?.name || '2025 Election'}</span>
             </p>
           </div>
 

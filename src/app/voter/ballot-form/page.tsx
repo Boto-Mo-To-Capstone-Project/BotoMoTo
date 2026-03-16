@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import BallotComponent from "@/components/BallotComponent";
+import UserHeader from "@/components/voter/UserHeader";
 
 const BallotForm = () => {
   const router = useRouter();
@@ -56,6 +57,7 @@ const BallotForm = () => {
     return (
       <main className="flex flex-col items-center px-5 sm:px-20 pb-20 text-justify pt-30 animate-pulse">
         <div className="w-full flex flex-col">
+          <UserHeader isLoading className="mb-4" />
           {/* Header */}
           <div className="mb-6 rounded-2xl bg-gray-200 px-8 py-6 w-full">
             <div className="h-6 w-1/3 bg-gray-300 rounded mb-3"></div>
@@ -150,6 +152,8 @@ const BallotForm = () => {
       ballotData={ballotData}
       electionName={voterData?.election?.name || 'Election Name'}
       voterScope={voterData?.votingScope?.name}
+      voterName={voterData?.name}
+      organizationName={voterData?.organizationName}
       mode="voter"
       onCancel={handleCancel}
       onReview={handleReview}
