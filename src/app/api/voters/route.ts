@@ -31,6 +31,7 @@ async function getVoters(request: NextRequest) {
     const hasVoted = url.searchParams.get('hasVoted');
     const votedParam = url.searchParams.get('voted');
     const isActive = url.searchParams.get('isActive');
+    const sessionStatus = url.searchParams.get('sessionStatus');
     const all = url.searchParams.get('all') === 'true';
 
     if (!electionId) {
@@ -132,6 +133,23 @@ async function getVoters(request: NextRequest) {
       where.isActive = isActive === 'true';
     }
 
+    // Add live session filter
+    if (sessionStatus === 'online') {
+      where.voterSessions = {
+        some: {
+          isActive: true,
+          expires: { gte: new Date() }
+        }
+      };
+    } else if (sessionStatus === 'offline') {
+      where.voterSessions = {
+        none: {
+          isActive: true,
+          expires: { gte: new Date() }
+        }
+      };
+    }
+
     // Add search filter if provided
     if (search) {
       const searchTerm = search.trim().toLowerCase();
@@ -158,6 +176,24 @@ async function getVoters(request: NextRequest) {
         // Users who haven't voted
         searchConditions.push({ 
           voteResponses: { none: { electionId: electionIdInt } } 
+        });
+      } else if (searchTerm === 'online') {
+        searchConditions.push({
+          voterSessions: {
+            some: {
+              isActive: true,
+              expires: { gte: new Date() }
+            }
+          }
+        });
+      } else if (searchTerm === 'offline') {
+        searchConditions.push({
+          voterSessions: {
+            none: {
+              isActive: true,
+              expires: { gte: new Date() }
+            }
+          }
         });
       }
 
@@ -201,6 +237,19 @@ async function getVoters(request: NextRequest) {
             where: { electionId: electionIdInt },
             select: { id: true },
             take: 1
+          },
+          voterSessions: {
+            where: {
+              isActive: true,
+              expires: { gte: new Date() }
+            },
+            orderBy: { lastActiveAt: 'desc' },
+            take: 1,
+            select: {
+              sessionToken: true,
+              lastActiveAt: true,
+              expires: true
+            }
           }
         },
         orderBy,
@@ -222,10 +271,19 @@ async function getVoters(request: NextRequest) {
     });
 
     // Compute hasVoted boolean based on presence of voteResponses
-    const votersWithComputed = voters.map(v => ({
-      ...v,
-      voted: (v as any).voteResponses?.length > 0
-    }));
+    const votersWithComputed = voters.map((v: any) => {
+      const liveSession = v.voterSessions?.[0] || null;
+      return {
+        ...v,
+        voted: v.voteResponses?.length > 0,
+        currentlyOnline: !!liveSession,
+        liveSession: liveSession ? {
+          sessionToken: liveSession.sessionToken,
+          lastActiveAt: liveSession.lastActiveAt,
+          expires: liveSession.expires
+        } : null
+      };
+    });
 
     // Prepare response data
     const responseData: any = {

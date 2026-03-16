@@ -5,6 +5,11 @@ interface Voter {
   id: number;
   name: string;
   status: string;
+  liveSession: {
+    sessionToken: string;
+    lastActiveAt: string;
+    expires: string;
+  } | null;
   scope: string;
   email: string;
   code: string;
@@ -27,6 +32,7 @@ interface VoterTableProps {
   pageSize: number;
   onPageSizeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onRowClick?: (voter: Voter) => void;
+  onSessionClick?: (voter: Voter) => void;
   title?: string;
   selectedIds?: number[];
   onCheckboxChange?: (id: number) => void;
@@ -88,7 +94,7 @@ export default function VoterTable({
                 className="py-2 px-3 border-b border-gray-200 cursor-pointer select-none whitespace-nowrap"
                 onClick={() => props.onSort("status")}
               >
-                Status{" "}
+                Live Session{" "}
                 {props.sortCol === "status" ? (
                   props.sortDir === "asc" ? <FaSortUp className="inline" /> : <FaSortDown className="inline" />
                 ) : (
@@ -196,12 +202,22 @@ export default function VoterTable({
                   </td>
                   <td className="py-2 px-3 align-middle truncate max-w-[150px]">{voter.name}</td>
                   <td className="py-2 px-3 align-middle">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        props.onSessionClick?.(voter);
+                      }}
+                      className="flex items-center gap-2 hover:opacity-80 transition cursor-pointer"
+                      disabled={!props.onSessionClick}
+                    >
+                      <div className={`w-2 h-2 rounded-full ${voter.status === "Online" ? "bg-green-500" : "bg-gray-400"}`}></div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        voter.status === "Online" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+                      }`}>
                         {voter.status}
                       </span>
-                    </div>
+                    </button>
                   </td>
                   <td className="py-2 px-3 align-middle truncate max-w-[120px]">{voter.scope}</td>
                   <td className="py-2 px-3 align-middle truncate max-w-[180px]">{voter.email}</td>

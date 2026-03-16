@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { MdAdd, MdDownload, MdDelete, MdEdit, MdSave, MdFileUpload } from "react-icons/md";
+import { MdAdd, MdDownload, MdDelete, MdEdit, MdFileUpload } from "react-icons/md";
 import { SubmitButton } from '@/components/SubmitButton';
 import SearchBar from '@/components/SearchBar';
 import VoterTable from '@/components/VoterTable';
@@ -9,8 +9,9 @@ import { VotersDragandDropdown } from '@/components/VotersDragandDropdown';
 import FileViewer from '@/components/FileViewer';
 import { FilterToolbar } from '@/components/FilterToolbar';
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Toaster, toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import ConfirmationModal from '@/components/ConfirmationModal';
+import VoterSessionModal from '@/components/VoterSessionModal';
 import { useElectionStatus } from '@/hooks/useElectionStatus';
 import { ElectionStatusWarning } from '@/components/ElectionStatusWarning';
 
@@ -23,6 +24,24 @@ function useDebouncedValue<T>(value: T, delay = 400) {
   }, [value, delay]);
   return v;
 }
+
+type LiveSessionRow = {
+  sessionToken: string;
+  lastActiveAt: string;
+  expires: string;
+};
+
+type VoterRow = {
+  id: number;
+  name: string;
+  status: string;
+  liveSession: LiveSessionRow | null;
+  scope: string;
+  email: string;
+  code: string;
+  birthdate: string;
+  voted: boolean;
+};
 
 export default function VoterDashboardPage() {
   // for dynamic confirmation modal
@@ -46,6 +65,9 @@ export default function VoterDashboardPage() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showVotersModal, setShowVotersModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [sessionModalOpen, setSessionModalOpen] = useState(false);
+  const [sessionModalVoter, setSessionModalVoter] = useState<VoterRow | null>(null);
+  const [sessionTerminating, setSessionTerminating] = useState(false);
   // Edit state
   const [isEditMode, setIsEditMode] = useState(false);
   const [editInitialData, setEditInitialData] = useState<{
@@ -76,16 +98,7 @@ export default function VoterDashboardPage() {
   } | null>(null);
 
   // Data state from API
-  const [rawRows, setRawRows] = useState<Array<{
-    id: number;
-    name: string;
-    status: string;
-    scope: string;
-    email: string;
-    code: string;
-    birthdate: string;
-    voted: boolean;
-  }>>([]);
+  const [rawRows, setRawRows] = useState<VoterRow[]>([]);
 
   // Frontend sorting function
   const getSortedRows = () => {
@@ -120,6 +133,7 @@ export default function VoterDashboardPage() {
   const [loading, setLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false); // added for lazy loading
   const [reloadKey, setReloadKey] = useState(0);
+  const [sessionRefreshTick, setSessionRefreshTick] = useState(0);
   // NEW: voting scopes for the election
   const [votingScopes, setVotingScopes] = useState<Array<{ id: number; name: string }>>([]);
   // NEW: All voters for duplicate detection (not paginated)
@@ -147,7 +161,8 @@ export default function VoterDashboardPage() {
     if (!Number.isNaN(p) && p > 0) setPage(p);
     if (!Number.isNaN(l) && l > 0) setPageSize(l);
     setSearch(s);
-    setStatusFilter(status);
+    const normalizedStatus = status === "active" ? "online" : status === "inactive" ? "offline" : status;
+    setStatusFilter(normalizedStatus);
     setVotedFilter(voted);
     setScopeFilter(scope);
   }, [searchParams]);
@@ -212,16 +227,16 @@ export default function VoterDashboardPage() {
   const voterFilters = useMemo(() => [
     {
       key: "status",
-      label: "Status",
+      label: "Live Session",
       value: statusFilter,
       onChange: (value: string) => {
         setStatusFilter(value);
         setPage(1);
       },
       options: [
-        { value: "all", label: "All Status" },
-        { value: "active", label: "Active" },
-        { value: "inactive", label: "Inactive" },
+        { value: "all", label: "All Sessions" },
+        { value: "online", label: "Online" },
+        { value: "offline", label: "Offline" },
       ]
     },
     {
@@ -520,7 +535,7 @@ export default function VoterDashboardPage() {
           limit: String(pageSize),
           ...(debouncedSearch ? { search: debouncedSearch } : {}),
           // Apply filters
-          ...(statusFilter !== "all" ? { isActive: statusFilter === "active" ? "true" : "false" } : {}),
+          ...(statusFilter !== "all" ? { sessionStatus: statusFilter } : {}),
           ...(votedFilter !== "all" ? { voted: votedFilter === "voted" ? "true" : "false" } : {}),
           ...(scopeFilter !== "all" ? { votingScopeId: scopeFilter } : {}),
           // Removed sortCol and sortDir - frontend sorting only
@@ -544,7 +559,14 @@ export default function VoterDashboardPage() {
           name: `${v.lastName ?? ""}, ${v.firstName ?? ""}${v.middleName ? " " + v.middleName : ""}`
             .trim()
             .replace(/^,\s*/, ""),
-          status: v.isActive ? "Active" : "Inactive",
+          status: v.currentlyOnline ? "Online" : "Offline",
+          liveSession: v.liveSession
+            ? {
+                sessionToken: v.liveSession.sessionToken,
+                lastActiveAt: v.liveSession.lastActiveAt,
+                expires: v.liveSession.expires,
+              }
+            : null,
           scope: v.votingScope?.name ?? "—",
           email: v.email ?? "",
           code: v.code ?? "",
@@ -572,7 +594,16 @@ export default function VoterDashboardPage() {
       alive = false;
       ctrl.abort();
     };
-  }, [electionId, page, pageSize, debouncedSearch, statusFilter, votedFilter, scopeFilter, reloadKey]); // Added filter dependencies
+  }, [electionId, page, pageSize, debouncedSearch, statusFilter, votedFilter, scopeFilter, reloadKey, sessionRefreshTick]); // Added filter dependencies
+
+  // Poll voter sessions for near real-time status updates
+  useEffect(() => {
+    if (!electionId || Number.isNaN(electionId)) return;
+    const interval = setInterval(() => {
+      setSessionRefreshTick((tick) => tick + 1);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [electionId]);
 
   // NEW: Fetch voting scopes for this election (for the modal select)
   useEffect(() => {
@@ -697,6 +728,46 @@ export default function VoterDashboardPage() {
     const filename = `voters-${electionId}-${new Date().toISOString().split('T')[0]}.csv`;
     downloadCSV(rawRows, filename, headers);
     toast.success(`Downloaded ${rawRows.length} voter(s)`);
+  };
+
+  const handleOpenSessionModal = (voter: VoterRow) => {
+    setSessionModalVoter(voter);
+    setSessionModalOpen(true);
+  };
+
+  const handleTerminateSession = async () => {
+    if (!sessionModalVoter) return;
+
+    setSessionTerminating(true);
+    try {
+      const res = await fetch(`/api/voters/${sessionModalVoter.id}/session/terminate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json?.success === false) {
+        toast.error(json?.message || 'Failed to terminate session');
+        return;
+      }
+
+      setRawRows((prev) =>
+        prev.map((row) =>
+          row.id === sessionModalVoter.id
+            ? { ...row, status: "Offline", liveSession: null }
+            : row
+        )
+      );
+      setSessionModalVoter((prev) => (prev ? { ...prev, status: "Offline", liveSession: null } : null));
+      setSessionModalOpen(false);
+      setReloadKey((k) => k + 1);
+      toast.success('Session terminated successfully');
+    } catch (error) {
+      console.error('Terminate session error:', error);
+      toast.error('Failed to terminate session');
+    } finally {
+      setSessionTerminating(false);
+    }
   };
 
   return (
@@ -829,6 +900,7 @@ export default function VoterDashboardPage() {
               onPageSizeChange={handlePageSizeChange}
               selectedIds={selectedIds}
               onCheckboxChange={handleCheckboxChange}
+              onSessionClick={handleOpenSessionModal}
             />
           </div>
         </div>
@@ -879,6 +951,14 @@ export default function VoterDashboardPage() {
           {...modalConfig}
         />
       )}
+      <VoterSessionModal
+        open={sessionModalOpen}
+        onClose={() => setSessionModalOpen(false)}
+        voterName={sessionModalVoter?.name || "Voter"}
+        session={sessionModalVoter?.liveSession || null}
+        onTerminate={handleTerminateSession}
+        isTerminating={sessionTerminating}
+      />
     </>
   );
 }
