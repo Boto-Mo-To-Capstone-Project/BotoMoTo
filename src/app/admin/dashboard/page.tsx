@@ -45,7 +45,7 @@ export default function VoterDashboardPage() {
         } else {
           setError(result.message || 'Failed to load dashboard statistics');
         }
-      } catch (err) {
+      } catch {
         setError('Failed to connect to server');
       } finally {
         setLoading(false);
@@ -80,7 +80,7 @@ export default function VoterDashboardPage() {
                 {/* Chart section skeleton */}
                 <div className="flex-1 bg-gray-100 rounded-2xl border-2 border-gray-200 min-w-0 w-full p-4">
                   <div className="h-6 bg-gray-200 rounded w-48 mb-4"></div>
-                  <div className="w-full h-[180px] bg-gray-200 rounded"></div>
+                  <div className="w-full h-[300px] bg-gray-200 rounded"></div>
                 </div>
 
                 {/* Right side: Recent + Completed elections */}
@@ -244,7 +244,7 @@ export default function VoterDashboardPage() {
                     <h2 className="text-sm font-semibold">Election Turnout Trends</h2>
                   </div>
                   {/* Line Chart */}
-                  <div className="w-full min-h-[180px] flex overflow-x-auto">
+                  <div className="w-full min-h-[300px]">
                     <DashboardLineChart />
                   </div>
                 </div>

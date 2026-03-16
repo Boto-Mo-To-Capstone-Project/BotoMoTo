@@ -15,6 +15,8 @@ interface ChartData {
   }>;
 }
 
+const CHART_HEIGHT = 300;
+
 export default function DashboardLineChart() {
   const [chartData, setChartData] = useState<ChartData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,7 @@ export default function DashboardLineChart() {
   // If no real data available, show message instead of chart
   if (!loading && !hasRealData) {
     return (
-      <div className="flex items-center justify-center h-60 w-full bg-gray-50 rounded-lg border border-gray-200">
+      <div className="flex items-center justify-center h-[300px] w-full bg-gray-50 rounded-lg border border-gray-200">
         <div className="text-center px-4">
           <HiChartBar className="text-gray-400 text-5xl mb-3 mx-auto" />
           <div className="text-gray-600 text-sm text-lg mb-2">No Election Data Available</div>
@@ -61,8 +63,11 @@ export default function DashboardLineChart() {
   const chartOptions: ApexOptions = {
     chart: {
       type: "line",
-      height: 240,
+      height: CHART_HEIGHT,
       toolbar: { show: false },
+      redrawOnWindowResize: true,
+      redrawOnParentResize: true,
+      parentHeightOffset: 0,
     },
     dataLabels: { enabled: true },
     // Color palette for election lines - vibrant and distinct colors
@@ -118,7 +123,7 @@ export default function DashboardLineChart() {
       borderColor: "#dddddd",
       strokeDashArray: 5,
       xaxis: { lines: { show: true } },
-      padding: { top: 5, right: 20 },
+      padding: { top: 8, right: 12, left: 8, bottom: 0 },
     },
     fill: { opacity: 0.8 },
     tooltip: { 
@@ -133,11 +138,21 @@ export default function DashboardLineChart() {
     legend: {
       show: true,
       position: "top",
-      horizontalAlign: "right",
+      horizontalAlign: "left",
       markers: {},
       fontSize: "14px",
       fontWeight: 500,
     },
+    responsive: [
+      {
+        breakpoint: 1024,
+        options: {
+          legend: {
+            fontSize: "12px",
+          },
+        },
+      },
+    ],
     noData: {
       text: loading ? "Loading chart data..." : "No election data available",
       align: 'center',
@@ -151,7 +166,7 @@ export default function DashboardLineChart() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-60">
+      <div className="flex items-center justify-center h-[300px] w-full">
         <div className="text-gray-500">Loading chart...</div>
       </div>
     );
@@ -162,8 +177,8 @@ export default function DashboardLineChart() {
       options={chartOptions}
       series={displaySeries}
       type="line"
-      height={240}
-      width={800}
+      height={CHART_HEIGHT}
+      width="100%"
     />
   );
 }
