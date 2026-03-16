@@ -306,7 +306,7 @@ export default function SurveyResponsesPage() {
           setSubmittedDateFilter(value);
           setPage(1);
         },
-        type: "date",
+        type: "date" as const,
         defaultValue: "",
       },
     ],
