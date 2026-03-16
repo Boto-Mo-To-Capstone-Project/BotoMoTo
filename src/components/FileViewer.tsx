@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { X, Download, ZoomIn, ZoomOut, RotateCw, Play, Pause, Volume2, VolumeX, ExternalLink, Smartphone, Monitor, Menu } from "lucide-react";
 
 type SupportedFileType = "pdf" | "image" | "video" | "audio" | "text" | "unknown";
+type BackdropVariant = "dark" | "transparent" | "blur";
 
 interface FileViewerProps {
   fileUrl: string;
@@ -11,9 +12,21 @@ interface FileViewerProps {
   onClose: () => void;
   title?: string;
   fileType?: SupportedFileType;
+  backdropVariant?: BackdropVariant;
+  transparentBackdrop?: boolean;
+  sidebarAwareCenter?: boolean;
 }
 
-const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileType }: FileViewerProps) => {
+const FileViewer = ({
+  fileUrl,
+  fileName,
+  onClose,
+  title,
+  fileType: explicitFileType,
+  backdropVariant,
+  transparentBackdrop = false,
+  sidebarAwareCenter = false,
+}: FileViewerProps) => {
   const [zoom, setZoom] = useState(100);
   const [rotation, setRotation] = useState(0);
   const [fileType, setFileType] = useState<SupportedFileType>(explicitFileType || "unknown");
@@ -460,10 +473,20 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
   };
   // hamburger open close state 
   const [menuOpen, setMenuOpen] = useState(false); 
+  const resolvedBackdropVariant: BackdropVariant =
+    backdropVariant ?? (transparentBackdrop ? "transparent" : "dark");
+  const backdropClass =
+    resolvedBackdropVariant === "transparent"
+      ? "bg-transparent"
+      : resolvedBackdropVariant === "blur"
+        ? "bg-gray-900/20 backdrop-blur-sm"
+        : "bg-black bg-opacity-75";
 
   return (
-    <div className="fixed inset-0 z-[99999] bg-black bg-opacity-75 flex items-center justify-center">
-      <div className="bg-white w-full h-full max-w-6xl max-h-[90vh] flex flex-col rounded-lg overflow-hidden">
+    <div
+      className={`fixed inset-0 z-[99999] flex items-center justify-center ${backdropClass} ${sidebarAwareCenter ? "lg:ml-68" : ""}`}
+    >
+      <div className="bg-white w-full h-full max-w-6xl max-h-[90vh] flex flex-col rounded-lg overflow-hidden shadow-2xl border border-gray-200">
         {/* Header */}
         <div className="bg-gray-100 px-4 py-3 flex items-center justify-between border-b">
           <div className="flex flex-col xs:flex-row items-start xs:items-center space-x-4 max-w-[240px] xs:max-w-full">
@@ -525,7 +548,7 @@ const FileViewer = ({ fileUrl, fileName, onClose, title, fileType: explicitFileT
         </div>
 
         {/* Content Viewer */}
-        <div className="flex-1 bg-gray-200 overflow-auto">
+        <div className="flex-1 bg-transparent overflow-auto">
           <div className="p-4 overflow-x-auto">
             <div className="inline-block min-w-full">
               {renderContent()}

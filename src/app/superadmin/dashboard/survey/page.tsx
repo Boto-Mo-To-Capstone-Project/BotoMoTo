@@ -48,7 +48,7 @@ export default function SuperAdminSurveyPage() {
             </span>
           ),
           Form_Schema: (
-            <div className="flex justify-center">
+            <div className="flex justify-start">
               <button
                 className="inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
                 onClick={(e) => {
@@ -63,7 +63,7 @@ export default function SuperAdminSurveyPage() {
             </div>
           ),
           View_Responses: (
-            <div className="flex justify-center">
+            <div className="flex justify-start">
               <button
                 className="inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-colors"
                 onClick={(e) => {
@@ -77,7 +77,7 @@ export default function SuperAdminSurveyPage() {
             </div>
           ),
           Publish: (
-            <div className="flex justify-center">
+            <div className="flex justify-start">
               <button
                 className="publish-btn inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-full transition-colors"
                 onClick={(e) => {
@@ -239,7 +239,7 @@ export default function SuperAdminSurveyPage() {
             </span>
           ),
           Form_Schema: (
-            <div className="flex justify-center">
+            <div className="flex justify-start">
               <button
                 className="inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
                 onClick={(e) => {
@@ -254,7 +254,7 @@ export default function SuperAdminSurveyPage() {
             </div>
           ),
           View_Responses: (
-            <div className="flex justify-center">
+            <div className="flex justify-start">
               <button
                 className="inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-colors"
                 onClick={(e) => {
@@ -268,7 +268,7 @@ export default function SuperAdminSurveyPage() {
             </div>
           ),
           Publish: (
-            <div className="flex justify-center">
+            <div className="flex justify-start">
               <button
                 className="publish-btn inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-full transition-colors"
                 onClick={(e) => {
