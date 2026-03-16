@@ -99,25 +99,54 @@ const KpiCard: React.FC<KpiCardProps> = ({
 
   // Superadmin variant with trend indicators (modern design)
   if (variant === "superadmin") {
-    const trendColor = trend === "up" ? "green" : "red";
-    const colors = colorClasses[trendColor];
+    const trendClasses =
+      trend === "up"
+        ? {
+            accentBar: "bg-emerald-500/70",
+            iconBg: "bg-emerald-50",
+            iconText: "text-emerald-600",
+            badgeBg: "bg-emerald-50",
+            badgeText: "text-emerald-700",
+            valueText: "text-emerald-700",
+            descText: "text-emerald-700/90",
+          }
+        : trend === "down"
+          ? {
+              accentBar: "bg-red-500/70",
+              iconBg: "bg-red-50",
+              iconText: "text-red-600",
+              badgeBg: "bg-red-50",
+              badgeText: "text-red-700",
+              valueText: "text-red-700",
+              descText: "text-red-700/90",
+            }
+          : {
+              accentBar: "bg-gray-300",
+              iconBg: "bg-gray-100",
+              iconText: "text-gray-600",
+              badgeBg: "bg-gray-100",
+              badgeText: "text-gray-700",
+              valueText: "text-gray-900",
+              descText: "text-gray-500",
+            };
 
     return (
       <div
-        className={`group bg-white rounded-xl p-6 shadow-sm border-2 transition-all duration-300 h-full
-          ${trend === "up" ? "border-green-600 hover:border-green-700" : ""}
-          ${trend === "down" ? "border-red-600 hover:border-red-700" : ""}
-          ${!trend ? "border-gray-200 hover:border-gray-300" : ""}
-          hover:shadow-md
-        `}
+        className="group relative h-full overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
         onClick={handleClick}
       >
-        <div className="flex items-start justify-between mb-4">
-          <div className={`w-12 h-12 ${colors?.iconBg || 'bg-gray-100'} rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-            <Icon className={`w-6 h-6 ${colors?.iconText || 'text-gray-600'}`} />
+        <div className={`absolute inset-x-0 top-0 h-1 ${trendClasses.accentBar}`} />
+
+        <div className="flex items-start justify-between gap-3">
+          <div
+            className={`h-11 w-11 rounded-xl ${trendClasses.iconBg} flex items-center justify-center transition-transform duration-300 group-hover:scale-105`}
+          >
+            <Icon className={`h-5 w-5 ${trendClasses.iconText}`} />
           </div>
           {trend && (
-            <div className={`flex items-center gap-1 ${colors?.badgeBg || 'bg-gray-50'} ${colors?.badgeText || 'text-gray-600'} px-2.5 py-1 rounded-full text-xs font-semibold`}>
+            <div
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${trendClasses.badgeBg} ${trendClasses.badgeText}`}
+            >
               {trend === "up" ? (
                 <ArrowUp className="h-3 w-3" />
               ) : (
@@ -127,10 +156,13 @@ const KpiCard: React.FC<KpiCardProps> = ({
             </div>
           )}
         </div>
-        <p className={`text-3xl font-bold mb-1 ${colors?.valueBg || 'text-gray-700'}`}>{value}</p>
-        <p className="text-sm text-gray-600 font-medium">{name}</p>
+
+        <p className={`mt-5 text-3xl font-bold tracking-tight ${trendClasses.valueText}`}>
+          {value}
+        </p>
+        <p className="mt-1 text-sm font-semibold text-gray-700">{name}</p>
         {desc && (
-          <p className={`text-xs mt-2 ${colors?.badgeText || 'text-gray-500'}`}>
+          <p className={`mt-2 text-xs ${trendClasses.descText}`}>
             {desc}
           </p>
         )}
