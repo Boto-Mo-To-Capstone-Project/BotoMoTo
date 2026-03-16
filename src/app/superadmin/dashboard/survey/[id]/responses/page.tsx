@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { MdVisibility } from "react-icons/md";
@@ -67,7 +67,11 @@ export default function SurveyResponsesPage() {
   // Pagination state
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  
+  // Filter state (audits-style filter toolbar)
+  const [answersCountFilter, setAnswersCountFilter] = useState("all");
+  const [averageFilter, setAverageFilter] = useState("all");
+  const [submittedDateFilter, setSubmittedDateFilter] = useState("all");
   
   // Response detail modal state
   const [viewModalOpen, setViewModalOpen] = useState(false);
@@ -118,6 +122,9 @@ export default function SurveyResponsesPage() {
           Submitted_At: new Date(response.submittedAt).toLocaleString(),
           Answers_Count: Object.keys(response.answers).length,
           Average_Answer: averageAnswer === null ? "N/A" : averageAnswer.toFixed(2),
+          Answers_Count_Value: Object.keys(response.answers).length,
+          Average_Answer_Value: averageAnswer,
+          Submitted_At_Value: response.submittedAt,
           View: (
             <div className="flex justify-start gap-2">
               <button
@@ -211,6 +218,107 @@ export default function SurveyResponsesPage() {
     setSelectedIds(newSelectedIds);
   };
 
+  const filteredRows = useMemo(() => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(now.getDate() - 7);
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(now.getDate() - 30);
+
+    return rows.filter((row) => {
+      const answersCount = Number(row.Answers_Count_Value ?? row.Answers_Count ?? 0);
+      const averageValue =
+        typeof row.Average_Answer_Value === "number" ? row.Average_Answer_Value : null;
+      const submittedAt = row.Submitted_At_Value ? new Date(row.Submitted_At_Value) : null;
+
+      // Answers Count filter
+      if (answersCountFilter === "0-2" && !(answersCount >= 0 && answersCount <= 2)) return false;
+      if (answersCountFilter === "3-5" && !(answersCount >= 3 && answersCount <= 5)) return false;
+      if (answersCountFilter === "6+" && !(answersCount >= 6)) return false;
+
+      // Average filter
+      if (averageFilter === "with_average" && averageValue === null) return false;
+      if (averageFilter === "no_average" && averageValue !== null) return false;
+      if (averageFilter === "high" && !(averageValue !== null && averageValue >= 4)) return false;
+      if (averageFilter === "mid" && !(averageValue !== null && averageValue >= 3 && averageValue < 4)) return false;
+      if (averageFilter === "low" && !(averageValue !== null && averageValue < 3)) return false;
+
+      // Submitted date filter
+      if (submittedDateFilter === "today" && !(submittedAt && submittedAt >= startOfToday)) return false;
+      if (submittedDateFilter === "last_7_days" && !(submittedAt && submittedAt >= sevenDaysAgo)) return false;
+      if (submittedDateFilter === "last_30_days" && !(submittedAt && submittedAt >= thirtyDaysAgo)) return false;
+
+      return true;
+    });
+  }, [rows, answersCountFilter, averageFilter, submittedDateFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+
+  useEffect(() => {
+    setPage((current) => Math.min(current, totalPages));
+  }, [totalPages]);
+
+  const filters = useMemo(
+    () => [
+      {
+        key: "answersCount",
+        label: "Answers Count",
+        value: answersCountFilter,
+        onChange: (value: string) => {
+          setAnswersCountFilter(value);
+          setPage(1);
+        },
+        options: [
+          { value: "all", label: "All Counts" },
+          { value: "0-2", label: "0 to 2" },
+          { value: "3-5", label: "3 to 5" },
+          { value: "6+", label: "6+" },
+        ],
+      },
+      {
+        key: "average",
+        label: "Average Answer",
+        value: averageFilter,
+        onChange: (value: string) => {
+          setAverageFilter(value);
+          setPage(1);
+        },
+        options: [
+          { value: "all", label: "All Averages" },
+          { value: "with_average", label: "With Average" },
+          { value: "high", label: "High (>= 4.00)" },
+          { value: "mid", label: "Mid (3.00 - 3.99)" },
+          { value: "low", label: "Low (< 3.00)" },
+          { value: "no_average", label: "No Average (N/A)" },
+        ],
+      },
+      {
+        key: "submittedDate",
+        label: "Submitted Date",
+        value: submittedDateFilter,
+        onChange: (value: string) => {
+          setSubmittedDateFilter(value);
+          setPage(1);
+        },
+        options: [
+          { value: "all", label: "All Dates" },
+          { value: "today", label: "Today" },
+          { value: "last_7_days", label: "Last 7 Days" },
+          { value: "last_30_days", label: "Last 30 Days" },
+        ],
+      },
+    ],
+    [answersCountFilter, averageFilter, submittedDateFilter]
+  );
+
+  const handleClearAllFilters = () => {
+    setAnswersCountFilter("all");
+    setAverageFilter("all");
+    setSubmittedDateFilter("all");
+    setPage(1);
+  };
+
   // Pagination handlers
   const handleFirst = () => setPage(1);
   const handlePrev = () => setPage((p) => Math.max(1, p - 1));
@@ -238,10 +346,13 @@ export default function SurveyResponsesPage() {
                 "Average_Answer",
                 "View",
               ]}
-              data={rows}
+              data={filteredRows}
               showActions={true}
-              actions={["export"]}
+              actions={["export", "filter"]}
               onExport={handleExportCSV}
+              showFilters={false}
+              filterToolbarFilters={filters}
+              onFilterClearAll={handleClearAllFilters}
               selectedIds={selectedIds}
               onSelectionChange={handleSelectionChange}
               page={page}
