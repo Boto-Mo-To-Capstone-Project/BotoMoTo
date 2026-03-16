@@ -41,8 +41,11 @@ type TableProps = {
     key: string;
     label: string;
     value: string;
-    options: Array<{ value: string; label: string }>;
+    options?: Array<{ value: string; label: string }>;
     onChange: (value: string) => void;
+    type?: "select" | "date";
+    defaultValue?: string;
+    placeholder?: string;
   }>;
   onFilterClearAll?: () => void;
   pageSize: number;

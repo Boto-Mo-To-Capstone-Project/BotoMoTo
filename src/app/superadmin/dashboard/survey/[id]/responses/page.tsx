@@ -53,6 +53,14 @@ const calculateAverageAnswer = (answers: Record<string, any>): number | null => 
   return total / numericValues.length;
 };
 
+const toLocalDateKey = (value: string | Date): string => {
+  const d = typeof value === "string" ? new Date(value) : value;
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export default function SurveyResponsesPage() {
   const params = useParams();
   const router = useRouter();
@@ -71,7 +79,7 @@ export default function SurveyResponsesPage() {
   // Filter state (audits-style filter toolbar)
   const [answersCountFilter, setAnswersCountFilter] = useState("all");
   const [averageFilter, setAverageFilter] = useState("all");
-  const [submittedDateFilter, setSubmittedDateFilter] = useState("all");
+  const [submittedDateFilter, setSubmittedDateFilter] = useState("");
   
   // Response detail modal state
   const [viewModalOpen, setViewModalOpen] = useState(false);
@@ -125,6 +133,7 @@ export default function SurveyResponsesPage() {
           Answers_Count_Value: Object.keys(response.answers).length,
           Average_Answer_Value: averageAnswer,
           Submitted_At_Value: response.submittedAt,
+          Submitted_Date_Key: toLocalDateKey(response.submittedAt),
           View: (
             <div className="flex justify-start gap-2">
               <button
@@ -219,18 +228,11 @@ export default function SurveyResponsesPage() {
   };
 
   const filteredRows = useMemo(() => {
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const sevenDaysAgo = new Date(now);
-    sevenDaysAgo.setDate(now.getDate() - 7);
-    const thirtyDaysAgo = new Date(now);
-    thirtyDaysAgo.setDate(now.getDate() - 30);
-
     return rows.filter((row) => {
       const answersCount = Number(row.Answers_Count_Value ?? row.Answers_Count ?? 0);
       const averageValue =
         typeof row.Average_Answer_Value === "number" ? row.Average_Answer_Value : null;
-      const submittedAt = row.Submitted_At_Value ? new Date(row.Submitted_At_Value) : null;
+      const submittedDateKey = row.Submitted_Date_Key as string | undefined;
 
       // Answers Count filter
       if (answersCountFilter === "0-2" && !(answersCount >= 0 && answersCount <= 2)) return false;
@@ -244,10 +246,8 @@ export default function SurveyResponsesPage() {
       if (averageFilter === "mid" && !(averageValue !== null && averageValue >= 3 && averageValue < 4)) return false;
       if (averageFilter === "low" && !(averageValue !== null && averageValue < 3)) return false;
 
-      // Submitted date filter
-      if (submittedDateFilter === "today" && !(submittedAt && submittedAt >= startOfToday)) return false;
-      if (submittedDateFilter === "last_7_days" && !(submittedAt && submittedAt >= sevenDaysAgo)) return false;
-      if (submittedDateFilter === "last_30_days" && !(submittedAt && submittedAt >= thirtyDaysAgo)) return false;
+      // Submitted date filter (specific date)
+      if (submittedDateFilter && submittedDateKey !== submittedDateFilter) return false;
 
       return true;
     });
@@ -301,12 +301,8 @@ export default function SurveyResponsesPage() {
           setSubmittedDateFilter(value);
           setPage(1);
         },
-        options: [
-          { value: "all", label: "All Dates" },
-          { value: "today", label: "Today" },
-          { value: "last_7_days", label: "Last 7 Days" },
-          { value: "last_30_days", label: "Last 30 Days" },
-        ],
+        type: "date",
+        defaultValue: "",
       },
     ],
     [answersCountFilter, averageFilter, submittedDateFilter]
@@ -315,7 +311,7 @@ export default function SurveyResponsesPage() {
   const handleClearAllFilters = () => {
     setAnswersCountFilter("all");
     setAverageFilter("all");
-    setSubmittedDateFilter("all");
+    setSubmittedDateFilter("");
     setPage(1);
   };
 

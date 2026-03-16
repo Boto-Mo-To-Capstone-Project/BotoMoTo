@@ -12,8 +12,11 @@ interface Filter {
   key: string;
   label: string;
   value: string;
-  options: FilterOption[];
+  options?: FilterOption[];
   onChange: (value: string) => void;
+  type?: "select" | "date";
+  defaultValue?: string;
+  placeholder?: string;
 }
 
 interface FilterToolbarProps {
@@ -34,8 +37,13 @@ export function FilterToolbar({
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
-  // Count active filters (not "all")
-  const activeFiltersCount = filters.filter(f => f.value !== "all").length;
+  const getDefaultValue = (filter: Filter) => {
+    if (filter.defaultValue !== undefined) return filter.defaultValue;
+    return filter.type === "date" ? "" : "all";
+  };
+
+  // Count active filters (different from each filter's default value)
+  const activeFiltersCount = filters.filter((f) => f.value !== getDefaultValue(f)).length;
 
   // Calculate dropdown position
   const updateDropdownPosition = () => {
@@ -91,8 +99,9 @@ export function FilterToolbar({
 
   const handleClearAll = () => {
     filters.forEach(filter => {
-      if (filter.value !== "all") {
-        filter.onChange("all");
+      const defaultValue = getDefaultValue(filter);
+      if (filter.value !== defaultValue) {
+        filter.onChange(defaultValue);
       }
     });
     onClearAll?.();
@@ -158,17 +167,27 @@ export function FilterToolbar({
                 <label className="text-sm font-medium text-gray-700 block">
                   {filter.label}
                 </label>
-                <select
-                  value={filter.value}
-                  onChange={(e) => filter.onChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
-                >
-                  {filter.options.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                {filter.type === "date" ? (
+                  <input
+                    type="date"
+                    value={filter.value}
+                    onChange={(e) => filter.onChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                    placeholder={filter.placeholder}
+                  />
+                ) : (
+                  <select
+                    value={filter.value}
+                    onChange={(e) => filter.onChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                  >
+                    {(filter.options || []).map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             ))}
           </div>
