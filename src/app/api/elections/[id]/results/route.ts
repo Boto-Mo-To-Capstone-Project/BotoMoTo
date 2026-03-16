@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import db from "@/lib/db/db";
 import { ELECTION_STATUS } from "@/lib/constants";
 import { apiResponse } from "@/lib/apiResponse";
+import { getElectionResultsRefreshConfig } from "@/lib/elections/resultsRefreshConfig";
 
 export async function GET(
   request: NextRequest,
@@ -150,6 +151,7 @@ export async function GET(
     ]);
 
     // Process and format the results
+    const refreshConfig = getElectionResultsRefreshConfig();
     const results = {
       overview: {
         totalVoters,
@@ -186,6 +188,7 @@ export async function GET(
         organization: election.organization.name,
         schedule: election.schedule
       },
+      refreshConfig,
       timestamp: new Date().toISOString()
     };
 

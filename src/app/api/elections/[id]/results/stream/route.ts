@@ -2,6 +2,7 @@
 import { NextRequest } from 'next/server';
 import db from '@/lib/db/db';
 import { ELECTION_STATUS } from '@/lib/constants';
+import { getElectionResultsRefreshConfig } from '@/lib/elections/resultsRefreshConfig';
 
 // Global connection manager to prevent multiple SSE connections per election
 // This tracks active connections to prevent memory leaks and duplicate connections
@@ -55,6 +56,8 @@ export async function GET(
     }
 
     // Create SSE stream
+    const refreshConfig = getElectionResultsRefreshConfig();
+    const pollingIntervalMs = Math.max(1, refreshConfig.pollingSeconds) * 1000;
     const encoder = new TextEncoder();
     let currentResultsHash = '';
     let interval: NodeJS.Timeout;
@@ -254,7 +257,7 @@ export async function GET(
           return;
         }
 
-        // Set up polling for result changes (optimized for voting activity)
+        // Set up stream refresh loop
         interval = setInterval(async () => {
           if (isClosed) {
             clearInterval(interval);
@@ -265,8 +268,13 @@ export async function GET(
             const currentResults = await fetchResults();
             const currentHash = JSON.stringify(currentResults);
 
-            // Only send update if results changed
-            if (currentHash !== currentResultsHash) {
+            // polling mode: emit at configured interval even if unchanged
+            // sse mode: emit only on changes for more continuous, efficient updates
+            const shouldSendUpdate = refreshConfig.refreshType === 'polling'
+              ? true
+              : currentHash !== currentResultsHash;
+
+            if (shouldSendUpdate) {
               console.log(`🔄 Results updated for election ${electionId}`);
               
               const eventId = ++globalEventId;
@@ -304,7 +312,7 @@ export async function GET(
               }
             }
           }
-        }, 3000); // 3-second intervals for live results
+        }, refreshConfig.refreshType === 'polling' ? pollingIntervalMs : 3000);
 
         // Heartbeat to keep connection alive (every 30 seconds)
         heartbeatInterval = setInterval(() => {
