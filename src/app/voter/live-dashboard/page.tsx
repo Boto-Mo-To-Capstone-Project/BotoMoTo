@@ -6,6 +6,7 @@ import KpiCard from "@/components/KpiCard";
 import PositionSection from "@/components/PositionSection";
 import DemographicSection from "@/components/DemographicSection";
 import toast from "react-hot-toast";
+import ConfirmationModal from "@/components/ConfirmationModal";
 
 interface ElectionResults {
   overview: {
@@ -60,6 +61,7 @@ const LiveDashboard = () => {
   const [isSuperAdminContext, setIsSuperAdminContext] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isVoterContext, setIsVoterContext] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   
   // Check if we're in admin context
   useEffect(() => {
@@ -478,7 +480,7 @@ const LiveDashboard = () => {
           <div className="flex items-center gap-3 no-print">
             {isVoterContext && !isAdminContext && !isSuperAdminContext && (
               <button
-                onClick={handleVoterLogout}
+                onClick={() => setShowLogoutModal(true)}
                 className="px-4 py-2 text-sm font-semibold text-[#7b1c1c] border border-[#7b1c1c] rounded-lg hover:bg-[#7b1c1c] hover:text-white transition-colors"
               >
                 Logout
@@ -592,6 +594,17 @@ const LiveDashboard = () => {
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        open={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        title="Confirm Logout"
+        description="Are you sure you want to log out of your voter session?"
+        confirmLabel="Logout"
+        cancelLabel="Cancel"
+        onConfirm={handleVoterLogout}
+        variant="delete"
+      />
     </main>
   );
 };
