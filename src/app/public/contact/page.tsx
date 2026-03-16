@@ -3,7 +3,7 @@
 import AboutFooter from "@/components/about-us/AboutFooter";
 import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
-import { Trash2 } from "lucide-react";
+import { Clock3, Mail, ShieldCheck, Trash2 } from "lucide-react";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -271,13 +271,50 @@ export default function ContactPage() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center pt-20">
-      <div className="flex flex-col items-center pt-20 pb-10 gap-4 px-5 xs:px-20 text-center">
-        <p className="text-dmd font-semibold">Get in touch</p>
+    <main className="min-h-screen flex flex-col items-center mt-20">
+      <div className="flex flex-col items-center gap-6 py-20 px-5 xs:px-20 text-center">
+        <div className="text-center">
+          <p className="text-md font-semibold text-primary">Get in touch</p>
+          <p className="text-dlg font-semibold text-black">Contact our team</p>
+        </div>
         <p className="text-xl font-normal text-gray text-center">Our team would love to hear from you.</p>
       </div>
 
-      <div className="flex flex-col w-full xs:w-[420px] mb-10 px-5 items-center">
+      <div className="w-full px-5 xs:px-20 pb-10">
+        <div className="w-full max-w-6xl mx-auto flex flex-col xl:flex-row gap-8 xl:gap-10">
+          <div className="hidden xl:flex xl:w-[380px] bg-gray-50 border border-gray-200 rounded-2xl p-7 flex-col justify-between">
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <p className="text-md font-semibold text-primary">We usually reply fast</p>
+                <p className="text-lg font-semibold text-black">Let us know what you need</p>
+              </div>
+              <p className="text-gray text-sm leading-6">
+                Submit your concern with email verification so we know it is really from you.
+              </p>
+            </div>
+            <div className="space-y-4 mt-6">
+              <div className="flex items-center gap-3 text-sm text-gray-700">
+                <div className="w-8 h-8 rounded-full bg-red-100 text-primary flex items-center justify-center">
+                  <Mail size={16} />
+                </div>
+                Verified email contact
+              </div>
+              <div className="flex items-center gap-3 text-sm text-gray-700">
+                <div className="w-8 h-8 rounded-full bg-red-100 text-primary flex items-center justify-center">
+                  <ShieldCheck size={16} />
+                </div>
+                Privacy-policy protected
+              </div>
+              <div className="flex items-center gap-3 text-sm text-gray-700">
+                <div className="w-8 h-8 rounded-full bg-red-100 text-primary flex items-center justify-center">
+                  <Clock3 size={16} />
+                </div>
+                5-second confirm safety
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col w-full xs:w-[420px] xl:w-full mx-auto mb-10 items-center xl:items-stretch xl:bg-white xl:border xl:border-gray-200 xl:rounded-2xl xl:shadow-sm xl:p-8">
         <div className="flex justify-between w-full gap-2">
           <InputField
             placeholder="First name"
@@ -438,7 +475,7 @@ export default function ContactPage() {
           type="button"
           onClick={() => setIsConfirmOpen(true)}
           disabled={!privacyAccepted || isSubmitting}
-          className={`mt-5 w-full max-w-[380px] h-[44px] rounded-[8px] text-sm font-semibold transition-colors ${
+          className={`mt-5 w-full h-[44px] rounded-[8px] text-sm font-semibold transition-colors ${
             !privacyAccepted || isSubmitting
               ? "bg-gray-300 text-gray-600 cursor-not-allowed"
               : "bg-[var(--color-primary)] hover:brightness-90 text-white"
@@ -452,6 +489,8 @@ export default function ContactPage() {
             Complete all fields, verify your email with OTP, and accept the privacy policy to continue.
           </p>
         ) : null}
+      </div>
+        </div>
       </div>
 
       {isConfirmOpen ? (
