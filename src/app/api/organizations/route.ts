@@ -57,73 +57,69 @@ async function getOrganizations(request: NextRequest) {
     if (!authResult.authorized) return authResult.response;
     const user = authResult.user;
 
-    let organizations;
-    let message;
+    // Get pagination/filter parameters from query
+    const url = new URL(request.url);
+    const parsedPage = parseInt(url.searchParams.get("page") || "1", 10);
+    const parsedLimit = parseInt(url.searchParams.get("limit") || "50", 10);
+    const page = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
+    const limit = Number.isNaN(parsedLimit) || parsedLimit < 1 ? 50 : parsedLimit;
+    const all = url.searchParams.get("all") === "true";
+    const statusFilter = url.searchParams.get("status")?.toUpperCase();
 
-    if (user.role === ROLES.SUPER_ADMIN) {
-      // Super admin can see all organizations
-      organizations = await db.organization.findMany({
-        where: { isDeleted: false },
-        include: {
-          admin: {
-            select: {
-              id: true,
-              email: true,
-              name: true,
-              role: true
-            }
-          },
-          elections: {
-            where: { isDeleted: false },
-            select: {
-              id: true,
-              name: true,
-              status: true,
-            },
-          },
-          _count: {
-            select: {
-              elections: true
-            }
-          }
-        },
-        orderBy: { createdAt: "desc" },
+    const validStatuses = Object.values(ORGANIZATION_STATUS) as string[];
+    if (statusFilter && !validStatuses.includes(statusFilter)) {
+      return apiResponse({
+        success: false,
+        message: "Invalid status filter",
+        data: null,
+        error: `Status must be one of: ${validStatuses.join(", ")}`,
+        status: 400,
       });
-      message = "All organizations fetched successfully (superadmin)";
-    } else {
-      // Admin can only see their own organization
-      organizations = await db.organization.findMany({
-        where: { 
-          adminId: user.id,
-          isDeleted: false 
-        },
-        include: {
-          admin: {
-            select: {
-              id: true,
-              email: true,
-              name: true,
-              role: true
-            }
-          },
-          elections: {
-            where: { isDeleted: false },
-            select: {
-              id: true,
-              name: true,
-              status: true,
-            },
-          },
-          _count: {
-            select: {
-              elections: true
-            }
-          }
-        },
-        orderBy: { createdAt: "desc" },
-      });
-      message = "Your organizations fetched successfully (admin)";
     }
+
+    const where: any = {
+      isDeleted: false,
+      ...(user.role === ROLES.ADMIN ? { adminId: user.id } : {}),
+      ...(statusFilter ? { status: statusFilter } : {}),
+    };
+
+    const totalCount = await db.organization.count({ where });
+    const skip = all ? 0 : (page - 1) * limit;
+    const take = all ? undefined : limit;
+
+    const organizations = await db.organization.findMany({
+      where,
+      include: {
+        admin: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true
+          }
+        },
+        elections: {
+          where: { isDeleted: false },
+          select: {
+            id: true,
+            name: true,
+            status: true,
+          },
+        },
+        _count: {
+          select: {
+            elections: true
+          }
+        }
+      },
+      orderBy: { createdAt: "desc" },
+      skip,
+      ...(take !== undefined && { take })
+    });
+
+    const message = user.role === ROLES.SUPER_ADMIN
+      ? `All organizations fetched successfully (superadmin)${all ? " (all organizations)" : ""}`
+      : `Your organizations fetched successfully (admin)${all ? " (all organizations)" : ""}`;
 
     // Transform organizations to include dynamic URLs
     const transformedOrganizations = await Promise.all(
@@ -140,14 +136,26 @@ async function getOrganizations(request: NextRequest) {
         : "Viewed own organizations (admin)",
     });
 
+    const totalPages = all ? 1 : Math.max(1, Math.ceil(totalCount / limit));
+    const responseData: any = {
+      organizations: transformedOrganizations,
+      totalCount,
+      audit
+    };
+
+    if (!all) {
+      responseData.pagination = {
+        currentPage: page,
+        pageSize: limit,
+        totalCount,
+        totalPages
+      };
+    }
+
     return apiResponse({
       success: true,
       message,
-      data: {
-        organizations: transformedOrganizations,
-        totalCount: transformedOrganizations.length,
-        audit
-      },
+      data: responseData,
       error: null,
       status: 200
     });

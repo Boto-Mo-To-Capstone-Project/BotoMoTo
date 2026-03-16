@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 
 import Table from "@/components/TableComponent";
 import FileViewer from "@/components/FileViewer";
@@ -10,7 +10,8 @@ export default function SuperAdminOrgRequestPage() {
   // Local state for requests (pending) and all organizations
   const [orgRequests, setOrgRequests] = useState<Record<string, any>[]>([]);
   const [allOrgs, setAllOrgs] = useState<Record<string, any>[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loadingRequests, setLoadingRequests] = useState<boolean>(true);
+  const [loadingAllOrgs, setLoadingAllOrgs] = useState<boolean>(true);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
   // File viewer state
@@ -22,29 +23,32 @@ export default function SuperAdminOrgRequestPage() {
     fileType?: "pdf" | "image" | "video" | "audio" | "text" | "unknown";
   } | null>(null);
   
-  // Pagination state
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const handleFirst = () => setPage(1);
-  const handlePrev = () => setPage((p) => Math.max(1, p - 1));
-  const handleNext = () => setPage((p) => p + 1); // Table component will handle max bounds
-  const handleLast = () => setPage(1); // Will be overridden by individual table's totalPages
-  const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setPageSize(Number(e.target.value));
-    setPage(1); // reset to first page when page size changes
+  // Pagination state - keep tables independent
+  const [requestsPage, setRequestsPage] = useState(1);
+  const [requestsPageSize, setRequestsPageSize] = useState(10);
+  const [requestsTotalPages, setRequestsTotalPages] = useState(1);
+  const [allOrgsPage, setAllOrgsPage] = useState(1);
+  const [allOrgsPageSize, setAllOrgsPageSize] = useState(10);
+  const [allOrgsTotalPages, setAllOrgsTotalPages] = useState(1);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const handleRequestsFirst = () => setRequestsPage(1);
+  const handleRequestsPrev = () => setRequestsPage((p) => Math.max(1, p - 1));
+  const handleRequestsNext = () => setRequestsPage((p) => Math.min(requestsTotalPages, p + 1));
+  const handleRequestsLast = () => setRequestsPage(requestsTotalPages);
+  const handleRequestsPageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setRequestsPageSize(Number(e.target.value));
+    setRequestsPage(1);
   };
-  
-  // Calculate pagination for organizations instead of elections
-  const filteredOrgRequests = orgRequests.filter((org) =>
-    org.Name?.toLowerCase().includes(search.toLowerCase()) || ""
-  );
-  const filteredAllOrgs = allOrgs.filter((org) =>
-    org.Name?.toLowerCase().includes(search.toLowerCase()) || ""
-  );
-  
-  const requestsTotalPages = Math.ceil(Math.max(1, filteredOrgRequests.length) / pageSize);
-  const allOrgsTotalPages = Math.ceil(Math.max(1, filteredAllOrgs.length) / pageSize);
+
+  const handleAllOrgsFirst = () => setAllOrgsPage(1);
+  const handleAllOrgsPrev = () => setAllOrgsPage((p) => Math.max(1, p - 1));
+  const handleAllOrgsNext = () => setAllOrgsPage((p) => Math.min(allOrgsTotalPages, p + 1));
+  const handleAllOrgsLast = () => setAllOrgsPage(allOrgsTotalPages);
+  const handleAllOrgsPageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setAllOrgsPageSize(Number(e.target.value));
+    setAllOrgsPage(1);
+  };
 
   // Helper to extract filename from a stored path or URL
   const extractFilename = (path: string) => {
@@ -108,30 +112,93 @@ export default function SuperAdminOrgRequestPage() {
     Admin: org.admin?.name || org.adminId || "-",
   });
 
-  const loadOrganizations = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(`/api/organizations`, { method: "GET" });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || "Failed to fetch organizations");
+  useEffect(() => {
+    let isMounted = true;
+    const loadPendingOrganizations = async () => {
+      try {
+        setLoadingRequests(true);
+        const res = await fetch(
+          `/api/organizations?page=${requestsPage}&limit=${requestsPageSize}&status=PENDING`,
+          { method: "GET" }
+        );
+        const json = await res.json();
+        if (!res.ok || !json?.success) {
+          throw new Error(json?.error || json?.message || "Failed to fetch pending organizations");
+        }
 
-      const orgs = (json?.data?.organizations || []) as any[];
-      const all = orgs.map(toTableRow);
-      const pending = orgs.filter((o) => o.status === "PENDING").map(toTableRow);
+        const orgs = (json?.data?.organizations || []) as any[];
+        const pagination = json?.data?.pagination;
+        const nextTotalPages = pagination?.totalPages || 1;
 
-      setAllOrgs(all);
-      setOrgRequests(pending);
-    } catch (e: any) {
-      toast.error(e?.message || "Error loading organizations");
-    } finally {
-      setLoading(false);
-    }
-  };
+        if (!isMounted) return;
+
+        setRequestsTotalPages(nextTotalPages);
+        if (requestsPage > nextTotalPages) {
+          setRequestsPage(nextTotalPages);
+          return;
+        }
+        setOrgRequests(orgs.map(toTableRow));
+      } catch (e: any) {
+        if (isMounted) {
+          toast.error(e?.message || "Error loading pending organizations");
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingRequests(false);
+        }
+      }
+    };
+
+    loadPendingOrganizations();
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestsPage, requestsPageSize, reloadKey]);
 
   useEffect(() => {
-    loadOrganizations();
+    let isMounted = true;
+    const loadAllOrganizations = async () => {
+      try {
+        setLoadingAllOrgs(true);
+        const res = await fetch(
+          `/api/organizations?page=${allOrgsPage}&limit=${allOrgsPageSize}`,
+          { method: "GET" }
+        );
+        const json = await res.json();
+        if (!res.ok || !json?.success) {
+          throw new Error(json?.error || json?.message || "Failed to fetch organizations");
+        }
+
+        const orgs = (json?.data?.organizations || []) as any[];
+        const pagination = json?.data?.pagination;
+        const nextTotalPages = pagination?.totalPages || 1;
+
+        if (!isMounted) return;
+
+        setAllOrgsTotalPages(nextTotalPages);
+        if (allOrgsPage > nextTotalPages) {
+          setAllOrgsPage(nextTotalPages);
+          return;
+        }
+        setAllOrgs(orgs.map(toTableRow));
+      } catch (e: any) {
+        if (isMounted) {
+          toast.error(e?.message || "Error loading organizations");
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingAllOrgs(false);
+        }
+      }
+    };
+
+    loadAllOrganizations();
+    return () => {
+      isMounted = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [allOrgsPage, allOrgsPageSize, reloadKey]);
 
   // Approve/Reject handlers
   const handleApprove = async (row: Record<string, any>) => {
@@ -146,9 +213,8 @@ export default function SuperAdminOrgRequestPage() {
       if (!res.ok) throw new Error(json.message || "Failed to approve");
 
       toast.success(`Approved ${row.Name}`);
-      // Remove from requests and update status in all orgs
-      setOrgRequests((prev) => prev.filter((o) => o.id !== row.id));
-      setAllOrgs((prev) => prev.map((o) => (o.id === row.id ? { ...o, Status: "APPROVED" } : o)));
+      setSelectedIds([]);
+      setReloadKey((prev) => prev + 1);
     } catch (e: any) {
       toast.error(e?.message || "Error approving organization");
     }
@@ -166,9 +232,8 @@ export default function SuperAdminOrgRequestPage() {
       if (!res.ok) throw new Error(json.message || "Failed to reject");
 
       toast.success(`Rejected ${row.Name}`);
-      // Remove from requests and update status in all orgs
-      setOrgRequests((prev) => prev.filter((o) => o.id !== row.id));
-      setAllOrgs((prev) => prev.map((o) => (o.id === row.id ? { ...o, Status: "REJECTED" } : o)));
+      setSelectedIds([]);
+      setReloadKey((prev) => prev + 1);
     } catch (e: any) {
       toast.error(e?.message || "Error rejecting organization");
     }
@@ -193,7 +258,7 @@ export default function SuperAdminOrgRequestPage() {
             <>
               {/* Organization Requests (Pending) */}
               <Table
-                loading={loading}
+                loading={loadingRequests}
                 title="Organization Requests"
                 columns={columns}
                 data={orgRequests}
@@ -203,29 +268,29 @@ export default function SuperAdminOrgRequestPage() {
                 onSelectionChange={handleSelectionChange}
                 onApprove={handleApprove}
                 onReject={handleReject}
-                page={page}
+                page={requestsPage}
                 totalPages={requestsTotalPages}
-                onFirst={handleFirst}
-                onPrev={handlePrev}
-                onNext={handleNext}
-                onLast={handleLast}
-                pageSize={pageSize}
-                onPageSizeChange={handlePageSizeChange} 
+                onFirst={handleRequestsFirst}
+                onPrev={handleRequestsPrev}
+                onNext={handleRequestsNext}
+                onLast={handleRequestsLast}
+                pageSize={requestsPageSize}
+                onPageSizeChange={handleRequestsPageSizeChange}
               />
               {/* All Organizations */}
               <Table
-                loading={loading}
+                loading={loadingAllOrgs}
                 title="All Organizations"
                 columns={columns}
                 data={allOrgs}
-                page={page}
+                page={allOrgsPage}
                 totalPages={allOrgsTotalPages}
-                onFirst={handleFirst}
-                onPrev={handlePrev}
-                onNext={handleNext}
-                onLast={handleLast}
-                pageSize={pageSize}
-                onPageSizeChange={handlePageSizeChange} 
+                onFirst={handleAllOrgsFirst}
+                onPrev={handleAllOrgsPrev}
+                onNext={handleAllOrgsNext}
+                onLast={handleAllOrgsLast}
+                pageSize={allOrgsPageSize}
+                onPageSizeChange={handleAllOrgsPageSizeChange}
               />
             </>
           </div>
