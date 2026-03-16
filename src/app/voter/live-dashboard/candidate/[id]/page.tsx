@@ -59,8 +59,28 @@ interface ElectionResults {
       dateFinish: string;
     };
   };
+  refreshConfig?: RefreshConfig;
   timestamp: string;
 }
+
+interface RefreshConfig {
+  refreshType: "polling" | "sse";
+  pollingSeconds: number;
+}
+
+const DEFAULT_REFRESH_CONFIG: RefreshConfig = {
+  refreshType: "polling",
+  pollingSeconds: 10,
+};
+
+const normalizeRefreshConfig = (config: any): RefreshConfig => {
+  const refreshType = config?.refreshType === "sse" ? "sse" : "polling";
+  const pollingSeconds = Number.isFinite(config?.pollingSeconds) && config.pollingSeconds > 0
+    ? config.pollingSeconds
+    : DEFAULT_REFRESH_CONFIG.pollingSeconds;
+
+  return { refreshType, pollingSeconds };
+};
 
 
 const CandidateDashboard = () => {
@@ -123,6 +143,11 @@ const CandidateDashboard = () => {
 
   // Fetch initial results and set up real-time updates
   useEffect(() => {
+    let activeEventSource: EventSource | null = null;
+    let pollingInterval: ReturnType<typeof setInterval> | null = null;
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+    let isUnmounted = false;
+
     const initializeCandidate = async () => {
       // First try to get election ID from session (secure method)
       let electionId = await getElectionIdFromSession();
@@ -140,8 +165,8 @@ const CandidateDashboard = () => {
 
       console.log(`🚀 Initializing candidate dashboard for election ${electionId}`);
 
-      // Fetch initial data
-      const fetchInitialResults = async () => {
+      // Fetch data based on selected refresh mode
+      const fetchResults = async (): Promise<RefreshConfig> => {
         try {
           console.log(`🔄 Fetching candidate data for election ${electionId}`);
           const response = await fetch(`/api/elections/${electionId}/results`);
@@ -155,13 +180,17 @@ const CandidateDashboard = () => {
           if (data.success) {
             setResults(data.data);
             setError(null);
+            setIsConnected(true);
             console.log("✅ Candidate data loaded:", data.data);
+            return normalizeRefreshConfig(data.data?.refreshConfig);
           } else {
             throw new Error(data.message || "Failed to fetch results");
           }
         } catch (error) {
           console.error("❌ Failed to fetch candidate data:", error);
+          setIsConnected(false);
           setError(error instanceof Error ? error.message : "Failed to load data");
+          return DEFAULT_REFRESH_CONFIG;
         } finally {
           setLoading(false);
         }
@@ -172,6 +201,7 @@ const CandidateDashboard = () => {
         console.log(`📡 Connecting to candidate SSE stream for election ${electionId}`);
         
         const eventSource = new EventSource(`/api/elections/${electionId}/results/stream`);
+        activeEventSource = eventSource;
         
         eventSource.onopen = () => {
           console.log("✅ Candidate SSE connection established");
@@ -205,31 +235,49 @@ const CandidateDashboard = () => {
         });
 
         eventSource.onerror = () => {
+          if (isUnmounted) return;
           console.log("🔌 Candidate SSE connection lost, attempting to reconnect...");
           setIsConnected(false);
           
           // Clean up and retry
           eventSource.close();
-          setTimeout(() => {
-            fetchInitialResults();
+          reconnectTimeout = setTimeout(() => {
+            if (isUnmounted) return;
+            fetchResults();
             connectToSSE();
           }, 5000);
         };
-
-        return eventSource;
       };
 
-      // Start with initial fetch, then connect to stream
-      fetchInitialResults().then(() => {
+      const refreshConfig = await fetchResults();
+      if (isUnmounted) return;
+
+      if (refreshConfig.refreshType === "sse") {
         connectToSSE();
-      });
+      } else {
+        console.log(`🕒 Using polling refresh every ${refreshConfig.pollingSeconds} seconds`);
+        pollingInterval = setInterval(() => {
+          fetchResults();
+        }, refreshConfig.pollingSeconds * 1000);
+      }
     };
 
     initializeCandidate();
 
     // Cleanup on unmount
     return () => {
+      isUnmounted = true;
       console.log("🧹 Cleaning up candidate SSE connection");
+      if (activeEventSource) {
+        activeEventSource.close();
+      }
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+      setIsConnected(false);
     };
   }, []);
 

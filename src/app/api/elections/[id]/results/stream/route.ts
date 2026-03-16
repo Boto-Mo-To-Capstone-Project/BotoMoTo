@@ -1,7 +1,9 @@
 // Election results stream endpoint (GET) - Real-time SSE for live dashboard
 import { NextRequest } from 'next/server';
 import db from '@/lib/db/db';
-import { ELECTION_STATUS } from '@/lib/constants';
+import { auth } from '@/lib/auth/adminAuth';
+import { ELECTION_STATUS, ROLES } from '@/lib/constants';
+import { getElectionResultsRefreshConfig } from '@/lib/elections/resultsRefreshConfig';
 
 // Global connection manager to prevent multiple SSE connections per election
 // This tracks active connections to prevent memory leaks and duplicate connections
@@ -26,25 +28,86 @@ export async function GET(
       return new Response('Invalid election ID', { status: 400 });
     }
 
-    // Verify election exists and is active for real-time streaming
-    const election = await db.election.findFirst({
-      where: {
-        id: electionId,
-        isDeleted: false,
-        status: { in: [ELECTION_STATUS.ACTIVE, ELECTION_STATUS.CLOSED] }
-      },
-      select: {
-        id: true,
-        name: true,
-        instanceName: true,
-        status: true,
-        schedule: true,
-        organization: { select: { name: true } }
+    // Authorize stream access:
+    // 1) Admin/Superadmin with valid NextAuth session (and ownership check for Admin)
+    // 2) Voter with valid voter_session cookie for this election
+    let election = null as null | {
+      id: number;
+      name: string;
+      instanceName: string | null;
+      status: string;
+      schedule: any;
+      organization: { name: string };
+    };
+
+    const adminSession = await auth();
+    const adminUser = adminSession?.user;
+
+    if (
+      adminUser &&
+      (adminUser.role === ROLES.ADMIN || adminUser.role === ROLES.SUPER_ADMIN)
+    ) {
+      election = await db.election.findFirst({
+        where: {
+          id: electionId,
+          isDeleted: false,
+          status: { in: [ELECTION_STATUS.ACTIVE, ELECTION_STATUS.CLOSED] },
+          ...(adminUser.role === ROLES.ADMIN
+            ? { organization: { adminId: adminUser.id } }
+            : {}),
+        },
+        select: {
+          id: true,
+          name: true,
+          instanceName: true,
+          status: true,
+          schedule: true,
+          organization: { select: { name: true } },
+        },
+      });
+    } else {
+      const voterSessionToken = request.cookies.get('voter_session')?.value;
+
+      if (voterSessionToken) {
+        const voterSession = await db.voterSession.findFirst({
+          where: {
+            sessionToken: voterSessionToken,
+            isActive: true,
+            expires: { gt: new Date() },
+            voter: {
+              isDeleted: false,
+              isActive: true,
+              electionId,
+              election: {
+                isDeleted: false,
+                status: { in: [ELECTION_STATUS.ACTIVE, ELECTION_STATUS.CLOSED] },
+              },
+            },
+          },
+          select: {
+            voter: {
+              select: {
+                election: {
+                  select: {
+                    id: true,
+                    name: true,
+                    instanceName: true,
+                    status: true,
+                    schedule: true,
+                    organization: { select: { name: true } },
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        election = voterSession?.voter?.election ?? null;
       }
-    });
+    }
 
     if (!election) {
-      return new Response('Election not found, deleted, or not streamable', { status: 404 });
+      return new Response('Unauthorized or election not streamable', { status: 403 });
     }
 
     // Close any existing connection for this election to prevent duplicates
@@ -55,6 +118,8 @@ export async function GET(
     }
 
     // Create SSE stream
+    const refreshConfig = getElectionResultsRefreshConfig();
+    const pollingIntervalMs = Math.max(1, refreshConfig.pollingSeconds) * 1000;
     const encoder = new TextEncoder();
     let currentResultsHash = '';
     let interval: NodeJS.Timeout;
@@ -254,7 +319,7 @@ export async function GET(
           return;
         }
 
-        // Set up polling for result changes (optimized for voting activity)
+        // Set up stream refresh loop
         interval = setInterval(async () => {
           if (isClosed) {
             clearInterval(interval);
@@ -265,8 +330,13 @@ export async function GET(
             const currentResults = await fetchResults();
             const currentHash = JSON.stringify(currentResults);
 
-            // Only send update if results changed
-            if (currentHash !== currentResultsHash) {
+            // polling mode: emit at configured interval even if unchanged
+            // sse mode: emit only on changes for more continuous, efficient updates
+            const shouldSendUpdate = refreshConfig.refreshType === 'polling'
+              ? true
+              : currentHash !== currentResultsHash;
+
+            if (shouldSendUpdate) {
               console.log(`🔄 Results updated for election ${electionId}`);
               
               const eventId = ++globalEventId;
@@ -304,7 +374,7 @@ export async function GET(
               }
             }
           }
-        }, 3000); // 3-second intervals for live results
+        }, refreshConfig.refreshType === 'polling' ? pollingIntervalMs : 3000);
 
         // Heartbeat to keep connection alive (every 30 seconds)
         heartbeatInterval = setInterval(() => {

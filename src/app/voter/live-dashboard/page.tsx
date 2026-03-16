@@ -26,8 +26,28 @@ interface ElectionResults {
       dateFinish: string;
     };
   };
+  refreshConfig?: RefreshConfig;
   timestamp: string;
 }
+
+interface RefreshConfig {
+  refreshType: "polling" | "sse";
+  pollingSeconds: number;
+}
+
+const DEFAULT_REFRESH_CONFIG: RefreshConfig = {
+  refreshType: "polling",
+  pollingSeconds: 10,
+};
+
+const normalizeRefreshConfig = (config: any): RefreshConfig => {
+  const refreshType = config?.refreshType === "sse" ? "sse" : "polling";
+  const pollingSeconds = Number.isFinite(config?.pollingSeconds) && config.pollingSeconds > 0
+    ? config.pollingSeconds
+    : DEFAULT_REFRESH_CONFIG.pollingSeconds;
+
+  return { refreshType, pollingSeconds };
+};
 
 const LiveDashboard = () => {
   const router = useRouter();
@@ -102,7 +122,7 @@ const LiveDashboard = () => {
   };
 
   // Fetch initial results
-  const fetchInitialResults = async (electionId: number) => {
+  const fetchInitialResults = async (electionId: number): Promise<RefreshConfig> => {
     try {
       console.log(`🔄 Fetching initial results for election ${electionId}`);
       const response = await fetch(`/api/elections/${electionId}/results`);
@@ -116,13 +136,17 @@ const LiveDashboard = () => {
       if (data.success) {
         setResults(data.data);
         setError(null);
+        setIsConnected(true);
         console.log("✅ Initial results loaded:", data.data);
+        return normalizeRefreshConfig(data.data?.refreshConfig);
       } else {
         throw new Error(data.message || "Failed to fetch results");
       }
     } catch (error) {
       console.error("❌ Failed to fetch initial results:", error);
+      setIsConnected(false);
       setError(error instanceof Error ? error.message : "Failed to load election results");
+      return DEFAULT_REFRESH_CONFIG;
     } finally {
       setLoading(false);
     }
@@ -301,8 +325,12 @@ const LiveDashboard = () => {
     }
   };
 
-  // Initialize data fetching and SSE connection
+  // Initialize data fetching and refresh strategy
   useEffect(() => {
+    let cleanupSSE: (() => void) | undefined;
+    let pollingInterval: ReturnType<typeof setInterval> | undefined;
+    let isUnmounted = false;
+
     const initializeDashboard = async () => {
       let electionId = await getElectionIdFromSession();
       
@@ -312,16 +340,37 @@ const LiveDashboard = () => {
       
       if (electionId) {
         console.log(`🚀 Initializing live dashboard for election ${electionId}`);
-        fetchInitialResults(electionId);
-        const cleanup = connectToSSE(electionId);
-        return cleanup;
+
+        const refreshConfig = await fetchInitialResults(electionId);
+        if (isUnmounted) return;
+
+        if (refreshConfig.refreshType === "sse") {
+          cleanupSSE = connectToSSE(electionId);
+        } else {
+          const intervalMs = refreshConfig.pollingSeconds * 1000;
+          console.log(`🕒 Using polling refresh every ${refreshConfig.pollingSeconds} seconds`);
+
+          pollingInterval = setInterval(() => {
+            if (!isUnmounted) {
+              fetchInitialResults(electionId);
+            }
+          }, intervalMs);
+        }
       } else {
         setError("Access denied. This page requires an active voter session or admin privileges.");
+        setIsConnected(false);
         setLoading(false);
       }
     };
 
     initializeDashboard();
+
+    return () => {
+      isUnmounted = true;
+      if (cleanupSSE) cleanupSSE();
+      if (pollingInterval) clearInterval(pollingInterval);
+      setIsConnected(false);
+    };
   }, []);
 
   // Loading state
