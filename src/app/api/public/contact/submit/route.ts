@@ -37,7 +37,6 @@ export async function POST(request: NextRequest) {
     const subject = (formData.get("subject") || "").toString().trim();
     const message = (formData.get("message") || "").toString().trim();
     const verificationToken = (formData.get("verificationToken") || "").toString().trim();
-    const privacyAccepted = (formData.get("privacyAccepted") || "").toString() === "true";
 
     const parsed = contactDetailsSchema.safeParse({
       first_name,
@@ -47,7 +46,6 @@ export async function POST(request: NextRequest) {
       subject,
       message,
       verificationToken,
-      privacyAccepted,
     });
 
     if (!parsed.success) {

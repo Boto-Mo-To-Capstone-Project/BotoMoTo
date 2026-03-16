@@ -3,7 +3,7 @@
 import AboutFooter from "@/components/about-us/AboutFooter";
 import { InputField } from "@/components/InputField";
 import { SubmitButton } from "@/components/SubmitButton";
-import { Clock3, Mail, ShieldCheck, Trash2 } from "lucide-react";
+import { Clock3, EyeIcon, EyeOffIcon, Mail, Trash2 } from "lucide-react";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -20,11 +20,11 @@ export default function ContactPage() {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
-  const [privacyAccepted, setPrivacyAccepted] = useState(false);
 
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
+  const [showOtp, setShowOtp] = useState(false);
   const [verificationToken, setVerificationToken] = useState("");
   const [otpCooldown, setOtpCooldown] = useState(0);
 
@@ -38,6 +38,7 @@ export default function ContactPage() {
 
   const normalizedEmail = email.trim().toLowerCase();
   const phoneNumber = `+63${phoneLocal}`;
+  const isEmailVerified = otpVerified && verificationToken.length > 0;
 
   const fileTotalSize = useMemo(
     () => attachments.reduce((sum, file) => sum + file.size, 0),
@@ -91,9 +92,7 @@ export default function ContactPage() {
     subject.trim().length >= 3 &&
     message.trim().length >= 10 &&
     !attachmentError &&
-    privacyAccepted &&
-    otpVerified &&
-    verificationToken.length > 0;
+    isEmailVerified;
 
   useEffect(() => {
     if (otpCooldown <= 0) return;
@@ -229,7 +228,6 @@ export default function ContactPage() {
       data.append("phoneNumber", phoneNumber);
       data.append("subject", subject.trim());
       data.append("message", message.trim());
-      data.append("privacyAccepted", String(privacyAccepted));
       data.append("verificationToken", verificationToken);
 
       attachments.forEach((file) => {
@@ -256,10 +254,10 @@ export default function ContactPage() {
       setSubject("");
       setMessage("");
       setAttachments([]);
-      setPrivacyAccepted(false);
       setOtp("");
       setOtpSent(false);
       setOtpVerified(false);
+      setShowOtp(false);
       setVerificationToken("");
       setOtpCooldown(0);
     } catch {
@@ -297,13 +295,7 @@ export default function ContactPage() {
                 <div className="w-8 h-8 rounded-full bg-red-100 text-primary flex items-center justify-center">
                   <Mail size={16} />
                 </div>
-                Verified email contact
-              </div>
-              <div className="flex items-center gap-3 text-sm text-gray-700">
-                <div className="w-8 h-8 rounded-full bg-red-100 text-primary flex items-center justify-center">
-                  <ShieldCheck size={16} />
-                </div>
-                Privacy-policy protected
+                OTP verified identity
               </div>
               <div className="flex items-center gap-3 text-sm text-gray-700">
                 <div className="w-8 h-8 rounded-full bg-red-100 text-primary flex items-center justify-center">
@@ -332,6 +324,21 @@ export default function ContactPage() {
             onChange={(event) => setLastName(event.target.value)}
             error={fieldErrors.lastName}
           />
+        </div>
+
+        <div className="mt-4 w-full">
+          <label className="block text-sm font-medium text-[var(--color-black)] mb-1">Phone number</label>
+          <div className="flex items-center h-[44px] border rounded-md overflow-hidden border-[var(--color-secondary)]">
+            <span className="px-3 text-sm bg-gray-100 h-full flex items-center border-r border-[var(--color-secondary)]">+63</span>
+            <input
+              type="tel"
+              value={phoneLocal}
+              onChange={(event) => onPhoneChange(event.target.value)}
+              className="w-full h-full px-3 text-sm focus:outline-none"
+              placeholder="9XXXXXXXXX"
+            />
+          </div>
+          {fieldErrors.phone ? <p className="text-xs text-red-600 mt-1">{fieldErrors.phone}</p> : null}
         </div>
 
         <InputField
@@ -367,14 +374,25 @@ export default function ContactPage() {
 
         {otpSent && (
           <div className="w-full mt-3 flex gap-2 items-end">
-            <InputField
-              placeholder="6-digit code"
-              label="OTP"
-              type="text"
-              value={otp}
-              onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
-              wrapperClassName="!mt-0"
-            />
+            <div className="relative flex-1">
+              <InputField
+                placeholder="6-digit code"
+                label="OTP"
+                type={showOtp ? "text" : "password"}
+                value={otp}
+                onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                wrapperClassName="!mt-0"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowOtp((value) => !value)}
+                className="absolute right-3 top-[38px] text-gray-500 hover:text-gray-700 focus:outline-none"
+                aria-label={showOtp ? "Hide OTP" : "Show OTP"}
+              >
+                {showOtp ? <EyeIcon className="h-5 w-5" /> : <EyeOffIcon className="h-5 w-5" />}
+              </button>
+            </div>
             <button
               type="button"
               onClick={verifyOtp}
@@ -390,21 +408,6 @@ export default function ContactPage() {
           </div>
         )}
 
-        <div className="mt-4 w-full">
-          <label className="block text-sm font-medium text-[var(--color-black)] mb-1">Phone number</label>
-          <div className="flex items-center h-[44px] border rounded-md overflow-hidden border-[var(--color-secondary)]">
-            <span className="px-3 text-sm bg-gray-100 h-full flex items-center border-r border-[var(--color-secondary)]">+63</span>
-            <input
-              type="tel"
-              value={phoneLocal}
-              onChange={(event) => onPhoneChange(event.target.value)}
-              className="w-full h-full px-3 text-sm focus:outline-none"
-              placeholder="9XXXXXXXXX"
-            />
-          </div>
-          {fieldErrors.phone ? <p className="text-xs text-red-600 mt-1">{fieldErrors.phone}</p> : null}
-        </div>
-
         <InputField
           placeholder="Subject"
           label="Subject"
@@ -413,6 +416,8 @@ export default function ContactPage() {
           onChange={(event) => setSubject(event.target.value)}
           wrapperClassName="mt-4"
           error={fieldErrors.subject}
+          disabled={!isEmailVerified}
+          className="disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-500 disabled:placeholder:text-gray-400 disabled:cursor-not-allowed"
         />
 
         <InputField
@@ -425,23 +430,31 @@ export default function ContactPage() {
           onChange={(event) => setMessage(event.target.value)}
           wrapperClassName="mt-4"
           error={fieldErrors.message}
+          disabled={!isEmailVerified}
+          className="disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-500 disabled:placeholder:text-gray-400 disabled:cursor-not-allowed"
         />
 
         <div className="mt-4 w-full">
           <label className="block text-sm font-medium text-[var(--color-black)] mb-2">Attachments (optional)</label>
           <div className="w-full flex items-center gap-2">
-            <label className="flex-1 h-[48px] border-2 border-yellow-400 bg-yellow-50 rounded-md px-4 flex items-center justify-between cursor-pointer hover:bg-yellow-100 transition-colors">
-              <span className="text-sm text-yellow-900 font-medium">Choose files</span>
-              <span className="text-xs text-yellow-800">Max 3 files</span>
-              <input type="file" multiple onChange={onFilesChange} className="hidden" />
+            <label
+              className={`flex-1 h-[48px] border-2 rounded-md px-4 flex items-center justify-between transition-colors ${
+                isEmailVerified
+                  ? "border-yellow-400 bg-yellow-50 cursor-pointer hover:bg-yellow-100"
+                  : "border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed"
+              }`}
+            >
+              <span className={`text-sm font-medium ${isEmailVerified ? "text-yellow-900" : "text-gray-500"}`}>Choose files</span>
+              <span className={`text-xs ${isEmailVerified ? "text-yellow-800" : "text-gray-500"}`}>Max 3 files</span>
+              <input type="file" multiple onChange={onFilesChange} className="hidden" disabled={!isEmailVerified} />
             </label>
             <button
               type="button"
               onClick={() => setAttachments([])}
-              disabled={attachments.length === 0}
+              disabled={attachments.length === 0 || !isEmailVerified}
               title="Remove all attachments"
               className={`h-[48px] w-[48px] rounded-md flex items-center justify-center transition-colors ${
-                attachments.length === 0
+                attachments.length === 0 || !isEmailVerified
                   ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                   : "bg-primary text-white hover:brightness-90"
               }`}
@@ -460,23 +473,14 @@ export default function ContactPage() {
           {attachmentError ? <p className="text-xs text-red-600 mt-1">{attachmentError}</p> : null}
         </div>
 
-        <label className="w-full mt-4 flex items-center gap-2 text-sm text-[var(--color-black)]">
-          <input
-            type="checkbox"
-            checked={privacyAccepted}
-            onChange={(event) => setPrivacyAccepted(event.target.checked)}
-          />
-          I agree to the Privacy Policy
-        </label>
-
         {error ? <p className="w-full mt-3 text-sm text-red-600">{error}</p> : null}
 
         <button
           type="button"
           onClick={() => setIsConfirmOpen(true)}
-          disabled={!privacyAccepted || isSubmitting}
+          disabled={!canOpenConfirm || isSubmitting}
           className={`mt-5 w-full h-[44px] rounded-[8px] text-sm font-semibold transition-colors ${
-            !privacyAccepted || isSubmitting
+            !canOpenConfirm || isSubmitting
               ? "bg-gray-300 text-gray-600 cursor-not-allowed"
               : "bg-[var(--color-primary)] hover:brightness-90 text-white"
           }`}
@@ -486,7 +490,7 @@ export default function ContactPage() {
 
         {!canOpenConfirm ? (
           <p className="w-full mt-2 text-xs text-gray-500">
-            Complete all fields, verify your email with OTP, and accept the privacy policy to continue.
+            Complete all required fields and verify your email with OTP to continue.
           </p>
         ) : null}
       </div>
