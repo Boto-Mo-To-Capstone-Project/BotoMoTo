@@ -23,6 +23,36 @@ interface Survey {
   isActive: boolean;
 }
 
+const collectNumericValues = (value: unknown, bucket: number[]) => {
+  if (value === null || value === undefined) return;
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    bucket.push(value);
+    return;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+      bucket.push(Number(trimmed));
+    }
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectNumericValues(item, bucket));
+  }
+};
+
+const calculateAverageAnswer = (answers: Record<string, any>): number | null => {
+  const numericValues: number[] = [];
+  Object.values(answers || {}).forEach((value) => collectNumericValues(value, numericValues));
+
+  if (numericValues.length === 0) return null;
+  const total = numericValues.reduce((sum, current) => sum + current, 0);
+  return total / numericValues.length;
+};
+
 export default function SurveyResponsesPage() {
   const params = useParams();
   const router = useRouter();
@@ -78,27 +108,32 @@ export default function SurveyResponsesPage() {
       setResponses(responsesList);
       
       // Map responses to table format
-      const mapped = responsesList.map((response: SurveyResponse) => ({
-        id: response.id,
-        Voter_Code: response.voterCode,
-        Voter_Name: response.voterName || "N/A",
-        Submitted_At: new Date(response.submittedAt).toLocaleString(),
-        Answers_Count: Object.keys(response.answers).length,
-        View: (
-          <div className="flex justify-start gap-2">
-            <button
-              className="inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleViewResponse(response);
-              }}
-              title="View response details"
-            >
-              <MdVisibility size={18} />
-            </button>
-          </div>
-        ),
-      }));
+      const mapped = responsesList.map((response: SurveyResponse) => {
+        const averageAnswer = calculateAverageAnswer(response.answers);
+
+        return {
+          id: response.id,
+          Voter_Code: response.voterCode,
+          Voter_Name: response.voterName || "N/A",
+          Submitted_At: new Date(response.submittedAt).toLocaleString(),
+          Answers_Count: Object.keys(response.answers).length,
+          Average_Answer: averageAnswer === null ? "N/A" : averageAnswer.toFixed(2),
+          View: (
+            <div className="flex justify-start gap-2">
+              <button
+                className="inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleViewResponse(response);
+                }}
+                title="View response details"
+              >
+                <MdVisibility size={18} />
+              </button>
+            </div>
+          ),
+        };
+      });
       
       setRows(mapped);
     } catch (err: any) {
@@ -122,7 +157,7 @@ export default function SurveyResponsesPage() {
     
     try {
       // Create CSV content
-      const headers = ["Voter Code", "Voter Name", "Submitted At"];
+      const headers = ["Voter Code", "Voter Name", "Submitted At", "Average Answer"];
       
       // Add question headers
       if (survey?.formSchema?.questions) {
@@ -134,10 +169,12 @@ export default function SurveyResponsesPage() {
       const csvContent = [
         headers.join(","),
         ...responses.map(response => {
+          const averageAnswer = calculateAverageAnswer(response.answers);
           const row = [
             `"${response.voterCode}"`,
             `"${response.voterName || 'N/A'}"`,
-            `"${new Date(response.submittedAt).toLocaleString()}"`
+            `"${new Date(response.submittedAt).toLocaleString()}"`,
+            `"${averageAnswer === null ? "N/A" : averageAnswer.toFixed(2)}"`
           ];
           
           // Add answers
@@ -198,6 +235,7 @@ export default function SurveyResponsesPage() {
                 "Voter_Name",
                 "Submitted_At",
                 "Answers_Count",
+                "Average_Answer",
                 "View",
               ]}
               data={rows}
