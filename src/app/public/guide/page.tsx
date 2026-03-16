@@ -413,13 +413,13 @@ const TutorialPage = () => {
 
         {/* toggle styled like tabs */}
         <div className="py-10 w-full text-center px-5 xs:px-20">
-            <div className="inline-flex w-full max-w-[500px] md:w-auto rounded-md border border-gray-300 overflow-hidden bg-white ">
+            <div className="flex w-full rounded-md border border-gray-300 overflow-hidden bg-white">
                 {tabs.map((t, i) => (
                 <SubmitButton
                     key={t}
                     variant="tab"
                     onClick={() => setTab(t as "Admin" | "Voter")}
-                    className={`w-full h-[44px] md:w-[120px] md:h-10 font-medium transition ${
+                    className={`flex-1 h-[44px] font-medium transition ${
                     tab === t
                         ? "bg-primary text-white hover:bg-red-900"
                         : "bg-white text-gray hover:bg-gray-100"
