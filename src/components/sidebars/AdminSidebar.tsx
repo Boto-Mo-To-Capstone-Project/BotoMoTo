@@ -5,7 +5,7 @@ import { useSession, } from "next-auth/react";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Avatar } from "@/components/Avatar";
 
 import BotoMoToLogo from "@/app/assets/BotoMoToLogo_light.png";
@@ -38,6 +38,8 @@ const AdminSidebar = ({
   const { data: session } = useSession();
 
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const eidParam = searchParams.get("eid");
   const [showSetup, setShowSetup] = useState(false);
   const [showManage, setShowManage] = useState(false);
 
@@ -79,12 +81,22 @@ const AdminSidebar = ({
     { name: "Profile", href: "/admin/dashboard/elections/profile", icon: User },
   ];
 
-  const setupLinks = ["Overview", "Voters", "Positions", "Candidates", "Manage Election"].map(
-    (sub) => ({
-      name: sub,
-      href: `/admin/dashboard/elections/${currentElectionId}/setup/${sub.toLowerCase().replace(/\s+/g, "-")}`,
-    })
-  );
+  const setupLinks = [
+    {
+      name: "Election Info",
+      href: `/admin/dashboard/elections/create?eid=${currentElectionId}`,
+      isActive:
+        pathname === "/admin/dashboard/elections/create" &&
+        String(currentElectionId) === eidParam,
+    },
+    ...["Overview", "Voters", "Positions", "Candidates", "Manage Election"].map(
+      (sub) => ({
+        name: sub,
+        href: `/admin/dashboard/elections/${currentElectionId}/setup/${sub.toLowerCase().replace(/\s+/g, "-")}`,
+        isActive: pathname === `/admin/dashboard/elections/${currentElectionId}/setup/${sub.toLowerCase().replace(/\s+/g, "-")}`,
+      })
+    ),
+  ];
 
   const displayName = session?.user?.name || "Username";
   const displayEmail = session?.user?.email || "Email";
@@ -184,7 +196,7 @@ const AdminSidebar = ({
                 {showSetup && (
                   <nav className="space-y-1 mt-2 bg-white rounded-lg">
                     {setupLinks.map((link) => {
-                      const isActive = pathname === link.href;
+                      const isActive = link.isActive;
                       return (
                         <Link
                           key={link.href}
