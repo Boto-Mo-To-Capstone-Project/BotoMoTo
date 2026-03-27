@@ -4,6 +4,48 @@ A comprehensive Role-Based Access Control (RBAC) voting system built with Next.j
 
 ## 🚀 Quick Start (3 minutes)
 
+## 🐳 Docker Compose Quick Start
+
+Run the full stack (Next.js app + PostgreSQL) with Docker:
+
+```bash
+cp .env.docker.example .env.docker
+docker compose up --build
+```
+
+By default in this compose setup, the app is exposed on `http://localhost:3004`.
+
+### Docker files in this repository
+
+- `Dockerfile`: Production image for the Next.js app
+- `docker-compose.yml`: Multi-container stack (app + postgres)
+- `.env.docker.example`: Template for container-specific app environment
+- `.dockerignore`: Build context exclusions for faster image builds
+
+### Useful commands
+
+```bash
+# Start in background
+docker compose up -d --build
+
+# View logs
+docker compose logs -f app
+
+# Stop services
+docker compose down
+
+# Stop services and remove DB volume (fresh database)
+docker compose down -v
+```
+
+### Notes
+
+- Prisma migrations are applied automatically when the app container starts.
+- Postgres data is persisted in the `postgres_data` Docker volume.
+- Docker maps Postgres to host port `5433` to avoid conflicts with a local Postgres on `5432`.
+- Change `AUTH_SECRET` in `.env.docker` before using this setup outside local development.
+- Superadmin credentials creation is included in docker setup
+
 ### Prerequisites
 
 - Node.js 18+
